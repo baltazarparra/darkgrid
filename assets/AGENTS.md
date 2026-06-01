@@ -29,6 +29,19 @@ assets/
 7. **Import settings:** For every `.png`, set Filter to **Nearest**, Compress to **Lossless**, Mipmaps to **Off**.
 8. **Licenses:** Every asset pack downloaded must have its license copied into `assets/licenses/`.
 
+## Horror Folk Palette
+
+The visual identity is **dark, humid, and hostile**. Pixel art should evoke:
+
+| Use | Color | Hex |
+|-----|-------|-----|
+| Background / Night | Deep blue-black | `#0d1117` |
+| Earth / Trail | Reddish brown | `#3d1f1f` |
+| Foliage / Moss | Rotten green | `#1a2f1a` |
+| Blood / Damage | Blood red | `#8b0000` |
+| Highlight / Cue | Amber / Fire | `#ff6b00` |
+| Text | Dirty white | `#c9d1d9` |
+
 ## Kenney Pack Recommendations
 
 | Pack | Use For |
@@ -37,14 +50,14 @@ assets/
 | Tiny Town | Environment variations |
 | 1-Bit Pack | Minimalist fallback, prototyping |
 | RPG Urban | Additional tiles if needed |
-| Character packs | Player sprite (idle/walk) |
-| Monster/Enemy packs | Enemy sprite (skeleton, slime, goblin) |
+| Character packs | Caipora sprite (idle/walk) |
+| Monster/Enemy packs | Creature sprite (skeleton, slime, goblin) |
 
 ## SFX Checklist (MVP)
 
 Generate these with jsfxr/sfxr:
 
-- [ ] `attack.wav` — Player swing/slash
+- [ ] `attack.wav` — Caipora slash/strike
 - [ ] `hit.wav` — Damage impact
 - [ ] `dodge.wav` — Quick whoosh/swish
 - [ ] `timing_perfect.wav` — Reward ding/chime

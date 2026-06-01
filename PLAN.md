@@ -1,28 +1,42 @@
-# darkgrid — Combat-Focused Roguelike
+# caipora — Roguelike Brasileiro de Horror Folclórico
 
 > Browser-first roguelike built with Godot 4.6 + GDScript.  
 > Published on itch.io as an HTML5 build.
 
 ---
 
-## 1. Product Vision
+## 1. Visão do Produto
 
-**darkgrid** is a 2D pixel-art roguelike where the combat feels *satisfying*.
+**caipora** é um roguelike 2D em pixel art ambientado no horror folclórico brasileiro.
 
-The core innovation is a **timing-based combat system** inspired by *Legend of Dragoon* and *Clair Obscur*:
+Você joga como a **Caipora**, guardiã da mata, despertando em uma floresta corrompida onde os antigos pactos entre humanos, bichos, mortos, rios e encantados foram quebrados.
 
-- **Spacebar to attack:** Press at the right frame to land a **critical hit** (2x–3x damage).
-- **Spacebar to defend:** Press at the right frame to **perfect dodge** (zero damage) and **counter-attack**.
+A cada movimento no grid, o mundo responde. A Caipora avança por trilhas tortas, clareiras queimadas, rios escuros, capelas abandonadas e vilas tomadas por superstição. Cada passo é uma escolha. Cada encontro pode virar caça, punição, fuga ou encantamento.
 
-Every action has juicy feedback: screen shake, particle bursts, hit-stop frames, and crisp sound effects.
+Diferente de um herói tradicional, a Caipora não está ali para salvar a humanidade. Ela é uma entidade antiga, ambígua e perigosa: protetora dos animais, senhora dos rastros, espírito de assovio, armadilha e vingança. Sua missão é descobrir o que adoeceu a mata — e decidir se os humanos ainda merecem permanecer nela.
 
-**MVP Scope:**
-- 1 playable character
-- 1 enemy type
-- 1 arena/stage + boss
-- Timing system fully implemented and satisfying
+### Tom
 
-**Out of scope for MVP:**
+**GORE / TERROR / SANGRENTO**
+
+Inspirado pela tensão estratégica de roguelikes clássicos, pela estranheza ritual de *Sol Cesto* e pela atmosfera opressiva de *Bloodborne*. caipora troca o gótico europeu por um horror brasileiro de terra molhada, cipó, fumaça, olho brilhando no escuro e canto vindo do rio.
+
+### Mecânica Central
+
+O combate usa um sistema de **timing**:
+- Pressione **Espaço** no frame correto para desferir um **ataque crítico** (2x–3x de dano).
+- Pressione **Espaço** no frame correto para **esquivar perfeitamente** (zero dano) e **contra-atacar**.
+
+Toda ação tem feedback visceral: screen shake, partículas de sangue, hit-stop e sons de impacto.
+
+### Escopo do MVP
+
+- 1 jogável: **Caipora**
+- 1 inimigo: criatura folclórica (ex: Caboclo d'Água, Boto corrompido, ou entidade genérica da mata)
+- 1 arena: clareira queimada ou capela abandonada na floresta
+- Sistema de timing implementado e satisfatório
+
+**Fora do escopo do MVP:**
 - Steam / desktop builds
 - Mobile builds
 - Gamepad support
@@ -30,137 +44,139 @@ Every action has juicy feedback: screen shake, particle bursts, hit-stop frames,
 - Cloud saves
 - Leaderboards
 - Achievements
+- Música (SFX apenas no MVP)
 
 ---
 
-## 2. Target Platform
+## 2. Plataforma Alvo
 
-- **Primary:** Web / HTML5 (itch.io)
-- **Renderer:** Godot 2D (Compatibility mode for WebGL stability)
-- **Resolution:** 1280×720 (scalable)
+- **Primária:** Web / HTML5 (itch.io)
+- **Renderizador:** Godot 2D (Compatibility mode para estabilidade WebGL)
+- **Resolução:** 1280×720 (escalável)
 
 ---
 
 ## 3. Tech Stack
 
-| Layer | Choice |
-|-------|--------|
+| Camada | Escolha |
+|--------|---------|
 | Engine | Godot 4.6.3 |
-| Language | GDScript |
-| Rendering | 2D, OpenGL Compatibility |
-| Distribution | itch.io HTML5 export |
-| Version Control | Git |
+| Linguagem | GDScript |
+| Renderização | 2D, OpenGL Compatibility |
+| Distribuição | itch.io HTML5 export |
+| Controle de Versão | Git |
 | Agent Tools | `@coding-solo/godot-mcp` (MCP server) |
 
 ---
 
-## 4. Game Architecture
+## 4. Arquitetura do Jogo
 
-### 4.1 Gameplay Loop
-
-```
-[Main Menu]
-    ↓
-[Exploration]  ← grid-based, turn-based
-    ↓  (step onto arena tile)
-[Arena Combat] ← action / timing-based
-    ↓  (win / die)
-[Rewards / Death]
-    ↓
-[Hub / Meta-progression]
-    ↓
-[Exploration]  ← next arena
-```
-
-**Exploration:**
-- Grid-based movement (4 directions)
-- Turn-based: player moves one tile → enemies move
-- Fog of war or limited visibility
-- Stepping onto an arena tile triggers combat
-
-**Arena Combat:**
-- Real-time action (not turn-based)
-- Player and enemy have attack cooldowns
-- Enemy telegraphs attacks with a visual cue + wind-up window
-- Player presses **Space** during the cue window to dodge + counter
-- Player presses **Space** during their own attack window to crit
-- Missing the timing = normal outcome (no penalty, no bonus)
-
-### 4.2 Core Systems
-
-| System | Responsibility |
-|--------|----------------|
-| `TurnManager` | Handles exploration turn order |
-| `ArenaManager` | Spawns enemies, manages arena state, win/lose conditions |
-| `TimingSystem` | Detects spacebar presses within cue windows, emits hit/miss events |
-| `CombatSystem` | Applies damage, handles death, triggers feedback |
-| `FeedbackSystem` | Screenshake, particles, hit-stop, sound cues |
-| `MetaProgression` | Unlocks between runs (persisted in `user://`) |
-
-### 4.3 Entity Structure
+### 4.1 Loop de Gameplay
 
 ```
-Player
-├── MovementController (exploration)
+[Menu Principal]
+    ↓
+[Exploração]  ← grid-based, turn-based (floresta)
+    ↓  (pisar no tile de arena)
+[Combate na Arena] ← action / timing-based
+    ↓  (vitória / morte)
+[Recompensas / Morte]
+    ↓
+[Hub / Meta-progressão]
+    ↓
+[Exploração]  ← próxima arena
+```
+
+**Exploração:**
+- Movimento grid-based (4 direções)
+- Turn-based: jogador move um tile → criaturas movem
+- Visibilidade limitada / fog of war
+- Pisar em um tile de arena dispara combate
+- Ambientes: trilha torta, clareira queimada, rio escuro, capela abandonada
+
+**Combate na Arena:**
+- Action em tempo real (não turn-based)
+- Jogador e inimigo têm cooldowns de ataque
+- Inimigo telegrafa ataques com cue visual + janela de wind-up
+- Jogador pressiona **Espaço** durante a janela de cue para esquivar + contra-atacar
+- Jogador pressiona **Espaço** durante sua própria janela de ataque para crítico
+- Errar o timing = resultado normal (sem penalidade, sem bônus)
+
+### 4.2 Sistemas Core
+
+| Sistema | Responsabilidade |
+|---------|------------------|
+| `TurnManager` | Ordem de turnos na exploração |
+| `ArenaManager` | Spawna inimigos, gerencia estado da arena, condições de vitória/derrota |
+| `TimingSystem` | Detecta presses de espaço dentro das janelas de cue, emite hit/miss |
+| `CombatSystem` | Aplica dano, lida com morte, dispara feedback |
+| `FeedbackSystem` | Screenshake, partículas, hit-stop, sound cues |
+| `MetaProgression` | Unlocks entre runs (persistido em `user://`) |
+
+### 4.3 Estrutura de Entidades
+
+```
+Caipora (Player)
+├── MovementController (exploração)
 ├── CombatActor (arena)
 │   ├── Health
 │   ├── AttackCooldown
 │   └── TimingWindow
 └── FeedbackReceiver
 
-Enemy
+Criatura (Enemy)
 ├── CombatActor
 │   ├── Health
 │   ├── AttackPattern (telegraph → wind-up → strike)
-│   └── TimingWindow (for player dodge)
+│   └── TimingWindow (para esquiva do jogador)
 └── FeedbackReceiver
 ```
 
 ---
 
-## 5. Directory Structure
+## 5. Estrutura de Diretórios
 
 ```
-darkgrid/
+caipora/
 ├── assets/
-│   ├── sprites/          # all sprites: chars, enemies, tiles, items (.png)
+│   ├── sprites/          # todos os sprites: chars, inimigos, tiles, itens (.png)
 │   ├── audio/
-│   │   └── sfx/          # sound effects (.wav, jsfxr/sfxr)
-│   ├── fonts/            # pixel font (.ttf / .otf)
-│   └── licenses/         # CC0 licenses and attribution
+│   │   └── sfx/          # efeitos sonoros (.wav, jsfxr/sfxr)
+│   ├── fonts/            # fonte pixelada (.ttf / .otf)
+│   └── licenses/         # licenças CC0 e atribuições
 ├── scenes/
-│   ├── ui/               # menus, HUD, screens
-│   ├── exploration/      # grid map, fog, tiles
-│   ├── arena/            # combat arena backgrounds
-│   └── shared/           # reusable components (health bar, etc)
+│   ├── ui/               # menus, HUD, telas
+│   ├── exploration/      # mapa grid, fog, camadas de tile
+│   ├── arena/            # arenas de combate
+│   └── shared/           # componentes reutilizáveis (barra de vida, etc)
 ├── scripts/
 │   ├── core/             # autoloads: GameState, SignalBus, MetaProgression
 │   ├── systems/          # TimingSystem, CombatSystem, FeedbackSystem
-│   ├── entities/         # Player, Enemy base classes
-│   ├── exploration/      # grid logic, TurnManager
-│   ├── arena/            # ArenaManager, attack patterns
+│   ├── entities/         # Caipora, Criatura (classes base)
+│   ├── exploration/      # lógica de grid, TurnManager
+│   ├── arena/            # ArenaManager, padrões de ataque
 │   └── utils/            # helpers, constants
 ├── tests/
-│   └── unit/             # GUT unit tests
-├── docs/                 # design docs, references
-└── export/               # HTML5 build output (gitignored)
+│   └── unit/             # testes unitários GUT
+├── docs/                 # documentos de design
+└── export/               # saída do build HTML5 (gitignored)
 ```
 
 ---
 
-## 6. Code Standards
+## 6. Padrões de Código
 
 ### 6.1 Naming
 
-| Type | Convention | Example |
-|------|------------|---------|
+| Tipo | Convenção | Exemplo |
+|------|-----------|---------|
 | Classes | PascalCase | `CombatActor`, `TimingSystem` |
-| Variables / Functions | snake_case | `attack_damage`, `start_timing_window()` |
-| Constants | UPPER_SNAKE_CASE | `MAX_HEALTH`, `TIMING_WINDOW_FRAMES` |
-| Signals | past-tense snake_case | `health_changed`, `timing_hit` |
-| Files | snake_case | `combat_actor.gd`, `arena_manager.gd` |
+| Variáveis / Funções | snake_case | `attack_damage`, `start_timing_window()` |
+| Constantes | UPPER_SNAKE_CASE | `MAX_HEALTH`, `TIMING_WINDOW_FRAMES` |
+| Signals | passado snake_case | `health_changed`, `timing_hit` |
+| Arquivos | snake_case | `combat_actor.gd`, `arena_manager.gd` |
 
-### 6.2 Script Layout
+### 6.2 Layout de Script
 
 ```gdscript
 class_name CombatActor
@@ -197,166 +213,179 @@ func _open_timing_window() -> void:
     is_timing_window_open = true
 ```
 
-### 6.3 Principles
+### 6.3 Princípios
 
-- **Composition over inheritance:** Use `@export` nodes and components, avoid deep inheritance trees.
-- **Signals for decoupling:** Systems communicate via `SignalBus` autoload or direct signals, not direct references.
-- **State machines:** Use `StateMachine` pattern for Player and Enemy behaviors (explore → combat → dead).
-- **No magic numbers:** Define constants at the top of the script or in a `constants.gd` autoload.
-- **Typed everything:** Use static typing (`-> void`, `-> int`, `: int`) everywhere.
+- **Composition over inheritance:** Use `@export` nodes e componentes, evite árvores de herança profundas.
+- **Signals para desacoplamento:** Sistemas se comunicam via `SignalBus` autoload ou signals diretos, não referências diretas.
+- **State machines:** Use padrão `StateMachine` para Caipora e Criaturas (explorar → combater → morto).
+- **Sem números mágicos:** Defina constantes no topo do script ou em `constants.gd` autoload.
+- **Typed everything:** Use static typing (`-> void`, `-> int`, `: int`) em todas as funções e variáveis.
+- **Uma classe por arquivo:** Não empilhe múltiplas classes em um único `.gd`.
 
 ---
 
-## 7. Scene Architecture
+## 7. Arquitetura de Cenas
 
 ### 7.1 Autoloads (`Project > Project Settings > Autoloads`)
 
-| Name | Script | Purpose |
-|------|--------|---------|
-| `GameState` | `scripts/core/game_state.gd` | Current screen, run state, pause |
-| `SignalBus` | `scripts/core/signal_bus.gd` | Global signals (decoupled communication) |
-| `MetaProgression` | `scripts/core/meta_progression.gd` | Unlocks, currency, stats between runs |
-| `FeedbackSystem` | `scripts/systems/feedback_system.gd` | Global screenshake, particles, sound |
+| Nome | Script | Propósito |
+|------|--------|-----------|
+| `GameState` | `scripts/core/game_state.gd` | Tela atual, estado da run, pause |
+| `SignalBus` | `scripts/core/signal_bus.gd` | Signals globais (comunicação desacoplada) |
+| `MetaProgression` | `scripts/core/meta_progression.gd` | Unlocks, currency, stats entre runs |
+| `FeedbackSystem` | `scripts/systems/feedback_system.gd` | Screenshake global, partículas, som |
 
-### 7.2 Scene Tree Patterns
+### 7.2 Padrões de Scene Tree
 
-- **Arena scene:** `ArenaManager` (Node2D) owns the background, spawns `Player` and `Enemy` instances.
-- **UI scenes:** CanvasLayer-based, anchored to viewport, use `Control` nodes for layout.
-- **Reusable components:** HealthBar, DamageNumber, TimingCue are instanced scenes (`PackedScene`) exported as `@export var`.
+- **Cena de Arena:** `ArenaManager` (Node2D) possui o background, spawna instâncias de `Caipora` e `Criatura`.
+- **Cenas de UI:** Baseadas em CanvasLayer, ancoradas ao viewport, usam nós `Control` para layout.
+- **Componentes reutilizáveis:** HealthBar, DamageNumber, TimingCue são cenas instanciáveis (`PackedScene`) exportadas como `@export var`.
 
 ---
 
 ## 8. MCP & Agent Harness
 
-The project has `@coding-solo/godot-mcp` installed and configured.
+O projeto usa `@coding-solo/godot-mcp` instalado e configurado.
 
-### 8.1 Available MCP Tools
+### 8.1 MCP Tools Disponíveis
 
-| Tool | Use Case |
-|------|----------|
-| `create_scene` | Create new `.tscn` files |
-| `add_node` | Add nodes to existing scenes |
-| `save_scene` | Save scene changes |
-| `run_project` | Run the game and capture output |
-| `get_debug_output` | Read stdout/stderr from running game |
-| `stop_project` | Kill the running game process |
-| `launch_editor` | Open Godot editor for the project |
-| `get_godot_version` | Verify installed Godot version |
+| Tool | Quando usar |
+|------|-------------|
+| `create_scene` | Criar novo arquivo `.tscn` |
+| `add_node` | Adicionar nó a uma cena existente |
+| `save_scene` | Salvar alterações em uma cena |
+| `run_project` | Rodar o jogo e capturar output |
+| `get_debug_output` | Ler stdout/stderr do jogo rodando |
+| `stop_project` | Parar o processo do jogo |
+| `launch_editor` | Abrir o editor Godot |
+| `get_godot_version` | Verificar versão do Godot instalado |
 
-### 8.2 Agent Workflow
+### 8.2 Workflow do Agente
 
-1. **Orient:** Read `PLAN.md`, check git status, read `AGENTS.md`.
-2. **Verify:** Run smoke test (`run_project`) before making changes.
-3. **Implement:** One task per session. Use MCP tools for scene creation.
-4. **Test:** Run GUT unit tests + smoke test + screenshot validation.
-5. **Update:** Commit with descriptive message. Update `PLAN.md` if scope changes.
+1. **Orient:** Ler `PLAN.md`, checar `git status`, ler `AGENTS.md`.
+2. **Verify:** Rodar smoke test (`run_project`) antes de fazer mudanças.
+3. **Implement:** Uma task por sessão. Usar MCP tools para criação de cenas.
+4. **Test:** Rodar smoke test + GUT tests. Se houver mudanças visuais, validar com screenshot.
+5. **Update:** Commit com mensagem descritiva. Marcar task completa em `PLAN.md` se aplicável.
 
 ---
 
 ## 9. Build & Export Pipeline
 
-### 9.1 Local Development
+### 9.1 Desenvolvimento Local
 
 ```bash
-# Run the game (requires display :0, WSLg works)
+# Rodar o jogo (requer display :0, WSLg funciona)
 ~/.local/bin/godot --path /home/baltz/darkgrid
 
-# Run headless (for scene operations via MCP)
+# Rodar headless (para operações de cena via MCP)
 ~/.local/bin/godot --headless --path /home/baltz/darkgrid --script <script>
 
-# Run GUT tests
+# Rodar testes GUT
 ~/.local/bin/godot --headless --path /home/baltz/darkgrid -s res://addons/gut/gut_cmdln.gd
 ```
 
-### 9.2 Export to HTML5
+### 9.2 Exportar para HTML5
 
 ```bash
-# Export preset must be configured in Godot first
+# O preset de export deve estar configurado no Godot primeiro
 ~/.local/bin/godot --headless --path /home/baltz/darkgrid --export-release "Web" export/index.html
 ```
 
-### 9.3 Deploy to itch.io
+### 9.3 Deploy no itch.io
 
-1. Zip `export/` contents.
-2. Upload to itch.io project page.
-3. Set "This file will be played in the browser" for `index.html`.
+1. Zipar conteúdo de `export/`.
+2. Fazer upload na página do projeto no itch.io.
+3. Marcar "This file will be played in the browser" para `index.html`.
 
 ---
 
-## 10. Testing & Validation
+## 10. Testes & Validação
 
-### 10.1 Layers
+### 10.1 Camadas
 
-| Layer | Tool | Trigger |
-|-------|------|---------|
-| Smoke test | `run_project` | After every change |
-| Unit tests | GUT (Godot Unit Test) | Before commit |
-| Visual validation | Screenshot | Before commit |
-| Playtest | Manual | At milestone boundaries |
+| Camada | Tool | Gatilho |
+|--------|------|---------|
+| Smoke test | `run_project` | Após cada mudança |
+| Unit tests | GUT (Godot Unit Test) | Antes do commit |
+| Validação visual | Screenshot | Antes do commit |
+| Playtest | Manual | Nos boundaries de milestone |
 
-### 10.2 Acceptance Criteria per Milestone
+### 10.2 Critérios de Aceitação por Milestone
 
-- **Fase 1:** Player moves on grid. Camera follows. No crashes.
-- **Fase 2:** Arena loads. Timing cue appears. Spacebar registers hit/miss. Damage applies.
-- **Fase 3:** Enemy attacks with telegraph. Boss has unique pattern. Win/lose conditions work.
-- **Fase 4:** Meta-progression unlocks persist. Polish particles, sounds, screenshake.
-- **Fase 5:** HTML5 export runs in browser. itch.io page loads and plays.
+- **Fase 1:** Caipora se move no grid. Câmera segue. Não crasha.
+- **Fase 2:** Arena carrega. Cue de timing aparece. Espaço registra hit/miss. Dano aplica.
+- **Fase 3:** Criatura ataca com telegraph. Boss tem padrão único. Condições de vitória/derrota funcionam.
+- **Fase 4:** Meta-progressão unlocks persistem. Polish: partículas, sons, screenshake.
+- **Fase 5:** Export HTML5 roda no browser. Página do itch.io carrega e joga.
 
 ---
 
 ## 11. Milestones
 
-### Phase 1: Grid + Player Movement
-- [ ] Grid-based exploration scene
-- [ ] Player character with 4-direction movement
-- [ ] Camera follow
-- [ ] Arena tile triggers combat
+### Fase 1: Grid + Movimento da Caipora
+- [ ] Cena de exploração grid-based
+- [ ] Personagem Caipora com movimento 4-direcional
+- [ ] Câmera segue
+- [ ] Tile de arena dispara combate
 
-### Phase 2: Arena + Timing System
-- [ ] Arena scene with background
-- [ ] Player combat actor (health, damage)
-- [ ] Timing cue UI (visual bar + window)
-- [ ] Spacebar detection within window
-- [ ] Critical hit on perfect timing
-- [ ] Feedback: screenshake + particles + sound
+### Fase 2: Arena + Sistema de Timing
+- [ ] Cena de arena com background
+- [ ] Caipora combat actor (vida, dano)
+- [ ] Cue de timing UI (barra visual + janela)
+- [ ] Detecção de espaço dentro da janela
+- [ ] Ataque crítico no timing perfeito
+- [ ] Feedback: screenshake + partículas + som
 
-### Phase 3: Enemy AI + Boss
-- [ ] Enemy combat actor
-- [ ] Attack telegraph (wind-up animation + cue)
-- [ ] Perfect dodge + counter-attack on timing
-- [ ] Boss with unique attack pattern
-- [ ] Win condition (enemy death) / Lose condition (player death)
+### Fase 3: Criatura + Boss
+- [ ] Criatura combat actor
+- [ ] Telegraph de ataque (animação de wind-up + cue)
+- [ ] Esquiva perfeita + contra-ataque no timing
+- [ ] Boss com padrão de ataque único
+- [ ] Condição de vitória (morte da criatura) / derrota (morte da Caipora)
 
-### Phase 4: Meta-Progression + Polish
-- [ ] Hub scene between runs
-- [ ] Unlock system (characters, modifiers)
-- [ ] Persistent save (`user://`)
-- [ ] Particle polish
-- [ ] Sound design (sfx for every action)
-- [ ] Screenshake tuning
+### Fase 4: Meta-Progressão + Polish
+- [ ] Cena de hub entre runs
+- [ ] Sistema de unlocks (personagens, modifiers)
+- [ ] Save persistente (`user://`)
+- [ ] Polish de partículas
+- [ ] Sound design (sfx para cada ação)
+- [ ] Tuning de screenshake
 - [ ] Hit-stop frames
 
-### Phase 5: Export + Publish
-- [ ] HTML5 export preset configured
-- [ ] Export test in browser
-- [ ] itch.io page created
-- [ ] Upload and verify
+### Fase 5: Export + Publish
+- [ ] Preset de export HTML5 configurado
+- [ ] Teste de export no browser
+- [ ] Página do itch.io criada
+- [ ] Upload e verificação
 
 ---
 
-## 12. Asset Guidelines
+## 12. Diretrizes de Assets
 
-- **Sprites:** CC0 from Kenney.nl. Pick **one pack** for visual consistency. 16×16 or 32×32, .png, transparent background. No AI-generated sprites for core game.
-- **Audio:** Generate with jsfxr/sfxr. Export as .wav. Short, punchy, under 100KB each. No music in MVP.
-- **UI:** Godot native UI nodes (`Button`, `Panel`, `Label`, `ProgressBar`). No custom UI sprite sheets.
-- **Fonts:** One pixel font with permissive license (e.g., Kenney Fonts or "Press Start 2P").
-- **Licenses:** Copy every asset pack's license into `assets/licenses/`.
+- **Sprites:** CC0 da Kenney.nl. Escolha **um único pack** para consistência visual. 16×16 ou 32×32, .png, fundo transparente. **Sem sprites gerados por IA** para o jogo principal.
+- **Áudio:** Gerar com jsfxr/sfxr. Exportar como .wav. Curto, punchy, under 100KB cada. **Sem música no MVP.**
+- **UI:** Usar nós nativos do Godot (`Button`, `Panel`, `Label`, `ProgressBar`). Sem sprite sheets customizadas para UI.
+- **Fontes:** Uma fonte pixelada com licença permissiva (ex: Kenney Fonts ou "Press Start 2P").
+- **Licenças:** Copiar a licença de cada pack de assets para `assets/licenses/`.
+
+### Paleta de Horror Folclórico Brasileiro
+
+| Uso | Cor | Hex |
+|-----|-----|-----|
+| Fundo / Noite | Preto azulado | `#0d1117` |
+| Terra / Trilha | Marrom avermelhado | `#3d1f1f` |
+| Folhagem / Musgo | Verde podre | `#1a2f1a` |
+| Sangue / Dano | Vermelho vivo | `#8b0000` |
+| Destaque / Cue | Âmbar / Fogo | `#ff6b00` |
+| Texto | Branco sujo | `#c9d1d9` |
 
 ---
 
-## 13. Notes
+## 13. Notas
 
-- **Browser-first:** Avoid heavy shaders, large textures, and complex physics. Test load time frequently.
-- **Timing windows:** Start generous (12 frames), tune down based on playtest feel.
-- **Feedback is king:** Every action must feel good. Prioritize juice over content.
-- **Save often:** Use git commits as checkpoints. The agent should commit after every successful task.
+- **Browser-first:** Evite shaders pesados, texturas grandes, física complexa. Teste tempo de load frequentemente.
+- **Janelas de timing:** Comece generoso (12 frames), ajuste baseado no feel do playtest.
+- **Feedback é rei:** Cada ação deve ser satisfatória. Priorize juice sobre conteúdo.
+- **Save often:** Use commits do git como checkpoints. O agente deve commitar após cada task bem-sucedida.
+- **Tom:** Nunca suavize o horror. A floresta é hostil. A Caipora é perigosa. O sangue é real.

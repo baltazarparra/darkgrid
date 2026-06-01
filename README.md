@@ -1,24 +1,23 @@
-# darkgrid
+# caipora
 
-> A combat-focused 2D pixel-art roguelike built with Godot 4.6.  
+> A Brazilian folk horror roguelike built with Godot 4.6.  
 > Play it in the browser on [itch.io](https://itch.io) (link coming soon).
 
 ---
 
-## What is darkgrid?
+## What is caipora?
 
-**darkgrid** reimagines the roguelike combat loop with a **timing-based action system** inspired by *Legend of Dragoon* and *Clair Obscur*.
+**caipora** is a 2D pixel-art roguelike set in the dark heart of Brazilian folklore.
 
-- **Press Space at the right moment** to land a **critical hit** (2x–3x damage).
-- **Press Space at the right moment** to **perfect dodge** an enemy attack and **counter-attack**.
+You play as the **Caipora** — guardian of the forest, spirit of whistles, traps, and vengeance — awakening in a corrupted woodland where ancient pacts have been shattered. Every step on the grid is a choice. Every encounter can become hunt, punishment, flight, or enchantment.
 
-Every strike, dodge, and death is packed with juicy feedback: screen shake, particle bursts, hit-stop frames, and crisp sound effects.
+The core mechanic is **timing-based combat** inspired by *Legend of Dragoon* and *Clair Obscur*:
+- Press **Space** at the right moment to land a **critical hit** (2x–3x damage).
+- Press **Space** at the right moment to **perfect dodge** an attack and **counter-attack**.
 
-### Gameplay Loop
+Every strike, dodge, and death is packed with visceral feedback: screen shake, blood particles, hit-stop frames, and brutal sound effects.
 
-1. **Explore** — Move on a grid between arenas (turn-based).
-2. **Fight** — Enter an arena and battle in real-time with timing mechanics.
-3. **Die or Win** — Learn from failure. Unlock permanent upgrades. Try again.
+**Tone:** GORE / TERROR / SANGRENTO
 
 ---
 
@@ -38,13 +37,13 @@ Every strike, dodge, and death is packed with juicy feedback: screen shake, part
 ## Project Structure
 
 ```
-darkgrid/
+caipora/
 ├── assets/          — Sprites (CC0/Kenney), SFX, fonts, licenses
 ├── scenes/          — Godot scenes (UI, exploration, arena, shared)
 ├── scripts/         — GDScript source code
 │   ├── core/        — Autoloads (GameState, SignalBus, MetaProgression)
 │   ├── systems/     — TimingSystem, CombatSystem, FeedbackSystem
-│   ├── entities/    — Player, Enemy
+│   ├── entities/    — Caipora, Criatura
 │   ├── exploration/ — Grid logic, TurnManager
 │   ├── arena/       — ArenaManager, attack patterns
 │   └── utils/       — Helpers, constants
@@ -122,9 +121,9 @@ Read `AGENTS.md` before contributing (human or agent).
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| 1 | Grid + Player movement | 🔲 Not started |
+| 1 | Grid + Caipora movement | 🔲 Not started |
 | 2 | Arena + Timing system | 🔲 Not started |
-| 3 | Enemy AI + Boss | 🔲 Not started |
+| 3 | Criatura + Boss | 🔲 Not started |
 | 4 | Meta-progression + Polish | 🔲 Not started |
 | 5 | Export HTML5 + itch.io | 🔲 Not started |
 

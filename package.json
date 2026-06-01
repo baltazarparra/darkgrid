@@ -1,7 +1,7 @@
 {
-  "name": "darkgrid",
+  "name": "caipora",
   "version": "1.0.0",
-  "description": "Roguelike",
+  "description": "Roguelike brasileiro de horror folclórico",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

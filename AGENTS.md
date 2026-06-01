@@ -1,18 +1,20 @@
-# AGENTS.md — darkgrid
+# AGENTS.md — caipora
 
-This file guides the Kimi Code CLI agent when working on the **darkgrid** project.
+This file guides the Kimi Code CLI agent when working on the **caipora** project.
 
 ## Project Overview
 
-**darkgrid** is a browser-first 2D pixel-art roguelike built with Godot 4.6.3 + GDScript.
+**caipora** is a browser-first 2D pixel-art roguelike set in Brazilian folk horror.
+
+You play as the **Caipora**, guardian of the forest, awakening in a corrupted woodland where ancient pacts between humans, beasts, the dead, rivers, and enchanted beings have been broken.
 
 The core mechanic is **timing-based combat**:
 - Press **Space** at the right frame to land a **critical hit** (2x–3x damage).
 - Press **Space** at the right frame to **perfect dodge** an enemy attack and **counter-attack**.
 
-Gameplay loop: grid-based exploration (turn-based) → step onto arena tile → real-time arena combat with timing.
-
 The full product spec is in `PLAN.md`. Read it before every session.
+
+**Tone:** GORE / TERROR / SANGRENTO. The forest is hostile. The Caipora is dangerous. Do not sanitize the horror.
 
 ---
 
@@ -31,7 +33,7 @@ This project uses the **Godot MCP Server** (`@coding-solo/godot-mcp`) to let the
 | `get_debug_output` | Read stdout/stderr from the running game |
 | `stop_project` | Stop the running game process |
 | `launch_editor` | Open the Godot editor |
-| `get_godot_version` | Verify Godot installation |
+| `get_godot_version` | Verify installed Godot version |
 
 ### Godot Path
 
@@ -49,7 +51,7 @@ This project uses the **Godot MCP Server** (`@coding-solo/godot-mcp`) to let the
 | Engine | Godot 4.6.3 |
 | Language | GDScript (static typing required) |
 | Rendering | 2D, OpenGL Compatibility |
-| Art | Pixel art — CC0 (Kenney) |
+| Art | Pixel art — CC0 (Kenney). One pack only for consistency. |
 | Audio | `.wav` SFX (jsfxr / sfxr) — no music in MVP |
 | Distribution | itch.io HTML5 export |
 | Tests | GUT (Godot Unit Test) |
@@ -71,13 +73,13 @@ assets/
 scenes/
   ui/          — Menus, HUD, screens
   exploration/ — Grid map, fog, tile layers
-  arena/       — Combat arena backgrounds
+  arena/       — Combat arenas
   shared/      — Reusable components (health bar, damage number, etc.)
 
 scripts/
   core/        — Autoloads: GameState, SignalBus, MetaProgression
   systems/     — TimingSystem, CombatSystem, FeedbackSystem
-  entities/    — Player, Enemy base classes
+  entities/    — Caipora, Criatura base classes
   exploration/ — Grid logic, TurnManager
   arena/       — ArenaManager, attack patterns
   utils/       — Helpers, constants
@@ -123,7 +125,7 @@ extends BaseClass
 
 - **Composition over inheritance.** Export nodes as `@export var` components. Avoid deep inheritance.
 - **Signals for decoupling.** Use `SignalBus` autoload or direct signals. Do not hardwire direct references between unrelated systems.
-- **State machines.** Player and Enemy behaviors use `StateMachine` (explore → combat → dead).
+- **State machines.** Caipora and Criatura behaviors use `StateMachine` (explore → combat → dead).
 - **No magic numbers.** Define constants at the top or in `scripts/utils/constants.gd`.
 - **Static typing everywhere.** Use `-> void`, `-> int`, `: Type` on all functions and variables.
 - **One class per file.** Do not stack multiple classes in a single `.gd` file.
@@ -145,7 +147,7 @@ Register these in `Project > Project Settings > Autoloads`:
 
 ### Patterns
 
-- **Arena scene:** `ArenaManager` (Node2D) owns background, spawns `Player` and `Enemy` instances.
+- **Arena scene:** `ArenaManager` (Node2D) owns background, spawns `Caipora` and `Criatura` instances.
 - **UI scenes:** CanvasLayer-based, anchored to viewport.
 - **Reusable components:** Export as `@export var reusable_scene: PackedScene` and instantiate.
 
@@ -178,6 +180,7 @@ Register these in `Project > Project Settings > Autoloads`:
 5. **Browser load time.** Keep assets small. Test HTML5 export load time frequently.
 6. **Signal disconnection.** Godot does not warn about disconnected signals. Always verify signal connections in the scene inspector after node renames.
 7. **Scene file corruption.** Manual edits to `.tscn` files can corrupt scenes. Prefer MCP `add_node` or Godot editor for scene modifications.
+8. **Tone consistency.** Do not sanitize horror. Blood, darkness, and hostility are intentional design choices.
 
 ---
 
@@ -198,3 +201,4 @@ Every session follows this sequence:
 - Commit after every successful task.
 - If the agent discovers a bug (even unrelated), document it in `PLAN.md` under a "Known Issues" section, then fix or leave for a future session.
 - Update `AGENTS.md` if a new gotcha is discovered.
+- **Never soften the horror.** The forest is hostile. The Caipora is dangerous. The blood is real.

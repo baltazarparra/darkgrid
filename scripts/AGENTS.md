@@ -8,7 +8,7 @@ This folder contains all GDScript (`.gd`) source files.
 scripts/
   core/        — Autoloads (GameState, SignalBus, MetaProgression)
   systems/     — Game systems (TimingSystem, CombatSystem, FeedbackSystem)
-  entities/    — Player and Enemy classes
+  entities/    — Caipora and Criatura classes
   exploration/ — Grid logic, TurnManager
   arena/       — ArenaManager, attack patterns
   utils/       — Helpers, constants
@@ -26,8 +26,8 @@ scripts/
 ## State Machine Pattern
 
 ```gdscript
-# scripts/entities/player/states/player_explore_state.gd
-class_name PlayerExploreState
+# scripts/entities/caipora/states/caipora_explore_state.gd
+class_name CaiporaExploreState
 extends State
 
 func enter() -> void:
@@ -43,14 +43,14 @@ func exit() -> void:
 
 The state machine transitions are triggered by signals, not direct calls:
 ```gdscript
-# In Player entity
+# In Caipora entity
 @onready var state_machine: StateMachine = $StateMachine
 
 func _ready() -> void:
     SignalBus.arena_entered.connect(_on_arena_entered)
 
 func _on_arena_entered() -> void:
-    state_machine.transition_to("PlayerCombatState")
+    state_machine.transition_to("CaiporaCombatState")
 ```
 
 ## Autoload Access
@@ -65,3 +65,7 @@ GameState.current_screen = GameState.Screen.ARENA
 # Incorrect
 get_node("/root/SignalBus").health_changed.emit(new_health)
 ```
+
+## Narrative Code
+
+When naming variables, functions, and classes related to the player, always use `caipora` (not `player`). When naming enemy-related code, use `criatura` or the specific folk entity name. This keeps the codebase aligned with the game's identity.
