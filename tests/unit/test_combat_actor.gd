@@ -4,8 +4,7 @@ var _actor: CombatActor
 
 func before_each():
     _actor = preload("res://scenes/arena/criatura.tscn").instantiate()
-    _actor._ready()
-    add_child_autofree(_actor)
+    add_child_autofree(_actor)  # add_child dispara _ready e resolve os @onready
 
 func test_critical_damage_multiplier():
     _actor.base_attack_damage = 10
