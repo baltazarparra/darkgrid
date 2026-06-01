@@ -95,19 +95,19 @@ O MVP está completo quando:
 
 ---
 
-## Fase 4: Meta-Progression & UI 🔲
+## Fase 4: Meta-Progression & UI ✅
 
 **Objetivo:** Loop completo do jogo com menus e persistência.
 
 ### Tasks
-- [ ] Criar cena MainMenu (CanvasLayer com título + botão Start)
-- [ ] Criar HUD com barra de vida da Caipora (ProgressBar)
-- [ ] Criar cena GameOver (derrota) e WinScreen (vitória)
-- [ ] Implementar transição entre Exploration → Arena → GameOver/Win → Hub
-- [ ] Criar cena Hub entre runs (árvore de upgrades simples)
-- [ ] Implementar unlocks: +10 max HP, faster cooldown, etc.
-- [ ] Salvar meta-progressão em user://savegame.json
-- [ ] Carregar save no início da run
+- [x] Criar cena MainMenu (CanvasLayer com título + botão Start)
+- [x] Criar HUD com barra de vida da Caipora (ProgressBar)
+- [x] Criar cena GameOver (derrota) e WinScreen (vitória) — integradas ao loop
+- [x] Implementar transição MainMenu → Hub → Exploration → Arena → GameOver/Win → Hub
+- [x] Criar cena Hub entre runs (árvore de upgrades simples)
+- [x] Implementar unlocks: +10 max HP (Vigor), faster cooldown (Reflexos)
+- [x] Salvar meta-progressão em user://savegame.json (com upgrades, retrocompatível)
+- [x] Carregar save no início (boot do MainMenu) + HP persistente na run
 
 ### Definition of Done
 - Player pode jogar uma run completa (exploração → combate → vitória/derrota → hub → próxima run).
