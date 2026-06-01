@@ -61,14 +61,15 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 	_timing_system.timing_result.disconnect(_on_attack_timing_result)
 
 	var is_critical := result == TimingSystem.TimingResult.PERFECT
-	if is_critical:
-		_feedback.trigger_screenshake(12.0, 0.4)
-	else:
-		_feedback.trigger_screenshake(5.0, 0.2)
-
 	var damage := _caipora.execute_attack(is_critical)
 	_enemy.take_damage(damage)
-	_feedback.spawn_impact_particles(_enemy.position)
+	if is_critical:
+		_feedback.trigger_screenshake(12.0, 0.4)
+		_feedback.spawn_critical_particles(_enemy.position)
+		_feedback.trigger_hit_stop(3)
+	else:
+		_feedback.trigger_screenshake(5.0, 0.2)
+		_feedback.spawn_blood_particles(_enemy.position)
 
 	if _enemy.health.is_alive():
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
@@ -97,12 +98,14 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		var counter_damage := _caipora.execute_attack(true, Constants.DAMAGE_COUNTER_MULTIPLIER)
 		_enemy.take_damage(counter_damage)
 		_feedback.trigger_screenshake(10.0, 0.35)
-		_feedback.spawn_impact_particles(_enemy.position)
+		_feedback.spawn_critical_particles(_enemy.position)
+		_feedback.trigger_hit_stop(4)
 	else:
 		var damage := _enemy.execute_attack(false)
 		_caipora.take_damage(damage)
 		_feedback.trigger_screenshake(8.0, 0.3)
-		_feedback.spawn_impact_particles(_caipora.position)
+		_feedback.spawn_blood_particles(_caipora.position)
+		_feedback.trigger_hit_stop(2)
 
 func _on_enemy_pattern_finished() -> void:
 	if _both_alive():
@@ -113,10 +116,13 @@ func _on_actor_died(actor: CombatActor) -> void:
 	var caipora_won := actor == _enemy
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.state_machine.stop()
+	_feedback.spawn_death_particles(actor.position)
 	_feedback.trigger_screenshake(20.0, 0.6)
-	_feedback.spawn_impact_particles(actor.position)
+	_feedback.trigger_hit_stop(5)
 
 	SignalBus.arena_exited.emit(caipora_won)
+	# Aguarda a death animation (flash + fade ≈ 0.55s) antes de trocar de tela.
+	await get_tree().create_timer(0.6).timeout
 	if caipora_won:
 		GameState.change_screen(SignalBus.Screen.WIN)
 	else:

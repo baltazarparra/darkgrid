@@ -14,6 +14,7 @@ signal dodge_performed
 
 var _attack_timer: Timer
 var _can_attack: bool = true
+var _is_dying: bool = false
 
 func _ready() -> void:
 	_attack_timer = Timer.new()
@@ -21,6 +22,7 @@ func _ready() -> void:
 	_attack_timer.wait_time = attack_cooldown
 	_attack_timer.timeout.connect(_on_attack_cooldown_ready)
 	add_child(_attack_timer)
+	health.died.connect(_on_health_died)
 
 func start_attack_window() -> void:
 	pass
@@ -28,6 +30,8 @@ func start_attack_window() -> void:
 ## Executa o ataque e retorna o dano calculado (fonte única de verdade).
 ## O chamador deve aplicar esse valor via take_damage() em vez de recomputar.
 func execute_attack(is_critical: bool = false, multiplier_override: float = 0.0) -> int:
+	if _is_dying:
+		return 0
 	var damage := base_attack_damage
 	if is_critical:
 		if multiplier_override > 0.0:
@@ -44,4 +48,22 @@ func _on_attack_cooldown_ready() -> void:
 	attack_ready.emit()
 
 func take_damage(amount: int) -> void:
+	if _is_dying:
+		return
 	health.take_damage(amount)
+
+func is_dying() -> bool:
+	return _is_dying
+
+# ─── Morte ─────────────────────────────────────────
+## Death animation: flash branco + fade out, então libera o nó.
+func _on_health_died() -> void:
+	if _is_dying:
+		return
+	_is_dying = true
+	if animated_sprite == null:
+		return
+	var tween := create_tween()
+	tween.tween_property(animated_sprite, "modulate", Color(2, 2, 2, 1), 0.05)
+	tween.tween_property(animated_sprite, "modulate", Color(1, 1, 1, 0), 0.5)
+	tween.tween_callback(queue_free)
