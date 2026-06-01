@@ -49,6 +49,26 @@ func spawn_critical_particles(at_position: Vector2) -> void:
 func spawn_death_particles(at_position: Vector2) -> void:
 	_spawn_particles(DEATH_PARTICLES, at_position)
 
+func spawn_dodge_particles(at_position: Vector2) -> void:
+	var p := CPUParticles2D.new()
+	p.position = at_position
+	p.amount = 28
+	p.lifetime = 0.55
+	p.one_shot = true
+	p.explosiveness = 0.95
+	p.spread = 80.0
+	p.gravity = Vector2(0, -120)
+	p.initial_velocity_min = 70.0
+	p.initial_velocity_max = 160.0
+	p.scale_amount_min = 2.0
+	p.scale_amount_max = 5.0
+	p.color = Color(0.9, 0.95, 1.0, 0.9)
+	get_tree().current_scene.add_child(p)
+	p.emitting = true
+	await get_tree().create_timer(p.lifetime + 0.1).timeout
+	if is_instance_valid(p):
+		p.queue_free()
+
 ## Mantido como alias de sangue para chamadas legadas.
 func spawn_impact_particles(at_position: Vector2) -> void:
 	_spawn_particles(BLOOD_PARTICLES, at_position)

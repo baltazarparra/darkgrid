@@ -112,6 +112,7 @@ func _on_attack_first_hit() -> void:
 	_timing_system.timing_first_hit.disconnect(_on_attack_first_hit)
 	_timing_bubble.burst_success()
 	_sfx.play(_sfx.timing_alert_sound)
+	_feedback.trigger_screenshake(2.5, 0.08)
 
 func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 	_timing_system.timing_result.disconnect(_on_attack_timing_result)
@@ -177,7 +178,7 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		var counter_damage := _caipora.execute_attack(true, Constants.DAMAGE_COUNTER_MULTIPLIER)
 		_enemy.take_damage(counter_damage)
 		_feedback.trigger_screenshake(10.0, 0.35)
-		_feedback.spawn_critical_particles(_enemy.position)
+		_feedback.spawn_dodge_particles(_caipora.position)
 		_feedback.trigger_hit_stop(4)
 	else:
 		_timing_bubble.hide_bubble()
