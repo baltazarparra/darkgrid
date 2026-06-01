@@ -27,9 +27,9 @@ const DAMAGE_CRIT_MULTIPLIER := 2.0
 const DAMAGE_COUNTER_MULTIPLIER := 2.0
 
 # ─── Health ────────────────────────────────────────
-const CAIPORA_MAX_HEALTH := 5
-const ENEMY_MAX_HEALTH := 3
-const BOSS_MAX_HEALTH := 6
+const CAIPORA_MAX_HEALTH := 1
+const ENEMY_MAX_HEALTH := 5
+const BOSS_MAX_HEALTH := 5
 
 # ─── Colors (Horror Folk Palette) ──────────────────
 const COLOR_NIGHT := Color("#0d1117")

@@ -24,7 +24,7 @@ shape = SubResource("RectangleShape2D_64x64")
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("3_health")
-max_health = 3
+max_health = 5
 
 [node name="EnemyStateMachine" type="Node" parent="."]
 script = ExtResource("4_sm")

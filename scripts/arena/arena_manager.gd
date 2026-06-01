@@ -206,6 +206,10 @@ func _on_bubble_vulnerable() -> void:
 # ─── Morte ─────────────────────────────────────────
 func _on_actor_died(actor: CombatActor) -> void:
 	var caipora_won := actor == _enemy
+	if caipora_won:
+		_caipora.health.max_health += 1
+		_caipora.health.heal(1)
+		GameState.caipora_max_hp = _caipora.health.max_health
 	GameState.caipora_current_hp = maxi(0, _caipora.health.current_health)
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.state_machine.stop()
