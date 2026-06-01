@@ -12,7 +12,7 @@ func test_boss_is_a_criatura_with_boss_stats():
     add_child_autofree(boss)
     assert_true(boss is Criatura, "Boss herda de Criatura")
     assert_eq(boss.health.max_health, Constants.BOSS_MAX_HEALTH)
-    assert_eq(boss.base_attack_damage, 18)
+    assert_eq(boss.base_attack_damage, 1)
     assert_eq(boss.attack_pattern.strike_count, 3)
 
 func test_boss_pattern_runs_three_strikes():

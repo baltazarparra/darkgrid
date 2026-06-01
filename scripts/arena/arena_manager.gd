@@ -57,8 +57,10 @@ func _spawn_enemy() -> void:
 	_enemy.position = Vector2(480, 240)
 	add_child(_enemy)
 	_enemy.health.died.connect(_on_actor_died.bind(_enemy))
+	_enemy.health.health_changed.connect(_on_enemy_health_changed)
 	_enemy.state_machine.attack_started.connect(_on_enemy_attack_started)
 	_enemy.state_machine.pattern_finished.connect(_on_enemy_pattern_finished)
+	SignalBus.enemy_health_changed.emit(_enemy.health.current_health, _enemy.health.max_health)
 
 func _both_alive() -> bool:
 	return _caipora.health.is_alive() and _enemy.health.is_alive()
@@ -193,6 +195,9 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 func _on_enemy_pattern_finished() -> void:
 	if _both_alive():
 		_start_caipora_turn()
+
+func _on_enemy_health_changed(new_health: int, max_health: int) -> void:
+	SignalBus.enemy_health_changed.emit(new_health, max_health)
 
 # ─── Bolha ─────────────────────────────────────────
 func _on_bubble_vulnerable() -> void:

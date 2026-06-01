@@ -8,7 +8,7 @@ var SAVE_PATH := "user://savegame.json"
 
 # Definição declarativa dos upgrades: chave → nome de exibição + cap de níveis.
 const UPGRADE_DEFS := {
-	"max_hp": { "name": "Vigor", "max_level": 3 },      # +10 HP por nível
+	"max_hp": { "name": "Vigor", "max_level": 3 },      # +1 pentagrama por nível
 	"cooldown": { "name": "Reflexos", "max_level": 2 },  # -0.1s cooldown por nível
 }
 
@@ -34,7 +34,7 @@ func purchase_upgrade(key: String) -> bool:
 	return true
 
 func get_bonus_max_hp() -> int:
-	return get_upgrade_level("max_hp") * 10
+	return get_upgrade_level("max_hp") * 1
 
 func get_cooldown_reduction() -> float:
 	return get_upgrade_level("cooldown") * 0.1

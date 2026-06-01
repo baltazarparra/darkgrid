@@ -22,14 +22,14 @@ const TIMING_DOUBLE_MIN_INTERVAL := 0.08
 const TIMING_DOUBLE_SPAWN_DELAY := 0.35
 
 # ─── Damage ────────────────────────────────────────
-const DAMAGE_BASE := 10
-const DAMAGE_CRIT_MULTIPLIER := 2.5
-const DAMAGE_COUNTER_MULTIPLIER := 1.5
+const DAMAGE_BASE := 1
+const DAMAGE_CRIT_MULTIPLIER := 2.0
+const DAMAGE_COUNTER_MULTIPLIER := 2.0
 
 # ─── Health ────────────────────────────────────────
-const CAIPORA_MAX_HEALTH := 100
-const ENEMY_MAX_HEALTH := 80
-const BOSS_MAX_HEALTH := 200
+const CAIPORA_MAX_HEALTH := 5
+const ENEMY_MAX_HEALTH := 3
+const BOSS_MAX_HEALTH := 6
 
 # ─── Colors (Horror Folk Palette) ──────────────────
 const COLOR_NIGHT := Color("#0d1117")

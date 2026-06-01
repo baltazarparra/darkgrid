@@ -16,9 +16,9 @@ func after_each():
     MetaProgression.upgrades = {}
 
 func test_start_run_fills_hp_with_bonus():
-    MetaProgression.purchase_upgrade("max_hp")  # +10
+    MetaProgression.purchase_upgrade("max_hp")  # +1
     GameState.start_run()
-    assert_eq(GameState.caipora_max_hp, Constants.CAIPORA_MAX_HEALTH + 10)
+    assert_eq(GameState.caipora_max_hp, Constants.CAIPORA_MAX_HEALTH + 1)
     assert_eq(GameState.caipora_current_hp, GameState.caipora_max_hp)
     assert_true(GameState.run_active)
 

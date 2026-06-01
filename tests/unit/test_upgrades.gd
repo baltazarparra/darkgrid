@@ -16,7 +16,7 @@ func after_each():
 func test_purchase_increments_and_caps():
     assert_true(MetaProgression.purchase_upgrade("max_hp"))
     assert_eq(MetaProgression.get_upgrade_level("max_hp"), 1)
-    assert_eq(MetaProgression.get_bonus_max_hp(), 10)
+    assert_eq(MetaProgression.get_bonus_max_hp(), 1)
     MetaProgression.purchase_upgrade("max_hp")
     MetaProgression.purchase_upgrade("max_hp")
     assert_false(MetaProgression.purchase_upgrade("max_hp"), "recusa no cap")
