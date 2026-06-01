@@ -51,6 +51,10 @@ func toggle_pause() -> void:
 # ─── Private ───────────────────────────────────────
 func _on_screen_changed(new_screen: SignalBus.Screen) -> void:
 	match new_screen:
+		SignalBus.Screen.MAIN_MENU:
+			get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+		SignalBus.Screen.HUB:
+			get_tree().change_scene_to_file("res://scenes/ui/hub.tscn")
 		SignalBus.Screen.ARENA:
 			get_tree().change_scene_to_file("res://scenes/arena/arena.tscn")
 		SignalBus.Screen.EXPLORATION:
