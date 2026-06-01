@@ -11,11 +11,13 @@ var _enemy: Criatura
 var _timing_system: TimingSystem
 var _timing_cue: TimingCue
 var _feedback: FeedbackSystem
+var _sfx: SfxSystem
 
 func _ready() -> void:
 	_timing_system = $TimingSystem
 	_timing_cue = $TimingCue
 	_feedback = $FeedbackSystem
+	_sfx = $SfxSystem
 
 	_spawn_caipora()
 	_spawn_enemy()
@@ -53,6 +55,7 @@ func _both_alive() -> bool:
 func _start_caipora_turn() -> void:
 	if not _both_alive():
 		return
+	_sfx.play(_sfx.attack_sound)
 	_timing_system.timing_result.connect(_on_attack_timing_result)
 	_timing_cue.show_cue(1.5)
 	_timing_system.open_window(1.5, 0.35, 0.65)
@@ -64,10 +67,13 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 	var damage := _caipora.execute_attack(is_critical)
 	_enemy.take_damage(damage)
 	if is_critical:
+		_sfx.play(_sfx.timing_perfect_sound, -4.0)
+		_sfx.play(_sfx.hit_sound)
 		_feedback.trigger_screenshake(12.0, 0.4)
 		_feedback.spawn_critical_particles(_enemy.position)
 		_feedback.trigger_hit_stop(3)
 	else:
+		_sfx.play(_sfx.hit_sound)
 		_feedback.trigger_screenshake(5.0, 0.2)
 		_feedback.spawn_blood_particles(_enemy.position)
 
@@ -95,6 +101,8 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 
 	if result == TimingSystem.TimingResult.PERFECT:
 		_caipora.dodge_performed.emit()
+		_sfx.play(_sfx.dodge_sound)
+		_sfx.play(_sfx.timing_perfect_sound, -4.0)
 		var counter_damage := _caipora.execute_attack(true, Constants.DAMAGE_COUNTER_MULTIPLIER)
 		_enemy.take_damage(counter_damage)
 		_feedback.trigger_screenshake(10.0, 0.35)
@@ -103,6 +111,7 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 	else:
 		var damage := _enemy.execute_attack(false)
 		_caipora.take_damage(damage)
+		_sfx.play(_sfx.hit_sound)
 		_feedback.trigger_screenshake(8.0, 0.3)
 		_feedback.spawn_blood_particles(_caipora.position)
 		_feedback.trigger_hit_stop(2)
@@ -116,6 +125,7 @@ func _on_actor_died(actor: CombatActor) -> void:
 	var caipora_won := actor == _enemy
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.state_machine.stop()
+	_sfx.play(_sfx.death_sound)
 	_feedback.spawn_death_particles(actor.position)
 	_feedback.trigger_screenshake(20.0, 0.6)
 	_feedback.trigger_hit_stop(5)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://arena_main"]
+[gd_scene load_steps=14 format=3 uid="uid://arena_main"]
 
 [ext_resource type="Script" path="res://scripts/arena/arena_manager.gd" id="1_manager"]
 [ext_resource type="PackedScene" path="res://scenes/arena/caipora_combat.tscn" id="2_caipora"]
@@ -6,6 +6,13 @@
 [ext_resource type="Script" path="res://scripts/systems/timing_system.gd" id="4_timing"]
 [ext_resource type="Script" path="res://scripts/systems/feedback_system.gd" id="5_feedback"]
 [ext_resource type="PackedScene" path="res://scenes/ui/timing_cue.tscn" id="6_timingcue"]
+[ext_resource type="Script" path="res://scripts/systems/sfx_system.gd" id="7_sfx"]
+[ext_resource type="AudioStream" uid="uid://m85icx2ael8l" path="res://assets/audio/sfx/attack.wav" id="8_attack"]
+[ext_resource type="AudioStream" uid="uid://bf81radkwovtj" path="res://assets/audio/sfx/hit.wav" id="9_hit"]
+[ext_resource type="AudioStream" uid="uid://uplxri48x1m1" path="res://assets/audio/sfx/dodge.wav" id="10_dodge"]
+[ext_resource type="AudioStream" uid="uid://cn2i1whe3bqxo" path="res://assets/audio/sfx/timing_perfect.wav" id="11_perfect"]
+[ext_resource type="AudioStream" uid="uid://pcb0es6yole7" path="res://assets/audio/sfx/death.wav" id="12_death"]
+[ext_resource type="AudioStream" uid="uid://dw42c6yi6qe82" path="res://assets/audio/sfx/ui_click.wav" id="13_click"]
 
 [node name="Arena" type="Node2D"]
 script = ExtResource("1_manager")
@@ -25,5 +32,14 @@ script = ExtResource("4_timing")
 
 [node name="FeedbackSystem" type="Node" parent="."]
 script = ExtResource("5_feedback")
+
+[node name="SfxSystem" type="Node" parent="."]
+script = ExtResource("7_sfx")
+attack_sound = ExtResource("8_attack")
+hit_sound = ExtResource("9_hit")
+dodge_sound = ExtResource("10_dodge")
+timing_perfect_sound = ExtResource("11_perfect")
+death_sound = ExtResource("12_death")
+ui_click_sound = ExtResource("13_click")
 
 [node name="TimingCue" parent="." instance=ExtResource("6_timingcue")]
