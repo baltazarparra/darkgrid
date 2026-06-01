@@ -9,15 +9,16 @@ extends Node2D
 var _caipora: CombatActor
 var _enemy: Criatura
 var _timing_system: TimingSystem
-var _timing_cue: TimingCue
+var _timing_bubble: Node2D
 var _feedback: FeedbackSystem
 var _sfx: SfxSystem
 
 func _ready() -> void:
 	_timing_system = $TimingSystem
-	_timing_cue = $TimingCue
+	_timing_bubble = $TimingBubble
 	_feedback = $FeedbackSystem
 	_sfx = $SfxSystem
+	_timing_bubble.vulnerable_entered.connect(_on_bubble_vulnerable)
 
 	_spawn_caipora()
 	_spawn_enemy()
@@ -68,13 +69,27 @@ func _start_caipora_turn() -> void:
 		return
 	_sfx.play(_sfx.attack_sound)
 	_timing_system.timing_result.connect(_on_attack_timing_result)
-	_timing_cue.show_cue(1.5)
-	_timing_system.open_window(1.5, 0.35, 0.65)
+	_timing_bubble.show_bubble(
+		_enemy.position + Vector2(0, -70),
+		Constants.TIMING_WINDOW_ATTACK,
+		Constants.TIMING_PERFECT_START,
+		Constants.TIMING_PERFECT_END
+	)
+	_timing_system.open_window(
+		Constants.TIMING_WINDOW_ATTACK,
+		Constants.TIMING_PERFECT_START,
+		Constants.TIMING_PERFECT_END
+	)
 
 func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 	_timing_system.timing_result.disconnect(_on_attack_timing_result)
 
 	var is_critical := result == TimingSystem.TimingResult.PERFECT
+	if is_critical:
+		_timing_bubble.burst_success()
+	else:
+		_timing_bubble.hide_bubble()
+
 	var damage := _caipora.execute_attack(is_critical)
 	_enemy.take_damage(damage)
 	if is_critical:
@@ -107,13 +122,19 @@ func _on_enemy_attack_started() -> void:
 	if _timing_system.timing_result.is_connected(_on_defense_timing_result):
 		_timing_system.timing_result.disconnect(_on_defense_timing_result)
 	_timing_system.timing_result.connect(_on_defense_timing_result)
-	_timing_cue.show_cue(window)
-	_timing_system.open_window(window, 0.4, 0.6)
+	_timing_bubble.show_bubble(
+		_enemy.position + Vector2(0, -70),
+		window,
+		Constants.TIMING_PERFECT_START,
+		Constants.TIMING_PERFECT_END
+	)
+	_timing_system.open_window(window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END)
 
 func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 	_timing_system.timing_result.disconnect(_on_defense_timing_result)
 
 	if result == TimingSystem.TimingResult.PERFECT:
+		_timing_bubble.burst_success()
 		_caipora.dodge_performed.emit()
 		_sfx.play(_sfx.dodge_sound)
 		_sfx.play(_sfx.timing_perfect_sound, -4.0)
@@ -123,6 +144,7 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.spawn_critical_particles(_enemy.position)
 		_feedback.trigger_hit_stop(4)
 	else:
+		_timing_bubble.hide_bubble()
 		var damage := _enemy.execute_attack(false)
 		_caipora.take_damage(damage)
 		_sfx.play(_sfx.hit_sound)
@@ -133,6 +155,10 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 func _on_enemy_pattern_finished() -> void:
 	if _both_alive():
 		_start_caipora_turn()
+
+# ─── Bolha ─────────────────────────────────────────
+func _on_bubble_vulnerable() -> void:
+	_sfx.play(_sfx.timing_alert_sound)
 
 # ─── Morte ─────────────────────────────────────────
 func _on_actor_died(actor: CombatActor) -> void:

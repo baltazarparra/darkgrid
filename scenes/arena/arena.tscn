@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/arena/criatura.tscn" id="3_criatura"]
 [ext_resource type="Script" path="res://scripts/systems/timing_system.gd" id="4_timing"]
 [ext_resource type="Script" path="res://scripts/systems/feedback_system.gd" id="5_feedback"]
-[ext_resource type="PackedScene" path="res://scenes/ui/timing_cue.tscn" id="6_timingcue"]
+[ext_resource type="Script" path="res://scripts/ui/timing_bubble.gd" id="6_bubble"]
 [ext_resource type="Script" path="res://scripts/systems/sfx_system.gd" id="7_sfx"]
 [ext_resource type="AudioStream" uid="uid://m85icx2ael8l" path="res://assets/audio/sfx/attack.wav" id="8_attack"]
 [ext_resource type="AudioStream" uid="uid://bf81radkwovtj" path="res://assets/audio/sfx/hit.wav" id="9_hit"]
@@ -43,6 +43,7 @@ timing_perfect_sound = ExtResource("11_perfect")
 death_sound = ExtResource("12_death")
 ui_click_sound = ExtResource("13_click")
 
-[node name="TimingCue" parent="." instance=ExtResource("6_timingcue")]
+[node name="TimingBubble" type="Node2D" parent="."]
+script = ExtResource("6_bubble")
 
 [node name="Hud" parent="." instance=ExtResource("14_hud")]

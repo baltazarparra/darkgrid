@@ -8,6 +8,7 @@ extends Node
 @export var hit_sound: AudioStream
 @export var dodge_sound: AudioStream
 @export var timing_perfect_sound: AudioStream
+@export var timing_alert_sound: AudioStream
 @export var death_sound: AudioStream
 @export var ui_click_sound: AudioStream
 

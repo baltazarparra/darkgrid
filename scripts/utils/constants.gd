@@ -11,6 +11,9 @@ const TIMING_WINDOW_FRAMES := 12
 const TIMING_PERFECT_FRAMES := 3
 const ATTACK_COOLDOWN_SECONDS := 1.5
 const DODGE_COOLDOWN_SECONDS := 0.5
+const TIMING_WINDOW_ATTACK := 0.8
+const TIMING_PERFECT_START := 0.65
+const TIMING_PERFECT_END := 0.85
 
 # ─── Damage ────────────────────────────────────────
 const DAMAGE_BASE := 10
