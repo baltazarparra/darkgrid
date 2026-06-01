@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://timing_cue"]
+
+[ext_resource type="Script" path="res://scripts/ui/timing_cue.gd" id="1_script"]
+
+[node name="TimingCue" type="CanvasLayer"]
+script = ExtResource("1_script")

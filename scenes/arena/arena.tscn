@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://arena_main"]
+[gd_scene load_steps=7 format=3 uid="uid://arena_main"]
 
 [ext_resource type="Script" path="res://scripts/arena/arena_manager.gd" id="1_manager"]
 [ext_resource type="PackedScene" path="res://scenes/arena/caipora_combat.tscn" id="2_caipora"]
 [ext_resource type="PackedScene" path="res://scenes/arena/criatura.tscn" id="3_criatura"]
 [ext_resource type="Script" path="res://scripts/systems/timing_system.gd" id="4_timing"]
 [ext_resource type="Script" path="res://scripts/systems/feedback_system.gd" id="5_feedback"]
+[ext_resource type="PackedScene" path="res://scenes/ui/timing_cue.tscn" id="6_timingcue"]
 
 [node name="Arena" type="Node2D"]
 script = ExtResource("1_manager")
@@ -24,3 +25,5 @@ script = ExtResource("4_timing")
 
 [node name="FeedbackSystem" type="Node" parent="."]
 script = ExtResource("5_feedback")
+
+[node name="TimingCue" parent="." instance=ExtResource("6_timingcue")]
