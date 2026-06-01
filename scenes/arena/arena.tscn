@@ -1,0 +1,26 @@
+[gd_scene load_steps=6 format=3 uid="uid://arena_main"]
+
+[ext_resource type="Script" path="res://scripts/arena/arena_manager.gd" id="1_manager"]
+[ext_resource type="PackedScene" path="res://scenes/arena/caipora_combat.tscn" id="2_caipora"]
+[ext_resource type="PackedScene" path="res://scenes/arena/criatura.tscn" id="3_criatura"]
+[ext_resource type="Script" path="res://scripts/systems/timing_system.gd" id="4_timing"]
+[ext_resource type="Script" path="res://scripts/systems/feedback_system.gd" id="5_feedback"]
+
+[node name="Arena" type="Node2D"]
+script = ExtResource("1_manager")
+caipora_combat_scene = ExtResource("2_caipora")
+criatura_scene = ExtResource("3_criatura")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 640.0
+offset_bottom = 480.0
+color = Color(0.102, 0.059, 0.059, 1)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(320, 240)
+
+[node name="TimingSystem" type="Node" parent="."]
+script = ExtResource("4_timing")
+
+[node name="FeedbackSystem" type="Node" parent="."]
+script = ExtResource("5_feedback")
