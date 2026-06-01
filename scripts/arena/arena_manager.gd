@@ -30,7 +30,18 @@ func _spawn_caipora() -> void:
 	_caipora = caipora_combat_scene.instantiate()
 	_caipora.position = Vector2(160, 240)
 	add_child(_caipora)
+	# Aplica HP de run + bônus/cooldown de meta (após _ready do HealthComponent).
+	_caipora.health.max_health = GameState.caipora_max_hp
+	_caipora.health.current_health = clampi(GameState.caipora_current_hp, 0, GameState.caipora_max_hp)
+	_caipora.attack_cooldown = maxf(0.3, Constants.ATTACK_COOLDOWN_SECONDS - MetaProgression.get_cooldown_reduction())
+	_caipora.health.health_changed.connect(_on_caipora_health_changed)
 	_caipora.health.died.connect(_on_actor_died.bind(_caipora))
+	_caipora.health.died.connect(func(): SignalBus.caipora_died.emit())
+	# Inicializa o HUD com o estado atual da run.
+	SignalBus.caipora_health_changed.emit(_caipora.health.current_health, _caipora.health.max_health)
+
+func _on_caipora_health_changed(new_health: int, max_health: int) -> void:
+	SignalBus.caipora_health_changed.emit(new_health, max_health)
 
 func _spawn_enemy() -> void:
 	# GameState pode definir o inimigo do próximo combate (ex: hub na Fase 4).
@@ -126,6 +137,8 @@ func _on_enemy_pattern_finished() -> void:
 # ─── Morte ─────────────────────────────────────────
 func _on_actor_died(actor: CombatActor) -> void:
 	var caipora_won := actor == _enemy
+	# Grava o HP sobrevivente de volta no GameState (0 em caso de derrota).
+	GameState.caipora_current_hp = maxi(0, _caipora.health.current_health)
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.state_machine.stop()
 	_sfx.play(_sfx.death_sound)

@@ -40,6 +40,7 @@ func execute_attack(is_critical: bool = false, multiplier_override: float = 0.0)
 			damage = int(damage * critical_multiplier)
 	attack_executed.emit(damage, is_critical)
 	_can_attack = false
+	_attack_timer.wait_time = attack_cooldown  # reflete ajustes pós-spawn (meta)
 	_attack_timer.start()
 	return damage
 

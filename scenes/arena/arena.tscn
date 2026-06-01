@@ -1,6 +1,7 @@
-[gd_scene load_steps=14 format=3 uid="uid://arena_main"]
+[gd_scene load_steps=15 format=3 uid="uid://arena_main"]
 
 [ext_resource type="Script" path="res://scripts/arena/arena_manager.gd" id="1_manager"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="14_hud"]
 [ext_resource type="PackedScene" path="res://scenes/arena/caipora_combat.tscn" id="2_caipora"]
 [ext_resource type="PackedScene" path="res://scenes/arena/criatura.tscn" id="3_criatura"]
 [ext_resource type="Script" path="res://scripts/systems/timing_system.gd" id="4_timing"]
@@ -43,3 +44,5 @@ death_sound = ExtResource("12_death")
 ui_click_sound = ExtResource("13_click")
 
 [node name="TimingCue" parent="." instance=ExtResource("6_timingcue")]
+
+[node name="Hud" parent="." instance=ExtResource("14_hud")]
