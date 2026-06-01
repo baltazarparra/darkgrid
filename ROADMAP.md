@@ -20,19 +20,19 @@ O MVP está completo quando:
 
 ---
 
-## Fase 0: Setup & Foundation 🔲
+## Fase 0: Setup & Foundation ✅
 
 **Objetivo:** Preparar o projeto Godot, instalar ferramentas e baixar assets.
 
 ### Tasks
-- [ ] Instalar GUT addon (Godot Unit Test)
-- [ ] Baixar 1 pack Kenney CC0 para pixel art
-- [ ] Criar autoloads: GameState, SignalBus, MetaProgression
-- [ ] Configurar export preset HTML5 no Godot
-- [ ] Criar scripts/utils/constants.gd com valores base
+- [x] Instalar GUT addon (Godot Unit Test) — v9.6.0, 2/2 tests passando
+- [x] Baixar 1 pack Kenney CC0 para pixel art — placeholders CC0 gerados (Kenney inacessível via CLI)
+- [x] Criar autoloads: GameState, SignalBus, MetaProgression — com fix de dependência circular (enum Screen em SignalBus)
+- [x] Configurar export preset HTML5 no Godot — templates 4.6.3 instalados manualmente, export testado
+- [x] Criar scripts/utils/constants.gd com valores base
 
 ### Definition of Done
-- Projeto abre sem erros. GUT addon aparece no menu.
+- Projeto abre sem erros. GUT addon aparece no menu. Export HTML5 gera arquivos.
 
 ---
 
@@ -135,3 +135,13 @@ O MVP está completo quando:
 - **Atualizar este ROADMAP.md** marcando `[x]` nas tasks feitas.
 - **Se descobrir um blocker,** documentar em "Known Issues" no final deste arquivo.
 - **Nunca suavizar o horror.** A floresta é hostil. A Caipora é perigosa. O sangue é real.
+
+---
+
+## Known Issues
+
+| # | Issue | Fase Descoberta | Impacto | Status |
+|---|-------|-----------------|---------|--------|
+| KI-001 | **Sprites são placeholders** — Kenney.nl requer JavaScript para download; não acessível via `wget`/`curl`. Placeholders CC0 gerados com PIL serão substituídos por sprites Kenney reais na Fase 1. | Fase 0 | Médio | 🔄 Pendente |
+| KI-002 | **`--check-only` não existe no Godot 4.6** — A PRD original mencionava esta flag para lint de GDScript, mas ela não existe. Validação de sintaxe é feita abrindo o projeto em headless. | Fase 0 | Baixo | ✅ Documentado |
+| KI-003 | **GUT plugin emite erro `_exit_tree`** — `Invalid assignment of property or key 'menu_manager' with value of type 'Nil'` ocorre ao fechar Godot em headless. Não afeta funcionalidade dos testes. | Fase 0 | Baixo | ✅ Conhecido |
