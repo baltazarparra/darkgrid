@@ -28,8 +28,8 @@ Every strike, dodge, and death is packed with juicy feedback: screen shake, part
 |-------|------------|
 | Engine | Godot 4.6.3 |
 | Language | GDScript |
-| Art | Pixel art (16×16 / 32×32 sprites) |
-| Audio | `.ogg` music, `.wav` SFX |
+| Art | Pixel art — CC0 (Kenney) |
+| Audio | `.wav` SFX (jsfxr / sfxr) — no music in MVP |
 | Platform | Browser-first (HTML5 / itch.io) |
 | AI Agent | Kimi-k2.6 via Kimi Code CLI + Godot MCP |
 
@@ -39,7 +39,7 @@ Every strike, dodge, and death is packed with juicy feedback: screen shake, part
 
 ```
 darkgrid/
-├── assets/          — Sprites, tilesets, audio, fonts
+├── assets/          — Sprites (CC0/Kenney), SFX, fonts, licenses
 ├── scenes/          — Godot scenes (UI, exploration, arena, shared)
 ├── scripts/         — GDScript source code
 │   ├── core/        — Autoloads (GameState, SignalBus, MetaProgression)

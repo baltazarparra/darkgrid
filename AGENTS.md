@@ -49,8 +49,8 @@ This project uses the **Godot MCP Server** (`@coding-solo/godot-mcp`) to let the
 | Engine | Godot 4.6.3 |
 | Language | GDScript (static typing required) |
 | Rendering | 2D, OpenGL Compatibility |
-| Art | Pixel art (16×16 or 32×32 sprites) |
-| Audio | `.ogg` music, `.wav` SFX |
+| Art | Pixel art — CC0 (Kenney) |
+| Audio | `.wav` SFX (jsfxr / sfxr) — no music in MVP |
 | Distribution | itch.io HTML5 export |
 | Tests | GUT (Godot Unit Test) |
 | Agent Tools | `@coding-solo/godot-mcp` |
@@ -63,12 +63,10 @@ Place files in the correct directory. Do not create new top-level folders withou
 
 ```
 assets/
-  sprites/     — Character and object sprites (.png)
-  tilesets/    — Tileset images + .tres resources
-  particles/   — Particle textures
-  audio/sfx/   — Short sound effects
-  audio/music/ — Background music
-  fonts/       — Pixel fonts
+  sprites/     — All sprites: characters, enemies, tiles, items (.png)
+  audio/sfx/   — Sound effects (.wav, jsfxr/sfxr)
+  fonts/       — Pixel font (.ttf / .otf)
+  licenses/    — CC0 licenses and attribution
 
 scenes/
   ui/          — Menus, HUD, screens

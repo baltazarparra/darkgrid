@@ -123,13 +123,11 @@ Enemy
 ```
 darkgrid/
 ├── assets/
-│   ├── sprites/          # .png pixel art sprites
-│   ├── tilesets/         # .png tilesets + .tres tileset resources
-│   ├── particles/        # particle textures
+│   ├── sprites/          # all sprites: chars, enemies, tiles, items (.png)
 │   ├── audio/
-│   │   ├── sfx/          # short sound effects (.ogg / .wav)
-│   │   └── music/        # background tracks (.ogg)
-│   └── fonts/            # pixel fonts (.ttf / .otf)
+│   │   └── sfx/          # sound effects (.wav, jsfxr/sfxr)
+│   ├── fonts/            # pixel font (.ttf / .otf)
+│   └── licenses/         # CC0 licenses and attribution
 ├── scenes/
 │   ├── ui/               # menus, HUD, screens
 │   ├── exploration/      # grid map, fog, tiles
@@ -348,10 +346,11 @@ The project has `@coding-solo/godot-mcp` installed and configured.
 
 ## 12. Asset Guidelines
 
-- **Sprites:** 16×16 or 32×32 pixel art, .png, transparent background.
-- **Tilesets:** Same grid size, consistent palette.
-- **Audio:** .ogg for music, .wav for short SFX. Keep files small for web load.
-- **Fonts:** Pixel fonts with permissive license (e.g., "Press Start 2P").
+- **Sprites:** CC0 from Kenney.nl. Pick **one pack** for visual consistency. 16×16 or 32×32, .png, transparent background. No AI-generated sprites for core game.
+- **Audio:** Generate with jsfxr/sfxr. Export as .wav. Short, punchy, under 100KB each. No music in MVP.
+- **UI:** Godot native UI nodes (`Button`, `Panel`, `Label`, `ProgressBar`). No custom UI sprite sheets.
+- **Fonts:** One pixel font with permissive license (e.g., Kenney Fonts or "Press Start 2P").
+- **Licenses:** Copy every asset pack's license into `assets/licenses/`.
 
 ---
 
