@@ -46,4 +46,7 @@ ui_click_sound = ExtResource("13_click")
 [node name="TimingBubble" type="Node2D" parent="."]
 script = ExtResource("6_bubble")
 
+[node name="TimingBubbleB" type="Node2D" parent="."]
+script = ExtResource("6_bubble")
+
 [node name="Hud" parent="." instance=ExtResource("14_hud")]

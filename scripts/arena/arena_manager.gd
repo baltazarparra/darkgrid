@@ -10,15 +10,18 @@ var _caipora: CombatActor
 var _enemy: Criatura
 var _timing_system: TimingSystem
 var _timing_bubble: Node2D
+var _timing_bubble_b: Node2D
 var _feedback: FeedbackSystem
 var _sfx: SfxSystem
 
 func _ready() -> void:
 	_timing_system = $TimingSystem
 	_timing_bubble = $TimingBubble
+	_timing_bubble_b = $TimingBubbleB
 	_feedback = $FeedbackSystem
 	_sfx = $SfxSystem
 	_timing_bubble.vulnerable_entered.connect(_on_bubble_vulnerable)
+	_timing_bubble_b.vulnerable_entered.connect(_on_bubble_vulnerable)
 
 	_spawn_caipora()
 	_spawn_enemy()
@@ -31,21 +34,18 @@ func _spawn_caipora() -> void:
 	_caipora = caipora_combat_scene.instantiate()
 	_caipora.position = Vector2(160, 240)
 	add_child(_caipora)
-	# Aplica HP de run + bônus/cooldown de meta (após _ready do HealthComponent).
 	_caipora.health.max_health = GameState.caipora_max_hp
 	_caipora.health.current_health = clampi(GameState.caipora_current_hp, 0, GameState.caipora_max_hp)
 	_caipora.attack_cooldown = maxf(0.3, Constants.ATTACK_COOLDOWN_SECONDS - MetaProgression.get_cooldown_reduction())
 	_caipora.health.health_changed.connect(_on_caipora_health_changed)
 	_caipora.health.died.connect(_on_actor_died.bind(_caipora))
 	_caipora.health.died.connect(func(): SignalBus.caipora_died.emit())
-	# Inicializa o HUD com o estado atual da run.
 	SignalBus.caipora_health_changed.emit(_caipora.health.current_health, _caipora.health.max_health)
 
 func _on_caipora_health_changed(new_health: int, max_health: int) -> void:
 	SignalBus.caipora_health_changed.emit(new_health, max_health)
 
 func _spawn_enemy() -> void:
-	# GameState pode definir o inimigo do próximo combate (ex: hub na Fase 4).
 	var scene := enemy_scene
 	if GameState.next_enemy_scene != null:
 		scene = GameState.next_enemy_scene
@@ -68,24 +68,49 @@ func _start_caipora_turn() -> void:
 	if not _both_alive():
 		return
 	var is_double: bool = randf() < Constants.TIMING_DOUBLE_CHANCE
-	var p_start: float = Constants.TIMING_DOUBLE_PERFECT_START if is_double else Constants.TIMING_PERFECT_START
-	var p_end: float = Constants.TIMING_DOUBLE_PERFECT_END if is_double else Constants.TIMING_PERFECT_END
 	_sfx.play(_sfx.attack_sound)
+	_timing_system.timing_result.connect(_on_attack_timing_result)
+
 	if is_double:
 		_timing_system.timing_first_hit.connect(_on_attack_first_hit)
-	_timing_system.timing_result.connect(_on_attack_timing_result)
-	_timing_bubble.show_bubble(
-		_enemy.position + Vector2(0, -70),
-		Constants.TIMING_WINDOW_ATTACK,
-		p_start,
-		p_end,
-		is_double
-	)
-	_timing_system.open_window(Constants.TIMING_WINDOW_ATTACK, p_start, p_end, is_double)
+		_timing_system.open_window(
+			Constants.TIMING_WINDOW_ATTACK,
+			Constants.TIMING_DOUBLE_PERFECT_START,
+			Constants.TIMING_DOUBLE_PERFECT_END,
+			true
+		)
+		# Bolha A — posição levemente acima-esquerda do inimigo
+		_timing_bubble.show_bubble(
+			_enemy.position + Vector2(-35, -85),
+			Constants.TIMING_WINDOW_ATTACK,
+			Constants.TIMING_DOUBLE_PERFECT_START,
+			Constants.TIMING_DOUBLE_PERFECT_END
+		)
+		# Bolha B — posição diferente, nasce 150ms depois, expira 80ms antes
+		await get_tree().create_timer(0.15).timeout
+		if _both_alive():
+			_timing_bubble_b.show_bubble(
+				_enemy.position + Vector2(35, -55),
+				Constants.TIMING_WINDOW_ATTACK - 0.15,
+				Constants.TIMING_DOUBLE_PERFECT_START,
+				Constants.TIMING_DOUBLE_PERFECT_END - 0.08
+			)
+	else:
+		_timing_bubble.show_bubble(
+			_enemy.position + Vector2(0, -70),
+			Constants.TIMING_WINDOW_ATTACK,
+			Constants.TIMING_PERFECT_START,
+			Constants.TIMING_PERFECT_END
+		)
+		_timing_system.open_window(
+			Constants.TIMING_WINDOW_ATTACK,
+			Constants.TIMING_PERFECT_START,
+			Constants.TIMING_PERFECT_END
+		)
 
 func _on_attack_first_hit() -> void:
 	_timing_system.timing_first_hit.disconnect(_on_attack_first_hit)
-	_timing_bubble.first_hit()
+	_timing_bubble.burst_success()
 	_sfx.play(_sfx.timing_alert_sound)
 
 func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
@@ -96,8 +121,10 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 	var is_critical := result == TimingSystem.TimingResult.PERFECT
 	if is_critical:
 		_timing_bubble.burst_success()
+		_timing_bubble_b.burst_success()
 	else:
 		_timing_bubble.hide_bubble()
+		_timing_bubble_b.hide_bubble()
 
 	var damage := _caipora.execute_attack(is_critical)
 	_enemy.take_damage(damage)
@@ -117,7 +144,6 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		_start_enemy_turn()
 
 # ─── Turno do Inimigo (Defesa) ─────────────────────
-# A cadência (wind-up, golpes, cooldown) é dirigida pela EnemyStateMachine.
 func _start_enemy_turn() -> void:
 	if not _both_alive():
 		return
@@ -127,15 +153,16 @@ func _on_enemy_attack_started() -> void:
 	if not _both_alive():
 		return
 	var window := _enemy.attack_pattern.attack_duration
-	# Em multi-strike, garante estado limpo entre golpes consecutivos.
 	if _timing_system.timing_result.is_connected(_on_defense_timing_result):
 		_timing_system.timing_result.disconnect(_on_defense_timing_result)
 	_timing_system.timing_result.connect(_on_defense_timing_result)
+	# Bolha de defesa: ao lado do jogador, azul
 	_timing_bubble.show_bubble(
-		_enemy.position + Vector2(0, -70),
+		_caipora.position + Vector2(0, -70),
 		window,
 		Constants.TIMING_PERFECT_START,
-		Constants.TIMING_PERFECT_END
+		Constants.TIMING_PERFECT_END,
+		true
 	)
 	_timing_system.open_window(window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END)
 
@@ -172,7 +199,6 @@ func _on_bubble_vulnerable() -> void:
 # ─── Morte ─────────────────────────────────────────
 func _on_actor_died(actor: CombatActor) -> void:
 	var caipora_won := actor == _enemy
-	# Grava o HP sobrevivente de volta no GameState (0 em caso de derrota).
 	GameState.caipora_current_hp = maxi(0, _caipora.health.current_health)
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.state_machine.stop()
@@ -182,7 +208,6 @@ func _on_actor_died(actor: CombatActor) -> void:
 	_feedback.trigger_hit_stop(5)
 
 	SignalBus.arena_exited.emit(caipora_won)
-	# Aguarda a death animation (flash + fade ≈ 0.55s) antes de trocar de tela.
 	await get_tree().create_timer(0.6).timeout
 	if caipora_won:
 		if GameState.active_combat_is_boss:
