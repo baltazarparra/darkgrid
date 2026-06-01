@@ -12,8 +12,8 @@ O MVP está completo quando:
 - [x] Arena de combate carrega com transição
 - [x] Timing system funciona (ataque crítico + esquiva)
 - [x] 1 Criatura com telegraph pattern
-- [x] Vitória/derrota **detectadas** (condição de fim de arena funciona) — telas WIN/GAME_OVER e transição pendentes (Fase 4)
-- [ ] SFX para cada ação
+- [x] Vitória/derrota **detectadas** + telas WIN/GAME_OVER placeholder com transição de volta à exploração (KI-004 resolvida na Fase 3; menus/hub completos na Fase 4)
+- [x] SFX para cada ação
 - [x] Meta-progressão persiste entre runs
 - [ ] HTML5 export roda no browser
 - [ ] itch.io page carrega e joga
@@ -76,19 +76,19 @@ O MVP está completo quando:
 
 ---
 
-## Fase 3: Enemy AI & Visceral Feedback 🔲
+## Fase 3: Enemy AI & Visceral Feedback ✅
 
 **Objetivo:** Criatura é ameaçadora. Feedback é brutal e satisfatório.
 
 ### Tasks
-- [ ] Criar AttackPattern para Criatura: wind-up → telegraph visual → ataque
-- [ ] Implementar StateMachine na Criatura (idle → wind-up → attack → cooldown)
-- [ ] Criar Boss com pattern diferente (mais rápido ou múltiplos golpes)
-- [ ] Adicionar blood particles no hit (vermelho `#8b0000`)
-- [ ] Adicionar hit-stop frames (congelar jogo por 2-3 frames no impacto)
-- [ ] Implementar death animation (flash + fade + particles)
-- [ ] Gerar SFX com jsfxr: attack.wav, hit.wav, dodge.wav, timing_perfect.wav, death.wav, ui_click.wav
-- [ ] Conectar SFX aos eventos de SignalBus
+- [x] Criar AttackPattern para Criatura: wind-up → telegraph visual → ataque
+- [x] Implementar StateMachine na Criatura (idle → wind-up → attack → cooldown)
+- [x] Criar Boss com pattern diferente (multi-strike: 3 golpes consecutivos)
+- [x] Adicionar blood particles no hit (vermelho `#8b0000`) + critical/death particles
+- [x] Adicionar hit-stop frames (congelar jogo por 2-5 frames no impacto)
+- [x] Implementar death animation (flash + fade + particles)
+- [x] Gerar SFX: attack.wav, hit.wav, dodge.wav, timing_perfect.wav, death.wav, ui_click.wav (Python `wave`, ver KI-005)
+- [x] Conectar SFX aos eventos de combate (via ArenaManager/SfxSystem)
 
 ### Definition of Done
 - Criatura ataca com telegraph visível. Boss tem pattern único. Blood, hit-stop e sons funcionam.
@@ -146,4 +146,5 @@ O MVP está completo quando:
 | KI-001 | **Sprites são placeholders** — Kenney.nl requer JavaScript para download; não acessível via `wget`/`curl`. Placeholders CC0 gerados com PIL serão substituídos por sprites Kenney reais na Fase 1. | Fase 0 | Médio | 🔄 Pendente |
 | KI-002 | **`--check-only` não existe no Godot 4.6** — A PRD original mencionava esta flag para lint de GDScript, mas ela não existe. Validação de sintaxe é feita abrindo o projeto em headless. | Fase 0 | Baixo | ✅ Documentado |
 | KI-003 | **GUT plugin emite erro `_exit_tree`** — `Invalid assignment of property or key 'menu_manager' with value of type 'Nil'` ocorre ao fechar Godot em headless. Não afeta funcionalidade dos testes. | Fase 0 | Baixo | ✅ Conhecido |
-| KI-004 | **Vitória/derrota são beco sem saída** — `ArenaManager` detecta o fim e chama `GameState.change_screen(WIN/GAME_OVER)`, mas `game_state.gd:_on_screen_changed` só troca cena para ARENA/EXPLORATION e as cenas WIN/GAME_OVER não existem. O jogo congela na arena ao fim do combate. | Fase 2 | Médio | 🔄 Resolve na Fase 4 (telas + transição) |
+| KI-004 | **Vitória/derrota são beco sem saída** — `ArenaManager` detecta o fim e chama `GameState.change_screen(WIN/GAME_OVER)`, mas `game_state.gd:_on_screen_changed` só troca cena para ARENA/EXPLORATION e as cenas WIN/GAME_OVER não existem. O jogo congela na arena ao fim do combate. | Fase 2 | Médio | ✅ Resolvida na Fase 3 (telas placeholder WIN/GAME_OVER + transição de volta à exploração; menus/hub completos na Fase 4) |
+| KI-005 | **jsfxr indisponível via CLI** — A PRD da Fase 3 previa jsfxr para gerar SFX, mas a ferramenta requer browser/JS e não roda headless. SFX gerados via fallback Python (`scripts/tools/gen_sfx.py`, stdlib `wave`+`math`) — ondas sintéticas básicas, substituíveis por assets autorais depois. | Fase 3 | Baixo | ✅ Documentado |
