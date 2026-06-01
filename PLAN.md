@@ -263,9 +263,9 @@ O projeto usa `@coding-solo/godot-mcp` instalado e configurado.
 ### 8.2 Workflow do Agente
 
 1. **Orient:** Ler `PLAN.md`, checar `git status`, ler `AGENTS.md`.
-2. **Verify:** Rodar smoke test (`run_project`) antes de fazer mudanças.
+2. **Verify:** Rodar `make smoke` antes de fazer mudanças.
 3. **Implement:** Uma task por sessão. Usar MCP tools para criação de cenas.
-4. **Test:** Rodar smoke test + GUT tests. Se houver mudanças visuais, validar com screenshot.
+4. **Test:** Rodar `make gate` (smoke + GUT). Se houver mudanças visuais, validar com screenshot.
 5. **Update:** Commit com mensagem descritiva. Marcar task completa em `PLAN.md` se aplicável.
 
 ---
@@ -274,22 +274,24 @@ O projeto usa `@coding-solo/godot-mcp` instalado e configurado.
 
 ### 9.1 Desenvolvimento Local
 
+Os comandos do harness vivem no `Makefile` (fonte única). Rode da raiz do repo.
+Sobrescreva o binário com `make test GODOT=/caminho/para/godot`.
+
 ```bash
-# Rodar o jogo (requer display :0, WSLg funciona)
-~/.local/bin/godot --path /home/baltz/darkgrid
+make smoke    # sobe headless ~50 frames e sai (smoke test)
+make test     # roda o gate GUT (tests/unit)
+make export   # build HTML5 reproduzível em export/
+make gate     # smoke + test (antes de cada commit)
 
-# Rodar headless (para operações de cena via MCP)
-~/.local/bin/godot --headless --path /home/baltz/darkgrid --script <script>
-
-# Rodar testes GUT
-~/.local/bin/godot --headless --path /home/baltz/darkgrid -s res://addons/gut/gut_cmdln.gd
+# Rodar o jogo com display (WSLg fornece :0)
+~/.local/bin/godot --path .
 ```
 
 ### 9.2 Exportar para HTML5
 
 ```bash
-# O preset de export deve estar configurado no Godot primeiro
-~/.local/bin/godot --headless --path /home/baltz/darkgrid --export-release "Web" export/index.html
+# O preset "Web" já está configurado em export_presets.cfg
+make export
 ```
 
 ### 9.3 Deploy no itch.io
@@ -323,41 +325,60 @@ O projeto usa `@coding-solo/godot-mcp` instalado e configurado.
 
 ## 11. Milestones
 
-### Fase 1: Grid + Movimento da Caipora
-- [ ] Cena de exploração grid-based
-- [ ] Personagem Caipora com movimento 4-direcional
-- [ ] Câmera segue
-- [ ] Tile de arena dispara combate
+### Fase 1: Grid + Movimento da Caipora ✅
+- [x] Cena de exploração grid-based
+- [x] Personagem Caipora com movimento 4-direcional
+- [x] Câmera segue
+- [x] Tile de arena dispara combate
 
-### Fase 2: Arena + Sistema de Timing
-- [ ] Cena de arena com background
-- [ ] Caipora combat actor (vida, dano)
-- [ ] Cue de timing UI (barra visual + janela)
-- [ ] Detecção de espaço dentro da janela
-- [ ] Ataque crítico no timing perfeito
-- [ ] Feedback: screenshake + partículas + som
+### Fase 2: Arena + Sistema de Timing ✅
+- [x] Cena de arena com background
+- [x] Caipora combat actor (vida, dano)
+- [x] Cue de timing UI (barra visual + janela)
+- [x] Detecção de espaço dentro da janela
+- [x] Ataque crítico no timing perfeito
+- [x] Feedback: screenshake + partículas + som
 
-### Fase 3: Criatura + Boss
-- [ ] Criatura combat actor
-- [ ] Telegraph de ataque (animação de wind-up + cue)
-- [ ] Esquiva perfeita + contra-ataque no timing
-- [ ] Boss com padrão de ataque único
-- [ ] Condição de vitória (morte da criatura) / derrota (morte da Caipora)
+### Fase 3: Criatura + Boss ✅
+- [x] Criatura combat actor
+- [x] Telegraph de ataque (animação de wind-up + cue)
+- [x] Esquiva perfeita + contra-ataque no timing
+- [x] Boss com padrão de ataque único
+- [x] Condição de vitória (morte da criatura) / derrota (morte da Caipora)
 
-### Fase 4: Meta-Progressão + Polish
-- [ ] Cena de hub entre runs
-- [ ] Sistema de unlocks (personagens, modifiers)
-- [ ] Save persistente (`user://`)
-- [ ] Polish de partículas
-- [ ] Sound design (sfx para cada ação)
-- [ ] Tuning de screenshake
-- [ ] Hit-stop frames
+### Fase 4: Meta-Progressão + Polish ✅
+- [x] Cena de hub entre runs
+- [x] Sistema de unlocks (personagens, modifiers)
+- [x] Save persistente (`user://`)
+- [x] Polish de partículas
+- [x] Sound design (sfx para cada ação)
+- [x] Tuning de screenshake
+- [x] Hit-stop frames
 
-### Fase 5: Export + Publish
-- [ ] Preset de export HTML5 configurado
-- [ ] Teste de export no browser
+### Fase 5: Export + Publish 🚧
+- [x] Preset de export HTML5 configurado (`export_presets.cfg`, auditado)
+- [x] Build HTML5 reproduzível via CLI (`make export`, 39MB, zero erros)
+- [ ] Teste de export no browser (Chrome + Firefox)
 - [ ] Página do itch.io criada
 - [ ] Upload e verificação
+
+### Fase 6: Grid Roguelike 🚧
+- [x] Inimigos no mapa
+- [x] Sistema de turnos
+- [x] Mapa de 3 salas
+
+---
+
+## 11.1 Known Issues
+
+Rastreador canônico de bugs/débitos conhecidos. O Session Protocol exige registrar
+aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no formato
+`KI-NNN`; referencie-os em commits e REPORTs.
+
+| ID | Severidade | Status | Descrição |
+|----|-----------|--------|-----------|
+| KI-004 | Média | ✅ Resolvida (`5cdbd40`) | Beco sem saída no fim de combate — telas WIN/GAME_OVER placeholder fecham o loop |
+| KI-005 | Baixa | 🔲 Aberta (pós-MVP) | SFX sintéticos gerados por `scripts/tools/gen_sfx.py` (fallback de jsfxr); substituir por assets autorais depois do MVP |
 
 ---
 

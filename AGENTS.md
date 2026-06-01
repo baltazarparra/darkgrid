@@ -1,6 +1,6 @@
 # AGENTS.md — caipora
 
-This file guides the Kimi Code CLI agent when working on the **caipora** project.
+This file guides the AI coding agent (Claude Code, Kimi Code, or Cursor) when working on the **caipora** project. It is the single source of truth — `CLAUDE.md` at each level is a symlink to the `AGENTS.md` beside it.
 
 ## Project Overview
 
@@ -29,11 +29,19 @@ This project uses the **Godot MCP Server** (`@coding-solo/godot-mcp`) to let the
 | `create_scene` | Create a new `.tscn` file |
 | `add_node` | Add a node to an existing scene |
 | `save_scene` | Save changes to a scene |
+| `load_sprite` | Load a sprite onto a node |
+| `export_mesh_library` | Export a MeshLibrary resource |
 | `run_project` | Run the game and capture output |
 | `get_debug_output` | Read stdout/stderr from the running game |
 | `stop_project` | Stop the running game process |
 | `launch_editor` | Open the Godot editor |
 | `get_godot_version` | Verify installed Godot version |
+| `get_project_info` | Read project metadata |
+| `list_projects` | List known Godot projects |
+| `get_uid` | Get the UID for a resource |
+| `update_project_uids` | Refresh `.uid` references project-wide |
+
+All 14 tools are auto-approved in `.mcp.json` (the canonical MCP config; `.cursor/mcp.json` and `.kimi-code/mcp.json` are symlinks to it).
 
 ### Godot Path
 
@@ -155,18 +163,20 @@ Register these in `Project > Project Settings > Autoloads`:
 
 ## Development Commands
 
+The harness commands live in the `Makefile` (single source of truth). Run them from
+the repo root. Override the Godot binary with `make test GODOT=/path/to/godot`.
+
 ```bash
-# Run the game (WSLg display :0 available)
-~/.local/bin/godot --path /home/baltz/darkgrid
+make smoke    # boot headless ~50 frames and exit (smoke test)
+make test     # run the GUT regression gate (tests/unit)
+make export   # build the reproducible HTML5 release into export/
+make gate     # smoke + test (run before every commit)
+```
 
-# Run headless (for MCP scene operations)
-~/.local/bin/godot --headless --path /home/baltz/darkgrid --script <script>
+Run the game with a display (WSLg provides `:0`):
 
-# Run GUT tests (must install GUT addon first)
-~/.local/bin/godot --headless --path /home/baltz/darkgrid -s res://addons/gut/gut_cmdln.gd
-
-# Export HTML5 (preset must be configured in Godot first)
-~/.local/bin/godot --headless --path /home/baltz/darkgrid --export-release "Web" export/index.html
+```bash
+~/.local/bin/godot --path .
 ```
 
 ---
@@ -189,10 +199,10 @@ Register these in `Project > Project Settings > Autoloads`:
 Every session follows this sequence:
 
 1. **Orient** — Read `PLAN.md`, check `git status`, read current milestone.
-2. **Verify Baseline** — Run `run_project` smoke test. Ensure the game starts without errors before touching anything.
+2. **Verify Baseline** — Run `make smoke` (or `run_project`). Ensure the game starts without errors before touching anything.
 3. **Select One Task** — Pick the highest-priority incomplete item from the current milestone in `PLAN.md`.
 4. **Implement** — Build the feature. Use MCP tools for scene creation when appropriate.
-5. **Test** — Run smoke test + GUT tests. If visual changes, validate with screenshot.
+5. **Test** — Run `make gate` (smoke + GUT tests). If visual changes, validate with screenshot.
 6. **Update State** — Commit with a descriptive message. Mark task complete in `PLAN.md` if applicable.
 7. **Clean Exit** — Confirm the game is in a working state.
 

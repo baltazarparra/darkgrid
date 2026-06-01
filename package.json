@@ -4,7 +4,10 @@
   "description": "Roguelike brasileiro de horror folclórico",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "smoke": "make smoke",
+    "test": "make test",
+    "export": "make export",
+    "gate": "make gate"
   },
   "repository": {
     "type": "git",

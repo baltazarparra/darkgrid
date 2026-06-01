@@ -30,7 +30,7 @@ Every strike, dodge, and death is packed with visceral feedback: screen shake, b
 | Art | Pixel art — CC0 (Kenney) |
 | Audio | `.wav` SFX (jsfxr / sfxr) — no music in MVP |
 | Platform | Browser-first (HTML5 / itch.io) |
-| AI Agent | Kimi-k2.6 via Kimi Code CLI + Godot MCP |
+| AI Agent | Claude Code / Kimi Code / Cursor + Godot MCP |
 
 ---
 
@@ -62,21 +62,18 @@ caipora/
 # Requires Godot 4.6+ installed at ~/.local/bin/godot
 # Display :0 must be available (WSLg on Windows, native X11 on Linux)
 
-~/.local/bin/godot --path /home/baltz/darkgrid
+~/.local/bin/godot --path .
 ```
 
 ### Running Tests
 
-```bash
-# Requires GUT addon installed
-~/.local/bin/godot --headless --path /home/baltz/darkgrid -s res://addons/gut/gut_cmdln.gd
-```
-
-### Exporting to HTML5
+All harness commands live in the `Makefile`. Override the binary with `make test GODOT=/path/to/godot`.
 
 ```bash
-# Configure the Web export preset in Godot first
-~/.local/bin/godot --headless --path /home/baltz/darkgrid --export-release "Web" export/index.html
+make smoke    # headless smoke test
+make test     # GUT regression gate
+make export   # reproducible HTML5 build
+make gate     # smoke + test (run before commit)
 ```
 
 ---
@@ -109,9 +106,10 @@ This project uses the **Godot MCP Server** (`@coding-solo/godot-mcp`) so AI agen
 
 This project follows **Harness Engineering** principles:
 
-- **Feedforward:** `AGENTS.md` and `PLAN.md` guide the agent before it acts.
-- **Feedback:** Smoke tests, GUT unit tests, and visual screenshots validate every change.
-- **Memory:** Git commits, milestone tracking in `PLAN.md`, and evolving `AGENTS.md`.
+- **Feedforward:** `AGENTS.md` (root + per-folder) and `PLAN.md` guide the agent before it acts. `CLAUDE.md` is a symlink to `AGENTS.md`, so every agent (Claude Code, Kimi, Cursor) reads the same source of truth.
+- **Feedback:** Verification commands are codified in the `Makefile` (`make smoke`/`test`/`export`/`gate`) — not buried in prose — so they are stable and discoverable.
+- **Memory:** Git commits, milestone tracking in `PLAN.md` (incl. a Known Issues section), and evolving `AGENTS.md`.
+- **Tools:** Godot MCP, configured once in `.mcp.json` (canonical); `.cursor/` and `.kimi-code/` configs are symlinks to it.
 
 Read `AGENTS.md` before contributing (human or agent).
 
@@ -121,11 +119,12 @@ Read `AGENTS.md` before contributing (human or agent).
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| 1 | Grid + Caipora movement | 🔲 Not started |
-| 2 | Arena + Timing system | 🔲 Not started |
-| 3 | Criatura + Boss | 🔲 Not started |
-| 4 | Meta-progression + Polish | 🔲 Not started |
-| 5 | Export HTML5 + itch.io | 🔲 Not started |
+| 1 | Grid + Caipora movement | ✅ Complete |
+| 2 | Arena + Timing system | ✅ Complete |
+| 3 | Criatura + Boss | ✅ Complete |
+| 4 | Meta-progression + Polish | ✅ Complete |
+| 5 | Export HTML5 (reproducible CLI build) | ✅ Complete |
+| 6 | Grid roguelike — enemies on map, turn system, 3-room map | 🚧 In progress |
 
 See `PLAN.md` for full milestone details.
 
