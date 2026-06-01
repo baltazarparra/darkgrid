@@ -36,18 +36,19 @@ O MVP está completo quando:
 
 ---
 
-## Fase 1: Grid & Exploration 🔲
+## Fase 1: Grid & Exploration ✅
 
 **Objetivo:** Caipora explora a floresta corrompida em grid-based movement.
 
 ### Tasks
-- [ ] Criar cena Exploration com Node2D root
-- [ ] Criar TileMapLayer com tiles de chão (grama/terra) e parede (árvore/pedra)
-- [ ] Adicionar tile de arena_trigger que dispara combate
-- [ ] Criar cena Caipora (CharacterBody2D) com sprite idle do pack Kenney
-- [ ] Implementar movimento 4-direcional no grid (move_and_collide)
-- [ ] Câmera segue Caipora com Camera2D
-- [ ] Adicionar limitação de visibilidade (fog of war ou darkness overlay)
+- [x] Criar cena Exploration com Node2D root
+- [x] Criar TileMapLayer com tiles de chão (grama/terra) e parede (árvore/pedra)
+- [x] Adicionar tile de arena_trigger que dispara combate
+- [x] Criar cena Caipora (CharacterBody2D) com sprite idle do pack Kenney
+- [x] Implementar movimento 4-direcional no grid (tween-based)
+- [x] Câmera segue Caipora com Camera2D
+- [x] Adicionar limitação de visibilidade (fog of war ou darkness overlay)
+- [x] Testes unitários GUT para movimento e colisão
 
 ### Definition of Done
 - Caipora anda no grid. Câmera segue. Pisar no tile de arena inicia transição.
