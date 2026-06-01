@@ -11,6 +11,7 @@ extends CombatActor
 @onready var state_machine: EnemyStateMachine = $EnemyStateMachine
 
 var _base_scale: Vector2 = Vector2.ONE
+var _base_modulate: Color = Color.WHITE
 var _telegraph_tween: Tween
 var _home_x: float = 0.0
 
@@ -22,6 +23,7 @@ func _ready() -> void:
 	_base_scale = Vector2(sprite_scale, sprite_scale)
 	if animated_sprite:
 		animated_sprite.scale = _base_scale
+		_base_modulate = animated_sprite.modulate  # preserva tom base (ex: Boss)
 
 	if attack_pattern == null:
 		attack_pattern = preload("res://resources/attack_patterns/criatura_pattern.tres")
@@ -46,7 +48,7 @@ func _play_windup_telegraph() -> void:
 	_telegraph_tween = create_tween().set_loops()
 	_telegraph_tween.tween_property(animated_sprite, "modulate", Color(1.4, 0.4, 0.4), 0.18)
 	_telegraph_tween.parallel().tween_property(animated_sprite, "scale", _base_scale * 1.12, 0.18)
-	_telegraph_tween.tween_property(animated_sprite, "modulate", Color.WHITE, 0.18)
+	_telegraph_tween.tween_property(animated_sprite, "modulate", _base_modulate, 0.18)
 	_telegraph_tween.parallel().tween_property(animated_sprite, "scale", _base_scale, 0.18)
 
 ## Lunge curto em direção à Caipora (esquerda) no início do ataque.
@@ -54,7 +56,7 @@ func _play_attack_lunge() -> void:
 	if animated_sprite == null:
 		return
 	_kill_telegraph()
-	animated_sprite.modulate = Color.WHITE
+	animated_sprite.modulate = _base_modulate
 	animated_sprite.scale = _base_scale
 	_home_x = position.x
 	var lunge := create_tween()
@@ -65,5 +67,5 @@ func _kill_telegraph() -> void:
 	if _telegraph_tween != null and _telegraph_tween.is_valid():
 		_telegraph_tween.kill()
 	if animated_sprite != null:
-		animated_sprite.modulate = Color.WHITE
+		animated_sprite.modulate = _base_modulate
 		animated_sprite.scale = _base_scale

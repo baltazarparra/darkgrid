@@ -92,6 +92,9 @@ func _on_enemy_attack_started() -> void:
 	if not _both_alive():
 		return
 	var window := _enemy.attack_pattern.attack_duration
+	# Em multi-strike, garante estado limpo entre golpes consecutivos.
+	if _timing_system.timing_result.is_connected(_on_defense_timing_result):
+		_timing_system.timing_result.disconnect(_on_defense_timing_result)
 	_timing_system.timing_result.connect(_on_defense_timing_result)
 	_timing_cue.show_cue(window)
 	_timing_system.open_window(window, 0.4, 0.6)

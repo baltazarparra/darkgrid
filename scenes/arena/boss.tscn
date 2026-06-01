@@ -1,0 +1,32 @@
+[gd_scene load_steps=7 format=3 uid="uid://boss_arena"]
+
+[ext_resource type="Script" path="res://scripts/entities/boss.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://assets/sprites/criatura_sprite_frames.tres" id="2_frames"]
+[ext_resource type="Script" path="res://scripts/shared/health_component.gd" id="3_health"]
+[ext_resource type="Script" path="res://scripts/entities/enemy_state_machine.gd" id="4_sm"]
+[ext_resource type="AttackPattern" path="res://resources/attack_patterns/boss_pattern.tres" id="5_pattern"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_96x96"]
+size = Vector2(96, 96)
+
+[node name="Boss" type="CharacterBody2D"]
+script = ExtResource("1_script")
+base_attack_damage = 18
+sprite_scale = 3.0
+attack_pattern = ExtResource("5_pattern")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+modulate = Color(0.8, 0.2, 0.2, 1)
+sprite_frames = ExtResource("2_frames")
+animation = &"idle"
+autoplay = "idle"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_96x96")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("3_health")
+max_health = 200
+
+[node name="EnemyStateMachine" type="Node" parent="."]
+script = ExtResource("4_sm")
