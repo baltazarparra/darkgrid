@@ -15,6 +15,16 @@ config/description="Roguelike brasileiro de horror folclórico"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[autoload]
+
+GameState="*res://scripts/core/game_state.gd"
+SignalBus="*res://scripts/core/signal_bus.gd"
+MetaProgression="*res://scripts/core/meta_progression.gd"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
+
 [display]
 
 window/size/viewport_width=1280
@@ -24,3 +34,4 @@ window/size/viewport_height=720
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
