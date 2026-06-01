@@ -23,6 +23,7 @@ var _radius: float = RADIUS_MIN
 var _color: Color = Color(1, 1, 1, 0.2)
 var _burst_timer: float = -1.0
 var _defense_mode: bool = false
+var _vuln_color: Color = Color.TRANSPARENT
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -63,7 +64,9 @@ func _process(delta: float) -> void:
 				var t: float = (progress - _perfect_start) / (_perfect_end - _perfect_start)
 				var pulse: float = sin(t * TAU * 4.0) * 0.15
 				_radius = RADIUS_MAX * (1.1 + pulse * 0.1)
-				if _defense_mode:
+				if _vuln_color.a > 0.0:
+					_color = Color(_vuln_color.r, _vuln_color.g, _vuln_color.b, 0.85 + pulse)
+				elif _defense_mode:
 					_color = Color(0.05 + pulse * 0.05, 0.3 + pulse * 0.1, 1.0, 0.85 + pulse)
 				else:
 					_color = Color(1.0, 0.05 + pulse * 0.1, 0.05 + pulse * 0.1, 0.85 + pulse)
@@ -85,7 +88,7 @@ func _draw() -> void:
 	draw_arc(Vector2.ZERO, _radius, 0.0, TAU, 32, Color(1, 1, 1, _color.a * 0.4), 1.5)
 
 # ─── Public API ────────────────────────────────────
-func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false) -> void:
+func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false, vuln_color: Color = Color.TRANSPARENT) -> void:
 	_duration = duration
 	_perfect_start = perfect_start
 	_perfect_end = perfect_end
@@ -93,6 +96,7 @@ func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perf
 	_phase = PHASE_GROW
 	_burst_timer = -1.0
 	_defense_mode = defense
+	_vuln_color = vuln_color
 	_radius = RADIUS_MIN
 	_color = Color(1, 1, 1, 0.2)
 	position = world_pos

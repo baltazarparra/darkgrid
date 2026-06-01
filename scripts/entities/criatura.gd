@@ -63,6 +63,9 @@ func _play_attack_lunge() -> void:
 	lunge.tween_property(self, "position:x", _home_x - 80.0, 0.1)
 	lunge.tween_property(self, "position:x", _home_x, 0.1)
 
+func get_attack_pattern() -> AttackPattern:
+	return attack_pattern
+
 func _kill_telegraph() -> void:
 	if _telegraph_tween != null and _telegraph_tween.is_valid():
 		_telegraph_tween.kill()

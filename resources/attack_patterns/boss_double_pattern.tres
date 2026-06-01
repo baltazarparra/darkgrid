@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="AttackPattern" load_steps=2 format=3 uid="uid://r7kw5r4kjziu6"]
+
+[ext_resource type="Script" path="res://scripts/entities/attack_pattern.gd" id="1_pattern"]
+
+[resource]
+script = ExtResource("1_pattern")
+idle_duration = 0.2
+wind_up_duration = 0.35
+attack_duration = 0.8
+cooldown_duration = 1.2
+damage_multiplier = 1.0
+strike_count = 2
+strike_delay = 0.3

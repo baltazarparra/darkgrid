@@ -6,6 +6,11 @@ extends Node2D
 ## CombatActor com EnemyStateMachine) sem o ArenaManager conhecer a classe.
 @export var enemy_scene: PackedScene
 
+const BOSS_BUBBLE_COLOR := Color(0.55, 0.05, 0.95, 1.0)
+const BOSS_BUBBLE_SPREAD_MIN: float = 90.0
+const BOSS_BUBBLE_X: Vector2 = Vector2(70.0, 570.0)
+const BOSS_BUBBLE_Y: Vector2 = Vector2(80.0, 370.0)
+
 var _caipora: CombatActor
 var _enemy: Criatura
 var _timing_system: TimingSystem
@@ -13,6 +18,8 @@ var _timing_bubble: Node2D
 var _timing_bubble_b: Node2D
 var _feedback: FeedbackSystem
 var _sfx: SfxSystem
+var _active_enemy_pattern: AttackPattern
+var _last_boss_bubble_pos: Vector2 = Vector2(-999.0, -999.0)
 
 func _ready() -> void:
 	_timing_system = $TimingSystem
@@ -56,6 +63,7 @@ func _spawn_enemy() -> void:
 	_enemy = scene.instantiate()
 	_enemy.position = Vector2(480, 240)
 	add_child(_enemy)
+	_active_enemy_pattern = _enemy.attack_pattern
 	_enemy.health.died.connect(_on_actor_died.bind(_enemy))
 	_enemy.health.health_changed.connect(_on_enemy_health_changed)
 	_enemy.state_machine.attack_started.connect(_on_enemy_attack_started)
@@ -151,23 +159,21 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 func _start_enemy_turn() -> void:
 	if not _both_alive():
 		return
-	_enemy.state_machine.start_pattern(_enemy.attack_pattern)
+	_last_boss_bubble_pos = Vector2(-999.0, -999.0)
+	_active_enemy_pattern = _enemy.get_attack_pattern()
+	_enemy.state_machine.start_pattern(_active_enemy_pattern)
 
 func _on_enemy_attack_started() -> void:
 	if not _both_alive():
 		return
-	var window := _enemy.attack_pattern.attack_duration
+	var window: float = _active_enemy_pattern.attack_duration
 	if _timing_system.timing_result.is_connected(_on_defense_timing_result):
 		_timing_system.timing_result.disconnect(_on_defense_timing_result)
 	_timing_system.timing_result.connect(_on_defense_timing_result)
-	# Bolha de defesa: ao lado do jogador, azul
-	_timing_bubble.show_bubble(
-		_caipora.position + Vector2(0, -70),
-		window,
-		Constants.TIMING_PERFECT_START,
-		Constants.TIMING_PERFECT_END,
-		true
-	)
+	var is_boss: bool = GameState.active_combat_is_boss
+	var bubble_pos: Vector2 = _boss_spread_pos() if is_boss else _caipora.position + Vector2(0, -70)
+	var vuln: Color = BOSS_BUBBLE_COLOR if is_boss else Color.TRANSPARENT
+	_timing_bubble.show_bubble(bubble_pos, window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, true, vuln)
 	_timing_system.open_window(window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END)
 
 func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
@@ -195,6 +201,18 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 func _on_enemy_pattern_finished() -> void:
 	if _both_alive():
 		_start_caipora_turn()
+
+func _boss_spread_pos() -> Vector2:
+	var pos: Vector2
+	for _i in 20:
+		pos = Vector2(
+			randf_range(BOSS_BUBBLE_X.x, BOSS_BUBBLE_X.y),
+			randf_range(BOSS_BUBBLE_Y.x, BOSS_BUBBLE_Y.y)
+		)
+		if _last_boss_bubble_pos.distance_to(pos) >= BOSS_BUBBLE_SPREAD_MIN:
+			break
+	_last_boss_bubble_pos = pos
+	return pos
 
 func _on_enemy_health_changed(new_health: int, max_health: int) -> void:
 	SignalBus.enemy_health_changed.emit(new_health, max_health)
