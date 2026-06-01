@@ -14,6 +14,10 @@ const DODGE_COOLDOWN_SECONDS := 0.5
 const TIMING_WINDOW_ATTACK := 0.8
 const TIMING_PERFECT_START := 0.65
 const TIMING_PERFECT_END := 0.85
+const TIMING_DOUBLE_CHANCE := 0.30
+const TIMING_DOUBLE_PERFECT_START := 0.50
+const TIMING_DOUBLE_PERFECT_END := 0.88
+const TIMING_DOUBLE_MIN_INTERVAL := 0.10
 
 # ─── Damage ────────────────────────────────────────
 const DAMAGE_BASE := 10

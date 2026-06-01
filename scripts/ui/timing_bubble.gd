@@ -7,6 +7,7 @@ signal vulnerable_entered
 # ─── Constants ─────────────────────────────────────
 const RADIUS_MIN: float = 4.0
 const RADIUS_MAX: float = 40.0
+const DOUBLE_OFFSET: float = 22.0
 
 const PHASE_GROW: int = 0
 const PHASE_VULNERABLE: int = 1
@@ -23,15 +24,26 @@ var _radius: float = RADIUS_MIN
 var _color: Color = Color(1, 1, 1, 0.2)
 var _burst_timer: float = -1.0
 
-# ─── Lifecycle (_ready, _process, etc.) ────────────
+var _double_mode: bool = false
+var _first_burst: bool = false
+var _first_burst_timer: float = -1.0
+
+# ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	visible = false
 
 func _process(delta: float) -> void:
+	if _first_burst_timer >= 0.0:
+		_first_burst_timer -= delta
+		if _first_burst_timer <= 0.0:
+			_first_burst_timer = -1.0
+			queue_redraw()
+
 	if _burst_timer >= 0.0:
 		_burst_timer -= delta
-		_color = Color(1, 1, 1, lerpf(0.9, 0.0, 1.0 - maxf(0.0, _burst_timer / 0.12)))
-		_radius = lerpf(RADIUS_MAX * 0.8, RADIUS_MAX * 1.6, 1.0 - maxf(0.0, _burst_timer / 0.12))
+		var t: float = 1.0 - maxf(0.0, _burst_timer / 0.12)
+		_color = Color(1, 1, 1, lerpf(0.9, 0.0, t))
+		_radius = lerpf(RADIUS_MAX * 0.8, RADIUS_MAX * 1.6, t)
 		queue_redraw()
 		if _burst_timer <= 0.0:
 			_phase = PHASE_IDLE
@@ -76,17 +88,37 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if _phase == PHASE_IDLE and _burst_timer < 0.0:
 		return
-	draw_circle(Vector2.ZERO, _radius, _color)
-	draw_arc(Vector2.ZERO, _radius, 0.0, TAU, 32, Color(1.0, 1.0, 1.0, _color.a * 0.4), 1.5)
+
+	if not _double_mode:
+		draw_circle(Vector2.ZERO, _radius, _color)
+		draw_arc(Vector2.ZERO, _radius, 0.0, TAU, 32, Color(1, 1, 1, _color.a * 0.4), 1.5)
+		return
+
+	var left := Vector2(-DOUBLE_OFFSET, 0.0)
+	var right := Vector2(DOUBLE_OFFSET, 0.0)
+
+	if not _first_burst:
+		draw_circle(left, _radius, _color)
+		draw_arc(left, _radius, 0.0, TAU, 32, Color(1, 1, 1, _color.a * 0.4), 1.5)
+	elif _first_burst_timer > 0.0:
+		var flash_a: float = _first_burst_timer / 0.10
+		var flash_r: float = lerpf(RADIUS_MAX * 0.8, RADIUS_MAX * 1.4, 1.0 - flash_a)
+		draw_circle(left, flash_r, Color(1, 1, 1, flash_a * 0.8))
+
+	draw_circle(right, _radius, _color)
+	draw_arc(right, _radius, 0.0, TAU, 32, Color(1, 1, 1, _color.a * 0.4), 1.5)
 
 # ─── Public API ────────────────────────────────────
-func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float) -> void:
+func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, double: bool = false) -> void:
 	_duration = duration
 	_perfect_start = perfect_start
 	_perfect_end = perfect_end
 	_elapsed = 0.0
 	_phase = PHASE_GROW
 	_burst_timer = -1.0
+	_double_mode = double
+	_first_burst = false
+	_first_burst_timer = -1.0
 	_radius = RADIUS_MIN
 	_color = Color(1, 1, 1, 0.2)
 	position = world_pos
@@ -96,6 +128,7 @@ func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perf
 func hide_bubble() -> void:
 	_phase = PHASE_IDLE
 	_burst_timer = -1.0
+	_first_burst_timer = -1.0
 	visible = false
 
 func burst_success() -> void:
@@ -104,4 +137,9 @@ func burst_success() -> void:
 	_color = Color(1, 1, 1, 0.9)
 	_radius = RADIUS_MAX * 0.8
 	visible = true
+	queue_redraw()
+
+func first_hit() -> void:
+	_first_burst = true
+	_first_burst_timer = 0.10
 	queue_redraw()

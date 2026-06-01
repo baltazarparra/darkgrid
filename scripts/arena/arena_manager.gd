@@ -67,22 +67,31 @@ func _both_alive() -> bool:
 func _start_caipora_turn() -> void:
 	if not _both_alive():
 		return
+	var is_double: bool = randf() < Constants.TIMING_DOUBLE_CHANCE
+	var p_start: float = Constants.TIMING_DOUBLE_PERFECT_START if is_double else Constants.TIMING_PERFECT_START
+	var p_end: float = Constants.TIMING_DOUBLE_PERFECT_END if is_double else Constants.TIMING_PERFECT_END
 	_sfx.play(_sfx.attack_sound)
+	if is_double:
+		_timing_system.timing_first_hit.connect(_on_attack_first_hit)
 	_timing_system.timing_result.connect(_on_attack_timing_result)
 	_timing_bubble.show_bubble(
 		_enemy.position + Vector2(0, -70),
 		Constants.TIMING_WINDOW_ATTACK,
-		Constants.TIMING_PERFECT_START,
-		Constants.TIMING_PERFECT_END
+		p_start,
+		p_end,
+		is_double
 	)
-	_timing_system.open_window(
-		Constants.TIMING_WINDOW_ATTACK,
-		Constants.TIMING_PERFECT_START,
-		Constants.TIMING_PERFECT_END
-	)
+	_timing_system.open_window(Constants.TIMING_WINDOW_ATTACK, p_start, p_end, is_double)
+
+func _on_attack_first_hit() -> void:
+	_timing_system.timing_first_hit.disconnect(_on_attack_first_hit)
+	_timing_bubble.first_hit()
+	_sfx.play(_sfx.timing_alert_sound)
 
 func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 	_timing_system.timing_result.disconnect(_on_attack_timing_result)
+	if _timing_system.timing_first_hit.is_connected(_on_attack_first_hit):
+		_timing_system.timing_first_hit.disconnect(_on_attack_first_hit)
 
 	var is_critical := result == TimingSystem.TimingResult.PERFECT
 	if is_critical:
