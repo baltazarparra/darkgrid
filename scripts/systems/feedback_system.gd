@@ -23,6 +23,6 @@ func spawn_impact_particles(position: Vector2) -> void:
     var particles := preload("res://scenes/shared/impact_particles.tscn").instantiate()
     particles.position = position
     get_tree().current_scene.add_child(particles)
-    particles.restart()
+    particles.emitting = true
     await get_tree().create_timer(particles.lifetime + 0.1).timeout
     particles.queue_free()

@@ -8,13 +8,13 @@
 ## MVP Definition of Done
 
 O MVP está completo quando:
-- [ ] Caipora se move no grid de exploração
-- [ ] Arena de combate carrega com transição
-- [ ] Timing system funciona (ataque crítico + esquiva)
-- [ ] 1 Criatura com telegraph pattern
-- [ ] Vitória/derrota funcionam
+- [x] Caipora se move no grid de exploração
+- [x] Arena de combate carrega com transição
+- [x] Timing system funciona (ataque crítico + esquiva)
+- [x] 1 Criatura com telegraph pattern
+- [x] Vitória/derrota funcionam
 - [ ] SFX para cada ação
-- [ ] Meta-progressão persiste entre runs
+- [x] Meta-progressão persiste entre runs
 - [ ] HTML5 export roda no browser
 - [ ] itch.io page carrega e joga
 
@@ -55,21 +55,21 @@ O MVP está completo quando:
 
 ---
 
-## Fase 2: Arena & Timing 🔲
+## Fase 2: Arena & Timing ✅
 
 **Objetivo:** Combate action com timing mechanic funcional.
 
 ### Tasks
-- [ ] Criar cena Arena com background (TileMap ou ColorRect + tiles)
-- [ ] Spawn Caipora na arena via ArenaManager
-- [ ] Criar cena Criatura (CharacterBody2D) com sprite do pack Kenney
-- [ ] Implementar HealthComponent (vida, dano, morte)
-- [ ] Criar TimingCue UI (barra/círculo com janela de acerto)
-- [ ] Detectar press de espaço dentro da janela de timing
-- [ ] Aplicar dano crítico (2x-3x) no timing de ataque
-- [ ] Aplicar esquiva perfeita (0 dano) + contra-ataque no timing de defesa
-- [ ] Implementar screenshake básico via FeedbackSystem
-- [ ] Adicionar partículas de impacto (Godot CPUParticles2D)
+- [x] Criar cena Arena com background (ColorRect)
+- [x] Spawn Caipora na arena via ArenaManager
+- [x] Criar cena Criatura (CharacterBody2D) com sprite placeholder
+- [x] Implementar HealthComponent (vida, dano, morte)
+- [x] Criar TimingCue UI (barra ColorRect com janela de acerto)
+- [x] Detectar press de espaço dentro da janela de timing
+- [x] Aplicar dano crítico (2.5x) no timing de ataque
+- [x] Aplicar esquiva perfeita (0 dano) + contra-ataque (1.5x) no timing de defesa
+- [x] Implementar screenshake via FeedbackSystem
+- [x] Adicionar partículas de impacto (CPUParticles2D)
 
 ### Definition of Done
 - Arena inicia. Espaço no timing certo = crítico ou esquiva. Dano aplica. Screenshake funciona.
