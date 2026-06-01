@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "godot": {
+      "command": "bash",
+      "args": ["/home/baltz/darkgrid/scripts/mcp-wrapper.sh"],
+      "env": {
+        "GODOT_PATH": "/home/baltz/.local/bin/godot",
+        "DEBUG": "true"
+      }
+    }
+  }
+}
