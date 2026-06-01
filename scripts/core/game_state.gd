@@ -7,6 +7,10 @@ extends Node
 var current_screen: SignalBus.Screen = SignalBus.Screen.MAIN_MENU
 var is_paused: bool = false
 
+# Inimigo do próximo combate. Se != null, o ArenaManager o usa e reseta.
+# Ponto único para a Fase 4 (hub) escolher encontros (ex: Boss).
+var next_enemy_scene: PackedScene = null
+
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	SignalBus.screen_changed.connect(_on_screen_changed)
