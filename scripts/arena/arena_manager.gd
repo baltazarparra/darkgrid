@@ -74,26 +74,27 @@ func _start_caipora_turn() -> void:
 	if is_double:
 		_timing_system.timing_first_hit.connect(_on_attack_first_hit)
 		_timing_system.open_window(
-			Constants.TIMING_WINDOW_ATTACK,
+			Constants.TIMING_WINDOW_ATTACK_DOUBLE,
 			Constants.TIMING_DOUBLE_PERFECT_START,
 			Constants.TIMING_DOUBLE_PERFECT_END,
 			true
 		)
-		# Bolha A — posição levemente acima-esquerda do inimigo
+		# Bolha A — nasce imediatamente, levemente à esquerda do inimigo
 		_timing_bubble.show_bubble(
-			_enemy.position + Vector2(-35, -85),
-			Constants.TIMING_WINDOW_ATTACK,
+			_enemy.position + Vector2(-18, -78),
+			Constants.TIMING_WINDOW_ATTACK_DOUBLE,
 			Constants.TIMING_DOUBLE_PERFECT_START,
 			Constants.TIMING_DOUBLE_PERFECT_END
 		)
-		# Bolha B — posição diferente, nasce 150ms depois, expira 80ms antes
-		await get_tree().create_timer(0.15).timeout
+		# Bolha B — nasce TIMING_DOUBLE_SPAWN_DELAY depois, meia bolha à direita
+		await get_tree().create_timer(Constants.TIMING_DOUBLE_SPAWN_DELAY).timeout
 		if _both_alive():
+			var b_duration: float = Constants.TIMING_WINDOW_ATTACK_DOUBLE - Constants.TIMING_DOUBLE_SPAWN_DELAY
 			_timing_bubble_b.show_bubble(
-				_enemy.position + Vector2(35, -55),
-				Constants.TIMING_WINDOW_ATTACK - 0.15,
+				_enemy.position + Vector2(18, -60),
+				b_duration,
 				Constants.TIMING_DOUBLE_PERFECT_START,
-				Constants.TIMING_DOUBLE_PERFECT_END - 0.08
+				Constants.TIMING_DOUBLE_PERFECT_END - 0.06
 			)
 	else:
 		_timing_bubble.show_bubble(
