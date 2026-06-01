@@ -10,7 +10,7 @@ enum Screen { MAIN_MENU, EXPLORATION, ARENA, GAME_OVER, WIN, HUB }
 signal screen_changed(new_screen: Screen)
 signal arena_entered(arena_id: String)
 signal arena_exited(won: bool)
+
+# Reservados p/ Fase 4 (HUD / GameOver) — ainda sem emissor no MVP atual.
 signal caipora_died
 signal caipora_health_changed(new_health: int, max_health: int)
-signal timing_hit(type: String)  # "attack" or "defense"
-signal timing_miss(type: String)

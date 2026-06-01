@@ -78,7 +78,7 @@ Toda ação tem feedback visceral: screen shake, partículas de sangue, hit-stop
     ↓
 [Exploração]  ← grid-based, turn-based (floresta)
     ↓  (pisar no tile de arena)
-[Combate na Arena] ← action / timing-based
+[Combate na Arena] ← turnos + action command de timing
     ↓  (vitória / morte)
 [Recompensas / Morte]
     ↓
@@ -95,7 +95,7 @@ Toda ação tem feedback visceral: screen shake, partículas de sangue, hit-stop
 - Ambientes: trilha torta, clareira queimada, rio escuro, capela abandonada
 
 **Combate na Arena:**
-- Action em tempo real (não turn-based)
+- Combate por turnos com **action commands de timing** (no estilo *Legend of Dragoon* e *Clair Obscur: Expedition 33*) — não é ação em tempo real. O turno alterna entre jogador e inimigo; dentro de cada turno o jogador acerta o frame/janela correto para crítico ou esquiva.
 - Jogador e inimigo têm cooldowns de ataque
 - Inimigo telegrafa ataques com cue visual + janela de wind-up
 - Jogador pressiona **Espaço** durante a janela de cue para esquivar + contra-atacar

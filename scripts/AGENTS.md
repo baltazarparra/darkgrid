@@ -25,6 +25,9 @@ scripts/
 
 ## State Machine Pattern
 
+> Ilustrativo. A Fase 3 implementa `EnemyStateMachine` (enum `State` + `match/case`),
+> não o padrão de State-child abaixo. Use isto apenas como referência conceitual.
+
 ```gdscript
 # scripts/entities/caipora/states/caipora_explore_state.gd
 class_name CaiporaExploreState
@@ -59,11 +62,11 @@ Use autoloads for cross-system communication. Never use `get_node("/root/...")` 
 
 ```gdscript
 # Correct
-SignalBus.health_changed.emit(new_health)
-GameState.current_screen = GameState.Screen.ARENA
+SignalBus.caipora_health_changed.emit(new_health, max_health)
+GameState.change_screen(SignalBus.Screen.ARENA)  # enum Screen vive em SignalBus
 
 # Incorrect
-get_node("/root/SignalBus").health_changed.emit(new_health)
+get_node("/root/SignalBus").caipora_health_changed.emit(new_health, max_health)
 ```
 
 ## Narrative Code

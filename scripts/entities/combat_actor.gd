@@ -16,29 +16,32 @@ var _attack_timer: Timer
 var _can_attack: bool = true
 
 func _ready() -> void:
-    _attack_timer = Timer.new()
-    _attack_timer.one_shot = true
-    _attack_timer.wait_time = attack_cooldown
-    _attack_timer.timeout.connect(_on_attack_cooldown_ready)
-    add_child(_attack_timer)
+	_attack_timer = Timer.new()
+	_attack_timer.one_shot = true
+	_attack_timer.wait_time = attack_cooldown
+	_attack_timer.timeout.connect(_on_attack_cooldown_ready)
+	add_child(_attack_timer)
 
 func start_attack_window() -> void:
-    pass
+	pass
 
-func execute_attack(is_critical: bool = false, multiplier_override: float = 0.0) -> void:
-    var damage := base_attack_damage
-    if is_critical:
-        if multiplier_override > 0.0:
-            damage = int(damage * multiplier_override)
-        else:
-            damage = int(damage * critical_multiplier)
-    attack_executed.emit(damage, is_critical)
-    _can_attack = false
-    _attack_timer.start()
+## Executa o ataque e retorna o dano calculado (fonte única de verdade).
+## O chamador deve aplicar esse valor via take_damage() em vez de recomputar.
+func execute_attack(is_critical: bool = false, multiplier_override: float = 0.0) -> int:
+	var damage := base_attack_damage
+	if is_critical:
+		if multiplier_override > 0.0:
+			damage = int(damage * multiplier_override)
+		else:
+			damage = int(damage * critical_multiplier)
+	attack_executed.emit(damage, is_critical)
+	_can_attack = false
+	_attack_timer.start()
+	return damage
 
 func _on_attack_cooldown_ready() -> void:
-    _can_attack = true
-    attack_ready.emit()
+	_can_attack = true
+	attack_ready.emit()
 
 func take_damage(amount: int) -> void:
-    health.take_damage(amount)
+	health.take_damage(amount)

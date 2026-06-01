@@ -12,7 +12,7 @@ O MVP está completo quando:
 - [x] Arena de combate carrega com transição
 - [x] Timing system funciona (ataque crítico + esquiva)
 - [x] 1 Criatura com telegraph pattern
-- [x] Vitória/derrota funcionam
+- [x] Vitória/derrota **detectadas** (condição de fim de arena funciona) — telas WIN/GAME_OVER e transição pendentes (Fase 4)
 - [ ] SFX para cada ação
 - [x] Meta-progressão persiste entre runs
 - [ ] HTML5 export roda no browser
@@ -146,3 +146,4 @@ O MVP está completo quando:
 | KI-001 | **Sprites são placeholders** — Kenney.nl requer JavaScript para download; não acessível via `wget`/`curl`. Placeholders CC0 gerados com PIL serão substituídos por sprites Kenney reais na Fase 1. | Fase 0 | Médio | 🔄 Pendente |
 | KI-002 | **`--check-only` não existe no Godot 4.6** — A PRD original mencionava esta flag para lint de GDScript, mas ela não existe. Validação de sintaxe é feita abrindo o projeto em headless. | Fase 0 | Baixo | ✅ Documentado |
 | KI-003 | **GUT plugin emite erro `_exit_tree`** — `Invalid assignment of property or key 'menu_manager' with value of type 'Nil'` ocorre ao fechar Godot em headless. Não afeta funcionalidade dos testes. | Fase 0 | Baixo | ✅ Conhecido |
+| KI-004 | **Vitória/derrota são beco sem saída** — `ArenaManager` detecta o fim e chama `GameState.change_screen(WIN/GAME_OVER)`, mas `game_state.gd:_on_screen_changed` só troca cena para ARENA/EXPLORATION e as cenas WIN/GAME_OVER não existem. O jogo congela na arena ao fim do combate. | Fase 2 | Médio | 🔄 Resolve na Fase 4 (telas + transição) |

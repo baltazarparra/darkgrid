@@ -63,11 +63,13 @@ func _paint_map() -> void:
 		"WFFFFFFFFFFFFWFFFFFW",
 		"WFFFFFFFFFFFFWFFFFFW",
 		"WFFFFFFFFFFFFWFFFFFW",
-		"WFFFFFFFFFFFFTFFFFFW",
+		"WFFFFFFFFFFFFFFFFTFW",
 		"WFFFFFFFFFFFFFFFFFFW",
 		"WWWWWWWWWWWWWWWWWWWW",
 	]
 
+	# Single source of truth: the "T" in the layout IS the arena trigger.
+	var trigger_pos := Vector2i(-1, -1)
 	for y in range(map_layout.size()):
 		var row: String = map_layout[y]
 		for x in range(row.length()):
@@ -76,14 +78,17 @@ func _paint_map() -> void:
 			match cell:
 				"W":
 					_tilemap.set_cell(0, pos, 1, Vector2i(0, 0))
+				"T":
+					_tilemap.set_cell(0, pos, 0, Vector2i(0, 0))
+					trigger_pos = pos
 				_:
 					_tilemap.set_cell(0, pos, 0, Vector2i(0, 0))
 
-	# Mark trigger tile with custom data
-	var trigger_pos := Vector2i(17, 12)
-	var trigger_data := _tilemap.get_cell_tile_data(0, trigger_pos)
-	if trigger_data:
-		trigger_data.set_custom_data("is_arena_trigger", true)
+	# Mark the trigger tile (derived from layout) with custom data
+	if trigger_pos != Vector2i(-1, -1):
+		var trigger_data := _tilemap.get_cell_tile_data(0, trigger_pos)
+		if trigger_data:
+			trigger_data.set_custom_data("is_arena_trigger", true)
 
 # ─── Signal Handlers ───────────────────────────────
 func _on_arena_entered(arena_id: String) -> void:
