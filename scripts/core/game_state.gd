@@ -31,3 +31,7 @@ func _on_screen_changed(new_screen: SignalBus.Screen) -> void:
 			get_tree().change_scene_to_file("res://scenes/arena/arena.tscn")
 		SignalBus.Screen.EXPLORATION:
 			get_tree().change_scene_to_file("res://scenes/exploration/exploration.tscn")
+		SignalBus.Screen.WIN:
+			get_tree().change_scene_to_file("res://scenes/ui/win.tscn")
+		SignalBus.Screen.GAME_OVER:
+			get_tree().change_scene_to_file("res://scenes/ui/game_over.tscn")
