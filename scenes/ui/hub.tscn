@@ -1,0 +1,43 @@
+[gd_scene load_steps=2 format=3 uid="uid://hub_screen"]
+
+[ext_resource type="Script" path="res://scripts/ui/hub.gd" id="1_hub"]
+
+[node name="Hub" type="CanvasLayer"]
+script = ExtResource("1_hub")
+
+[node name="Background" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.239, 0.122, 0.122, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="Center"]
+layout_mode = 2
+theme_override_constants/separation = 28
+alignment = 1
+
+[node name="Title" type="Label" parent="Center/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.42, 0, 1)
+theme_override_font_sizes/font_size = 64
+text = "ACAMPAMENTO"
+horizontal_alignment = 1
+
+[node name="Stats" type="Label" parent="Center/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.788, 0.82, 0.851, 1)
+theme_override_font_sizes/font_size = 26
+text = "Caçadas: 0    Vitórias: 0"
+horizontal_alignment = 1
+
+[node name="UpgradeList" type="VBoxContainer" parent="Center/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="EnterButton" type="Button" parent="Center/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Entrar na Floresta"
