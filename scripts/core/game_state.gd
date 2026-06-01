@@ -16,9 +16,17 @@ var run_active: bool = false
 var caipora_max_hp: int = Constants.CAIPORA_MAX_HEALTH
 var caipora_current_hp: int = Constants.CAIPORA_MAX_HEALTH
 
+# ─── Exploration State ─────────────────────────────
+var defeated_enemy_ids: Array[String] = []
+var active_map_enemy_id: String = ""
+var active_combat_is_boss: bool = false
+
 ## Inicia uma nova run: HP cheio, com bônus de meta aplicado.
 func start_run() -> void:
 	run_active = true
+	defeated_enemy_ids.clear()
+	active_map_enemy_id = ""
+	active_combat_is_boss = false
 	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH + MetaProgression.get_bonus_max_hp()
 	caipora_current_hp = caipora_max_hp
 

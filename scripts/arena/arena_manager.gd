@@ -150,6 +150,10 @@ func _on_actor_died(actor: CombatActor) -> void:
 	# Aguarda a death animation (flash + fade ≈ 0.55s) antes de trocar de tela.
 	await get_tree().create_timer(0.6).timeout
 	if caipora_won:
-		GameState.change_screen(SignalBus.Screen.WIN)
+		if GameState.active_combat_is_boss:
+			GameState.change_screen(SignalBus.Screen.WIN)
+		else:
+			GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
+			GameState.change_screen(SignalBus.Screen.EXPLORATION)
 	else:
 		GameState.change_screen(SignalBus.Screen.GAME_OVER)

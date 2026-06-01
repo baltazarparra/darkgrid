@@ -3,8 +3,8 @@ extends RefCounted
 
 # ─── Grid ──────────────────────────────────────────
 const TILE_SIZE := 32
-const GRID_WIDTH := 20
-const GRID_HEIGHT := 15
+const GRID_WIDTH := 26
+const GRID_HEIGHT := 18
 
 # ─── Combat ────────────────────────────────────────
 const TIMING_WINDOW_FRAMES := 12

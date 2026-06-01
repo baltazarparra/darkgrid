@@ -11,5 +11,7 @@ format = 2
 
 [node name="Caipora" parent="." instance=ExtResource("2_caipora")]
 
+[node name="Enemies" type="Node2D" parent="."]
+
 [node name="CanvasModulate" type="CanvasModulate" parent="."]
 color = Color(0.0509804, 0.0666667, 0.0901961, 1)

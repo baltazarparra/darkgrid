@@ -5,6 +5,9 @@ extends CharacterBody2D
 @export var tilemap: TileMap
 @export var move_duration: float = 0.15
 
+# ─── Signals ───────────────────────────────────────
+signal move_finished(new_grid_pos: Vector2i)
+
 # ─── State ─────────────────────────────────────────
 var _is_moving: bool = false
 
@@ -75,12 +78,5 @@ func _would_collide(target: Vector2) -> bool:
 func _on_move_finished() -> void:
 	_is_moving = false
 	_animated_sprite.play("idle")
-	_check_arena_trigger()
-
-func _check_arena_trigger() -> void:
-	if tilemap == null:
-		return
-	var grid_pos := tilemap.local_to_map(position)
-	var tile_data := tilemap.get_cell_tile_data(0, grid_pos)
-	if tile_data and tile_data.get_custom_data("is_arena_trigger") == true:
-		SignalBus.arena_entered.emit("forest_arena_01")
+	if tilemap != null:
+		move_finished.emit(tilemap.local_to_map(position))
