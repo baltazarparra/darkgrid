@@ -24,6 +24,7 @@ const BOSS_MAX_HEALTH := 200
 
 # ─── Colors (Horror Folk Palette) ──────────────────
 const COLOR_NIGHT := Color("#0d1117")
+const COLOR_ARENA_BG := Color("#1a0f0f")
 const COLOR_EARTH := Color("#3d1f1f")
 const COLOR_MOSS := Color("#1a2f1a")
 const COLOR_BLOOD := Color("#8b0000")

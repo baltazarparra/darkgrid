@@ -1,0 +1,24 @@
+[gd_scene load_steps=5 format=3 uid="uid://criatura_arena"]
+
+[ext_resource type="Script" path="res://scripts/entities/criatura.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://assets/sprites/criatura_sprite_frames.tres" id="2_frames"]
+[ext_resource type="Script" path="res://scripts/shared/health_component.gd" id="3_health"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_64x64"]
+size = Vector2(64, 64)
+
+[node name="Criatura" type="CharacterBody2D"]
+script = ExtResource("1_script")
+base_attack_damage = 12
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = ExtResource("2_frames")
+animation = &"idle"
+autoplay = "idle"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_64x64")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("3_health")
+max_health = 80
