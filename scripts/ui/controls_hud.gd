@@ -5,7 +5,6 @@ extends CanvasLayer
 const SW: float = 1280.0
 const SH: float = 720.0
 const KEY_SZ: float = 40.0
-const SPACE_W: float = 160.0
 const GAP: float = 4.0
 const MARGIN: float = 18.0
 
@@ -28,8 +27,6 @@ func _ready() -> void:
 	_key(root, "↓", cx - KEY_SZ * 0.5,          y2)
 	_key(root, "→", cx + KEY_SZ * 0.5 + GAP,    y2)
 
-	# Barra de espaço — direita inferior
-	_key(root, "SPACE", SW - MARGIN - SPACE_W, y2, SPACE_W)
 
 # ─── Private helpers ───────────────────────────────
 func _key(parent: Control, label: String, x: float, y: float, w: float = KEY_SZ) -> void:

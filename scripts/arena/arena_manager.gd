@@ -22,6 +22,7 @@ var _active_enemy_pattern: AttackPattern
 var _last_boss_bubble_pos: Vector2 = Vector2(-999.0, -999.0)
 var _first_bubble_pos: Vector2 = Vector2.ZERO
 var _is_double_attack: bool = false
+var _boss_special_hit_index: int = 0
 
 func _ready() -> void:
 	_timing_system = $TimingSystem
@@ -87,7 +88,8 @@ func _start_caipora_turn() -> void:
 		_first_bubble_pos,
 		Constants.TIMING_WINDOW_ATTACK,
 		Constants.TIMING_PERFECT_START,
-		Constants.TIMING_PERFECT_END
+		Constants.TIMING_PERFECT_END,
+		false, Color.TRANSPARENT, "up"
 	)
 	if _is_double_attack:
 		var total: float = Constants.TIMING_DOUBLE_INTERVAL + Constants.TIMING_WINDOW_ATTACK
@@ -95,7 +97,7 @@ func _start_caipora_turn() -> void:
 		var p1e: float = Constants.TIMING_PERFECT_END * Constants.TIMING_WINDOW_ATTACK / total
 		var p2s: float = (Constants.TIMING_DOUBLE_INTERVAL + Constants.TIMING_PERFECT_START * Constants.TIMING_WINDOW_ATTACK) / total
 		var p2e: float = (Constants.TIMING_DOUBLE_INTERVAL + Constants.TIMING_PERFECT_END * Constants.TIMING_WINDOW_ATTACK) / total
-		_timing_system.open_window(total, p1s, p1e, true, p2s, p2e)
+		_timing_system.open_window(total, p1s, p1e, true, p2s, p2e, "ui_up", "ui_right")
 		_timing_system.timing_first_hit.connect(_on_double_first_hit)
 		_timing_system.timing_result.connect(_on_double_final_result)
 		get_tree().create_timer(Constants.TIMING_DOUBLE_INTERVAL).timeout.connect(_spawn_second_bubble)
@@ -103,7 +105,8 @@ func _start_caipora_turn() -> void:
 		_timing_system.open_window(
 			Constants.TIMING_WINDOW_ATTACK,
 			Constants.TIMING_PERFECT_START,
-			Constants.TIMING_PERFECT_END
+			Constants.TIMING_PERFECT_END,
+			false, 0.0, 0.0, "ui_up"
 		)
 		_timing_system.timing_result.connect(_on_attack_timing_result)
 
@@ -116,7 +119,8 @@ func _spawn_second_bubble() -> void:
 		_first_bubble_pos + Vector2(cos(angle) * dist, sin(angle) * dist),
 		Constants.TIMING_WINDOW_ATTACK,
 		Constants.TIMING_PERFECT_START,
-		Constants.TIMING_PERFECT_END
+		Constants.TIMING_PERFECT_END,
+		false, Color.TRANSPARENT, "right"
 	)
 
 func _on_double_first_hit() -> void:
@@ -169,6 +173,7 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 func _start_enemy_turn() -> void:
 	if not _both_alive():
 		return
+	_boss_special_hit_index = 0
 	_last_boss_bubble_pos = Vector2(-999.0, -999.0)
 	_active_enemy_pattern = _enemy.get_attack_pattern()
 	_enemy.state_machine.start_pattern(_active_enemy_pattern)
@@ -181,10 +186,22 @@ func _on_enemy_attack_started() -> void:
 		_timing_system.timing_result.disconnect(_on_defense_timing_result)
 	_timing_system.timing_result.connect(_on_defense_timing_result)
 	var is_special: bool = _active_enemy_pattern.is_special
+	var action: String
+	var hint: String
+	if is_special:
+		var seq := ["ui_right", "ui_left", "ui_right", "ui_left"]
+		var hint_seq := ["right", "left", "right", "left"]
+		var idx := clampi(_boss_special_hit_index, 0, seq.size() - 1)
+		action = seq[idx]
+		hint = hint_seq[idx]
+		_boss_special_hit_index += 1
+	else:
+		action = "ui_down"
+		hint = "down"
 	var bubble_pos: Vector2 = _boss_spread_pos() if is_special else _caipora.position + Vector2(0, -70)
 	var vuln: Color = BOSS_BUBBLE_COLOR if is_special else Color.TRANSPARENT
-	_timing_bubble.show_bubble(bubble_pos, window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, true, vuln)
-	_timing_system.open_window(window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END)
+	_timing_bubble.show_bubble(bubble_pos, window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, true, vuln, hint)
+	_timing_system.open_window(window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, false, 0.0, 0.0, action)
 
 func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 	_timing_system.timing_result.disconnect(_on_defense_timing_result)

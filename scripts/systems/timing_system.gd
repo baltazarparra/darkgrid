@@ -17,9 +17,11 @@ var _perfect_start_2: float = 0.35
 var _perfect_end_2: float = 0.65
 var _double_mode: bool = false
 var _first_hit_done: bool = false
+var _expected_action: String = "ui_up"
+var _expected_action_2: String = "ui_right"
 
 # ─── Public API ────────────────────────────────────
-func open_window(duration: float = 1.5, perfect_start: float = 0.35, perfect_end: float = 0.65, double: bool = false, perfect_start_2: float = 0.0, perfect_end_2: float = 0.0) -> void:
+func open_window(duration: float = 1.5, perfect_start: float = 0.35, perfect_end: float = 0.65, double: bool = false, perfect_start_2: float = 0.0, perfect_end_2: float = 0.0, action: String = "ui_up", action_2: String = "ui_right") -> void:
 	_is_window_open = true
 	_window_duration = duration
 	_perfect_start = perfect_start
@@ -29,6 +31,8 @@ func open_window(duration: float = 1.5, perfect_start: float = 0.35, perfect_end
 	_double_mode = double
 	_first_hit_done = false
 	_window_progress = 0.0
+	_expected_action = action
+	_expected_action_2 = action_2
 
 func close_window() -> void:
 	_is_window_open = false
@@ -48,7 +52,8 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if not _is_window_open:
 		return
-	if event.is_action_pressed("ui_accept"):
+	var action := _expected_action_2 if (_double_mode and _first_hit_done) else _expected_action
+	if event.is_action_pressed(action):
 		_evaluate_timing()
 
 # ─── Private helpers ───────────────────────────────

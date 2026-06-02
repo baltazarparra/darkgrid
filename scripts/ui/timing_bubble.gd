@@ -24,6 +24,7 @@ var _color: Color = Color(1, 1, 1, 0.2)
 var _burst_timer: float = -1.0
 var _defense_mode: bool = false
 var _vuln_color: Color = Color.TRANSPARENT
+var _key_hint: String = "up"
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -86,9 +87,22 @@ func _draw() -> void:
 		return
 	draw_circle(Vector2.ZERO, _radius, _color)
 	draw_arc(Vector2.ZERO, _radius, 0.0, TAU, 32, Color(1, 1, 1, _color.a * 0.4), 1.5)
+	if _phase == PHASE_VULNERABLE:
+		_draw_arrow(_key_hint)
+
+# ─── Private helpers ───────────────────────────────
+func _draw_arrow(dir: String) -> void:
+	var s := 10.0
+	var pts: PackedVector2Array
+	match dir:
+		"up":    pts = [Vector2(0, -s), Vector2(-s * .6, s * .4), Vector2(s * .6, s * .4)]
+		"down":  pts = [Vector2(0,  s), Vector2(-s * .6,-s * .4), Vector2(s * .6,-s * .4)]
+		"left":  pts = [Vector2(-s, 0), Vector2(s * .4,-s * .6), Vector2(s * .4, s * .6)]
+		"right": pts = [Vector2( s, 0), Vector2(-s * .4,-s * .6), Vector2(-s * .4, s * .6)]
+	draw_polygon(pts, [Color(1, 1, 1, 0.9)])
 
 # ─── Public API ────────────────────────────────────
-func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false, vuln_color: Color = Color.TRANSPARENT) -> void:
+func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false, vuln_color: Color = Color.TRANSPARENT, key_hint: String = "up") -> void:
 	_duration = duration
 	_perfect_start = perfect_start
 	_perfect_end = perfect_end
@@ -97,6 +111,7 @@ func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perf
 	_burst_timer = -1.0
 	_defense_mode = defense
 	_vuln_color = vuln_color
+	_key_hint = key_hint
 	_radius = RADIUS_MIN
 	_color = Color(1, 1, 1, 0.2)
 	position = world_pos
