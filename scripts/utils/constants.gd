@@ -96,8 +96,11 @@ const FONT_MD := 18
 const FONT_LG := 28
 const FONT_TITLE := 48
 
-const UI_CORNER_RADIUS := 6
+# Direção de arte da UI (scenes/AGENTS.md): cantos retos, bordas duras — sem arredondar.
+const UI_CORNER_RADIUS := 0
 const UI_BORDER_WIDTH := 2
+const UI_PADDING_H := 20  # padding horizontal interno de botões/painéis
+const UI_PADDING_V := 12  # padding vertical interno
 
 # ─── Physics Layers ────────────────────────────────
 const LAYER_PLAYER := 1

@@ -16,13 +16,13 @@ anchor_bottom = 1.0
 
 [node name="VBox" type="VBoxContainer" parent="Center"]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 24
 alignment = 1
 
 [node name="Title" type="Label" parent="Center/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.545, 0, 0, 1)
-theme_override_font_sizes/font_size = 44
+theme_override_font_sizes/font_size = 48
 text = "CAIPORA"
 horizontal_alignment = 1
 

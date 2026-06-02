@@ -1,7 +1,105 @@
-[gd_resource type="Theme" load_steps=2 format=3 uid="uid://rfhfxkbr1uq1n"]
+[gd_resource type="Theme" load_steps=9 format=3 uid="uid://rfhfxkbr1uq1n"]
 
 [ext_resource type="FontFile" uid="uid://dm4pk1kopq2kt" path="res://assets/fonts/PressStart2P.ttf" id="1_font"]
 
+; ─── Design system: horror folk amazônico ───────────────────────
+; Bordas duras (sem cantos arredondados), paleta vermelho/âmbar/preto.
+; Cores espelham scripts/utils/constants.gd (fonte única). Não inventar tons aqui.
+
+[sub_resource type="StyleBoxFlat" id="btn_normal"]
+bg_color = Color(0.102, 0.059, 0.059, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.239, 0.122, 0.122, 1)
+content_margin_left = 20.0
+content_margin_top = 12.0
+content_margin_right = 20.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="btn_hover"]
+bg_color = Color(0.18, 0.10, 0.10, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.42, 0, 1)
+content_margin_left = 20.0
+content_margin_top = 12.0
+content_margin_right = 20.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="btn_pressed"]
+bg_color = Color(0.3, 0.0, 0.0, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.42, 0, 1)
+content_margin_left = 20.0
+content_margin_top = 12.0
+content_margin_right = 20.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="btn_focus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.42, 0, 0.8)
+content_margin_left = 20.0
+content_margin_top = 12.0
+content_margin_right = 20.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="btn_disabled"]
+bg_color = Color(0.08, 0.06, 0.06, 0.6)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.18, 0.18, 0.6)
+content_margin_left = 20.0
+content_margin_top = 12.0
+content_margin_right = 20.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="panel_bg"]
+bg_color = Color(0.051, 0.067, 0.09, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.239, 0.122, 0.122, 1)
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
+
+[sub_resource type="StyleBoxFlat" id="progress_bg"]
+bg_color = Color(0.15, 0.08, 0.08, 0.6)
+
+[sub_resource type="StyleBoxFlat" id="progress_fill"]
+bg_color = Color(0.545, 0, 0, 1)
+
 [resource]
 default_font = ExtResource("1_font")
-default_font_size = 8
+default_font_size = 16
+Button/colors/font_color = Color(0.788, 0.82, 0.851, 1)
+Button/colors/font_hover_color = Color(1, 0.42, 0, 1)
+Button/colors/font_pressed_color = Color(1, 0.42, 0, 1)
+Button/colors/font_focus_color = Color(0.788, 0.82, 0.851, 1)
+Button/colors/font_disabled_color = Color(0.5, 0.48, 0.48, 0.7)
+Button/font_sizes/font_size = 18
+Button/styles/normal = SubResource("btn_normal")
+Button/styles/hover = SubResource("btn_hover")
+Button/styles/pressed = SubResource("btn_pressed")
+Button/styles/focus = SubResource("btn_focus")
+Button/styles/disabled = SubResource("btn_disabled")
+Label/colors/font_color = Color(0.788, 0.82, 0.851, 1)
+Panel/styles/panel = SubResource("panel_bg")
+PanelContainer/styles/panel = SubResource("panel_bg")
+ProgressBar/styles/background = SubResource("progress_bg")
+ProgressBar/styles/fill = SubResource("progress_fill")
