@@ -25,11 +25,11 @@ func _build_upgrade_rows() -> void:
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
 
 		var label := Label.new()
-		label.add_theme_font_size_override("font_size", 24)
+		label.add_theme_font_size_override("font_size", 14)
 		label.custom_minimum_size = Vector2(260, 0)
 
 		var button := Button.new()
-		button.add_theme_font_size_override("font_size", 24)
+		button.add_theme_font_size_override("font_size", 14)
 		button.text = "Aprimorar"
 		button.pressed.connect(_on_upgrade_pressed.bind(key, label, button))
 

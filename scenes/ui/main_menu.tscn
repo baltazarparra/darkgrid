@@ -22,23 +22,23 @@ alignment = 1
 [node name="Title" type="Label" parent="Center/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.545, 0, 0, 1)
-theme_override_font_sizes/font_size = 96
+theme_override_font_sizes/font_size = 44
 text = "CAIPORA"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="Center/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.788, 0.82, 0.851, 1)
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 14
 text = "a floresta tem fome"
 horizontal_alignment = 1
 
 [node name="StartButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 18
 text = "Iniciar"
 
 [node name="QuitButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 18
 text = "Sair"

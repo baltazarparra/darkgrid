@@ -14,7 +14,6 @@ var _is_moving: bool = false
 # ─── Onready ───────────────────────────────────────
 @onready var _animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _camera: Camera2D = $Camera2D
-@onready var _light: PointLight2D = $PointLight2D
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -29,11 +28,6 @@ func _ready() -> void:
 	_camera.limit_smoothed = true
 	_camera.position_smoothing_enabled = true
 	_camera.position_smoothing_speed = 10.0
-
-	# Light
-	_light.energy = 1.5
-	_light.blend_mode = PointLight2D.BLEND_MODE_MIX
-	_light.texture_scale = 3.0
 
 func _process(_delta: float) -> void:
 	if _is_moving:
@@ -50,6 +44,9 @@ func try_move(direction: Vector2) -> void:
 func _get_cardinal_input() -> Vector2:
 	var x := int(Input.is_action_pressed("ui_right")) - int(Input.is_action_pressed("ui_left"))
 	var y := int(Input.is_action_pressed("ui_down")) - int(Input.is_action_pressed("ui_up"))
+	# Cardinal puro: nunca move na diagonal (evita cortar cantos de parede).
+	if x != 0 and y != 0:
+		return Vector2(x, 0)
 	return Vector2(x, y)
 
 func _try_move(dir: Vector2) -> void:

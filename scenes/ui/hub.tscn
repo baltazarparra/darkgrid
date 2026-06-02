@@ -22,14 +22,14 @@ alignment = 1
 [node name="Title" type="Label" parent="Center/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.42, 0, 1)
-theme_override_font_sizes/font_size = 64
+theme_override_font_sizes/font_size = 34
 text = "ACAMPAMENTO"
 horizontal_alignment = 1
 
 [node name="Stats" type="Label" parent="Center/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.788, 0.82, 0.851, 1)
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 14
 text = "Caçadas: 0    Vitórias: 0"
 horizontal_alignment = 1
 
@@ -39,5 +39,5 @@ theme_override_constants/separation = 12
 
 [node name="EnterButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 18
 text = "Entrar na Floresta"

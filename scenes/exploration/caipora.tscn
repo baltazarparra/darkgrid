@@ -1,21 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://caipora_explore"]
+[gd_scene load_steps=3 format=3 uid="uid://caipora_explore"]
 
 [ext_resource type="Script" path="res://scripts/entities/caipora.gd" id="1_script"]
 [ext_resource type="SpriteFrames" uid="uid://caipora_frames" path="res://assets/sprites/caipora_sprite_frames.tres" id="2_frames"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_32x32"]
 size = Vector2(32, 32)
-
-[sub_resource type="Gradient" id="Gradient_light"]
-colors = PackedColorArray(1, 1, 1, 1, 0, 0, 0, 1)
-
-[sub_resource type="GradientTexture2D" id="GradientTexture2D_light"]
-width = 192
-height = 192
-fill = 1
-fill_from = Vector2(0.5, 0.5)
-fill_to = Vector2(1, 0.5)
-gradient = SubResource("Gradient_light")
 
 [node name="Caipora" type="CharacterBody2D"]
 script = ExtResource("1_script")
@@ -27,12 +16,6 @@ autoplay = "idle"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_32x32")
-
-[node name="PointLight2D" type="PointLight2D" parent="."]
-energy = 1.5
-blend_mode = 2
-texture = SubResource("GradientTexture2D_light")
-texture_scale = 3.0
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true
