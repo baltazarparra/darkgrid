@@ -20,6 +20,10 @@ const BUS_MUSIC: String = "Music"
 const BUS_AMBIENCE: String = "Ambience"
 const VOLUME_BUSES: PackedStringArray = [BUS_MASTER, BUS_SFX, BUS_MUSIC, BUS_AMBIENCE]
 
+## Trim global aplicado sobre o Master, por cima do volume do usuário. -6 dB ≈ metade
+## da amplitude linear (jogo 50% mais baixo) sem mexer no slider nem na persistência.
+const MASTER_TRIM_DB: float = -6.0
+
 const AMBIENCE_FADE: float = 1.2
 const DUCK_AMOUNT_DB: float = -8.0
 const DUCK_TIME: float = 0.35
@@ -243,7 +247,10 @@ func _apply_volume(bus_name: String) -> void:
 	var idx := AudioServer.get_bus_index(bus_name)
 	if idx < 0:
 		return
-	AudioServer.set_bus_volume_db(idx, _linear_to_db(_bus_volume[bus_name]))
+	var db := _linear_to_db(_bus_volume[bus_name])
+	if bus_name == BUS_MASTER:
+		db += MASTER_TRIM_DB
+	AudioServer.set_bus_volume_db(idx, db)
 
 func _linear_to_db(linear: float) -> float:
 	if linear <= 0.0001:
