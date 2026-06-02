@@ -374,8 +374,10 @@ make export
 - [x] Atmosfera unificadora: vinheta + grão (`atmosphere.gdshader`, sem screen-read)
 - [x] Floresta amazônica: tiles redesenhados + flora (samambaia/cipó)
 - [x] Vida ambiente decorativa: vaga-lumes (CPUParticles2D) + insetos (sem interação)
-- [x] Personagens identificáveis 48×48: Caipora (cabelo de fogo, pés virados),
-      caçador (chapéu/espingarda), bruxo (capuz/cajado/gema)
+- [x] Personagens identificáveis: Caipora 64×64 (cabelo de fogo, olhos brilhando,
+      cobertura de folhas/cipó, chicote de cipó, pés normais pra frente, imponente —
+      maior que o caçador; o pé-pra-trás é do Curupira, parente, NÃO da Caipora),
+      caçador 48×48 (chapéu/espingarda), bruxo 48×48 (capuz/cajado/gema)
 - [x] Geradores algorítmicos: `gen_tiles.py`, `gen_chars.py`; captura: `screenshot.gd`
 
 ---

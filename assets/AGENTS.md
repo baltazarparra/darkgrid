@@ -37,6 +37,9 @@ assets/
 2. **Tamanho:** **personagens 48×48**, **tiles/itens 32×32** (grid lógico = 32).
    Sprites de 48px transbordam o tile pra cima (offset.y = -8 no AnimatedSprite2D;
    pés na base). Background transparente.
+   **Exceção — Caipora (protagonista/guardiã): 64×64** (dentro do limite ≤64×64),
+   por ser imponente (maior que os caçadores). Usa offset/scale próprios por cena
+   (arena vs exploração) para os pés assentarem na base do tile.
 2b. **Pipeline de limpeza para IA (obrigatório):** quantizar para a paleta
    (`constants.gd`), alinhar ao grid, garantir alpha limpo (sem halos), ≤ 64×64.
    Sprite que não passar por isso não entra.

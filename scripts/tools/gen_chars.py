@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Gera sprites 48x48 dos personagens na paleta de horror folk amazônico.
+"""Gera sprites dos personagens na paleta de horror folk amazônico.
 
 Pixel art autoral algorítmica (determinística), priorizando traços-assinatura
 que tornam cada personagem identificável:
 
-  Caipora  — cabelo de fogo, pele escura, PÉS VIRADOS PRA TRÁS, pequena/ágil
-  Caçador  — chapéu, poncho, espingarda (inimigo humano predador)
-  Bruxo    — capuz, cajado com gema, olhos brilhando (boss)
+  Caipora  — guardiã da mata 64x64: cabelo de fogo, pele escura, corpo coberto
+             de folhas/cipós, olhos brilhando, chicote de cipó, PÉS NORMAIS PRA
+             FRENTE (o pé-pra-trás é do Curupira, parente — NÃO da Caipora),
+             imponente (maior que o caçador)
+  Caçador  — 48x48: chapéu, poncho, espingarda (inimigo humano predador)
+  Bruxo    — 48x48: capuz, cajado com gema, olhos brilhando (boss)
 
-Saída: player_idle/walk_1/walk_2.png, enemy_idle.png, boss_idle.png
+Saída: player_idle/walk_1/walk_2.png (64x64), enemy_idle.png, boss_idle.png (48x48)
 """
 import os
 from PIL import Image
@@ -49,12 +52,13 @@ GLOW_EYE = (255, 80, 30)
 
 
 class C:
-    def __init__(self):
-        self.im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    def __init__(self, size=S):
+        self.S = size
+        self.im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
         self.p = self.im.load()
 
     def px(self, x, y, c):
-        if 0 <= x < S and 0 <= y < S:
+        if 0 <= x < self.S and 0 <= y < self.S:
             self.p[x, y] = (c[0], c[1], c[2], 255) if len(c) == 3 else c
 
     def rect(self, x0, y0, x1, y1, c):
@@ -68,51 +72,103 @@ class C:
                 if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
                     self.px(x, y, c)
 
+    def line(self, x0, y0, x1, y1, c):
+        """Bresenham simples — usado pelo cipó/chicote."""
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx - dy
+        while True:
+            self.px(x0, y0, c)
+            if x0 == x1 and y0 == y1:
+                break
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x0 += sx
+            if e2 < dx:
+                err += dx
+                y0 += sy
+
     def save(self, name):
         self.im.save(os.path.join(OUT, name))
 
 
+def _leaf(c, x, y, col, shade):
+    """Folha pequena (3x3) com sombra — usada na cobertura vegetal da Caipora."""
+    c.rect(x, y + 1, x + 2, y + 1, col)
+    c.px(x + 1, y, col)
+    c.px(x + 1, y + 2, shade)
+    c.px(x + 2, y + 2, shade)
+
+
 def caipora(leg_phase=0):
-    """leg_phase: 0 idle, -1/+1 passos. Pés virados pra trás (toes p/ trás)."""
-    c = C()
-    # ── Cabelo de fogo (chamas subindo) ──
-    c.rect(17, 8, 30, 16, HAIR_DEEP)
-    for (x, top) in [(16, 6), (19, 2), (22, 4), (25, 1), (28, 4), (31, 3), (33, 7)]:
-        c.rect(x, top, x + 1, 12, HAIR)
-    for (x, top) in [(20, 4), (24, 3), (27, 5), (30, 5)]:
-        c.rect(x, top, x, top + 5, HAIR_HOT)
-    c.rect(18, 12, 31, 15, HAIR)
-    # ── Cabeça (pele escura) ──
-    c.disc(24, 19, 6, SKIN)
-    c.rect(19, 16, 29, 22, SKIN)
-    c.rect(19, 22, 29, 23, SKIN_DK)  # queixo sombreado
-    # olhos brilhando (encara o jogador)
-    c.rect(21, 19, 22, 20, EYE)
-    c.rect(26, 19, 27, 20, EYE)
-    c.px(21, 19, (255, 255, 200))
-    c.px(26, 19, (255, 255, 200))
-    # ── Torso (terra + cinto de folhas) ──
-    c.rect(19, 24, 29, 34, EARTH)
-    c.rect(19, 24, 20, 34, EARTH_DK)
-    c.rect(18, 30, 30, 33, LEAF)        # cinto de folhas
-    c.rect(18, 33, 30, 34, LEAF_DK)
-    # braços finos (ágil)
-    c.rect(15, 25, 18, 33, SKIN_DK)
-    c.rect(30, 25, 33, 33, SKIN_DK)
+    """Guardiã da mata, 64x64. leg_phase: 0 idle, -1/+1 passos.
+
+    Imponente, coberta de folhas/cipós, cabelo de fogo, olhos brilhando, cipó
+    na mão. PÉS NORMAIS PRA FRENTE (o pé-pra-trás é do Curupira, não da Caipora).
+    """
+    c = C(64)
+    cx = 32
+    # ── Juba/coroa de fogo (chamas subindo) ──
+    c.rect(20, 8, 44, 22, HAIR_DEEP)
+    c.disc(cx, 18, 13, HAIR_DEEP)
+    for (x, top) in [(19, 6), (23, 1), (27, 4), (31, -1), (35, 3), (39, 1), (43, 6)]:
+        c.rect(x, max(top, 0), x + 2, 18, HAIR)
+    for (x, top) in [(24, 2), (29, 1), (33, 0), (37, 3), (41, 3)]:
+        c.rect(x, max(top, 0), x + 1, top + 9, HAIR_HOT)
+    c.rect(21, 16, 43, 21, HAIR)
+    # ── Cabeça (pele escura, sombreada) ──
+    c.disc(cx, 27, 9, SKIN)
+    c.rect(23, 22, 41, 31, SKIN)
+    c.rect(23, 22, 25, 31, SKIN_DK)       # lado em sombra
+    c.rect(24, 31, 40, 33, SKIN_DK)       # queixo
+    # sobrancelha pesada (encara, ameaça)
+    c.rect(26, 24, 38, 25, SKIN_DK)
+    # ── Olhos brilhando intensamente ──
+    c.rect(27, 26, 30, 28, EYE)
+    c.rect(34, 26, 37, 28, EYE)
+    c.rect(28, 26, 29, 27, (255, 255, 210))   # núcleo branco-quente
+    c.rect(35, 26, 36, 27, (255, 255, 210))
+    c.px(27, 28, HAIR)                        # brilho derrama pra baixo
+    c.px(37, 28, HAIR)
+    # ── Torso (terra) ──
+    c.rect(24, 33, 40, 50, EARTH)
+    c.rect(24, 33, 26, 50, EARTH_DK)          # flanco em sombra
+    c.rect(30, 34, 33, 49, EARTH_DK)          # vinco do peito
+    # ── Cobertura de folhas/cipós (ombros, peito, cintura) ──
+    for (lx_, ly_) in [(22, 33), (38, 33), (25, 33), (35, 33),   # ombros
+                       (27, 39), (34, 39), (30, 42),             # peito
+                       (24, 45), (28, 46), (32, 45), (36, 46), (40, 45)]:  # saiote
+        _leaf(c, lx_, ly_, LEAF, LEAF_DK)
+    c.rect(23, 48, 41, 50, LEAF_DK)           # barra do saiote de folhas
+    # ── Braços ──
+    c.rect(19, 34, 23, 47, SKIN_DK)           # braço esq (em sombra)
+    c.rect(41, 34, 45, 47, SKIN)
+    c.rect(41, 34, 42, 47, SKIN_DK)
+    c.rect(19, 46, 23, 48, SKIN)              # mão esq
+    c.rect(41, 46, 45, 49, SKIN)              # mão dir (segura o cipó)
+    # ── Chicote de cipó (desce da mão direita, vivo) ──
+    c.line(44, 48, 48, 52, EARTH_DK)
+    c.line(48, 52, 45, 57, EARTH_DK)
+    c.line(45, 57, 49, 60, EARTH_DK)
+    c.line(44, 49, 47, 52, LEAF_DK)           # realce do cipó
+    _leaf(c, 47, 54, LEAF, LEAF_DK)
+    c.px(49, 60, LEAF)
     # ── Pernas ──
-    lx = 21 + leg_phase
-    rx = 25 - leg_phase
-    c.rect(lx, 35, lx + 2, 43, SKIN)
-    c.rect(rx, 35, rx + 2, 43, SKIN)
-    c.rect(lx, 35, lx, 43, SKIN_DK)
-    c.rect(rx, 35, rx, 43, SKIN_DK)
-    # ── PÉS VIRADOS PRA TRÁS (calcanhar à frente, dedos pra trás) ──
-    # corpo "encara" o jogador; os pés apontam para LONGE (pra cima/trás na tela)
+    lx = 27 + leg_phase * 2
+    rx = 33 - leg_phase * 2
+    c.rect(lx, 50, lx + 4, 59, SKIN)
+    c.rect(rx, 50, rx + 4, 59, SKIN)
+    c.rect(lx, 50, lx, 59, SKIN_DK)
+    c.rect(rx, 50, rx, 59, SKIN_DK)
+    # ── PÉS NORMAIS PRA FRENTE (planta no chão, dedos apontando pra frente/baixo) ──
     for fx in (lx, rx):
-        c.rect(fx - 3, 43, fx + 2, 44, SKIN)      # planta
-        c.rect(fx - 3, 40, fx - 2, 44, SKIN_DK)   # dedos esticados pra trás (frente do pé)
-        c.px(fx - 3, 40, SKIN)
-        c.px(fx - 2, 39, SKIN)
+        c.rect(fx - 1, 59, fx + 5, 61, SKIN)      # pé apontando pra frente
+        c.rect(fx - 1, 59, fx - 1, 61, SKIN_DK)   # calcanhar (atrás)
+        c.px(fx + 2, 61, SKIN_DK)                 # separação dos dedos
+        c.px(fx + 4, 61, SKIN_DK)
     return c
 
 
@@ -204,4 +260,4 @@ if __name__ == "__main__":
     caipora(1).save("player_walk_2.png")
     hunter().save("enemy_idle.png")
     wizard().save("boss_idle.png")
-    print("[gen_chars] caipora + caçador + bruxo gerados (48x48)")
+    print("[gen_chars] caipora (64x64) + caçador + bruxo (48x48) gerados")
