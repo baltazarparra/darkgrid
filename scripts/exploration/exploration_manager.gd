@@ -1,5 +1,7 @@
 extends Node2D
 
+const MapObject := preload("res://scripts/exploration/map_object.gd")
+
 # ─── Onready ───────────────────────────────────────
 @onready var _tilemap: TileMap = $TileMap
 @onready var _caipora: Caipora = $Caipora
@@ -10,8 +12,8 @@ extends Node2D
 var _map_enemies: Array[MapEnemy] = []
 var _player_grid_pos: Vector2i = PLAYER_START
 var _locked: bool = false
-var _key_node: MapObject = null
-var _chest_node: MapObject = null
+var _key_node: Node2D = null
+var _chest_node: Node2D = null
 
 # ─── Map Definition ────────────────────────────────
 # 26 cols × 18 rows.
@@ -79,15 +81,13 @@ func _spawn_enemies() -> void:
 func _spawn_objects() -> void:
 	# Baú
 	if not GameState.chest_opened:
-		_chest_node = MapObject.new()
-		_objects_container.add_child(_chest_node)
-		_chest_node.setup(MapObject.Type.CHEST, CHEST_POS)
+		var chest := _make_object(MapObject.Type.CHEST, CHEST_POS)
+		_chest_node = chest
 
 	# Chave
 	if not GameState.has_key:
-		_key_node = MapObject.new()
-		_objects_container.add_child(_key_node)
-		_key_node.setup(MapObject.Type.KEY, KEY_POS)
+		var key := _make_object(MapObject.Type.KEY, KEY_POS)
+		_key_node = key
 
 	# Hazards do mapa (sempre presentes)
 	for y: int in MAP_LAYOUT.size():
@@ -95,10 +95,8 @@ func _spawn_objects() -> void:
 		for x: int in row.length():
 			var ch: String = row[x]
 			if ch == "R" or ch == "S":
-				var hazard := MapObject.new()
-				_objects_container.add_child(hazard)
 				var t: MapObject.Type = MapObject.Type.FIRE if ch == "R" else MapObject.Type.SPIKE
-				hazard.setup(t, Vector2i(x, y))
+				_make_object(t, Vector2i(x, y))
 
 func _spawn_exit_marker() -> void:
 	var marker := Sprite2D.new()
@@ -187,6 +185,12 @@ func _is_occupied_by_enemy(pos: Vector2i) -> bool:
 		if enemy.grid_pos == pos:
 			return true
 	return false
+
+func _make_object(type: MapObject.Type, grid_pos: Vector2i) -> Node2D:
+	var obj := MapObject.new()
+	_objects_container.add_child(obj)
+	obj.setup(type, grid_pos)
+	return obj
 
 # ─── TileMap Setup ─────────────────────────────────
 func _setup_tilemap() -> void:
