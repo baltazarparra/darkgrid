@@ -4,24 +4,42 @@ This folder contains all game assets.
 
 ## Philosophy
 
-**MVP-first.** Use ready-made CC0 assets (primarily Kenney) to validate the game loop quickly. Do not use AI-generated sprites for the core game — AI art tends to produce visual inconsistency and requires heavy cleanup on grid alignment, palette, and transparency.
+**Coesão acima de tudo.** A identidade visual é um horror folclórico amazônico,
+sombrio e hostil. A coesão vem de uma **paleta única forçada** (`scripts/utils/constants.gd`)
++ uma **camada de atmosfera** (vinheta/grão/color-grade) que faz arte de origens
+diferentes parecer do mesmo mundo.
 
-AI makes sense later, for promotional material: itch.io cover, banner, icon.
+**Fontes de arte permitidas:**
+- **Pixel art autoral procedural** (geradores em `scripts/tools/gen_*.py`) — abordagem
+  atual: determinística, na paleta, zero dependência externa. Caipora, caçador, bruxo
+  e tiles foram gerados assim.
+- **Packs CC0** (ex. Kenney) como base, recoloridos na paleta. Copie a licença para
+  `assets/licenses/`.
+- **IA permitida no core** (personagens/props), desde que passe pelo **pipeline de
+  limpeza obrigatório** (ver Rules). IA também serve a material promocional (capa,
+  banner, ícone).
 
 ## Structure
 
 ```
 assets/
   sprites/     — All sprites: characters, enemies, tiles, items (.png)
+  shaders/     — Shaders de atmosfera/efeito (.gdshader)
   audio/sfx/   — Sound effects (.wav, generated with jsfxr / sfxr)
-  fonts/       — Pixel font (.ttf / .otf)
+  fonts/       — Pixel font (.ttf / .otf) + theme.tres (design system da UI)
   licenses/    — Licenses and attribution for CC0 assets
 ```
 
 ## Rules
 
-1. **Sprites:** CC0 only. Kenney.nl is the primary source. Pick **one pack** (e.g., Tiny Dungeon) and stick to it for visual consistency.
-2. **Grid alignment:** 16×16 or 32×32 pixels. Transparent background. Use `snake_case` filenames.
+1. **Sprites:** autoral procedural (preferido), CC0 recolorido, ou IA limpa (ver pipeline).
+   Sempre `snake_case`, fundo transparente, na paleta.
+2. **Tamanho:** **personagens 48×48**, **tiles/itens 32×32** (grid lógico = 32).
+   Sprites de 48px transbordam o tile pra cima (offset.y = -8 no AnimatedSprite2D;
+   pés na base). Background transparente.
+2b. **Pipeline de limpeza para IA (obrigatório):** quantizar para a paleta
+   (`constants.gd`), alinhar ao grid, garantir alpha limpo (sem halos), ≤ 64×64.
+   Sprite que não passar por isso não entra.
 3. **Audio:** Generate with [jsfxr](https://sfxr.me/) or [sfxr](https://www.drpetter.se/project_sfxr.html). Export as `.wav`. Short, punchy, under 100KB each.
 4. **No music in MVP.** SFX only. Music adds complexity and file size we don't need for the first Web build.
 5. **UI:** Use Godot's native UI nodes (`Button`, `Panel`, `Label`, `ProgressBar`). Do not create custom UI sprite sheets.
@@ -30,6 +48,9 @@ assets/
 8. **Licenses:** Every asset pack downloaded must have its license copied into `assets/licenses/`.
 
 ## Horror Folk Palette
+
+A fonte de verdade em runtime é `scripts/utils/constants.gd` (`COLOR_*`); a tabela abaixo
+é referência. A UI segue `assets/fonts/theme.tres` (bordas duras, sem cantos arredondados).
 
 The visual identity is **dark, humid, and hostile**. Pixel art should evoke:
 

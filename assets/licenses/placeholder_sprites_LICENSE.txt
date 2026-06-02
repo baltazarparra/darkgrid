@@ -1,13 +1,16 @@
-Placeholder Sprites License
-============================
+Sprites & Tiles — caipora
+==========================
 
-These placeholder sprites were generated programmatically for development
-and testing purposes during Fase 0 of the caipora project.
+Os sprites de personagens (Caipora, caçador, bruxo) e os tiles da floresta
+foram criados de forma autoral e algorítmica pelos geradores do projeto
+(scripts/tools/gen_chars.py, scripts/tools/gen_tiles.py), na paleta de horror
+folclórico amazônico. Não derivam de packs de terceiros.
+
+Nenhum pack CC0 externo foi usado nesta leva. Se um pack for adicionado no
+futuro, sua licença deve ser copiada para este diretório.
 
 License: CC0 1.0 Universal (Public Domain Dedication)
 https://creativecommons.org/publicdomain/zero/1.0/
 
 You may copy, modify, distribute and use these assets, even for commercial
 purposes, without asking permission.
-
-Note: These will be replaced with final art assets in a future phase.

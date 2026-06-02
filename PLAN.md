@@ -367,6 +367,17 @@ make export
 - [x] Sistema de turnos
 - [x] Mapa de 3 salas
 
+### Fase 7: Identidade Visual & Padronização ✅
+- [x] Paleta como fonte única (`constants.gd`) — ~60 `Color()` centralizados
+- [x] Design system de UI (`theme.tres`): Button/Panel/Label/ProgressBar, bordas duras
+- [x] Telas padronizadas (menu, game over, win, hub) com type scale consistente
+- [x] Atmosfera unificadora: vinheta + grão (`atmosphere.gdshader`, sem screen-read)
+- [x] Floresta amazônica: tiles redesenhados + flora (samambaia/cipó)
+- [x] Vida ambiente decorativa: vaga-lumes (CPUParticles2D) + insetos (sem interação)
+- [x] Personagens identificáveis 48×48: Caipora (cabelo de fogo, pés virados),
+      caçador (chapéu/espingarda), bruxo (capuz/cajado/gema)
+- [x] Geradores algorítmicos: `gen_tiles.py`, `gen_chars.py`; captura: `screenshot.gd`
+
 ---
 
 ## 11.1 Known Issues
@@ -384,7 +395,7 @@ aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no fo
 
 ## 12. Diretrizes de Assets
 
-- **Sprites:** CC0 da Kenney.nl. Escolha **um único pack** para consistência visual. 16×16 ou 32×32, .png, fundo transparente. **Sem sprites gerados por IA** para o jogo principal.
+- **Sprites:** pixel art autoral procedural (preferido), pack CC0 recolorido, ou **IA com pipeline de limpeza obrigatório** (paleta/grid/alpha). Personagens 48×48, tiles/itens 32×32, .png, fundo transparente. Detalhes em `assets/AGENTS.md`.
 - **Áudio:** Gerar com jsfxr/sfxr. Exportar como .wav. Curto, punchy, under 100KB cada. **Sem música no MVP.**
 - **UI:** Usar nós nativos do Godot (`Button`, `Panel`, `Label`, `ProgressBar`). Sem sprite sheets customizadas para UI.
 - **Fontes:** Uma fonte pixelada com licença permissiva (ex: Kenney Fonts ou "Press Start 2P").
