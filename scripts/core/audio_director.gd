@@ -24,10 +24,28 @@ const AMBIENCE_FADE: float = 1.2
 const DUCK_AMOUNT_DB: float = -8.0
 const DUCK_TIME: float = 0.35
 
-# Caminhos dos loops (gerados nas Fases C/D). Carregados só se existirem.
+const MUSIC_FADE: float = 0.9
+
+# Caminhos dos loops (carregados só se existirem — graceful).
 const AMB_FOREST: String = "res://assets/audio/ambience/amb_forest.wav"
 const AMB_RIVER: String = "res://assets/audio/ambience/amb_river.wav"
 const AMB_DREAD: String = "res://assets/audio/ambience/amb_dread.wav"
+
+# Stems de maracatu (loops sincronizados) e seu volume-alvo no mix.
+const MUSIC_DIR: String = "res://assets/audio/music/"
+const STEM_ALFAIA: String = "mar_alfaia"
+const STEM_GANZA: String = "mar_ganza"
+const STEM_AGOGO: String = "mar_agogo"
+const STEM_TARGET_DB: Dictionary = {
+	STEM_ALFAIA: 0.0, STEM_GANZA: -3.0, STEM_AGOGO: -2.0
+}
+
+# Stingers de estado (one-shot).
+const STING_DIR: String = "res://assets/audio/stingers/"
+const STING_ARENA: String = "sting_arena_enter"
+const STING_VICTORY: String = "sting_victory"
+const STING_GAME_OVER: String = "sting_game_over"
+const STING_CHEST: String = "sting_chest"
 
 # ─── State ─────────────────────────────────────────
 ## Volume linear (0..1) alvo por bus — fonte da verdade que o ducking respeita.
@@ -38,6 +56,10 @@ var _audio_unlocked: bool = false
 var _ambience_player: AudioStreamPlayer
 var _current_ambience: String = ""
 var _duck_tween: Tween
+## name do stem -> AudioStreamPlayer (bus Music). Tocam em fase.
+var _stem_players: Dictionary = {}
+var _maracatu_on: bool = false
+var _stinger_player: AudioStreamPlayer
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -47,11 +69,22 @@ func _ready() -> void:
 	_ambience_player.bus = BUS_AMBIENCE
 	add_child(_ambience_player)
 
+	for stem in STEM_TARGET_DB:
+		var p := AudioStreamPlayer.new()
+		p.bus = BUS_MUSIC
+		p.volume_db = -40.0
+		add_child(p)
+		_stem_players[stem] = p
+
+	_stinger_player = AudioStreamPlayer.new()
+	_stinger_player.bus = BUS_MUSIC
+	add_child(_stinger_player)
+
 	_load_settings()
 	_apply_all_volumes()
 
 	SignalBus.screen_changed.connect(_on_screen_changed)
-	SignalBus.arena_exited.connect(_on_arena_exited)
+	SignalBus.chest_opened.connect(_on_chest_opened)
 
 # ─── Public API: volume ────────────────────────────
 ## Define o volume linear (0..1) de um bus, aplica e persiste.
@@ -91,16 +124,32 @@ func unlock_audio() -> void:
 	if _audio_unlocked:
 		return
 	_audio_unlocked = true
-	_refresh_ambience(GameState.current_screen)
+	_apply_screen_audio(GameState.current_screen)
 
-# ─── Ambiência ─────────────────────────────────────
+# ─── Reação às telas ───────────────────────────────
 func _on_screen_changed(new_screen: int) -> void:
 	if _audio_unlocked:
-		_refresh_ambience(new_screen)
+		_apply_screen_audio(new_screen)
 
-func _on_arena_exited(_won: bool) -> void:
-	pass  # a troca de ambiência segue pelo screen_changed que vem em seguida
+## Casa ambiência, maracatu e stinger ao estado da tela.
+func _apply_screen_audio(screen: int) -> void:
+	_refresh_ambience(screen)
+	if screen == SignalBus.Screen.ARENA:
+		_start_maracatu(GameState.active_combat_is_boss)
+		_play_stinger(STING_ARENA)
+	else:
+		_stop_maracatu()
+	match screen:
+		SignalBus.Screen.WIN:
+			_play_stinger(STING_VICTORY)
+		SignalBus.Screen.GAME_OVER:
+			_play_stinger(STING_GAME_OVER)
 
+func _on_chest_opened() -> void:
+	if _audio_unlocked:
+		_play_stinger(STING_CHEST)
+
+# ─── Ambiência ─────────────────────────────────────
 func _refresh_ambience(screen: int) -> void:
 	var path := ""
 	match screen:
@@ -119,14 +168,56 @@ func _play_ambience(path: String) -> void:
 	if path == "" or not ResourceLoader.exists(path):
 		# Sem asset (ainda) ou tela sem ambiência: fade-out e para.
 		if _ambience_player.playing:
-			_fade_player(_ambience_player, 0.0, true)
+			_fade_player(_ambience_player, -40.0, true)
 		return
 	var stream: AudioStream = load(path)
 	_force_loop(stream)
 	_ambience_player.stream = stream
 	_ambience_player.volume_db = -40.0
 	_ambience_player.play()
-	_fade_player(_ambience_player, _linear_to_db(_bus_volume[BUS_AMBIENCE]), false)
+	# Player em 0 dB (cheio); o volume do usuário vive no bus Ambience.
+	_fade_player(_ambience_player, 0.0, false)
+
+# ─── Maracatu adaptativo ───────────────────────────
+## Inicia os stems em fase (alfaia+ganzá; +agogô no boss). Reinicia do compasso 1.
+func _start_maracatu(boss: bool) -> void:
+	_maracatu_on = true
+	_play_stem(STEM_ALFAIA, true)
+	_play_stem(STEM_GANZA, true)
+	_play_stem(STEM_AGOGO, boss)  # silencioso fora do boss
+
+func _stop_maracatu() -> void:
+	if not _maracatu_on:
+		return
+	_maracatu_on = false
+	for stem in _stem_players:
+		var p: AudioStreamPlayer = _stem_players[stem]
+		if p.playing:
+			_fade_player(p, -40.0, true)
+
+func _play_stem(stem: String, audible: bool) -> void:
+	var p: AudioStreamPlayer = _stem_players[stem]
+	if p.stream == null:
+		var path := MUSIC_DIR + stem + ".wav"
+		if not ResourceLoader.exists(path):
+			return
+		var s: AudioStream = load(path)
+		_force_loop(s)
+		p.stream = s
+	p.stop()
+	p.volume_db = -40.0
+	p.play()
+	if audible:
+		_fade_player(p, STEM_TARGET_DB[stem], false)
+
+# ─── Stingers ──────────────────────────────────────
+func _play_stinger(name: String) -> void:
+	var path := STING_DIR + name + ".wav"
+	if not ResourceLoader.exists(path):
+		return
+	_stinger_player.stream = load(path)
+	_stinger_player.volume_db = 0.0
+	_stinger_player.play()
 
 ## Garante loop contínuo no asset. O .import é gitignored (regenera sem loop), então
 ## forçamos LOOP_FORWARD em runtime no AudioStreamWAV (mono 16-bit = 2 bytes/frame).

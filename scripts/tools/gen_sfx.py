@@ -331,6 +331,128 @@ AMBIENCES = {
 }
 
 
+# ─── Maracatu adaptativo (stems sincronizados) ─────
+# Baque virado: 2 compassos em 4/4 a 100 BPM = 8 tempos = 4.8s = 32 semicolcheias.
+# Stems compartilham o mesmo loop_dur para tocarem em fase no AudioDirector.
+BPM = 100
+BEAT = 60.0 / BPM
+LOOP_BARS = 2
+LOOP_DUR = BEAT * 4 * LOOP_BARS  # 4.8s
+STEP = BEAT / 4  # semicolcheia
+
+
+def _loop_buffer():
+    return [0.0] * int(SAMPLE_RATE * LOOP_DUR)
+
+
+def _place(buf, sample, step, gain=1.0):
+    """Soma um som no grid de semicolcheias, com wrap (cauda volta ao início =
+    loop sem emenda)."""
+    n = len(buf)
+    at = int(step * STEP * SAMPLE_RATE)
+    for i, s in enumerate(sample):
+        buf[(at + i) % n] += s * gain
+
+
+def mar_alfaia():
+    """Marcação grave + virada no 2º compasso. O peso do groove."""
+    buf = _loop_buffer()
+    # (step, velocidade) por compasso de 16 semicolcheias
+    bar1 = [(0, 1.0), (6, 0.7), (10, 0.8), (12, 0.6)]
+    bar2 = [(0, 1.0), (6, 0.7), (10, 0.8), (12, 0.6), (14, 0.55), (15, 0.7)]
+    for step, vel in bar1:
+        _place(buf, alfaia(0.2, base=58.0, punch=vel), step, vel)
+    for step, vel in bar2:
+        _place(buf, alfaia(0.2, base=58.0, punch=vel), step + 16, vel)
+    return _normalize(buf, 0.85)
+
+
+def mar_ganza():
+    """Chiado constante em semicolcheias, com acento nos tempos. O drive."""
+    buf = _loop_buffer()
+    for step in range(32):
+        accent = 0.85 if step % 4 == 0 else 0.45
+        _place(buf, ganza(0.07, rising=False), step, accent)
+    return _normalize(buf, 0.6)
+
+
+def mar_agogo():
+    """Ostinato melódico de sino (dois bocais), grave e agudo. A 'voz' do groove."""
+    buf = _loop_buffer()
+    lo, hi = 880.0, 1320.0
+    # padrão de 1 compasso (step, pitch), repetido nos 2 compassos
+    pattern = [(0, hi), (2, lo), (4, hi), (6, hi), (8, lo), (10, hi), (12, lo), (14, hi)]
+    for bar in range(LOOP_BARS):
+        for step, pitch in pattern:
+            _place(buf, agogo(0.16, freq=pitch, bend=0.0), step + bar * 16, 0.5)
+    return _normalize(buf, 0.7)
+
+
+STEMS = {
+    "mar_alfaia": mar_alfaia,
+    "mar_ganza": mar_ganza,
+    "mar_agogo": mar_agogo,
+}
+
+
+# ─── Stingers de estado (one-shot) ─────────────────
+def _seq(*events):
+    """Monta um one-shot a partir de (som, atraso_s, ganho)."""
+    rendered = [(s, int(d * SAMPLE_RATE), g) for s, d, g in events]
+    n = max(off + len(s) for s, off, g in rendered)
+    out = [0.0] * n
+    for s, off, g in rendered:
+        for i, v in enumerate(s):
+            out[off + i] += v * g
+    return out
+
+
+def sting_arena_enter():
+    # Chamada à batalha: gonguê grave + tríade rápida de agogô + alfaia.
+    return _normalize(_seq(
+        (gongue(0.16, 520.0), 0.0, 0.8),
+        (agogo(0.16, 990.0), 0.10, 0.6),
+        (agogo(0.16, 1320.0), 0.18, 0.6),
+        (alfaia(0.24, 58.0), 0.26, 1.0),
+    ), 0.85)
+
+
+def sting_victory():
+    # Resolução luminosa: agogô ascendente + assovio-leitmotif sobindo.
+    return _normalize(_seq(
+        (agogo(0.18, 990.0), 0.0, 0.6),
+        (agogo(0.18, 1320.0), 0.12, 0.6),
+        (agogo(0.30, 1760.0), 0.24, 0.7),
+        (assovio(0.7, 1320.0), 0.30, 0.4),
+    ), 0.8)
+
+
+def sting_game_over():
+    # Queda: alfaia sub + gonguê descendente + cauda escura.
+    return _normalize(_seq(
+        (alfaia(0.35, 50.0), 0.0, 1.0),
+        (gongue(0.5, 300.0), 0.05, 0.7),
+        (gongue(0.6, 180.0), 0.30, 0.6),
+    ), 0.85)
+
+
+def sting_chest():
+    # Brilho de recompensa: cintilação de agogô.
+    return _normalize(_seq(
+        (agogo(0.16, 1320.0), 0.0, 0.6),
+        (agogo(0.16, 1760.0), 0.07, 0.6),
+        (agogo(0.24, 2093.0), 0.14, 0.5),
+    ), 0.7)
+
+
+STINGERS = {
+    "sting_arena_enter": sting_arena_enter,
+    "sting_victory": sting_victory,
+    "sting_game_over": sting_game_over,
+    "sting_chest": sting_chest,
+}
+
+
 def main():
     print("Gerando SFX de combate (maracatu / Amazônia)...")
     for variant, seed in enumerate(VARIANT_SEEDS):
@@ -343,6 +465,16 @@ def main():
     for name, gen in AMBIENCES.items():
         random.seed(7)
         _write(f"{name}.wav", gen(), subdir="ambience")
+
+    print("Gerando stems de maracatu (loops sincronizados)...")
+    for name, gen in STEMS.items():
+        random.seed(11)
+        _write(f"{name}.wav", gen(), subdir="music")
+
+    print("Gerando stingers de estado...")
+    for name, gen in STINGERS.items():
+        random.seed(13)
+        _write(f"{name}.wav", gen(), subdir="stingers")
     print("Pronto.")
 
 

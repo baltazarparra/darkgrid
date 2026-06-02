@@ -37,6 +37,9 @@ func _shake_camera(amount: float, camera: Camera2D) -> void:
 func trigger_hit_stop(frames: int = 3) -> void:
 	if _hit_stop_active:
 		return
+	# Mix reativo: todo impacto pesado abafa música/ambiência por um instante,
+	# deixando o SFX do golpe "estourar" — espelha o hit-stop no áudio.
+	AudioDirector.duck()
 	_hit_stop_active = true
 	Engine.time_scale = 0.0
 	await get_tree().create_timer(frames / 60.0, true, false, true).timeout

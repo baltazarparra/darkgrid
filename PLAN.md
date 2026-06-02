@@ -44,7 +44,7 @@ Toda ação tem feedback visceral: screen shake, partículas de sangue, hit-stop
 - Cloud saves
 - Leaderboards
 - Achievements
-- Música (SFX apenas no MVP)
+- ~~Música (SFX apenas no MVP)~~ → adicionada pós-MVP: maracatu adaptativo + ambiência + stingers (ver §12)
 
 ---
 
@@ -391,14 +391,19 @@ aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no fo
 | ID | Severidade | Status | Descrição |
 |----|-----------|--------|-----------|
 | KI-004 | Média | ✅ Resolvida (`5cdbd40`) | Beco sem saída no fim de combate — telas WIN/GAME_OVER placeholder fecham o loop |
-| KI-005 | Baixa | 🔲 Aberta (pós-MVP) | SFX sintéticos gerados por `scripts/tools/gen_sfx.py` (fallback de jsfxr); substituir por assets autorais depois do MVP |
+| KI-005 | Baixa | ✅ Resolvida (pós-MVP) | SFX reescritos com síntese de instrumentos do maracatu (alfaia/caixa/ganzá/agogô/gonguê) em `scripts/tools/gen_sfx.py`, com variação anti-repetição. Identidade sonora própria — não são mais placeholders genéricos |
 
 ---
 
 ## 12. Diretrizes de Assets
 
 - **Sprites:** pixel art autoral procedural (preferido), pack CC0 recolorido, ou **IA com pipeline de limpeza obrigatório** (paleta/grid/alpha). Personagens 48×48, tiles/itens 32×32, .png, fundo transparente. Detalhes em `assets/AGENTS.md`.
-- **Áudio:** Gerar com jsfxr/sfxr. Exportar como .wav. Curto, punchy, under 100KB cada. **Sem música no MVP.**
+- **Áudio:** Identidade sonora própria (maracatu / Amazônia / folk-horror), sintetizada proceduralmente em `scripts/tools/gen_sfx.py` (stdlib, reproduzível). Camadas:
+  - **SFX de combate** (`assets/audio/sfx/`): .wav curtos, punchy, under 100KB cada, 3 variantes por som (round-robin no `SfxSystem`).
+  - **Ambiência** (`assets/audio/ambience/`): loops por tela — floresta amazônica (exploração/hub), dread (arena).
+  - **Maracatu adaptativo** (`assets/audio/music/`): stems sincronizados (alfaia/ganzá/agogô); agogô só entra no boss.
+  - **Stingers** (`assets/audio/stingers/`): entrada de arena, vitória, game-over, baú.
+  - Arquitetura: bus layout `Master→SFX/Music/Ambience` (`default_bus_layout.tres`), autoload `AudioDirector` (volume persistido em `user://settings.cfg`, ducking, cross-fade por tela, unlock de autoplay HTML5), overlay de Opções com sliders. **A regra "sem música no MVP" foi superada pós-MVP.**
 - **UI:** Usar nós nativos do Godot (`Button`, `Panel`, `Label`, `ProgressBar`). Sem sprite sheets customizadas para UI.
 - **Fontes:** Uma fonte pixelada com licença permissiva (ex: Kenney Fonts ou "Press Start 2P").
 - **Licenças:** Copiar a licença de cada pack de assets para `assets/licenses/`.
