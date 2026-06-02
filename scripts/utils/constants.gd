@@ -49,7 +49,7 @@ const COLOR_AMBER_EMPTY := Color(0.3, 0.18, 0.02, 0.35)
 
 # Entidades no mapa (encantado/maligno → roxo).
 const COLOR_ENEMY_TINT := Color(0.7, 0.5, 0.9, 1.0)   # criatura comum (modulate)
-const COLOR_BOSS_TINT := Color(0.08, 0.0, 0.14, 1.0)  # boss bruxo (modulate)
+const COLOR_BOSS_TINT := Color(0.08, 0.0, 0.14, 1.0)  # boss caçador amaldiçoado (modulate)
 const COLOR_AURA_BOSS := Color(0.18, 0.0, 0.28, 0.75) # aura de partículas do boss
 const COLOR_EXIT := Color(1.0, 0.42, 0.0, 0.85)       # marcador de saída (âmbar)
 

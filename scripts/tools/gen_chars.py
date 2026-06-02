@@ -9,7 +9,7 @@ que tornam cada personagem identificável:
              FRENTE (o pé-pra-trás é do Curupira, parente — NÃO da Caipora),
              imponente (maior que o caçador)
   Caçador  — 48x48: chapéu, poncho, espingarda (inimigo humano predador)
-  Bruxo    — 48x48: capuz, cajado com gema, olhos brilhando (boss)
+  Caçador c/ machados — 48x48: capuz, manto, dois machados, olhos brilhando (boss)
 
 Saída: player_idle/walk_1/walk_2.png (64x64), enemy_idle.png, boss_idle.png (48x48)
 """
@@ -46,9 +46,12 @@ HOOD_DK = (28, 9, 40)
 ROBE = (33, 13, 48)
 ROBE_DK = (20, 7, 30)
 STAFF = (74, 44, 22)
-GEM = (255, 107, 0)
-GEM_HOT = (255, 190, 90)
 GLOW_EYE = (255, 80, 30)
+AXE_HAFT = (58, 34, 18)        # cabo de madeira escura
+AXE_HAFT_DK = (38, 22, 12)
+AXE_STEEL = (60, 56, 52)       # lâmina de aço sombrio
+AXE_EDGE = (140, 138, 146)     # fio reluzente da lâmina
+STRAP = (96, 30, 18)           # correia/couro do caçador (reaproveita tom da fita)
 
 
 class C:
@@ -211,16 +214,40 @@ def hunter():
     return c
 
 
-def wizard():
-    """Bruxo: capuz, túnica, cajado com gema, olhos brilhando no vazio."""
+def _axe(c, haft_x, blade_side):
+    """Machado de cabo longo. haft_x = coluna do cabo; blade_side -1 esq / +1 dir.
+
+    Lâmina larga no topo (single-bit) voltada pra fora, fio reluzente — leitura
+    clara de 'machado' e separa o boss do caçador-espingarda.
+    """
+    # ── Cabo (vertical, madeira escura) ──
+    c.rect(haft_x, 9, haft_x + 1, 41, AXE_HAFT)
+    c.rect(haft_x, 9, haft_x, 41, AXE_HAFT_DK)
+    # ── Cabeça da lâmina (no topo do cabo, voltada pra fora) ──
+    if blade_side > 0:
+        bx0, bx1 = haft_x + 2, haft_x + 7        # cresce pra direita
+        c.rect(bx0, 7, bx1, 16, AXE_STEEL)
+        c.rect(bx0, 9, bx1 + 1, 14, AXE_STEEL)   # barriga da lâmina
+        c.rect(bx1 + 1, 9, bx1 + 1, 14, AXE_EDGE)
+        c.rect(bx0, 7, bx0, 16, AXE_EDGE)        # topo do gume
+    else:
+        bx0, bx1 = haft_x - 5, haft_x            # cresce pra esquerda
+        c.rect(bx0, 7, bx1, 16, AXE_STEEL)
+        c.rect(bx0 - 1, 9, bx1, 14, AXE_STEEL)   # barriga da lâmina
+        c.rect(bx0 - 1, 9, bx0 - 1, 14, AXE_EDGE)
+        c.rect(bx1, 7, bx1, 16, AXE_EDGE)        # topo do gume
+
+
+def axe_hunter():
+    """Caçador com machados (boss): capuz, manto, dois machados, olhos no vazio.
+
+    Predador humano amaldiçoado — silhueta imponente, encapuzado na sombra,
+    empunhando um machado em cada mão. A aura de sombra fica a cargo do boss.gd.
+    """
     c = C()
-    # ── Cajado (à direita) ──
-    c.rect(36, 10, 38, 46, STAFF)
-    c.rect(36, 10, 36, 46, EARTH_DK)
-    # gema âmbar no topo, brilhando
-    c.disc(37, 8, 4, GEM)
-    c.disc(37, 8, 2, GEM_HOT)
-    c.px(36, 7, (255, 255, 220))
+    # ── Machados (um de cada lado, lâminas erguidas) ──
+    _axe(c, 9, -1)
+    _axe(c, 38, +1)
     # ── Capuz ──
     c.rect(16, 10, 31, 14, HOOD)
     c.disc(23, 14, 9, HOOD)
@@ -236,21 +263,23 @@ def wizard():
     c.rect(25, 20, 27, 22, GLOW_EYE)
     c.px(21, 21, (255, 180, 120))
     c.px(26, 21, (255, 180, 120))
-    # ── Túnica longa ──
+    # ── Manto longo ──
     c.rect(13, 26, 33, 46, ROBE)
     c.rect(13, 26, 15, 46, ROBE_DK)
     c.rect(31, 26, 33, 46, ROBE_DK)
     c.rect(22, 26, 24, 46, ROBE_DK)     # dobra central
-    # mangas/braço segurando o cajado
-    c.rect(30, 28, 37, 32, ROBE)
-    c.rect(30, 31, 38, 33, HOOD_DK)
+    # ── Braços estendidos segurando os machados ──
+    c.rect(10, 28, 16, 31, ROBE)        # braço esq
+    c.rect(9, 30, 12, 33, HOOD_DK)      # mão esq no cabo
+    c.rect(30, 28, 38, 31, ROBE)        # braço dir
+    c.rect(36, 30, 39, 33, HOOD_DK)     # mão dir no cabo
     # barra esfarrapada
     for x in range(13, 34, 3):
         c.px(x, 46, ROBE_DK)
         c.px(x + 1, 45, ROBE_DK)
-    # símbolo ritual no peito (pentagrama simplificado em sangue)
-    c.rect(22, 34, 24, 40, (90, 0, 0))
-    c.rect(20, 36, 26, 37, (90, 0, 0))
+    # ── Correia de couro cruzada no peito (caçador, sem tema mágico) ──
+    c.line(17, 28, 28, 38, STRAP)
+    c.line(17, 29, 28, 39, AXE_HAFT_DK)
     return c
 
 
@@ -259,5 +288,5 @@ if __name__ == "__main__":
     caipora(-1).save("player_walk_1.png")
     caipora(1).save("player_walk_2.png")
     hunter().save("enemy_idle.png")
-    wizard().save("boss_idle.png")
-    print("[gen_chars] caipora (64x64) + caçador + bruxo (48x48) gerados")
+    axe_hunter().save("boss_idle.png")
+    print("[gen_chars] caipora (64x64) + caçador + caçador-de-machados (48x48) gerados")

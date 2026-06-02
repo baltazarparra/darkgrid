@@ -25,7 +25,7 @@ func setup(id: String, pos: Vector2i, boss: bool = false) -> void:
 	var sprite := Sprite2D.new()
 	sprite.texture = BOSS_TEXTURE if boss else ENEMY_TEXTURE
 	sprite.offset = Vector2(0, -8)  # 48px transborda pra cima, pés na base do tile
-	# Arte 48px já tem identidade própria (caçador/bruxo) — sem tint.
+	# Arte 48px já tem identidade própria (caçador / caçador com machados) — sem tint.
 	add_child(sprite)
 
 	if boss:

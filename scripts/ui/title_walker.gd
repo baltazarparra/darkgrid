@@ -17,9 +17,10 @@ const SPRITE_HALF: float = 32.0  # Caipora é 64×64 (assets/AGENTS.md)
 const WALK_SCALE: float = 2.6
 const START_X: float = -120.0
 const END_X: float = 1400.0
-const CROSS_DURATION: float = 9.0
+const CROSS_DURATION: float = 22.0
 const BOB_AMPLITUDE: float = 4.0
-const BOB_SPEED: float = 8.0
+const BOB_SPEED: float = 3.4
+const WALK_ANIM_SPEED: float = 0.45
 const SHADOW_COLOR := Color(0.0, 0.0, 0.0, 0.35)
 
 # ─── State ─────────────────────────────────────────
@@ -43,6 +44,7 @@ func _ready() -> void:
 	_sprite.scale = Vector2(WALK_SCALE, WALK_SCALE)
 	_sprite.flip_h = false  # andando para a direita
 	_sprite.position = Vector2(0, _rest_y)  # pés na origem (sobre a crista)
+	_sprite.speed_scale = WALK_ANIM_SPEED
 	_sprite.play("walk")
 	add_child(_sprite)
 
