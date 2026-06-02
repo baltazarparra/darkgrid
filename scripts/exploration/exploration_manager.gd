@@ -4,56 +4,61 @@ extends Node2D
 @onready var _tilemap: TileMap = $TileMap
 @onready var _caipora: Caipora = $Caipora
 @onready var _enemies_container: Node2D = $Enemies
+@onready var _objects_container: Node2D = $Objects
 
 # ─── State ─────────────────────────────────────────
 var _map_enemies: Array[MapEnemy] = []
 var _player_grid_pos: Vector2i = PLAYER_START
-var _locked: bool = false  # true while combat is triggering
+var _locked: bool = false
+var _key_node: MapObject = null
+var _chest_node: MapObject = null
 
 # ─── Map Definition ────────────────────────────────
-# 26 cols × 18 rows. W=wall, F=floor, E=exit (leads to win).
-# Room 1 (start): cols 1-9, rows 1-3
-# Corridor H:     cols 6-15, row 4
-# Corridor V:     col 15, rows 5-7
-# Room 2:         cols 15-22, rows 8-11
-# Corridor V2:    col 20, rows 12-14
-# Room 3 (boss):  cols 17-22, rows 15-16
+# 26 cols × 18 rows.
+# W=wall  F=floor  E=exit
+# C=baú   K=chave
+# R=fogo  S=espinho
 const MAP_LAYOUT = [
 	"WWWWWWWWWWWWWWWWWWWWWWWWWW",
 	"WFFFFFFFFFWWWWWWWWWWWWWWWW",
-	"WFFFFFFFFFWWWWWWWWWWWWWWWW",
+	"WFFFFCFFFFWWWWWWWWWWWWWWWW",  # baú em (5,2)
 	"WFFFFFFFFFWWWWWWWWWWWWWWWW",
 	"WWWWWWFFFFFFFFFFWWWWWWWWWW",
 	"WWWWWWWWWWWWWWWFWWWWWWWWWW",
+	"WWWWWWWWWWWWWWWSWWWWWWWWWW",  # espinho (15,6)
 	"WWWWWWWWWWWWWWWFWWWWWWWWWW",
-	"WWWWWWWWWWWWWWWFWWWWWWWWWW",
 	"WWWWWWWWWWWWWWWFFFFFFFFWWW",
 	"WWWWWWWWWWWWWWWFFFFFFFFWWW",
-	"WWWWWWWWWWWWWWWFFFFFFFFWWW",
+	"WWWWWWWWWWWWWWWFRFFFFFFWWW",  # fogo (16,10)
 	"WWWWWWWWWWWWWWWFFFFFFFFWWW",
 	"WWWWWWWWWWWWWWWWWWWWFWWWWW",
-	"WWWWWWWWWWWWWWWWWWWWFWWWWW",
+	"WWWWWWWWWWWWWWWWWWWWSWWWWW",  # espinho (20,13)
 	"WWWWWWWWWWWWWWWWWWWWFWWWWW",
 	"WWWWWWWWWWWWWWWWWFFFFFFWWW",
-	"WWWWWWWWWWWWWWWWWFFFFEWWWW",
+	"WWWWWWWWWWWWWWWWWKFFFEWWWW",  # chave (17,16), saída (21,16)
 	"WWWWWWWWWWWWWWWWWWWWWWWWWW",
 ]
 
 const ENEMY_DEFS = [
-	{"id": "e0", "x": 8, "y": 2, "boss": false},
-	{"id": "e1", "x": 15, "y": 8, "boss": false},
+	{"id": "e0", "x": 8,  "y": 2,  "boss": false},
+	{"id": "e1", "x": 15, "y": 8,  "boss": false},
 	{"id": "e2", "x": 21, "y": 11, "boss": false},
 	{"id": "e3", "x": 18, "y": 15, "boss": true},
 ]
 
 const EXIT_POS     := Vector2i(21, 16)
-const PLAYER_START := Vector2i(2, 2)
+const CHEST_POS    := Vector2i(5,  2)
+const KEY_POS      := Vector2i(17, 16)
+const PLAYER_START := Vector2i(2,  2)
+
+const HAZARD_CHARS := ["R", "S"]
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	_setup_tilemap()
 	_setup_player()
 	_spawn_enemies()
+	_spawn_objects()
 	_spawn_exit_marker()
 
 func _setup_player() -> void:
@@ -71,6 +76,30 @@ func _spawn_enemies() -> void:
 		enemy.setup(def["id"], Vector2i(def["x"], def["y"]), def["boss"])
 		_map_enemies.append(enemy)
 
+func _spawn_objects() -> void:
+	# Baú
+	if not GameState.chest_opened:
+		_chest_node = MapObject.new()
+		_objects_container.add_child(_chest_node)
+		_chest_node.setup(MapObject.Type.CHEST, CHEST_POS)
+
+	# Chave
+	if not GameState.has_key:
+		_key_node = MapObject.new()
+		_objects_container.add_child(_key_node)
+		_key_node.setup(MapObject.Type.KEY, KEY_POS)
+
+	# Hazards do mapa (sempre presentes)
+	for y: int in MAP_LAYOUT.size():
+		var row: String = MAP_LAYOUT[y]
+		for x: int in row.length():
+			var ch: String = row[x]
+			if ch == "R" or ch == "S":
+				var hazard := MapObject.new()
+				_objects_container.add_child(hazard)
+				var t: MapObject.Type = MapObject.Type.FIRE if ch == "R" else MapObject.Type.SPIKE
+				hazard.setup(t, Vector2i(x, y))
+
 func _spawn_exit_marker() -> void:
 	var marker := Sprite2D.new()
 	marker.texture = preload("res://assets/sprites/tile_floor.png")
@@ -84,17 +113,52 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 		return
 	_player_grid_pos = new_grid_pos
 
+	# Saída
 	if new_grid_pos == EXIT_POS:
 		_locked = true
 		GameState.change_screen(SignalBus.Screen.WIN)
 		return
 
+	# Chave
+	if new_grid_pos == KEY_POS and not GameState.has_key:
+		GameState.has_key = true
+		if _key_node != null:
+			_key_node.visible = false
+
+	# Baú
+	if new_grid_pos == CHEST_POS and not GameState.chest_opened:
+		if GameState.has_key:
+			_open_chest()
+
+	# Colisão com inimigo
 	for enemy in _map_enemies:
 		if enemy.grid_pos == new_grid_pos:
 			_trigger_combat(enemy)
 			return
 
+	# Hazard
+	var row: String = MAP_LAYOUT[new_grid_pos.y]
+	if new_grid_pos.x < row.length() and row[new_grid_pos.x] in HAZARD_CHARS:
+		_apply_hazard_damage()
+		if _locked:
+			return
+
 	_run_enemy_turns()
+
+func _open_chest() -> void:
+	GameState.chest_opened = true
+	GameState.caipora_max_hp += 1
+	GameState.caipora_current_hp = mini(GameState.caipora_current_hp + 1, GameState.caipora_max_hp)
+	SignalBus.caipora_health_changed.emit(GameState.caipora_current_hp, GameState.caipora_max_hp)
+	if _chest_node != null:
+		_chest_node.visible = false
+
+func _apply_hazard_damage() -> void:
+	GameState.caipora_current_hp = maxi(0, GameState.caipora_current_hp - 1)
+	SignalBus.caipora_health_changed.emit(GameState.caipora_current_hp, GameState.caipora_max_hp)
+	if GameState.caipora_current_hp <= 0:
+		_locked = true
+		GameState.change_screen(SignalBus.Screen.GAME_OVER)
 
 func _run_enemy_turns() -> void:
 	for enemy in _map_enemies:
@@ -149,9 +213,9 @@ func _setup_tilemap() -> void:
 	_paint_map()
 
 func _paint_map() -> void:
-	for y in range(MAP_LAYOUT.size()):
+	for y: int in range(MAP_LAYOUT.size()):
 		var row: String = MAP_LAYOUT[y]
-		for x in range(row.length()):
+		for x: int in range(row.length()):
 			var pos := Vector2i(x, y)
 			if row[x] == "W":
 				_tilemap.set_cell(0, pos, 1, Vector2i(0, 0))
