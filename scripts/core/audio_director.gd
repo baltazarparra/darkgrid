@@ -122,10 +122,20 @@ func _play_ambience(path: String) -> void:
 			_fade_player(_ambience_player, 0.0, true)
 		return
 	var stream: AudioStream = load(path)
+	_force_loop(stream)
 	_ambience_player.stream = stream
 	_ambience_player.volume_db = -40.0
 	_ambience_player.play()
 	_fade_player(_ambience_player, _linear_to_db(_bus_volume[BUS_AMBIENCE]), false)
+
+## Garante loop contínuo no asset. O .import é gitignored (regenera sem loop), então
+## forçamos LOOP_FORWARD em runtime no AudioStreamWAV (mono 16-bit = 2 bytes/frame).
+func _force_loop(stream: AudioStream) -> void:
+	if stream is AudioStreamWAV:
+		var wav := stream as AudioStreamWAV
+		wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		wav.loop_begin = 0
+		wav.loop_end = wav.data.size() / 2
 
 func _fade_player(player: AudioStreamPlayer, to_db: float, stop_after: bool) -> void:
 	var tween := create_tween()

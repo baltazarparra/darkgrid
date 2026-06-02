@@ -25,7 +25,7 @@ import struct
 import wave
 
 SAMPLE_RATE = 22050
-OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "audio", "sfx")
+AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "audio")
 
 # Seeds das variantes. A 1ª mantém os nomes originais (attack.wav...); as demais
 # viram attack_2.wav / attack_3.wav e alimentam o round-robin do SfxSystem.
@@ -33,9 +33,10 @@ VARIANT_SEEDS = [42, 1337, 2024]
 
 
 # ─── IO ────────────────────────────────────────────
-def _write(name, samples):
-    os.makedirs(OUT_DIR, exist_ok=True)
-    path = os.path.join(OUT_DIR, name)
+def _write(name, samples, subdir="sfx"):
+    out_dir = os.path.join(AUDIO_DIR, subdir)
+    os.makedirs(out_dir, exist_ok=True)
+    path = os.path.join(out_dir, name)
     with wave.open(path, "w") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
@@ -259,6 +260,77 @@ GENERATORS = {
 }
 
 
+# ─── Ambiência (loops costurados) ──────────────────
+def _loopify(render, n, fade):
+    """Costura um loop sem emenda: 'render' tem n+fade amostras; o overhang
+    (n..n+fade) é cruzado por cima do início, então o fim flui de volta ao começo."""
+    out = list(render[:n])
+    for i in range(fade):
+        w = i / fade
+        out[i] = render[i] * w + render[n + i] * (1.0 - w)
+    return out
+
+
+def amb_forest(dur=6.0):
+    """Floresta amazônica: hum grave + leito de insetos (ruído alto modulado) +
+    chiado de rio + um fiapo do assovio-leitmotif ao fundo. Bed da exploração."""
+    fade = int(SAMPLE_RATE * 0.4)
+    n = int(SAMPLE_RATE * dur)
+    total = n + fade
+    out = [0.0] * total
+    hp = 0.0
+    lp = 0.0
+    # assovio distante entra uma vez, no terço final, bem baixo (canto vindo do rio).
+    whistle_at = int(n * 0.6)
+    whistle = assovio(1.4, freq=820.0)
+    for i in range(total):
+        t = i / SAMPLE_RATE
+        # hum grave da mata
+        hum = 0.10 * math.sin(2 * math.pi * 70.0 * t) + 0.06 * math.sin(2 * math.pi * 112.0 * t)
+        hum *= 0.8 + 0.2 * math.sin(2 * math.pi * 0.12 * t)
+        # insetos: ruído alto (highpass) com tremolo rápido
+        raw = _noise()
+        lp = lp * 0.5 + raw * 0.5
+        hp = raw - lp
+        insects = hp * (0.05 + 0.05 * abs(math.sin(2 * math.pi * 7.0 * t))) * (0.6 + 0.4 * math.sin(2 * math.pi * 0.4 * t))
+        # rio: ruído mid com undulação lenta
+        river = lp * 0.06 * (0.5 + 0.5 * math.sin(2 * math.pi * 0.2 * t + 1.0))
+        s = hum + insects + river
+        if whistle_at <= i < whistle_at + len(whistle):
+            s += whistle[i - whistle_at] * 0.18
+        out[i] = s
+    return _normalize(_loopify(out, n, fade), 0.5)
+
+
+def amb_dread(dur=6.0):
+    """Arena: drone grave dissonante (sines batendo) + saw escuro + cintilação
+    alta tensa. Opressivo."""
+    fade = int(SAMPLE_RATE * 0.4)
+    n = int(SAMPLE_RATE * dur)
+    total = n + fade
+    out = [0.0] * total
+    lp = 0.0
+    for i in range(total):
+        t = i / SAMPLE_RATE
+        # duas fundamentais quase iguais = batimento lento (mal-estar)
+        drone = 0.16 * math.sin(2 * math.pi * 55.0 * t) + 0.14 * math.sin(2 * math.pi * 58.3 * t)
+        # saw escuro filtrado
+        phase = (t * 41.0) % 1.0
+        saw = (2.0 * phase - 1.0)
+        lp = lp * 0.92 + saw * 0.08
+        dark = lp * 0.12
+        # cintilação alta, bem baixa, com swell lento
+        shimmer = _noise() * 0.02 * max(0.0, math.sin(2 * math.pi * 0.07 * t))
+        out[i] = drone + dark + shimmer
+    return _normalize(_loopify(out, n, fade), 0.6)
+
+
+AMBIENCES = {
+    "amb_forest": amb_forest,
+    "amb_dread": amb_dread,
+}
+
+
 def main():
     print("Gerando SFX de combate (maracatu / Amazônia)...")
     for variant, seed in enumerate(VARIANT_SEEDS):
@@ -266,6 +338,11 @@ def main():
         suffix = "" if variant == 0 else f"_{variant + 1}"
         for name, gen in GENERATORS.items():
             _write(f"{name}{suffix}.wav", gen())
+
+    print("Gerando ambiências (loops)...")
+    for name, gen in AMBIENCES.items():
+        random.seed(7)
+        _write(f"{name}.wav", gen(), subdir="ambience")
     print("Pronto.")
 
 
