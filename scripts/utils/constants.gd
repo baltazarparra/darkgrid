@@ -23,8 +23,8 @@ const TIMING_DOUBLE_SPAWN_DELAY := 0.35
 
 # ─── Damage ────────────────────────────────────────
 const DAMAGE_BASE := 1
-const DAMAGE_CRIT_MULTIPLIER := 2.0
-const DAMAGE_COUNTER_MULTIPLIER := 2.0
+const DAMAGE_CRIT_MULTIPLIER := 1.0
+const DAMAGE_COUNTER_MULTIPLIER := 1.0
 
 # ─── Health ────────────────────────────────────────
 const CAIPORA_MAX_HEALTH := 1

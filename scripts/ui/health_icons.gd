@@ -43,7 +43,7 @@ func _draw_pentagram(center: Vector2, radius: float, color: Color) -> void:
 	var inner_r: float = radius * 0.382
 	var pts: PackedVector2Array = []
 	for i: int in 10:
-		var angle: float = -PI / 2.0 + i * PI / 5.0
+		var angle: float = PI / 2.0 + i * PI / 5.0
 		var r: float = radius if i % 2 == 0 else inner_r
 		pts.append(center + Vector2(cos(angle), sin(angle)) * r)
 	draw_colored_polygon(pts, color)
