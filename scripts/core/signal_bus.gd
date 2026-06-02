@@ -15,3 +15,4 @@ signal arena_exited(won: bool)
 signal caipora_died
 signal caipora_health_changed(new_health: int, max_health: int)
 signal enemy_health_changed(new_health: int, max_health: int)
+signal fragment_gained(total: int)

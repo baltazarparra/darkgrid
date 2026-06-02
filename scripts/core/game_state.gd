@@ -33,12 +33,12 @@ func start_run() -> void:
 	has_key = false
 	chest_opened = false
 	player_map_pos = Vector2i(-1, -1)
-	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH
+	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH + MetaProgression.get_health_bonus()
 	caipora_current_hp = caipora_max_hp
 
 ## Recupera HP cheio (chamado ao entrar no Hub).
 func heal_to_full() -> void:
-	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH
+	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH + MetaProgression.get_health_bonus()
 	caipora_current_hp = caipora_max_hp
 
 ## Encerra a run, registra estatísticas e persiste.

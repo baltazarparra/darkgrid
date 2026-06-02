@@ -6,7 +6,8 @@ extends Node
 var SAVE_PATH := "user://savegame.json"
 
 const UPGRADE_DEFS := {
-	"forca": { "name": "Força", "max_level": 1, "fragment_cost": 4 }
+	"forca": { "name": "Força", "max_level": 1, "fragment_cost": 4 },
+	"saude": { "name": "Saúde", "max_level": 1, "fragment_cost": 6 }
 }
 
 # ─── State ─────────────────────────────────────────
@@ -21,6 +22,7 @@ var fragments: int = 0
 func add_fragment() -> void:
 	fragments += 1
 	save_progress()
+	SignalBus.fragment_gained.emit(fragments)
 
 # ─── Upgrades ──────────────────────────────────────
 func get_upgrade_level(key: String) -> int:
@@ -28,6 +30,9 @@ func get_upgrade_level(key: String) -> int:
 
 func get_damage_bonus() -> int:
 	return get_upgrade_level("forca")
+
+func get_health_bonus() -> int:
+	return get_upgrade_level("saude") * 2
 
 ## Consome fragmentos e incrementa o nível. Retorna false se não puder comprar.
 func purchase_upgrade(key: String) -> bool:
