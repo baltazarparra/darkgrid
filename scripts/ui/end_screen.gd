@@ -7,10 +7,18 @@ extends CanvasLayer
 
 @export var won: bool = false
 
+@onready var _hint: Label = $Center/VBox/Hint
+
 func _ready() -> void:
 	GameState.end_run(won)
+	# No mobile não há tecla Space; orienta o toque e evita o dead-end.
+	if DisplayServer.is_touchscreen_available():
+		_hint.text = "Toque para voltar ao acampamento"
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_accept"):
+	# Space/Enter (desktop) OU qualquer toque/clique (mobile) volta ao acampamento.
+	if event.is_action_pressed("ui_accept") \
+			or (event is InputEventScreenTouch and event.pressed) \
+			or (event is InputEventMouseButton and event.pressed):
 		get_viewport().set_input_as_handled()
 		GameState.change_screen(SignalBus.Screen.HUB)
