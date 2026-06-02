@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://boss_arena"]
 
 [ext_resource type="Script" path="res://scripts/entities/boss.gd" id="1_script"]
-[ext_resource type="SpriteFrames" path="res://assets/sprites/criatura_sprite_frames.tres" id="2_frames"]
+[ext_resource type="SpriteFrames" path="res://assets/sprites/boss_sprite_frames.tres" id="2_frames"]
 [ext_resource type="Script" path="res://scripts/shared/health_component.gd" id="3_health"]
 [ext_resource type="Script" path="res://scripts/entities/enemy_state_machine.gd" id="4_sm"]
 [ext_resource type="AttackPattern" path="res://resources/attack_patterns/boss_pattern.tres" id="5_pattern"]
@@ -16,7 +16,8 @@ sprite_scale = 1.5
 attack_pattern = ExtResource("5_pattern")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-modulate = Color(0.12, 0.05, 0.22, 1)
+offset = Vector2(0, -8)
+modulate = Color(1, 1, 1, 1)
 sprite_frames = ExtResource("2_frames")
 animation = &"idle"
 autoplay = "idle"

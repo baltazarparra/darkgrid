@@ -15,6 +15,7 @@ base_attack_damage = 1
 attack_pattern = ExtResource("5_pattern")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+offset = Vector2(0, -8)
 sprite_frames = ExtResource("2_frames")
 animation = &"idle"
 autoplay = "idle"

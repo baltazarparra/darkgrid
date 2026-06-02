@@ -3,6 +3,7 @@ extends Node2D
 
 # ─── Constants ─────────────────────────────────────
 const ENEMY_TEXTURE = preload("res://assets/sprites/enemy_idle.png")
+const BOSS_TEXTURE = preload("res://assets/sprites/boss_idle.png")
 const CHASE_RANGE := 5          # comuns: alcance de aggro
 const BOSS_CHASE_RANGE := 7     # boss: defende a porta com alcance maior
 const DRIFT_IDLE_CHANCE := 0.4  # chance de ficar parado ao voltar pra origem
@@ -22,8 +23,9 @@ func setup(id: String, pos: Vector2i, boss: bool = false) -> void:
 	_update_visual_position()
 
 	var sprite := Sprite2D.new()
-	sprite.texture = ENEMY_TEXTURE
-	sprite.modulate = Constants.COLOR_BOSS_TINT if boss else Constants.COLOR_ENEMY_TINT
+	sprite.texture = BOSS_TEXTURE if boss else ENEMY_TEXTURE
+	sprite.offset = Vector2(0, -8)  # 48px transborda pra cima, pés na base do tile
+	# Arte 48px já tem identidade própria (caçador/bruxo) — sem tint.
 	add_child(sprite)
 
 	if boss:

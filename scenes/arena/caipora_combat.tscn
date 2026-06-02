@@ -12,6 +12,7 @@ script = ExtResource("1_script")
 base_attack_damage = 1
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+offset = Vector2(0, -8)
 sprite_frames = ExtResource("2_frames")
 animation = &"idle"
 autoplay = "idle"
