@@ -19,7 +19,7 @@ func after_each():
 
 func test_start_run_fills_hp():
 	GameState.start_run()
-	assert_eq(GameState.caipora_max_hp, Constants.CAIPORA_MAX_HEALTH)
+	assert_eq(GameState.caipora_max_hp, float(Constants.CAIPORA_MAX_HEALTH))
 	assert_eq(GameState.caipora_current_hp, GameState.caipora_max_hp)
 	assert_true(GameState.run_active)
 

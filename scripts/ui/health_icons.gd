@@ -24,8 +24,8 @@ func setup(total: int, shape: Shape, active: Color, empty: Color) -> void:
 	custom_minimum_size = Vector2(_total * ICON_SPACING + ICON_RADIUS, ICON_RADIUS * 2.8)
 	queue_redraw()
 
-func set_current(n: int) -> void:
-	_current = clampi(n, 0, _total)
+func set_current(n: float) -> void:
+	_current = clampi(ceili(n), 0, _total)
 	queue_redraw()
 
 # ─── Drawing ───────────────────────────────────────

@@ -2,7 +2,7 @@ class_name CombatActor
 extends CharacterBody2D
 
 signal attack_ready
-signal attack_executed(damage: int, is_critical: bool)
+signal attack_executed(damage: float, is_critical: bool)
 signal dodge_performed
 
 @onready var health: HealthComponent = $HealthComponent
@@ -29,14 +29,14 @@ func start_attack_window() -> void:
 
 ## Executa o ataque e retorna o dano calculado (fonte única de verdade).
 ## O chamador deve aplicar esse valor via take_damage() em vez de recomputar.
-func execute_attack(is_critical: bool = false, multiplier_override: float = 0.0) -> int:
+func execute_attack(is_critical: bool = false, multiplier_override: float = 0.0) -> float:
 	if _is_dying:
-		return 0
-	var damage := base_attack_damage
+		return 0.0
+	var damage: float = float(base_attack_damage)
 	if multiplier_override > 0.0:
-		damage = int(damage * multiplier_override)
+		damage = damage * multiplier_override
 	elif is_critical:
-		damage = int(damage * critical_multiplier)
+		damage = damage * critical_multiplier
 	attack_executed.emit(damage, is_critical)
 	_can_attack = false
 	_attack_timer.wait_time = maxf(0.01, attack_cooldown)
@@ -47,7 +47,7 @@ func _on_attack_cooldown_ready() -> void:
 	_can_attack = true
 	attack_ready.emit()
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: float) -> void:
 	if _is_dying:
 		return
 	health.take_damage(amount)

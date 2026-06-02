@@ -18,6 +18,7 @@ const TIMING_DOUBLE_CHANCE := 0.30
 const TIMING_DOUBLE_INTERVAL := 0.5
 const TIMING_DOUBLE_BUBBLE_SPREAD_MIN := 60.0
 const TIMING_DOUBLE_BUBBLE_SPREAD_MAX := 80.0
+const TIMING_DOUBLE_BLOCK_DURATION := 0.55  # TIMING_WINDOW_ATTACK (0.8) - 0.25
 
 # ─── Damage ────────────────────────────────────────
 const DAMAGE_BASE := 1

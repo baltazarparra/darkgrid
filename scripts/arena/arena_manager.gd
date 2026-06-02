@@ -45,7 +45,7 @@ func _spawn_caipora() -> void:
 	_caipora.position = Vector2(160, 240)
 	add_child(_caipora)
 	_caipora.health.max_health = GameState.caipora_max_hp
-	_caipora.health.current_health = clampi(GameState.caipora_current_hp, 0, GameState.caipora_max_hp)
+	_caipora.health.current_health = clampf(GameState.caipora_current_hp, 0.0, GameState.caipora_max_hp)
 	_caipora.attack_cooldown = Constants.ATTACK_COOLDOWN_SECONDS
 	_caipora.base_attack_damage = 1 + MetaProgression.get_damage_bonus()
 	_caipora.health.health_changed.connect(_on_caipora_health_changed)
@@ -53,7 +53,7 @@ func _spawn_caipora() -> void:
 	_caipora.health.died.connect(func(): SignalBus.caipora_died.emit())
 	SignalBus.caipora_health_changed.emit(_caipora.health.current_health, _caipora.health.max_health)
 
-func _on_caipora_health_changed(new_health: int, max_health: int) -> void:
+func _on_caipora_health_changed(new_health: float, max_health: float) -> void:
 	SignalBus.caipora_health_changed.emit(new_health, max_health)
 
 func _spawn_enemy() -> void:
@@ -239,7 +239,7 @@ func _boss_spread_pos() -> Vector2:
 	_last_boss_bubble_pos = pos
 	return pos
 
-func _on_enemy_health_changed(new_health: int, max_health: int) -> void:
+func _on_enemy_health_changed(new_health: float, max_health: float) -> void:
 	SignalBus.enemy_health_changed.emit(new_health, max_health)
 
 # ─── Bolha ─────────────────────────────────────────
@@ -255,7 +255,7 @@ func _on_actor_died(actor: CombatActor) -> void:
 		GameState.caipora_max_hp = _caipora.health.max_health
 		if not GameState.active_combat_is_boss:
 			MetaProgression.add_fragment()
-	GameState.caipora_current_hp = maxi(0, _caipora.health.current_health)
+	GameState.caipora_current_hp = maxf(0.0, _caipora.health.current_health)
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.state_machine.stop()
 	_sfx.play(_sfx.death_sound)

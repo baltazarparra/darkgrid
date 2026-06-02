@@ -13,6 +13,6 @@ signal arena_exited(won: bool)
 
 # Reservados p/ Fase 4 (HUD / GameOver) — ainda sem emissor no MVP atual.
 signal caipora_died
-signal caipora_health_changed(new_health: int, max_health: int)
-signal enemy_health_changed(new_health: int, max_health: int)
+signal caipora_health_changed(new_health: float, max_health: float)
+signal enemy_health_changed(new_health: float, max_health: float)
 signal fragment_gained(total: int)

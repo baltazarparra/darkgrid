@@ -3,8 +3,10 @@ extends Criatura
 
 const CRIATURA_PATTERN := preload("res://resources/attack_patterns/criatura_pattern.tres")
 const SPECIAL_PATTERN := preload("res://resources/attack_patterns/boss_special_pattern.tres")
+const DOUBLE_BLOCK_PATTERN := preload("res://resources/attack_patterns/boss_double_block_pattern.tres")
 
 const SPECIAL_CHANCE: float = 0.35
+const DOUBLE_BLOCK_CHANCE_BOSS: float = 0.30
 
 var _current_is_special: bool = false
 
@@ -15,8 +17,19 @@ func _ready() -> void:
 
 # ─── Public API ────────────────────────────────────
 func get_attack_pattern() -> AttackPattern:
-	_current_is_special = randf() < SPECIAL_CHANCE
-	return SPECIAL_PATTERN if _current_is_special else CRIATURA_PATTERN
+	var r := randf()
+	var chosen: AttackPattern
+	if r < SPECIAL_CHANCE:
+		_current_is_special = true
+		chosen = SPECIAL_PATTERN
+	elif r < SPECIAL_CHANCE + DOUBLE_BLOCK_CHANCE_BOSS:
+		_current_is_special = false
+		chosen = DOUBLE_BLOCK_PATTERN
+	else:
+		_current_is_special = false
+		chosen = CRIATURA_PATTERN
+	_active_pattern = chosen
+	return chosen
 
 # ─── Telegraph override ─────────────────────────────
 func _play_windup_telegraph() -> void:

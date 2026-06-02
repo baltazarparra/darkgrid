@@ -6,7 +6,10 @@ extends CombatActor
 ## O telegraph visual (pulso + lunge) reage aos estados da própria StateMachine.
 
 @export var attack_pattern: AttackPattern
+@export var double_block_pattern: AttackPattern
 @export var sprite_scale: float = 2.0
+
+const DOUBLE_BLOCK_CHANCE: float = 0.35
 
 @onready var state_machine: EnemyStateMachine = $EnemyStateMachine
 
@@ -14,6 +17,7 @@ var _base_scale: Vector2 = Vector2.ONE
 var _base_modulate: Color = Color.WHITE
 var _telegraph_tween: Tween
 var _home_x: float = 0.0
+var _active_pattern: AttackPattern
 
 func _ready() -> void:
 	super._ready()
@@ -27,6 +31,10 @@ func _ready() -> void:
 
 	if attack_pattern == null:
 		attack_pattern = preload("res://resources/attack_patterns/criatura_pattern.tres")
+	if double_block_pattern == null:
+		double_block_pattern = preload("res://resources/attack_patterns/criatura_double_block_pattern.tres")
+
+	_active_pattern = attack_pattern
 
 	if state_machine != null:
 		state_machine.state_changed.connect(_on_state_changed)
@@ -40,16 +48,28 @@ func _on_state_changed(new_state: EnemyStateMachine.State) -> void:
 		EnemyStateMachine.State.ATTACK:
 			_play_attack_lunge()
 
-## Pulso vermelho crescente enquanto o ataque é preparado.
+## Pulso vermelho crescente — ou pulo laranja se o padrão ativo pede jump_telegraph.
 func _play_windup_telegraph() -> void:
 	if animated_sprite == null:
 		return
 	_kill_telegraph()
+	if _active_pattern != null and _active_pattern.jump_telegraph:
+		_play_jump_telegraph()
+		return
 	_telegraph_tween = create_tween().set_loops()
 	_telegraph_tween.tween_property(animated_sprite, "modulate", Color(1.4, 0.4, 0.4), 0.18)
 	_telegraph_tween.parallel().tween_property(animated_sprite, "scale", _base_scale * 1.12, 0.18)
 	_telegraph_tween.tween_property(animated_sprite, "modulate", _base_modulate, 0.18)
 	_telegraph_tween.parallel().tween_property(animated_sprite, "scale", _base_scale, 0.18)
+
+## Pulo vertical + flash laranja: sinaliza ataque duplo.
+func _play_jump_telegraph() -> void:
+	var home_y := position.y
+	_telegraph_tween = create_tween()
+	_telegraph_tween.tween_property(self, "position:y", home_y - 40.0, 0.12)
+	_telegraph_tween.parallel().tween_property(animated_sprite, "modulate", Color(1.4, 0.9, 0.2), 0.12)
+	_telegraph_tween.tween_property(self, "position:y", home_y, 0.10)
+	_telegraph_tween.parallel().tween_property(animated_sprite, "modulate", _base_modulate, 0.10)
 
 ## Lunge curto em direção à Caipora (esquerda) no início do ataque.
 func _play_attack_lunge() -> void:
@@ -64,7 +84,11 @@ func _play_attack_lunge() -> void:
 	lunge.tween_property(self, "position:x", _home_x, 0.1)
 
 func get_attack_pattern() -> AttackPattern:
-	return attack_pattern
+	if double_block_pattern != null and randf() < DOUBLE_BLOCK_CHANCE:
+		_active_pattern = double_block_pattern
+	else:
+		_active_pattern = attack_pattern
+	return _active_pattern
 
 func _kill_telegraph() -> void:
 	if _telegraph_tween != null and _telegraph_tween.is_valid():

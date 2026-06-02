@@ -13,7 +13,7 @@ func test_critical_damage_multiplier():
     var was_critical: Array = [false]
     _actor.attack_executed.connect(func(d, c): received_damage[0] = d; was_critical[0] = c)
     _actor.execute_attack(true)
-    assert_eq(received_damage[0], 25)
+    assert_eq(received_damage[0], 25.0)
     assert_true(was_critical[0])
 
 func test_normal_damage_without_critical():
@@ -22,7 +22,7 @@ func test_normal_damage_without_critical():
     var was_critical: Array = [true]
     _actor.attack_executed.connect(func(d, c): received_damage[0] = d; was_critical[0] = c)
     _actor.execute_attack(false)
-    assert_eq(received_damage[0], 10)
+    assert_eq(received_damage[0], 10.0)
     assert_false(was_critical[0])
 
 func test_death_signal_emitted():

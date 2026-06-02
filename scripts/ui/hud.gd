@@ -48,7 +48,7 @@ func _ready() -> void:
 	SignalBus.enemy_health_changed.connect(_on_enemy_health_changed)
 	SignalBus.fragment_gained.connect(_on_fragment_gained)
 
-func _on_caipora_health_changed(new_health: int, max_health: int) -> void:
+func _on_caipora_health_changed(new_health: float, max_health: float) -> void:
 	if max_health != _player_icons._total:
 		_player_icons.setup(
 			max_health,
@@ -58,7 +58,7 @@ func _on_caipora_health_changed(new_health: int, max_health: int) -> void:
 		)
 	_player_icons.set_current(new_health)
 
-func _on_enemy_health_changed(new_health: int, max_health: int) -> void:
+func _on_enemy_health_changed(new_health: float, max_health: float) -> void:
 	if not show_enemy_hp:
 		return
 	if max_health != _enemy_icons._total:

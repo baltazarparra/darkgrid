@@ -16,3 +16,5 @@ extends Resource
 @export var strike_count: int = 1
 ## Telegraph mais curto usado entre golpes consecutivos (golpes 2..N).
 @export var strike_delay: float = 0.4
+## Se true, a Criatura executa pulo durante wind-up para sinalizar ataque duplo.
+@export var jump_telegraph: bool = false

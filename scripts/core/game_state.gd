@@ -13,8 +13,8 @@ var next_enemy_scene: PackedScene = null
 
 # ─── Estado de Run (volátil; HP não vai para o save) ──
 var run_active: bool = false
-var caipora_max_hp: int = Constants.CAIPORA_MAX_HEALTH
-var caipora_current_hp: int = Constants.CAIPORA_MAX_HEALTH
+var caipora_max_hp: float = Constants.CAIPORA_MAX_HEALTH
+var caipora_current_hp: float = Constants.CAIPORA_MAX_HEALTH
 
 # ─── Exploration State ─────────────────────────────
 var defeated_enemy_ids: Array[String] = []
