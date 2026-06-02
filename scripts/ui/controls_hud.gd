@@ -17,6 +17,7 @@ const KEY_MAX: float = 140.0
 
 # ─── State ─────────────────────────────────────────
 var _root: Control = null
+var _dpad_rect: Rect2 = Rect2()
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -33,6 +34,12 @@ func _ready() -> void:
 
 	_rebuild()
 	get_viewport().size_changed.connect(_rebuild)
+
+
+# ─── Public API ────────────────────────────────────
+func get_dpad_screen_rect() -> Rect2:
+	# Vazio quando não há D-pad (desktop / sem touch) -> sem exclusão.
+	return _dpad_rect if _root != null else Rect2()
 
 
 # ─── Private helpers ───────────────────────────────
@@ -53,6 +60,10 @@ func _rebuild() -> void:
 
 	# Ancorado ao canto inferior DIREITO (zona do polegar direito).
 	var origin := Vector2(vp.x - margin - cluster_w, vp.y - margin - cluster_h)
+
+	# Retângulo em coordenadas de tela ocupado pelo cluster — consultado pela arena
+	# para impedir que bolhas de timing nasçam atrás do D-pad.
+	_dpad_rect = Rect2(origin, Vector2(cluster_w, cluster_h))
 
 	var cx: float = origin.x + key + gap          # coluna central
 	var y_top: float = origin.y                    # linha de cima (↑)

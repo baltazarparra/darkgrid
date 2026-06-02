@@ -18,7 +18,11 @@ const STAGE_CENTER: Vector2 = Vector2(320.0, 225.0)
 const STAGE_SIZE: Vector2 = Vector2(560.0, 340.0)
 const STAGE_FILL: float = 0.92
 
+# Folga extra (px de tela) somada ao raio da bolha ao testar contra o D-pad.
+const DPAD_BUBBLE_PADDING: float = 12.0
+
 @onready var _camera: Camera2D = $Camera2D
+@onready var _controls_hud: ControlsHud = $ControlsHud
 
 var _caipora: CombatActor
 var _enemy: Criatura
@@ -133,10 +137,15 @@ func _start_caipora_turn() -> void:
 func _spawn_second_bubble() -> void:
 	if not _both_alive() or not _timing_system.is_open():
 		return
-	var angle := randf() * TAU
-	var dist := randf_range(Constants.TIMING_DOUBLE_BUBBLE_SPREAD_MIN, Constants.TIMING_DOUBLE_BUBBLE_SPREAD_MAX)
+	var spread: Vector2
+	for _i in 20:
+		var angle := randf() * TAU
+		var dist := randf_range(Constants.TIMING_DOUBLE_BUBBLE_SPREAD_MIN, Constants.TIMING_DOUBLE_BUBBLE_SPREAD_MAX)
+		spread = _first_bubble_pos + Vector2(cos(angle) * dist, sin(angle) * dist)
+		if not _is_under_dpad(spread):
+			break
 	_timing_bubble_b.show_bubble(
-		_first_bubble_pos + Vector2(cos(angle) * dist, sin(angle) * dist),
+		spread,
 		Constants.TIMING_WINDOW_ATTACK,
 		Constants.TIMING_PERFECT_START,
 		Constants.TIMING_PERFECT_END,
@@ -254,10 +263,20 @@ func _boss_spread_pos() -> Vector2:
 			randf_range(BOSS_BUBBLE_X.x, BOSS_BUBBLE_X.y),
 			randf_range(BOSS_BUBBLE_Y.x, BOSS_BUBBLE_Y.y)
 		)
-		if _last_boss_bubble_pos.distance_to(pos) >= BOSS_BUBBLE_SPREAD_MIN:
+		if _last_boss_bubble_pos.distance_to(pos) >= BOSS_BUBBLE_SPREAD_MIN and not _is_under_dpad(pos):
 			break
 	_last_boss_bubble_pos = pos
 	return pos
+
+func _is_under_dpad(world_pos: Vector2) -> bool:
+	var rect := _controls_hud.get_dpad_screen_rect()
+	if rect.size == Vector2.ZERO:
+		return false
+	# Mundo -> tela (a transform do canvas embute a Camera2D).
+	var screen_pos := get_viewport().get_canvas_transform() * world_pos
+	# Expande pelo raio da bolha em px de tela + folga, para que nem a borda encoste no D-pad.
+	var grow := TimingBubble.RADIUS_MAX * _camera.zoom.x + DPAD_BUBBLE_PADDING
+	return rect.grow(grow).has_point(screen_pos)
 
 func _on_enemy_health_changed(new_health: float, max_health: float) -> void:
 	SignalBus.enemy_health_changed.emit(new_health, max_health)
