@@ -45,7 +45,8 @@ func _spawn_caipora() -> void:
 	add_child(_caipora)
 	_caipora.health.max_health = GameState.caipora_max_hp
 	_caipora.health.current_health = clampi(GameState.caipora_current_hp, 0, GameState.caipora_max_hp)
-	_caipora.attack_cooldown = maxf(0.0, Constants.ATTACK_COOLDOWN_SECONDS - MetaProgression.get_cooldown_reduction())
+	_caipora.attack_cooldown = Constants.ATTACK_COOLDOWN_SECONDS
+	_caipora.base_attack_damage = 1 + MetaProgression.get_damage_bonus()
 	_caipora.health.health_changed.connect(_on_caipora_health_changed)
 	_caipora.health.died.connect(_on_actor_died.bind(_caipora))
 	_caipora.health.died.connect(func(): SignalBus.caipora_died.emit())
@@ -235,6 +236,8 @@ func _on_actor_died(actor: CombatActor) -> void:
 		_caipora.health.max_health += 1
 		_caipora.health.heal(1)
 		GameState.caipora_max_hp = _caipora.health.max_health
+		if not GameState.active_combat_is_boss:
+			MetaProgression.add_fragment()
 	GameState.caipora_current_hp = maxi(0, _caipora.health.current_health)
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.state_machine.stop()

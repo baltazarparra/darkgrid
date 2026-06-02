@@ -3,32 +3,57 @@ extends GutTest
 var _original_save_path: String
 
 func before_each():
-    _original_save_path = MetaProgression.SAVE_PATH
-    MetaProgression.SAVE_PATH = "user://test_savegame.json"
-    MetaProgression.upgrades = {}
+	_original_save_path = MetaProgression.SAVE_PATH
+	MetaProgression.SAVE_PATH = "user://test_savegame.json"
+	MetaProgression.upgrades = {}
+	MetaProgression.fragments = 0
 
 func after_each():
-    if FileAccess.file_exists(MetaProgression.SAVE_PATH):
-        DirAccess.remove_absolute(ProjectSettings.globalize_path(MetaProgression.SAVE_PATH))
-    MetaProgression.SAVE_PATH = _original_save_path
-    MetaProgression.upgrades = {}
+	if FileAccess.file_exists(MetaProgression.SAVE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(MetaProgression.SAVE_PATH))
+	MetaProgression.SAVE_PATH = _original_save_path
+	MetaProgression.upgrades = {}
+	MetaProgression.fragments = 0
 
-func test_purchase_increments_and_caps():
-    assert_true(MetaProgression.purchase_upgrade("max_hp"))
-    assert_eq(MetaProgression.get_upgrade_level("max_hp"), 1)
-    assert_eq(MetaProgression.get_bonus_max_hp(), 1)
-    MetaProgression.purchase_upgrade("max_hp")
-    MetaProgression.purchase_upgrade("max_hp")
-    assert_false(MetaProgression.purchase_upgrade("max_hp"), "recusa no cap")
-    assert_eq(MetaProgression.get_upgrade_level("max_hp"), 3)
+func test_purchase_requires_fragments():
+	MetaProgression.fragments = 3
+	assert_false(MetaProgression.purchase_upgrade("forca"), "rejeita sem fragmentos suficientes")
+	assert_eq(MetaProgression.get_upgrade_level("forca"), 0)
+
+func test_purchase_consumes_fragments_and_increments():
+	MetaProgression.fragments = 4
+	assert_true(MetaProgression.purchase_upgrade("forca"))
+	assert_eq(MetaProgression.get_upgrade_level("forca"), 1)
+	assert_eq(MetaProgression.fragments, 0)
+
+func test_purchase_caps_at_max_level():
+	MetaProgression.fragments = 8
+	MetaProgression.purchase_upgrade("forca")
+	assert_false(MetaProgression.purchase_upgrade("forca"), "recusa no cap")
+	assert_eq(MetaProgression.get_upgrade_level("forca"), 1)
 
 func test_unknown_upgrade_is_rejected():
-    assert_false(MetaProgression.purchase_upgrade("inexistente"))
+	assert_false(MetaProgression.purchase_upgrade("inexistente"))
 
-func test_upgrades_persist_through_save_load():
-    MetaProgression.purchase_upgrade("cooldown")
-    MetaProgression.save_progress()
-    MetaProgression.upgrades = {}
-    MetaProgression.load_progress()
-    assert_eq(MetaProgression.get_upgrade_level("cooldown"), 1)
-    assert_almost_eq(MetaProgression.get_cooldown_reduction(), 0.1, 0.001)
+func test_forca_persists_through_save_load():
+	MetaProgression.fragments = 4
+	MetaProgression.purchase_upgrade("forca")
+	MetaProgression.save_progress()
+	MetaProgression.upgrades = {}
+	MetaProgression.fragments = 0
+	MetaProgression.load_progress()
+	assert_eq(MetaProgression.get_upgrade_level("forca"), 1)
+	assert_eq(MetaProgression.fragments, 0)
+
+func test_add_fragment_accumulates_and_persists():
+	MetaProgression.add_fragment()
+	MetaProgression.add_fragment()
+	assert_eq(MetaProgression.fragments, 2)
+	MetaProgression.load_progress()
+	assert_eq(MetaProgression.fragments, 2)
+
+func test_get_damage_bonus():
+	assert_eq(MetaProgression.get_damage_bonus(), 0)
+	MetaProgression.fragments = 4
+	MetaProgression.purchase_upgrade("forca")
+	assert_eq(MetaProgression.get_damage_bonus(), 1)

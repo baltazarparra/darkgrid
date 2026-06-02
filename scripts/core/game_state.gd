@@ -24,7 +24,7 @@ var has_key: bool = false
 var chest_opened: bool = false
 var player_map_pos: Vector2i = Vector2i(-1, -1)
 
-## Inicia uma nova run: HP cheio, com bônus de meta aplicado.
+## Inicia uma nova run: HP cheio.
 func start_run() -> void:
 	run_active = true
 	defeated_enemy_ids.clear()
@@ -33,12 +33,12 @@ func start_run() -> void:
 	has_key = false
 	chest_opened = false
 	player_map_pos = Vector2i(-1, -1)
-	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH + MetaProgression.get_bonus_max_hp()
+	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH
 	caipora_current_hp = caipora_max_hp
 
-## Recupera HP cheio (chamado ao entrar no Hub). Recalcula o max com o bônus atual.
+## Recupera HP cheio (chamado ao entrar no Hub).
 func heal_to_full() -> void:
-	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH + MetaProgression.get_bonus_max_hp()
+	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH
 	caipora_current_hp = caipora_max_hp
 
 ## Encerra a run, registra estatísticas e persiste.
