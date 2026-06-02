@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://exploration01"]
+[gd_scene load_steps=5 format=3 uid="uid://exploration01"]
 
 [ext_resource type="Script" path="res://scripts/exploration/exploration_manager.gd" id="1_mgr"]
 [ext_resource type="PackedScene" uid="uid://caipora_explore" path="res://scenes/exploration/caipora.tscn" id="2_caipora"]
 [ext_resource type="PackedScene" uid="uid://hud_combat" path="res://scenes/ui/hud.tscn" id="3_hud"]
+[ext_resource type="Script" path="res://scripts/ui/controls_hud.gd" id="4_controls"]
 
 [node name="ExplorationManager" type="Node2D"]
 script = ExtResource("1_mgr")
@@ -20,3 +21,6 @@ format = 2
 color = Color(0.0509804, 0.0666667, 0.0901961, 1)
 
 [node name="Hud" parent="." instance=ExtResource("3_hud")]
+
+[node name="ControlsHud" type="CanvasLayer" parent="."]
+script = ExtResource("4_controls")
