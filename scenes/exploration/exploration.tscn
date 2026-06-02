@@ -21,6 +21,7 @@ format = 2
 color = Color(0.6, 0.62, 0.72, 1)
 
 [node name="Hud" parent="." instance=ExtResource("3_hud")]
+show_enemy_hp = false
 
 [node name="ControlsHud" type="CanvasLayer" parent="."]
 script = ExtResource("4_controls")
