@@ -35,11 +35,15 @@ enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
+window/stretch/aspect="expand"
 
 [gui]
 
 theme/custom="res://assets/fonts/theme.tres"
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=true
 
 [rendering]
 

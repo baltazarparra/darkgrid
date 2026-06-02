@@ -29,6 +29,12 @@ func _ready() -> void:
 	_camera.position_smoothing_enabled = true
 	_camera.position_smoothing_speed = 10.0
 
+	# Zoom que "cobre" o viewport: a área útil do mapa ocupa 100% da tela, sem barras
+	# pretas. Com zoom = max(vp/mapa), a área visível (vp/zoom) fica <= mapa nos dois
+	# eixos, então os limit_* acima mantêm a câmera dentro das bordas.
+	_update_camera_zoom()
+	get_viewport().size_changed.connect(_update_camera_zoom)
+
 func _process(_delta: float) -> void:
 	if _is_moving:
 		return
@@ -62,6 +68,15 @@ func _try_move(dir: Vector2) -> void:
 	var tween := create_tween()
 	tween.tween_property(self, "position", target, move_duration)
 	tween.tween_callback(_on_move_finished)
+
+func _update_camera_zoom() -> void:
+	var map := Vector2(
+		Constants.GRID_WIDTH * Constants.TILE_SIZE,
+		Constants.GRID_HEIGHT * Constants.TILE_SIZE,
+	)
+	var vp := get_viewport().get_visible_rect().size
+	var z: float = maxf(vp.x / map.x, vp.y / map.y)
+	_camera.zoom = Vector2(z, z)
 
 func _would_collide(target: Vector2) -> bool:
 	if tilemap == null:
