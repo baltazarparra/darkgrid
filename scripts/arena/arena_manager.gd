@@ -6,7 +6,7 @@ extends Node2D
 ## CombatActor com EnemyStateMachine) sem o ArenaManager conhecer a classe.
 @export var enemy_scene: PackedScene
 
-const BOSS_BUBBLE_COLOR := Color(0.55, 0.05, 0.95, 1.0)
+const BOSS_BUBBLE_COLOR := Constants.COLOR_BUBBLE_BOSS
 const BOSS_BUBBLE_SPREAD_MIN: float = 90.0
 const BOSS_BUBBLE_X: Vector2 = Vector2(70.0, 570.0)
 const BOSS_BUBBLE_Y: Vector2 = Vector2(80.0, 370.0)

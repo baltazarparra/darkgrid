@@ -134,7 +134,7 @@ func _spawn_objects() -> void:
 func _spawn_exit_marker() -> void:
 	var marker := Sprite2D.new()
 	marker.texture = preload("res://assets/sprites/tile_floor.png")
-	marker.modulate = Color(1.0, 0.42, 0.0, 0.85)
+	marker.modulate = Constants.COLOR_EXIT
 	marker.position = Vector2(EXIT_POS) * Constants.TILE_SIZE
 	add_child(marker)
 

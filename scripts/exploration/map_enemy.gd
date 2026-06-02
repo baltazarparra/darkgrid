@@ -23,7 +23,7 @@ func setup(id: String, pos: Vector2i, boss: bool = false) -> void:
 
 	var sprite := Sprite2D.new()
 	sprite.texture = ENEMY_TEXTURE
-	sprite.modulate = Color(0.08, 0.0, 0.14, 1.0) if boss else Color(0.7, 0.5, 0.9, 1.0)
+	sprite.modulate = Constants.COLOR_BOSS_TINT if boss else Constants.COLOR_ENEMY_TINT
 	add_child(sprite)
 
 	if boss:
@@ -68,7 +68,7 @@ func _spawn_boss_aura() -> void:
 	aura.initial_velocity_max = 8.0
 	aura.scale_amount_min = 1.5
 	aura.scale_amount_max = 3.5
-	aura.color = Color(0.18, 0.0, 0.28, 0.75)
+	aura.color = Constants.COLOR_AURA_BOSS
 	add_child(aura)
 
 func _update_visual_position() -> void:

@@ -11,8 +11,8 @@ const ICON_ALLOT_FRAC: float = 0.40
 const ICON_SPACING_MAX: float = 64.0
 const ICON_RADIUS_MIN: float = 12.0
 const ICON_RADIUS_MAX: float = 32.0
-const PLAYER_EMPTY := Color(0.25, 0.04, 0.04, 0.35)
-const ENEMY_EMPTY := Color(0.3, 0.18, 0.02, 0.35)
+const PLAYER_EMPTY := Constants.COLOR_BLOOD_EMPTY
+const ENEMY_EMPTY := Constants.COLOR_AMBER_EMPTY
 
 # ─── State ─────────────────────────────────────────
 var _player_icons: HealthIcons

@@ -12,7 +12,7 @@ var _shape: Shape = Shape.PENTAGRAM
 var _total: int = 5
 var _current: int = 5
 var _active_color: Color = Constants.COLOR_BLOOD
-var _empty_color: Color = Color(0.3, 0.05, 0.05, 0.35)
+var _empty_color: Color = Constants.COLOR_BLOOD_EMPTY
 var _radius: float = ICON_RADIUS
 var _spacing: float = ICON_SPACING
 

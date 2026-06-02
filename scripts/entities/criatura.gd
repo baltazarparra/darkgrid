@@ -57,7 +57,7 @@ func _play_windup_telegraph() -> void:
 		_play_jump_telegraph()
 		return
 	_telegraph_tween = create_tween().set_loops()
-	_telegraph_tween.tween_property(animated_sprite, "modulate", Color(1.4, 0.4, 0.4), 0.18)
+	_telegraph_tween.tween_property(animated_sprite, "modulate", Constants.COLOR_TELEGRAPH_ENEMY, 0.18)
 	_telegraph_tween.parallel().tween_property(animated_sprite, "scale", _base_scale * 1.12, 0.18)
 	_telegraph_tween.tween_property(animated_sprite, "modulate", _base_modulate, 0.18)
 	_telegraph_tween.parallel().tween_property(animated_sprite, "scale", _base_scale, 0.18)
@@ -67,7 +67,7 @@ func _play_jump_telegraph() -> void:
 	var home_y := position.y
 	_telegraph_tween = create_tween()
 	_telegraph_tween.tween_property(self, "position:y", home_y - 40.0, 0.12)
-	_telegraph_tween.parallel().tween_property(animated_sprite, "modulate", Color(1.4, 0.9, 0.2), 0.12)
+	_telegraph_tween.parallel().tween_property(animated_sprite, "modulate", Constants.COLOR_TELEGRAPH_ENEMY_ALT, 0.12)
 	_telegraph_tween.tween_property(self, "position:y", home_y, 0.10)
 	_telegraph_tween.parallel().tween_property(animated_sprite, "modulate", _base_modulate, 0.10)
 

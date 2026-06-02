@@ -40,7 +40,7 @@ func _play_windup_telegraph() -> void:
 		return
 	_kill_telegraph()
 	_telegraph_tween = create_tween().set_loops()
-	_telegraph_tween.tween_property(animated_sprite, "modulate", Color(0.5, 0.05, 1.0), 0.22)
+	_telegraph_tween.tween_property(animated_sprite, "modulate", Constants.COLOR_TELEGRAPH_BOSS, 0.22)
 	_telegraph_tween.parallel().tween_property(animated_sprite, "scale", _base_scale * 1.08, 0.22)
 	_telegraph_tween.tween_property(animated_sprite, "modulate", _base_modulate, 0.22)
 	_telegraph_tween.parallel().tween_property(animated_sprite, "scale", _base_scale, 0.22)
@@ -57,6 +57,6 @@ func _spawn_shadow_aura() -> void:
 	aura.initial_velocity_max = 12.0
 	aura.scale_amount_min = 2.5
 	aura.scale_amount_max = 5.0
-	aura.color = Color(0.18, 0.0, 0.28, 0.7)
+	aura.color = Constants.COLOR_AURA_BOSS
 	aura.z_index = -1
 	add_child(aura)
