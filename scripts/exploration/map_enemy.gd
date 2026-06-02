@@ -3,17 +3,21 @@ extends Node2D
 
 # ─── Constants ─────────────────────────────────────
 const ENEMY_TEXTURE = preload("res://assets/sprites/enemy_idle.png")
-const CHASE_RANGE := 5
+const CHASE_RANGE := 5          # comuns: alcance de aggro
+const BOSS_CHASE_RANGE := 7     # boss: defende a porta com alcance maior
+const DRIFT_IDLE_CHANCE := 0.4  # chance de ficar parado ao voltar pra origem
 
 # ─── State ─────────────────────────────────────────
 var enemy_id: String = ""
 var grid_pos: Vector2i = Vector2i.ZERO
 var is_boss: bool = false
+var home_pos: Vector2i = Vector2i.ZERO  # origem; alvo do leash quando o jogador foge
 
 # ─── Public API ────────────────────────────────────
 func setup(id: String, pos: Vector2i, boss: bool = false) -> void:
 	enemy_id = id
 	grid_pos = pos
+	home_pos = pos
 	is_boss = boss
 	_update_visual_position()
 
@@ -31,11 +35,17 @@ func take_turn(player_pos: Vector2i, walkable_fn: Callable, occupied_fn: Callabl
 	if dist <= 1:
 		return true
 
+	var aggro_range := BOSS_CHASE_RANGE if is_boss else CHASE_RANGE
 	var new_pos: Vector2i
-	if dist <= CHASE_RANGE:
+	if dist <= aggro_range:
+		# Dentro do alcance: persegue o jogador.
 		new_pos = _chase(player_pos, walkable_fn, occupied_fn)
+	elif grid_pos != home_pos:
+		# Fora do alcance (jogador fugiu): faz leash de volta pra origem.
+		new_pos = _drift_home(walkable_fn, occupied_fn)
 	else:
-		new_pos = _wander(walkable_fn, occupied_fn)
+		# Já em casa e jogador longe: fica de guarda.
+		new_pos = grid_pos
 
 	if new_pos != grid_pos:
 		grid_pos = new_pos
@@ -81,13 +91,7 @@ func _chase(target: Vector2i, walkable_fn: Callable, occupied_fn: Callable) -> V
 				best = np
 	return best
 
-func _wander(walkable_fn: Callable, occupied_fn: Callable) -> Vector2i:
-	if randf() > 0.4:
+func _drift_home(walkable_fn: Callable, occupied_fn: Callable) -> Vector2i:
+	if randf() < DRIFT_IDLE_CHANCE:
 		return grid_pos
-	var dirs: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
-	dirs.shuffle()
-	for d: Vector2i in dirs:
-		var np: Vector2i = grid_pos + d
-		if walkable_fn.call(np) and not occupied_fn.call(np):
-			return np
-	return grid_pos
+	return _chase(home_pos, walkable_fn, occupied_fn)

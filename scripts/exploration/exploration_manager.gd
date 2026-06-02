@@ -20,40 +20,68 @@ var _chest_node: Node2D = null
 # W=wall  F=floor  E=exit
 # C=baú   K=chave
 # R=fogo  S=espinho
+# Mapa aberto: grande área caminhável com pilares de 1 tile (cobertura/rota) e
+# uma sala-chokepoint do boss no canto inferior-direito. A saída (E) fica dentro
+# dela; a porta única é o gap em (17,14), onde o boss (e3) faz guarda.
 const MAP_LAYOUT = [
 	"WWWWWWWWWWWWWWWWWWWWWWWWWW",
-	"WFFFFFFFFFWWWWWWWWWWWWWWWW",
-	"WFFFFCFFFFWWWWWWWWWWWWWWWW",  # baú em (5,2)
-	"WFFFFFFFFFWWWWWWWWWWWWWWWW",
-	"WWWWWWFFFFFFFFFFWWWWWWWWWW",
-	"WWWWWWWWWWWWWWWFWWWWWWWWWW",
-	"WWWWWWWWWWWWWWWFWWWWWWWWWW",
-	"WWWWWWWWWWWWWWWFWWWWWWWWWW",
-	"WWWWWWWWWWWWWWWFSFFFRFFWWW",  # room2: espinho (16,8), fogo (20,8)
-	"WWWWWWWWWWWWWWWFFFFFFFFWWW",
-	"WWWWWWWWWWWWWWWFRFFSFFFWWW",  # room2: fogo (16,10), espinho (19,10)
-	"WWWWWWWWWWWWWWWFFFFFFFFWWW",
-	"WWWWWWWWWWWWWWWWWWWWFWWWWW",
-	"WWWWWWWWWWWWWWWWWWWWFWWWWW",
-	"WWWWWWWWWWWWWWWWWWWWFWWWWW",
-	"WWWWWWWWWWWWWWWWWFFFFFFWWW",
-	"WWWWWWWWWWWWWWWWWKFFFEWWWW",  # chave (17,16), saída (21,16)
+	"WFFFFFFFFFFFFFFFFFFFFFFFFW",
+	"WFFFWFFFFFFFWFFFFFFFWFFFFW",
+	"WFFFFFFFFFFFFFFFFFFFFFFFFW",
+	"WFFFFFFWFFFFFFFFFWFFFFFFFW",
+	"WFFFFFFFRFFFFFFSFFFFFFFFFW",  # fogo (8,5), espinho (15,5)
+	"WFFFWFFFFFWFFFFFWFFFFFFFFW",
+	"WFFFFFFFFFFFFFFFFFFFFFFFFW",
+	"WFFFFFFWFFFRFFFFFWFFFSFFFW",  # fogo (11,8), espinho (21,8)
+	"WFFFFFFFFFFFFFFFFFFFFFFFFW",
+	"WFFFWFFFFFWFFFFFWFFFFFFFFW",
+	"WFFFFFFFFSFFFFFFRFFFFFFFFW",  # espinho (9,11), fogo (16,11)
+	"WFFFFFFFFFFFFFFFFFWWWWWWWW",
+	"WFFFFFFWFFFFFSFFFFWFFFFFFW",  # espinho (12,13)
+	"WFFFFFFFFFFFFFFFFFFFFFFFFW",  # porta do boss: gap em (17,14)
+	"WFFFWFFFFFFFFFFFFFWFFFFFFW",
+	"WFFFFFFFFFFFFFFFFFWFFFEFFW",  # saída (21,16) dentro da sala do boss
 	"WWWWWWWWWWWWWWWWWWWWWWWWWW",
 ]
 
 const ENEMY_DEFS = [
-	{"id": "e0", "x": 8,  "y": 2,  "boss": false},
-	{"id": "e1", "x": 15, "y": 8,  "boss": false},
-	{"id": "e2", "x": 21, "y": 11, "boss": false},
-	{"id": "e3", "x": 18, "y": 15, "boss": true},
+	{"id": "e0", "x": 9,  "y": 3,  "boss": false},
+	{"id": "e1", "x": 12, "y": 9,  "boss": false},
+	{"id": "e2", "x": 18, "y": 6,  "boss": false},
+	{"id": "e3", "x": 17, "y": 14, "boss": true},  # guarda a porta da saída
 ]
 
 const EXIT_POS     := Vector2i(21, 16)
-const CHEST_POS    := Vector2i(5,  2)
-const KEY_POS      := Vector2i(17, 16)
-const PLAYER_START := Vector2i(2,  2)
+const CHEST_POS    := Vector2i(6,  2)
+const KEY_POS      := Vector2i(12, 7)  # perto de e1, pegável sem lutar
+const PLAYER_START := Vector2i(2,  1)
 
 const HAZARD_CHARS := ["R", "S"]
+
+# Ambientação folk-horror (puramente visual, não afeta walkability).
+const DECO_DEFS = [
+	{"type": MapObject.Type.DEAD_TREE, "x": 2, "y": 3},
+	{"type": MapObject.Type.DEAD_TREE, "x": 23, "y": 2},
+	{"type": MapObject.Type.DEAD_TREE, "x": 2, "y": 14},
+	{"type": MapObject.Type.DEAD_TREE, "x": 23, "y": 9},
+	{"type": MapObject.Type.ROCK, "x": 5, "y": 2},
+	{"type": MapObject.Type.ROCK, "x": 22, "y": 5},
+	{"type": MapObject.Type.ROCK, "x": 6, "y": 15},
+	{"type": MapObject.Type.ROCK, "x": 20, "y": 3},
+	{"type": MapObject.Type.MOSS, "x": 9, "y": 6},
+	{"type": MapObject.Type.MOSS, "x": 14, "y": 7},
+	{"type": MapObject.Type.MOSS, "x": 8, "y": 9},
+	{"type": MapObject.Type.MOSS, "x": 13, "y": 10},
+	{"type": MapObject.Type.MOSS, "x": 16, "y": 9},
+	{"type": MapObject.Type.MOSS, "x": 11, "y": 4},
+	{"type": MapObject.Type.BONES, "x": 13, "y": 5},
+	{"type": MapObject.Type.BONES, "x": 20, "y": 8},
+	{"type": MapObject.Type.BONES, "x": 10, "y": 11},
+	{"type": MapObject.Type.BLOOD_POOL, "x": 12, "y": 13},
+	{"type": MapObject.Type.BLOOD_POOL, "x": 19, "y": 15},
+	{"type": MapObject.Type.BLOOD_POOL, "x": 15, "y": 14},
+	{"type": MapObject.Type.BONES, "x": 20, "y": 15},
+]
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -80,6 +108,10 @@ func _spawn_enemies() -> void:
 		_map_enemies.append(enemy)
 
 func _spawn_objects() -> void:
+	# Decorações de ambientação (atrás de tudo)
+	for d in DECO_DEFS:
+		_make_object(d["type"], Vector2i(d["x"], d["y"]))
+
 	# Baú
 	if not GameState.chest_opened:
 		var chest := _make_object(MapObject.Type.CHEST, CHEST_POS)

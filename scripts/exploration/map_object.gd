@@ -1,9 +1,12 @@
 class_name MapObject
 extends Node2D
 
-enum Type { CHEST, KEY, FIRE, SPIKE }
+enum Type { CHEST, KEY, FIRE, SPIKE, DEAD_TREE, BONES, MOSS, BLOOD_POOL, ROCK }
 
 const T: int = Constants.TILE_SIZE  # 32
+
+# Decorações puramente visuais (não-bloqueantes), renderizadas atrás das entidades.
+const DECO_TYPES := [Type.DEAD_TREE, Type.BONES, Type.MOSS, Type.BLOOD_POOL, Type.ROCK]
 
 var _type: Type
 
@@ -11,6 +14,8 @@ var _type: Type
 func setup(type: Type, grid_pos: Vector2i) -> void:
 	_type = type
 	position = Vector2(grid_pos) * T
+	if type in DECO_TYPES:
+		z_index = -1  # ambientação fica embaixo de jogador/inimigos/baú
 	queue_redraw()
 
 # ─── Drawing ───────────────────────────────────────
@@ -18,10 +23,15 @@ func _draw() -> void:
 	var cx: float = T / 2.0
 	var cy: float = T / 2.0
 	match _type:
-		Type.CHEST:  _draw_chest(cx, cy)
-		Type.KEY:    _draw_key(cx, cy)
-		Type.FIRE:   _draw_fire(cx, cy)
-		Type.SPIKE:  _draw_spike(cx, cy)
+		Type.CHEST:      _draw_chest(cx, cy)
+		Type.KEY:        _draw_key(cx, cy)
+		Type.FIRE:       _draw_fire(cx, cy)
+		Type.SPIKE:      _draw_spike(cx, cy)
+		Type.DEAD_TREE:  _draw_dead_tree(cx, cy)
+		Type.BONES:      _draw_bones(cx, cy)
+		Type.MOSS:       _draw_moss(cx, cy)
+		Type.BLOOD_POOL: _draw_blood_pool(cx, cy)
+		Type.ROCK:       _draw_rock(cx, cy)
 
 func _draw_fire(cx: float, cy: float) -> void:
 	draw_circle(Vector2(cx, cy), 11.0, Color(0.55, 0.08, 0.0, 0.35))
@@ -82,3 +92,72 @@ func _draw_inverted_pentagram(center: Vector2, radius: float, color: Color) -> v
 		var r: float = radius if i % 2 == 0 else inner_r
 		pts.append(center + Vector2(cos(angle), sin(angle)) * r)
 	draw_colored_polygon(pts, color)
+
+# ─── Decorações (ambientação folk-horror, não-bloqueantes) ──
+func _draw_dead_tree(cx: float, cy: float) -> void:
+	var bark      := Color(0.18, 0.11, 0.05)
+	var bark_dark := Color(0.10, 0.06, 0.02)
+	# tronco
+	draw_rect(Rect2(cx - 2.5, cy - 4, 5, 16), bark_dark)
+	draw_rect(Rect2(cx - 1.5, cy - 4, 3, 16), bark)
+	# galhos secos retorcidos
+	var branches: Array = [
+		[Vector2(cx, cy - 2),  Vector2(cx - 9, cy - 9)],
+		[Vector2(cx, cy - 4),  Vector2(cx + 8, cy - 11)],
+		[Vector2(cx, cy - 1),  Vector2(cx + 6, cy - 3)],
+		[Vector2(cx, cy - 6),  Vector2(cx - 5, cy - 13)],
+	]
+	for b: Array in branches:
+		draw_line(b[0], b[1], bark, 2.0)
+
+func _draw_bones(cx: float, cy: float) -> void:
+	var bone := Color(0.78, 0.74, 0.62)
+	var hollow := Color(0.12, 0.10, 0.08)
+	# crânio
+	draw_circle(Vector2(cx - 3, cy - 1), 5.0, bone)
+	draw_circle(Vector2(cx - 5, cy - 2), 1.3, hollow)
+	draw_circle(Vector2(cx - 1, cy - 2), 1.3, hollow)
+	draw_rect(Rect2(cx - 4, cy + 2, 3, 2), bone)
+	# ossos cruzados
+	draw_line(Vector2(cx + 1, cy + 5), Vector2(cx + 10, cy - 2), bone, 2.0)
+	draw_line(Vector2(cx + 1, cy - 2), Vector2(cx + 10, cy + 5), bone, 2.0)
+
+func _draw_moss(cx: float, cy: float) -> void:
+	var moss      := Color(0.13, 0.24, 0.10, 0.7)
+	var moss_dark := Color(0.08, 0.16, 0.06, 0.7)
+	var blobs: Array = [
+		[Vector2(cx - 6, cy + 4), 6.0], [Vector2(cx + 5, cy + 6), 5.0],
+		[Vector2(cx + 7, cy - 4), 4.0], [Vector2(cx - 4, cy - 5), 4.5],
+		[Vector2(cx + 1, cy + 1), 5.5],
+	]
+	for b: Array in blobs:
+		draw_circle(b[0], b[1], moss)
+	draw_circle(Vector2(cx - 5, cy + 5), 2.5, moss_dark)
+	draw_circle(Vector2(cx + 6, cy - 3), 2.0, moss_dark)
+
+func _draw_blood_pool(cx: float, cy: float) -> void:
+	var blood      := Color(0.42, 0.02, 0.02, 0.75)
+	var blood_dark := Color(0.24, 0.0, 0.0, 0.8)
+	var pool: PackedVector2Array = [
+		Vector2(cx - 9, cy + 1), Vector2(cx - 5, cy - 5), Vector2(cx + 2, cy - 6),
+		Vector2(cx + 8, cy - 2), Vector2(cx + 9, cy + 4), Vector2(cx + 3, cy + 8),
+		Vector2(cx - 4, cy + 7), Vector2(cx - 10, cy + 5),
+	]
+	draw_colored_polygon(pool, blood)
+	draw_circle(Vector2(cx + 1, cy + 1), 3.5, blood_dark)
+	# respingos
+	draw_circle(Vector2(cx + 11, cy - 6), 1.5, blood)
+	draw_circle(Vector2(cx - 12, cy - 3), 1.2, blood)
+
+func _draw_rock(cx: float, cy: float) -> void:
+	var stone      := Color(0.34, 0.34, 0.38)
+	var stone_dark := Color(0.20, 0.20, 0.24)
+	var rock: PackedVector2Array = [
+		Vector2(cx - 8, cy + 6), Vector2(cx - 6, cy - 3), Vector2(cx, cy - 7),
+		Vector2(cx + 7, cy - 2), Vector2(cx + 8, cy + 6),
+	]
+	draw_colored_polygon(rock, stone)
+	var shade: PackedVector2Array = [
+		Vector2(cx, cy - 7), Vector2(cx + 7, cy - 2), Vector2(cx + 8, cy + 6), Vector2(cx + 2, cy + 2),
+	]
+	draw_colored_polygon(shade, stone_dark)
