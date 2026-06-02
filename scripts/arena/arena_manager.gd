@@ -11,6 +11,15 @@ const BOSS_BUBBLE_SPREAD_MIN: float = 90.0
 const BOSS_BUBBLE_X: Vector2 = Vector2(70.0, 570.0)
 const BOSS_BUBBLE_Y: Vector2 = Vector2(80.0, 370.0)
 
+# Retângulo de conteúdo que envolve toda a ação (atores + timing bubbles + boss-spread).
+# A câmera dá zoom para encaixá-lo na tela, ampliando o combate e eliminando o espaço
+# morto. FILL < 1 deixa um respiro para a HUD (topo) e o D-pad (base).
+const STAGE_CENTER: Vector2 = Vector2(320.0, 225.0)
+const STAGE_SIZE: Vector2 = Vector2(560.0, 340.0)
+const STAGE_FILL: float = 0.92
+
+@onready var _camera: Camera2D = $Camera2D
+
 var _caipora: CombatActor
 var _enemy: Criatura
 var _timing_system: TimingSystem
@@ -33,9 +42,20 @@ func _ready() -> void:
 	_timing_bubble.vulnerable_entered.connect(_on_bubble_vulnerable)
 	_timing_bubble_b.vulnerable_entered.connect(_on_bubble_vulnerable)
 
+	_update_camera_fit()
+	get_viewport().size_changed.connect(_update_camera_fit)
+
 	_spawn_caipora()
 	_spawn_enemy()
 	_start_caipora_turn()
+
+func _update_camera_fit() -> void:
+	# Zoom "contain": encaixa STAGE_SIZE na viewport sem cortar a ação. Em paisagem o
+	# limite é a altura (ação grande, leve folga lateral); em retrato cabe inteiro.
+	var vp := get_viewport().get_visible_rect().size
+	var z: float = minf(vp.x / STAGE_SIZE.x, vp.y / STAGE_SIZE.y) * STAGE_FILL
+	_camera.zoom = Vector2(z, z)
+	_camera.position = STAGE_CENTER
 
 func _spawn_caipora() -> void:
 	if caipora_combat_scene == null:

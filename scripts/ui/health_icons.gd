@@ -13,31 +13,42 @@ var _total: int = 5
 var _current: int = 5
 var _active_color: Color = Constants.COLOR_BLOOD
 var _empty_color: Color = Color(0.3, 0.05, 0.05, 0.35)
+var _radius: float = ICON_RADIUS
+var _spacing: float = ICON_SPACING
 
 # ─── Public API ────────────────────────────────────
-func setup(total: int, shape: Shape, active: Color, empty: Color) -> void:
+func setup(total: int, shape: Shape, active: Color, empty: Color, radius: float = ICON_RADIUS, spacing: float = ICON_SPACING) -> void:
 	_total = total
 	_current = total
 	_shape = shape
 	_active_color = active
 	_empty_color = empty
-	custom_minimum_size = Vector2(_total * ICON_SPACING + ICON_RADIUS, ICON_RADIUS * 2.8)
+	_radius = radius
+	_spacing = spacing
+	custom_minimum_size = Vector2(_total * _spacing + _radius, _radius * 2.8)
 	queue_redraw()
 
 func set_current(n: float) -> void:
 	_current = clampi(ceili(n), 0, _total)
 	queue_redraw()
 
+## Atualiza só o tamanho dos ícones (sem mexer em total/atual). Usado no resize.
+func set_metrics(radius: float, spacing: float) -> void:
+	_radius = radius
+	_spacing = spacing
+	custom_minimum_size = Vector2(_total * _spacing + _radius, _radius * 2.8)
+	queue_redraw()
+
 # ─── Drawing ───────────────────────────────────────
 func _draw() -> void:
 	var cy: float = custom_minimum_size.y * 0.5
 	for i: int in _total:
-		var center := Vector2(ICON_RADIUS + i * ICON_SPACING, cy)
+		var center := Vector2(_radius + i * _spacing, cy)
 		var color: Color = _active_color if i < _current else _empty_color
 		if _shape == Shape.PENTAGRAM:
-			_draw_pentagram(center, ICON_RADIUS, color)
+			_draw_pentagram(center, _radius, color)
 		else:
-			_draw_star_of_david(center, ICON_RADIUS, color)
+			_draw_star_of_david(center, _radius, color)
 
 func _draw_pentagram(center: Vector2, radius: float, color: Color) -> void:
 	var inner_r: float = radius * 0.382
