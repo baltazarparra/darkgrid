@@ -45,26 +45,28 @@ func trigger_hit_stop(frames: int = 3) -> void:
 
 # ─── Partículas ────────────────────────────────────
 func spawn_blood_particles(at_position: Vector2) -> void:
-	_spawn_particles(BLOOD_PARTICLES, at_position)
+	# Dobro da densidade base: o golpe espirra muito mais sangue (tom gore).
+	_spawn_particles(BLOOD_PARTICLES, at_position, 2.0)
 
 func spawn_critical_particles(at_position: Vector2) -> void:
-	_spawn_particles(CRITICAL_PARTICLES, at_position)
+	_spawn_particles(CRITICAL_PARTICLES, at_position, 2.0)
 	# Segundo burst: faíscas claras overbright (blend aditivo) por cima do sangue,
-	# para a leitura do acerto crítico "estourar" e ficar nítida.
+	# para a leitura do acerto crítico "estourar" e ficar nítida. Mais densa e
+	# violenta que o sangue base.
 	var spark := CPUParticles2D.new()
 	spark.position = at_position
-	spark.amount = 14
-	spark.lifetime = 0.35
+	spark.amount = 28
+	spark.lifetime = 0.4
 	spark.one_shot = true
 	spark.explosiveness = 1.0
 	spark.direction = Vector2(0, -1)
 	spark.spread = 180.0
 	spark.gravity = Vector2(0, 60)
-	spark.initial_velocity_min = 180.0
-	spark.initial_velocity_max = 340.0
-	spark.scale_amount_min = 1.5
-	spark.scale_amount_max = 3.5
-	spark.color = Color(1.0, 0.92, 0.6, 1.0)
+	spark.initial_velocity_min = 220.0
+	spark.initial_velocity_max = 480.0
+	spark.scale_amount_min = 2.0
+	spark.scale_amount_max = 5.0
+	spark.color = Constants.COLOR_PARTICLE_SPARK
 	var glow := CanvasItemMaterial.new()
 	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	spark.material = glow
@@ -80,22 +82,70 @@ func spawn_death_particles(at_position: Vector2) -> void:
 func spawn_dodge_particles(at_position: Vector2) -> void:
 	var p := CPUParticles2D.new()
 	p.position = at_position
-	p.amount = 28
-	p.lifetime = 0.55
+	p.amount = 50
+	p.lifetime = 0.6
 	p.one_shot = true
 	p.explosiveness = 1.0
 	# Spread estreito + blend aditivo: vira um "flash" de alívio limpo, não uma
 	# nuvem dispersa — leitura clara da esquiva perfeita.
 	p.spread = 45.0
 	p.gravity = Vector2(0, -120)
-	p.initial_velocity_min = 90.0
-	p.initial_velocity_max = 200.0
-	p.scale_amount_min = 2.0
-	p.scale_amount_max = 5.0
-	p.color = Color(0.9, 0.95, 1.0, 0.95)
+	p.initial_velocity_min = 120.0
+	p.initial_velocity_max = 280.0
+	p.scale_amount_min = 2.5
+	p.scale_amount_max = 6.0
+	p.color = Constants.COLOR_PARTICLE_DODGE
 	var glow := CanvasItemMaterial.new()
 	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	p.material = glow
+	get_tree().current_scene.add_child(p)
+	p.emitting = true
+	await get_tree().create_timer(p.lifetime + 0.1).timeout
+	if is_instance_valid(p):
+		p.queue_free()
+
+## Estouro radial na posição da bolha no acerto — nasce onde o olho do jogador está,
+## reforçando a leitura do timing. Aditivo (glow) na cor do contexto.
+func spawn_bubble_burst(at_position: Vector2, tint: Color) -> void:
+	var p := CPUParticles2D.new()
+	p.position = at_position
+	p.amount = 32
+	p.lifetime = 0.45
+	p.one_shot = true
+	p.explosiveness = 1.0
+	p.spread = 180.0
+	p.gravity = Vector2.ZERO
+	p.initial_velocity_min = 160.0
+	p.initial_velocity_max = 360.0
+	p.scale_amount_min = 1.5
+	p.scale_amount_max = 4.0
+	p.color = tint
+	var glow := CanvasItemMaterial.new()
+	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	p.material = glow
+	get_tree().current_scene.add_child(p)
+	p.emitting = true
+	await get_tree().create_timer(p.lifetime + 0.1).timeout
+	if is_instance_valid(p):
+		p.queue_free()
+
+## Estilhaço negativo do erro: partículas escuras dessaturadas, blend normal (sem
+## brilho — leitura "morta") que despencam e dispersam rápido. Comunica a falha sem
+## premiar o jogador.
+func spawn_fail_particles(at_position: Vector2) -> void:
+	var p := CPUParticles2D.new()
+	p.position = at_position
+	p.amount = 22
+	p.lifetime = 0.4
+	p.one_shot = true
+	p.explosiveness = 1.0
+	p.spread = 180.0
+	p.gravity = Vector2(0, 320)
+	p.initial_velocity_min = 90.0
+	p.initial_velocity_max = 220.0
+	p.scale_amount_min = 1.5
+	p.scale_amount_max = 3.5
+	p.color = Constants.COLOR_PARTICLE_FAIL
 	get_tree().current_scene.add_child(p)
 	p.emitting = true
 	await get_tree().create_timer(p.lifetime + 0.1).timeout
@@ -106,9 +156,11 @@ func spawn_dodge_particles(at_position: Vector2) -> void:
 func spawn_impact_particles(at_position: Vector2) -> void:
 	_spawn_particles(BLOOD_PARTICLES, at_position)
 
-func _spawn_particles(scene: PackedScene, at_position: Vector2) -> void:
+func _spawn_particles(scene: PackedScene, at_position: Vector2, amount_scale: float = 1.0) -> void:
 	var particles: CPUParticles2D = scene.instantiate()
 	particles.position = at_position
+	if amount_scale != 1.0:
+		particles.amount = int(particles.amount * amount_scale)
 	get_tree().current_scene.add_child(particles)
 	particles.emitting = true
 	await get_tree().create_timer(particles.lifetime + 0.1).timeout

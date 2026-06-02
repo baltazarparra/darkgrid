@@ -22,6 +22,7 @@ var _phase: int = PHASE_IDLE
 var _radius: float = RADIUS_MIN
 var _color: Color = Color(1, 1, 1, 0.2)
 var _burst_timer: float = -1.0
+var _burst_fail: bool = false
 var _defense_mode: bool = false
 var _vuln_color: Color = Color.TRANSPARENT
 var _key_hint: String = "up"
@@ -34,8 +35,13 @@ func _process(delta: float) -> void:
 	if _burst_timer >= 0.0:
 		_burst_timer -= delta
 		var t: float = 1.0 - maxf(0.0, _burst_timer / 0.12)
-		_color = Color(1, 1, 1, lerpf(0.9, 0.0, t))
-		_radius = lerpf(RADIUS_MAX * 0.8, RADIUS_MAX * 1.6, t)
+		if _burst_fail:
+			# Colapso: encolhe e escurece — leitura "morta" da falha, sem expandir.
+			_color = Color(0.2, 0.05, 0.05, lerpf(0.8, 0.0, t))
+			_radius = lerpf(RADIUS_MAX * 0.8, RADIUS_MAX * 0.3, t)
+		else:
+			_color = Color(1, 1, 1, lerpf(0.9, 0.0, t))
+			_radius = lerpf(RADIUS_MAX * 0.8, RADIUS_MAX * 1.6, t)
 		queue_redraw()
 		if _burst_timer <= 0.0:
 			_phase = PHASE_IDLE
@@ -168,8 +174,19 @@ func hide_bubble() -> void:
 
 func burst_success() -> void:
 	_phase = PHASE_IDLE
+	_burst_fail = false
 	_burst_timer = 0.12
 	_color = Color(1, 1, 1, 0.9)
+	_radius = RADIUS_MAX * 0.8
+	visible = true
+	queue_redraw()
+
+## Estilhaço de erro: a bolha colapsa (encolhe e escurece) em vez de explodir.
+func burst_fail() -> void:
+	_phase = PHASE_IDLE
+	_burst_fail = true
+	_burst_timer = 0.12
+	_color = Color(0.2, 0.05, 0.05, 0.8)
 	_radius = RADIUS_MAX * 0.8
 	visible = true
 	queue_redraw()

@@ -162,7 +162,8 @@ func _on_double_first_hit() -> void:
 	var damage := _caipora.execute_attack(false)
 	_enemy.take_damage(damage)
 	_sfx.play(_sfx.hit_sound)
-	_feedback.trigger_screenshake(9.0, 0.25)
+	_feedback.trigger_screenshake(13.0, 0.3)
+	_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
 	_feedback.trigger_hit_stop(3)
 
 func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
@@ -175,12 +176,16 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 		_enemy.take_damage(damage)
 		_sfx.play(_sfx.timing_perfect_sound, -4.0)
 		_sfx.play(_sfx.hit_sound)
-		_feedback.trigger_screenshake(15.0, 0.45)
+		_feedback.trigger_screenshake(22.0, 0.5)
+		_feedback.spawn_bubble_burst(_timing_bubble_b.position, Constants.COLOR_TELEGRAPH_ENEMY)
 		_feedback.spawn_critical_particles(_enemy.position)
 		_feedback.trigger_hit_stop(4)
 	else:
-		_timing_bubble.hide_bubble()
-		_timing_bubble_b.hide_bubble()
+		_timing_bubble.burst_fail()
+		_timing_bubble_b.burst_fail()
+		_feedback.spawn_fail_particles(_timing_bubble_b.position)
+		_feedback.trigger_screenshake(6.0, 0.18)
+		_sfx.play(_sfx.ui_click_sound, -6.0)
 	if _enemy.health.is_alive():
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
 		_start_enemy_turn()
@@ -193,11 +198,15 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		_enemy.take_damage(damage)
 		_sfx.play(_sfx.timing_perfect_sound, -4.0)
 		_sfx.play(_sfx.hit_sound)
-		_feedback.trigger_screenshake(18.0, 0.5)
+		_feedback.trigger_screenshake(26.0, 0.55)
+		_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
 		_feedback.spawn_critical_particles(_enemy.position)
-		_feedback.trigger_hit_stop(5)
+		_feedback.trigger_hit_stop(6)
 	else:
-		_timing_bubble.hide_bubble()
+		_timing_bubble.burst_fail()
+		_feedback.spawn_fail_particles(_timing_bubble.position)
+		_feedback.trigger_screenshake(6.0, 0.18)
+		_sfx.play(_sfx.ui_click_sound, -6.0)
 	if _enemy.health.is_alive():
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
 		_start_enemy_turn()
@@ -244,15 +253,17 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		_caipora.dodge_performed.emit()
 		_sfx.play(_sfx.dodge_sound)
 		_sfx.play(_sfx.timing_perfect_sound, -4.0)
-		_feedback.trigger_screenshake(15.0, 0.45)
+		_feedback.trigger_screenshake(22.0, 0.5)
+		_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_PARTICLE_DODGE)
 		_feedback.spawn_dodge_particles(_caipora.position)
 		_feedback.trigger_hit_stop(5)
 	else:
-		_timing_bubble.hide_bubble()
+		_timing_bubble.burst_fail()
 		var damage := _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
 		_caipora.take_damage(damage)
 		_sfx.play(_sfx.hit_sound)
-		_feedback.trigger_screenshake(11.0, 0.35)
+		_feedback.trigger_screenshake(14.0, 0.35)
+		_feedback.spawn_fail_particles(_timing_bubble.position)
 		_feedback.spawn_blood_particles(_caipora.position)
 		_feedback.trigger_hit_stop(2)
 

@@ -83,6 +83,11 @@ const COLOR_TELEGRAPH_ENEMY_ALT := Color(1.4, 0.9, 0.2) # flash de ataque duplo 
 const COLOR_TELEGRAPH_BOSS := Color(0.5, 0.05, 1.0)     # wind-up do boss (roxo)
 const COLOR_BUBBLE_BOSS := Color(0.55, 0.05, 0.95, 1.0) # bolha de timing do boss
 
+# Partículas de feedback de combate (>1 = overbright p/ glow aditivo intencional).
+const COLOR_PARTICLE_SPARK := Color(1.0, 0.92, 0.6, 1.0)  # faísca de crítico (dourado)
+const COLOR_PARTICLE_DODGE := Color(0.9, 0.95, 1.0, 0.95) # flash de esquiva (azul-claro)
+const COLOR_PARTICLE_FAIL := Color(0.20, 0.18, 0.22, 0.9) # estilhaço de erro (cinza-fumaça morto, deriva de COLOR_STONE_DARK)
+
 # ─── UI Design Tokens (escala de espaçamento / tipografia) ──
 # Padronização AAA: telas e HUD consomem estes tokens, nunca números soltos.
 const SPACE_XS := 8
