@@ -41,6 +41,10 @@ func _ready() -> void:
 	_timing_system = $TimingSystem
 	_timing_bubble = $TimingBubble
 	_timing_bubble_b = $TimingBubbleB
+	# Bolhas acima dos atores (z 0): a seta da tecla precisa ficar sempre visível.
+	# Fica abaixo das CanvasLayer da HUD/D-pad, que desenham em camada própria.
+	_timing_bubble.z_index = 10
+	_timing_bubble_b.z_index = 10
 	_feedback = $FeedbackSystem
 	_sfx = $SfxSystem
 	_timing_bubble.vulnerable_entered.connect(_on_bubble_vulnerable)
