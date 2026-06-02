@@ -5,13 +5,18 @@ extends Node2D
 signal vulnerable_entered
 
 # ─── Constants ─────────────────────────────────────
-const RADIUS_MIN: float = 4.0
-const RADIUS_MAX: float = 40.0
+## Anel-alvo fixo: marca a janela de acerto. O jogador aperta quando o anel
+## convergente se sobrepõe a ele.
+const RADIUS_TARGET: float = 40.0
+## Maior extensão visual da bolha (raio inicial do anel convergente). Lido
+## externamente por arena_manager.gd (_is_under_dpad) para afastar a bolha do
+## D-pad — manter como o maior raio que a bolha desenha.
+const RADIUS_MAX: float = RADIUS_TARGET * 1.9
+## Raio final do colapso na falha (anel encolhe para dentro do alvo).
+const RADIUS_COLLAPSE: float = RADIUS_TARGET * 0.12
 
-const PHASE_GROW: int = 0
-const PHASE_VULNERABLE: int = 1
-const PHASE_EXPLODE: int = 2
-const PHASE_IDLE: int = 3
+const PHASE_ACTIVE: int = 0
+const PHASE_IDLE: int = 1
 
 # ─── State ─────────────────────────────────────────
 var _duration: float = 0.8
@@ -19,10 +24,15 @@ var _perfect_start: float = 0.65
 var _perfect_end: float = 0.85
 var _elapsed: float = 0.0
 var _phase: int = PHASE_IDLE
-var _radius: float = RADIUS_MIN
+var _outer_radius: float = RADIUS_MAX
 var _color: Color = Color(1, 1, 1, 0.2)
+var _target_alpha: float = 0.25
+var _arrow_alpha: float = 0.35
+var _vuln_emitted: bool = false
 var _burst_timer: float = -1.0
 var _burst_fail: bool = false
+var _burst_radius: float = RADIUS_TARGET
+var _burst_color: Color = Color(1, 1, 1, 0.9)
 var _defense_mode: bool = false
 var _vuln_color: Color = Color.TRANSPARENT
 var _key_hint: String = "up"
@@ -33,19 +43,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _burst_timer >= 0.0:
-		_burst_timer -= delta
-		var t: float = 1.0 - maxf(0.0, _burst_timer / 0.12)
-		if _burst_fail:
-			# Colapso: encolhe e escurece — leitura "morta" da falha, sem expandir.
-			_color = Color(0.2, 0.05, 0.05, lerpf(0.8, 0.0, t))
-			_radius = lerpf(RADIUS_MAX * 0.8, RADIUS_MAX * 0.3, t)
-		else:
-			_color = Color(1, 1, 1, lerpf(0.9, 0.0, t))
-			_radius = lerpf(RADIUS_MAX * 0.8, RADIUS_MAX * 1.6, t)
-		queue_redraw()
-		if _burst_timer <= 0.0:
-			_phase = PHASE_IDLE
-			visible = false
+		_process_burst(delta)
 		return
 
 	if _phase == PHASE_IDLE:
@@ -53,51 +51,88 @@ func _process(delta: float) -> void:
 
 	_elapsed += delta
 	var progress: float = clampf(_elapsed / _duration, 0.0, 1.0)
+	var pc: float = (_perfect_start + _perfect_end) * 0.5
 
-	match _phase:
-		PHASE_GROW:
-			if progress >= _perfect_start:
-				_phase = PHASE_VULNERABLE
-				vulnerable_entered.emit()
-			else:
-				var t: float = progress / _perfect_start
-				_radius = lerpf(RADIUS_MIN, RADIUS_MAX, t)
-				_color = Color(1.0, 1.0, 1.0, lerpf(0.2, 0.55, t))
+	# Anel convergente: encolhe de RADIUS_MAX até encostar no alvo exatamente no
+	# centro da zona perfeita, depois colapsa para dentro (leitura de falha).
+	if progress <= pc:
+		var t: float = progress / maxf(pc, 0.0001)
+		_outer_radius = lerpf(RADIUS_MAX, RADIUS_TARGET, t)
+	else:
+		var t: float = (progress - pc) / maxf(1.0 - pc, 0.0001)
+		_outer_radius = lerpf(RADIUS_TARGET, RADIUS_COLLAPSE, t)
 
-		PHASE_VULNERABLE:
-			if progress >= _perfect_end:
-				_phase = PHASE_EXPLODE
-			else:
-				var t: float = (progress - _perfect_start) / (_perfect_end - _perfect_start)
-				var pulse: float = sin(t * TAU * 4.0) * 0.15
-				_radius = RADIUS_MAX * (1.1 + pulse * 0.1)
-				if _vuln_color.a > 0.0:
-					_color = Color(_vuln_color.r, _vuln_color.g, _vuln_color.b, 0.85 + pulse)
-				elif _defense_mode:
-					_color = Color(0.05 + pulse * 0.05, 0.3 + pulse * 0.1, 1.0, 0.85 + pulse)
-				else:
-					_color = Color(1.0, 0.05 + pulse * 0.1, 0.05 + pulse * 0.1, 0.85 + pulse)
+	var in_perfect: bool = progress >= _perfect_start and progress <= _perfect_end
+	if in_perfect and not _vuln_emitted:
+		_vuln_emitted = true
+		vulnerable_entered.emit()
 
-		PHASE_EXPLODE:
-			var t: float = (progress - _perfect_end) / (1.0 - _perfect_end)
-			_radius = RADIUS_MAX * lerpf(1.1, 3.2, t)
-			_color = Color(lerpf(0.5, 0.1, t), 0.0, 0.0, lerpf(0.7, 0.0, t))
-			if t >= 1.0:
-				_phase = PHASE_IDLE
-				visible = false
+	# Cor do anel convergente + brilho do alvo + opacidade da seta.
+	var mode_color: Color = _mode_color()
+	if in_perfect:
+		var t: float = (progress - _perfect_start) / maxf(_perfect_end - _perfect_start, 0.0001)
+		var pulse: float = sin(t * TAU * 4.0) * 0.1
+		_color = Color(mode_color.r, mode_color.g, mode_color.b, 0.95)
+		_target_alpha = 0.7 + pulse
+		_arrow_alpha = 0.9
+	elif progress < _perfect_start:
+		var t: float = progress / maxf(_perfect_start, 0.0001)
+		_color = Color(mode_color.r, mode_color.g, mode_color.b, lerpf(0.45, 0.9, t))
+		_target_alpha = 0.25
+		_arrow_alpha = 0.35
+	else:
+		# Pós-janela: anel colapsando, esmaece.
+		var t: float = (progress - _perfect_end) / maxf(1.0 - _perfect_end, 0.0001)
+		_color = Color(mode_color.r * 0.5, mode_color.g * 0.2, mode_color.b * 0.2, lerpf(0.7, 0.0, t))
+		_target_alpha = lerpf(0.25, 0.0, t)
+		_arrow_alpha = lerpf(0.35, 0.0, t)
 
 	queue_redraw()
 
+func _process_burst(delta: float) -> void:
+	_burst_timer -= delta
+	var t: float = 1.0 - maxf(0.0, _burst_timer / 0.12)
+	if _burst_fail:
+		# Colapso: encolhe e escurece — leitura "morta" da falha.
+		_burst_color = Color(0.2, 0.05, 0.05, lerpf(0.8, 0.0, t))
+		_burst_radius = lerpf(RADIUS_TARGET * 0.8, RADIUS_TARGET * 0.3, t)
+	else:
+		_burst_color = Color(1, 1, 1, lerpf(0.9, 0.0, t))
+		_burst_radius = lerpf(RADIUS_TARGET * 0.8, RADIUS_TARGET * 1.6, t)
+	queue_redraw()
+	if _burst_timer <= 0.0:
+		_phase = PHASE_IDLE
+		visible = false
+
 func _draw() -> void:
-	if _phase == PHASE_IDLE and _burst_timer < 0.0:
+	if _burst_timer >= 0.0:
+		draw_circle(Vector2.ZERO, _burst_radius, _burst_color)
+		draw_arc(Vector2.ZERO, _burst_radius, 0.0, TAU, 32, Color(1, 1, 1, _burst_color.a * 0.4), 1.5)
 		return
-	draw_circle(Vector2.ZERO, _radius, _color)
-	draw_arc(Vector2.ZERO, _radius, 0.0, TAU, 32, Color(1, 1, 1, _color.a * 0.4), 1.5)
-	if _phase == PHASE_VULNERABLE:
-		_draw_arrow(_key_hint)
+
+	if _phase == PHASE_IDLE:
+		return
+
+	# 1. Anel-alvo fixo (a janela de acerto). Acende na zona perfeita.
+	var target_col: Color = _mode_color()
+	draw_circle(Vector2.ZERO, RADIUS_TARGET, Color(target_col.r, target_col.g, target_col.b, _target_alpha * 0.35))
+	draw_arc(Vector2.ZERO, RADIUS_TARGET, 0.0, TAU, 40, Color(target_col.r, target_col.g, target_col.b, _target_alpha), 2.0)
+
+	# 2. Anel convergente (o timer): encolhe em direção ao alvo.
+	draw_arc(Vector2.ZERO, _outer_radius, 0.0, TAU, 40, _color, 2.5)
+
+	# 3. Glifo da tecla (seta) no centro — sempre visível enquanto a janela está ativa.
+	_draw_arrow(_key_hint, _arrow_alpha)
 
 # ─── Private helpers ───────────────────────────────
-func _draw_arrow(dir: String) -> void:
+func _mode_color() -> Color:
+	if _vuln_color.a > 0.0:
+		return Color(_vuln_color.r, _vuln_color.g, _vuln_color.b, 1.0)
+	if _defense_mode:
+		return Color(0.1, 0.6, 1.0, 1.0)
+	return Color(1.0, 0.15, 0.1, 1.0)
+
+func _draw_arrow(dir: String, alpha: float) -> void:
 	const PX: float = 5.0
 	var grid: Array
 	match dir:
@@ -148,7 +183,7 @@ func _draw_arrow(dir: String) -> void:
 	for row in rows:
 		for col in cols:
 			if grid[row][col] == "X":
-				draw_rect(Rect2(ox + col * PX, oy + row * PX, PX, PX), Color(1.0, 1.0, 1.0, 0.9))
+				draw_rect(Rect2(ox + col * PX, oy + row * PX, PX, PX), Color(1.0, 1.0, 1.0, alpha))
 
 # ─── Public API ────────────────────────────────────
 func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false, vuln_color: Color = Color.TRANSPARENT, key_hint: String = "up") -> void:
@@ -156,13 +191,16 @@ func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perf
 	_perfect_start = perfect_start
 	_perfect_end = perfect_end
 	_elapsed = 0.0
-	_phase = PHASE_GROW
+	_phase = PHASE_ACTIVE
 	_burst_timer = -1.0
+	_vuln_emitted = false
 	_defense_mode = defense
 	_vuln_color = vuln_color
 	_key_hint = key_hint
-	_radius = RADIUS_MIN
-	_color = Color(1, 1, 1, 0.2)
+	_outer_radius = RADIUS_MAX
+	_target_alpha = 0.25
+	_arrow_alpha = 0.35
+	_color = Color(1, 1, 1, 0.45)
 	position = world_pos
 	visible = true
 	queue_redraw()
@@ -176,8 +214,8 @@ func burst_success() -> void:
 	_phase = PHASE_IDLE
 	_burst_fail = false
 	_burst_timer = 0.12
-	_color = Color(1, 1, 1, 0.9)
-	_radius = RADIUS_MAX * 0.8
+	_burst_color = Color(1, 1, 1, 0.9)
+	_burst_radius = RADIUS_TARGET * 0.8
 	visible = true
 	queue_redraw()
 
@@ -186,7 +224,7 @@ func burst_fail() -> void:
 	_phase = PHASE_IDLE
 	_burst_fail = true
 	_burst_timer = 0.12
-	_color = Color(0.2, 0.05, 0.05, 0.8)
-	_radius = RADIUS_MAX * 0.8
+	_burst_color = Color(0.2, 0.05, 0.05, 0.8)
+	_burst_radius = RADIUS_TARGET * 0.8
 	visible = true
 	queue_redraw()
