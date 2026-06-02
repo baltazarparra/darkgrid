@@ -25,6 +25,11 @@ boot_splash/fullsize=true
 GameState="*res://scripts/core/game_state.gd"
 SignalBus="*res://scripts/core/signal_bus.gd"
 MetaProgression="*res://scripts/core/meta_progression.gd"
+AudioDirector="*res://scripts/core/audio_director.gd"
+
+[audio]
+
+buses/default_bus_layout="res://default_bus_layout.tres"
 
 [editor_plugins]
 

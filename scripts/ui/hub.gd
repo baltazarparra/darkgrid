@@ -7,6 +7,7 @@ extends CanvasLayer
 @onready var _upgrade_list: VBoxContainer = $Center/VBox/UpgradeList
 @onready var _enter_button: Button = $Center/VBox/EnterButton
 
+var _options: OptionsPanel
 var _forca_label: Label
 var _forca_button: Button
 var _saude_label: Label
@@ -18,7 +19,22 @@ func _ready() -> void:
 	_build_forca_row()
 	_build_saude_row()
 	_enter_button.pressed.connect(_on_enter_pressed)
+	_add_options_ui()
 	_enter_button.grab_focus()
+
+## Botão "Opções" (abaixo de Entrar na Floresta) + overlay, montados em código.
+func _add_options_ui() -> void:
+	_options = OptionsPanel.new()
+	add_child(_options)
+
+	var options_button := Button.new()
+	options_button.text = "Opções"
+	options_button.add_theme_font_size_override("font_size", 16)
+	options_button.pressed.connect(_on_options_pressed)
+	$Center/VBox.add_child(options_button)
+
+func _on_options_pressed() -> void:
+	_options.open()
 
 func _refresh_stats() -> void:
 	_stats.text = "Caçadas: %d    Vitórias: %d" % [MetaProgression.total_runs, MetaProgression.total_wins]
