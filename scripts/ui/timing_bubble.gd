@@ -92,14 +92,57 @@ func _draw() -> void:
 
 # ─── Private helpers ───────────────────────────────
 func _draw_arrow(dir: String) -> void:
-	var s := 10.0
-	var pts: PackedVector2Array
+	const PX: float = 5.0
+	var grid: Array
 	match dir:
-		"up":    pts = [Vector2(0, -s), Vector2(-s * .6, s * .4), Vector2(s * .6, s * .4)]
-		"down":  pts = [Vector2(0,  s), Vector2(-s * .6,-s * .4), Vector2(s * .6,-s * .4)]
-		"left":  pts = [Vector2(-s, 0), Vector2(s * .4,-s * .6), Vector2(s * .4, s * .6)]
-		"right": pts = [Vector2( s, 0), Vector2(-s * .4,-s * .6), Vector2(-s * .4, s * .6)]
-	draw_polygon(pts, [Color(1, 1, 1, 0.9)])
+		"up":
+			grid = [
+				"...X...",
+				"..XXX..",
+				".XXXXX.",
+				"XXXXXXX",
+				"...X...",
+				"...X...",
+				"...X...",
+			]
+		"down":
+			grid = [
+				"...X...",
+				"...X...",
+				"...X...",
+				"XXXXXXX",
+				".XXXXX.",
+				"..XXX..",
+				"...X...",
+			]
+		"left":
+			grid = [
+				"...X...",
+				"..X....",
+				".X.....",
+				"XXXXXXX",
+				".X.....",
+				"..X....",
+				"...X...",
+			]
+		"right":
+			grid = [
+				"...X...",
+				"....X..",
+				".....X.",
+				"XXXXXXX",
+				".....X.",
+				"....X..",
+				"...X...",
+			]
+	var rows: int = grid.size()
+	var cols: int = 7
+	var ox: float = -cols * PX * 0.5
+	var oy: float = -rows * PX * 0.5
+	for row in rows:
+		for col in cols:
+			if grid[row][col] == "X":
+				draw_rect(Rect2(ox + col * PX, oy + row * PX, PX, PX), Color(1.0, 1.0, 1.0, 0.9))
 
 # ─── Public API ────────────────────────────────────
 func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false, vuln_color: Color = Color.TRANSPARENT, key_hint: String = "up") -> void:
