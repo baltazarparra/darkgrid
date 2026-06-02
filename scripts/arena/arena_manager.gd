@@ -20,6 +20,8 @@ var _feedback: FeedbackSystem
 var _sfx: SfxSystem
 var _active_enemy_pattern: AttackPattern
 var _last_boss_bubble_pos: Vector2 = Vector2(-999.0, -999.0)
+var _first_bubble_pos: Vector2 = Vector2.ZERO
+var _is_double_attack: bool = false
 
 func _ready() -> void:
 	_timing_system = $TimingSystem
@@ -43,7 +45,7 @@ func _spawn_caipora() -> void:
 	add_child(_caipora)
 	_caipora.health.max_health = GameState.caipora_max_hp
 	_caipora.health.current_health = clampi(GameState.caipora_current_hp, 0, GameState.caipora_max_hp)
-	_caipora.attack_cooldown = maxf(0.3, Constants.ATTACK_COOLDOWN_SECONDS - MetaProgression.get_cooldown_reduction())
+	_caipora.attack_cooldown = maxf(0.0, Constants.ATTACK_COOLDOWN_SECONDS - MetaProgression.get_cooldown_reduction())
 	_caipora.health.health_changed.connect(_on_caipora_health_changed)
 	_caipora.health.died.connect(_on_actor_died.bind(_caipora))
 	_caipora.health.died.connect(func(): SignalBus.caipora_died.emit())
@@ -77,80 +79,87 @@ func _both_alive() -> bool:
 func _start_caipora_turn() -> void:
 	if not _both_alive():
 		return
-	var is_double: bool = randf() < Constants.TIMING_DOUBLE_CHANCE
+	_is_double_attack = randf() < Constants.TIMING_DOUBLE_CHANCE
 	_sfx.play(_sfx.attack_sound)
-	_timing_system.timing_result.connect(_on_attack_timing_result)
-
-	if is_double:
-		_timing_system.timing_first_hit.connect(_on_attack_first_hit)
-		_timing_system.open_window(
-			Constants.TIMING_WINDOW_ATTACK_DOUBLE,
-			Constants.TIMING_DOUBLE_PERFECT_START,
-			Constants.TIMING_DOUBLE_PERFECT_END,
-			true
-		)
-		# Bolha A — nasce imediatamente, levemente à esquerda do inimigo
-		_timing_bubble.show_bubble(
-			_enemy.position + Vector2(-18, -78),
-			Constants.TIMING_WINDOW_ATTACK_DOUBLE,
-			Constants.TIMING_DOUBLE_PERFECT_START,
-			Constants.TIMING_DOUBLE_PERFECT_END
-		)
-		# Bolha B — nasce TIMING_DOUBLE_SPAWN_DELAY depois, meia bolha à direita
-		await get_tree().create_timer(Constants.TIMING_DOUBLE_SPAWN_DELAY).timeout
-		if _both_alive():
-			var b_duration: float = Constants.TIMING_WINDOW_ATTACK_DOUBLE - Constants.TIMING_DOUBLE_SPAWN_DELAY
-			_timing_bubble_b.show_bubble(
-				_enemy.position + Vector2(18, -60),
-				b_duration,
-				Constants.TIMING_DOUBLE_PERFECT_START,
-				Constants.TIMING_DOUBLE_PERFECT_END - 0.06
-			)
+	_first_bubble_pos = _enemy.position + Vector2(0, -78)
+	_timing_bubble.show_bubble(
+		_first_bubble_pos,
+		Constants.TIMING_WINDOW_ATTACK,
+		Constants.TIMING_PERFECT_START,
+		Constants.TIMING_PERFECT_END
+	)
+	if _is_double_attack:
+		var total: float = Constants.TIMING_DOUBLE_INTERVAL + Constants.TIMING_WINDOW_ATTACK
+		var p1s: float = Constants.TIMING_PERFECT_START * Constants.TIMING_WINDOW_ATTACK / total
+		var p1e: float = Constants.TIMING_PERFECT_END * Constants.TIMING_WINDOW_ATTACK / total
+		var p2s: float = (Constants.TIMING_DOUBLE_INTERVAL + Constants.TIMING_PERFECT_START * Constants.TIMING_WINDOW_ATTACK) / total
+		var p2e: float = (Constants.TIMING_DOUBLE_INTERVAL + Constants.TIMING_PERFECT_END * Constants.TIMING_WINDOW_ATTACK) / total
+		_timing_system.open_window(total, p1s, p1e, true, p2s, p2e)
+		_timing_system.timing_first_hit.connect(_on_double_first_hit)
+		_timing_system.timing_result.connect(_on_double_final_result)
+		get_tree().create_timer(Constants.TIMING_DOUBLE_INTERVAL).timeout.connect(_spawn_second_bubble)
 	else:
-		_timing_bubble.show_bubble(
-			_enemy.position + Vector2(0, -70),
-			Constants.TIMING_WINDOW_ATTACK,
-			Constants.TIMING_PERFECT_START,
-			Constants.TIMING_PERFECT_END
-		)
 		_timing_system.open_window(
 			Constants.TIMING_WINDOW_ATTACK,
 			Constants.TIMING_PERFECT_START,
 			Constants.TIMING_PERFECT_END
 		)
+		_timing_system.timing_result.connect(_on_attack_timing_result)
 
-func _on_attack_first_hit() -> void:
-	_timing_system.timing_first_hit.disconnect(_on_attack_first_hit)
+func _spawn_second_bubble() -> void:
+	if not _both_alive() or not _timing_system.is_open():
+		return
+	var angle := randf() * TAU
+	var dist := randf_range(Constants.TIMING_DOUBLE_BUBBLE_SPREAD_MIN, Constants.TIMING_DOUBLE_BUBBLE_SPREAD_MAX)
+	_timing_bubble_b.show_bubble(
+		_first_bubble_pos + Vector2(cos(angle) * dist, sin(angle) * dist),
+		Constants.TIMING_WINDOW_ATTACK,
+		Constants.TIMING_PERFECT_START,
+		Constants.TIMING_PERFECT_END
+	)
+
+func _on_double_first_hit() -> void:
+	_timing_system.timing_first_hit.disconnect(_on_double_first_hit)
 	_timing_bubble.burst_success()
-	_sfx.play(_sfx.timing_alert_sound)
-	_feedback.trigger_screenshake(2.5, 0.08)
+	var damage := _caipora.execute_attack(false)
+	_enemy.take_damage(damage)
+	_sfx.play(_sfx.hit_sound)
+	_feedback.trigger_screenshake(6.0, 0.2)
+	_feedback.trigger_hit_stop(2)
 
-func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
-	_timing_system.timing_result.disconnect(_on_attack_timing_result)
-	if _timing_system.timing_first_hit.is_connected(_on_attack_first_hit):
-		_timing_system.timing_first_hit.disconnect(_on_attack_first_hit)
-
-	var is_critical := result == TimingSystem.TimingResult.PERFECT
-	if is_critical:
-		_timing_bubble.burst_success()
+func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
+	_timing_system.timing_result.disconnect(_on_double_final_result)
+	if _timing_system.timing_first_hit.is_connected(_on_double_first_hit):
+		_timing_system.timing_first_hit.disconnect(_on_double_first_hit)
+	if result == TimingSystem.TimingResult.PERFECT:
 		_timing_bubble_b.burst_success()
+		var damage := _caipora.execute_attack(false)
+		_enemy.take_damage(damage)
+		_sfx.play(_sfx.timing_perfect_sound, -4.0)
+		_sfx.play(_sfx.hit_sound)
+		_feedback.trigger_screenshake(10.0, 0.35)
+		_feedback.spawn_critical_particles(_enemy.position)
+		_feedback.trigger_hit_stop(3)
 	else:
 		_timing_bubble.hide_bubble()
 		_timing_bubble_b.hide_bubble()
+	if _enemy.health.is_alive():
+		await get_tree().create_timer(_caipora.attack_cooldown).timeout
+		_start_enemy_turn()
 
-	var damage := _caipora.execute_attack(is_critical)
-	_enemy.take_damage(damage)
-	if is_critical:
+func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
+	_timing_system.timing_result.disconnect(_on_attack_timing_result)
+	if result == TimingSystem.TimingResult.PERFECT:
+		_timing_bubble.burst_success()
+		var damage := _caipora.execute_attack(true)
+		_enemy.take_damage(damage)
 		_sfx.play(_sfx.timing_perfect_sound, -4.0)
 		_sfx.play(_sfx.hit_sound)
 		_feedback.trigger_screenshake(12.0, 0.4)
 		_feedback.spawn_critical_particles(_enemy.position)
 		_feedback.trigger_hit_stop(3)
 	else:
-		_sfx.play(_sfx.hit_sound)
-		_feedback.trigger_screenshake(5.0, 0.2)
-		_feedback.spawn_blood_particles(_enemy.position)
-
+		_timing_bubble.hide_bubble()
 	if _enemy.health.is_alive():
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
 		_start_enemy_turn()
@@ -170,9 +179,9 @@ func _on_enemy_attack_started() -> void:
 	if _timing_system.timing_result.is_connected(_on_defense_timing_result):
 		_timing_system.timing_result.disconnect(_on_defense_timing_result)
 	_timing_system.timing_result.connect(_on_defense_timing_result)
-	var is_boss: bool = GameState.active_combat_is_boss
-	var bubble_pos: Vector2 = _boss_spread_pos() if is_boss else _caipora.position + Vector2(0, -70)
-	var vuln: Color = BOSS_BUBBLE_COLOR if is_boss else Color.TRANSPARENT
+	var is_special: bool = _active_enemy_pattern.is_special
+	var bubble_pos: Vector2 = _boss_spread_pos() if is_special else _caipora.position + Vector2(0, -70)
+	var vuln: Color = BOSS_BUBBLE_COLOR if is_special else Color.TRANSPARENT
 	_timing_bubble.show_bubble(bubble_pos, window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, true, vuln)
 	_timing_system.open_window(window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END)
 
@@ -184,14 +193,12 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		_caipora.dodge_performed.emit()
 		_sfx.play(_sfx.dodge_sound)
 		_sfx.play(_sfx.timing_perfect_sound, -4.0)
-		var counter_damage := _caipora.execute_attack(true, Constants.DAMAGE_COUNTER_MULTIPLIER)
-		_enemy.take_damage(counter_damage)
 		_feedback.trigger_screenshake(10.0, 0.35)
 		_feedback.spawn_dodge_particles(_caipora.position)
 		_feedback.trigger_hit_stop(4)
 	else:
 		_timing_bubble.hide_bubble()
-		var damage := _enemy.execute_attack(false)
+		var damage := _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
 		_caipora.take_damage(damage)
 		_sfx.play(_sfx.hit_sound)
 		_feedback.trigger_screenshake(8.0, 0.3)

@@ -19,8 +19,11 @@ func setup(id: String, pos: Vector2i, boss: bool = false) -> void:
 
 	var sprite := Sprite2D.new()
 	sprite.texture = ENEMY_TEXTURE
-	sprite.modulate = Color(1.0, 0.2, 0.2, 1.0) if boss else Color(0.7, 0.5, 0.9, 1.0)
+	sprite.modulate = Color(0.08, 0.0, 0.14, 1.0) if boss else Color(0.7, 0.5, 0.9, 1.0)
 	add_child(sprite)
+
+	if boss:
+		_spawn_boss_aura()
 
 ## Returns true if this enemy reaches the player and should trigger combat.
 func take_turn(player_pos: Vector2i, walkable_fn: Callable, occupied_fn: Callable) -> bool:
@@ -43,6 +46,21 @@ func take_turn(player_pos: Vector2i, walkable_fn: Callable, occupied_fn: Callabl
 	return false
 
 # ─── Private ───────────────────────────────────────
+func _spawn_boss_aura() -> void:
+	var aura := CPUParticles2D.new()
+	aura.z_index = -1
+	aura.amount = 16
+	aura.lifetime = 1.4
+	aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	aura.emission_sphere_radius = 14.0
+	aura.gravity = Vector2(0, -10)
+	aura.initial_velocity_min = 2.0
+	aura.initial_velocity_max = 8.0
+	aura.scale_amount_min = 1.5
+	aura.scale_amount_max = 3.5
+	aura.color = Color(0.18, 0.0, 0.28, 0.75)
+	add_child(aura)
+
 func _update_visual_position() -> void:
 	position = Vector2(grid_pos) * Constants.TILE_SIZE
 

@@ -9,17 +9,15 @@ const GRID_HEIGHT := 18
 # ─── Combat ────────────────────────────────────────
 const TIMING_WINDOW_FRAMES := 12
 const TIMING_PERFECT_FRAMES := 3
-const ATTACK_COOLDOWN_SECONDS := 1.5
+const ATTACK_COOLDOWN_SECONDS := 0.0
 const DODGE_COOLDOWN_SECONDS := 0.5
 const TIMING_WINDOW_ATTACK := 0.8
-const TIMING_WINDOW_ATTACK_DOUBLE := 1.2
 const TIMING_PERFECT_START := 0.65
 const TIMING_PERFECT_END := 0.85
 const TIMING_DOUBLE_CHANCE := 0.30
-const TIMING_DOUBLE_PERFECT_START := 0.35
-const TIMING_DOUBLE_PERFECT_END := 0.90
-const TIMING_DOUBLE_MIN_INTERVAL := 0.08
-const TIMING_DOUBLE_SPAWN_DELAY := 0.35
+const TIMING_DOUBLE_INTERVAL := 0.5
+const TIMING_DOUBLE_BUBBLE_SPREAD_MIN := 60.0
+const TIMING_DOUBLE_BUBBLE_SPREAD_MAX := 80.0
 
 # ─── Damage ────────────────────────────────────────
 const DAMAGE_BASE := 1
@@ -29,7 +27,7 @@ const DAMAGE_COUNTER_MULTIPLIER := 1.0
 # ─── Health ────────────────────────────────────────
 const CAIPORA_MAX_HEALTH := 1
 const ENEMY_MAX_HEALTH := 5
-const BOSS_MAX_HEALTH := 5
+const BOSS_MAX_HEALTH := 10
 
 # ─── Colors (Horror Folk Palette) ──────────────────
 const COLOR_NIGHT := Color("#0d1117")

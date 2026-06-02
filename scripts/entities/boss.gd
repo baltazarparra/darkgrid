@@ -1,10 +1,12 @@
 class_name Boss
 extends Criatura
 
-const DOUBLE_PATTERN := preload("res://resources/attack_patterns/boss_double_pattern.tres")
+const CRIATURA_PATTERN := preload("res://resources/attack_patterns/criatura_pattern.tres")
 const SPECIAL_PATTERN := preload("res://resources/attack_patterns/boss_special_pattern.tres")
 
 const SPECIAL_CHANCE: float = 0.35
+
+var _current_is_special: bool = false
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -13,13 +15,15 @@ func _ready() -> void:
 
 # ─── Public API ────────────────────────────────────
 func get_attack_pattern() -> AttackPattern:
-	if randf() < SPECIAL_CHANCE:
-		return SPECIAL_PATTERN
-	return DOUBLE_PATTERN
+	_current_is_special = randf() < SPECIAL_CHANCE
+	return SPECIAL_PATTERN if _current_is_special else CRIATURA_PATTERN
 
-# ─── Telegraph override (roxo em vez de vermelho) ──
+# ─── Telegraph override ─────────────────────────────
 func _play_windup_telegraph() -> void:
 	if animated_sprite == null:
+		return
+	if not _current_is_special:
+		super._play_windup_telegraph()
 		return
 	_kill_telegraph()
 	_telegraph_tween = create_tween().set_loops()

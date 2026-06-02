@@ -19,7 +19,7 @@ var _is_dying: bool = false
 func _ready() -> void:
 	_attack_timer = Timer.new()
 	_attack_timer.one_shot = true
-	_attack_timer.wait_time = attack_cooldown
+	_attack_timer.wait_time = maxf(0.01, attack_cooldown)
 	_attack_timer.timeout.connect(_on_attack_cooldown_ready)
 	add_child(_attack_timer)
 	health.died.connect(_on_health_died)
@@ -33,14 +33,13 @@ func execute_attack(is_critical: bool = false, multiplier_override: float = 0.0)
 	if _is_dying:
 		return 0
 	var damage := base_attack_damage
-	if is_critical:
-		if multiplier_override > 0.0:
-			damage = int(damage * multiplier_override)
-		else:
-			damage = int(damage * critical_multiplier)
+	if multiplier_override > 0.0:
+		damage = int(damage * multiplier_override)
+	elif is_critical:
+		damage = int(damage * critical_multiplier)
 	attack_executed.emit(damage, is_critical)
 	_can_attack = false
-	_attack_timer.wait_time = attack_cooldown  # reflete ajustes pós-spawn (meta)
+	_attack_timer.wait_time = maxf(0.01, attack_cooldown)
 	_attack_timer.start()
 	return damage
 

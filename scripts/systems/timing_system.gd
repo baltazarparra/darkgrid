@@ -13,21 +13,28 @@ var _window_progress: float = 0.0
 var _window_duration: float = 1.5
 var _perfect_start: float = 0.35
 var _perfect_end: float = 0.65
+var _perfect_start_2: float = 0.35
+var _perfect_end_2: float = 0.65
 var _double_mode: bool = false
-var _first_press_elapsed: float = -1.0
+var _first_hit_done: bool = false
 
 # ─── Public API ────────────────────────────────────
-func open_window(duration: float = 1.5, perfect_start: float = 0.35, perfect_end: float = 0.65, double: bool = false) -> void:
+func open_window(duration: float = 1.5, perfect_start: float = 0.35, perfect_end: float = 0.65, double: bool = false, perfect_start_2: float = 0.0, perfect_end_2: float = 0.0) -> void:
 	_is_window_open = true
 	_window_duration = duration
 	_perfect_start = perfect_start
 	_perfect_end = perfect_end
+	_perfect_start_2 = perfect_start_2 if perfect_start_2 > 0.0 else perfect_start
+	_perfect_end_2 = perfect_end_2 if perfect_end_2 > 0.0 else perfect_end
 	_double_mode = double
-	_first_press_elapsed = -1.0
+	_first_hit_done = false
 	_window_progress = 0.0
 
 func close_window() -> void:
 	_is_window_open = false
+
+func is_open() -> bool:
+	return _is_window_open
 
 # ─── Lifecycle ─────────────────────────────────────
 func _process(delta: float) -> void:
@@ -46,6 +53,8 @@ func _input(event: InputEvent) -> void:
 
 # ─── Private helpers ───────────────────────────────
 func _in_perfect_zone() -> bool:
+	if _double_mode and _first_hit_done:
+		return _window_progress >= _perfect_start_2 and _window_progress <= _perfect_end_2
 	return _window_progress >= _perfect_start and _window_progress <= _perfect_end
 
 func _evaluate_timing() -> void:
@@ -57,19 +66,16 @@ func _evaluate_timing() -> void:
 			timing_result.emit(TimingResult.MISS)
 		return
 
-	var elapsed: float = _window_progress * _window_duration
-
-	if _first_press_elapsed < 0.0:
+	if not _first_hit_done:
 		if _in_perfect_zone():
-			_first_press_elapsed = elapsed
+			_first_hit_done = true
 			timing_first_hit.emit()
 		else:
 			_is_window_open = false
 			timing_result.emit(TimingResult.MISS)
 	else:
-		var interval: float = elapsed - _first_press_elapsed
 		_is_window_open = false
-		if _in_perfect_zone() and interval >= Constants.TIMING_DOUBLE_MIN_INTERVAL:
+		if _in_perfect_zone():
 			timing_result.emit(TimingResult.PERFECT)
 		else:
 			timing_result.emit(TimingResult.MISS)

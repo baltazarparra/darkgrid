@@ -4,8 +4,8 @@
 
 [resource]
 script = ExtResource("1_pattern")
-idle_duration = 0.2
-wind_up_duration = 0.3
+idle_duration = 0.0
+wind_up_duration = 0.15
 attack_duration = 0.8
 cooldown_duration = 1.5
 damage_multiplier = 1.0

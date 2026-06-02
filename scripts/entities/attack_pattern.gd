@@ -10,6 +10,7 @@ extends Resource
 @export var attack_duration: float = 1.0
 @export var cooldown_duration: float = 2.0
 @export var damage_multiplier: float = 1.0
+@export var is_special: bool = false
 
 ## Multi-strike (Boss): número de golpes consecutivos por pattern.
 @export var strike_count: int = 1
