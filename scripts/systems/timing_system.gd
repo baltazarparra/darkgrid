@@ -6,6 +6,9 @@ enum TimingResult { PERFECT, MISS }
 # ─── Signals ───────────────────────────────────────
 signal timing_result(result: TimingResult)
 signal timing_first_hit
+## Emitido a cada input válido recebido durante uma janela aberta (perfeito OU
+## não). Serve para feedback tátil imediato (micro-shake + clique) a cada ação.
+signal input_registered
 
 # ─── State ─────────────────────────────────────────
 var _is_window_open: bool = false
@@ -54,6 +57,7 @@ func _input(event: InputEvent) -> void:
 		return
 	var action := _expected_action_2 if (_double_mode and _first_hit_done) else _expected_action
 	if event.is_action_pressed(action):
+		input_registered.emit()
 		_evaluate_timing()
 
 # ─── Private helpers ───────────────────────────────

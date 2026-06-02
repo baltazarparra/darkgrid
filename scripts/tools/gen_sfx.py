@@ -44,66 +44,108 @@ def _noise():
     return random.uniform(-1.0, 1.0)
 
 
+def _pitch_jitter(amount=0.06):
+    """Leve aleatoriedade de pitch por som (±amount) p/ não soar repetitivo."""
+    return 1.0 + random.uniform(-amount, amount)
+
+
 def attack_wav():
-    # Whoosh: ruído filtrado com pitch caindo.
+    # Whoosh aéreo: ruído com filtro abrindo (cutoff sobe) e pitch caindo no fim.
     n = int(SAMPLE_RATE * 0.2)
     out = []
     prev = 0.0
     for i in range(n):
+        t = i / n
+        # cutoff do low-pass abre ao longo do som: começa abafado, fica aéreo.
+        cut = 0.25 + 0.55 * t
         raw = _noise()
-        prev = prev * 0.6 + raw * 0.4  # low-pass leve
+        prev = prev * (1.0 - cut) + raw * cut
         out.append(prev * _env(i, n, 0.02, 0.6) * 0.5)
     return out
 
 
 def hit_wav():
-    # Punch seco: burst de ruído + tom grave curto.
-    n = int(SAMPLE_RATE * 0.15)
+    # Punch carnudo: thump grave (corpo) + snap mid (ataque) + ruído filtrado.
+    n = int(SAMPLE_RATE * 0.16)
     out = []
+    j = _pitch_jitter()
+    f_thump = 62.0 * j   # fundamental grave que "enche"
+    f_snap = 260.0 * j   # camada mid do impacto
+    prev = 0.0
     for i in range(n):
         t = i / SAMPLE_RATE
-        e = _env(i, n, 0.005, 0.8)
-        tone = math.sin(2 * math.pi * 90 * t)
-        out.append((0.6 * _noise() + 0.4 * tone) * e * 0.7)
+        e = _env(i, n, 0.004, 0.85)
+        # thump cai um pouco de pitch (pancada que assenta)
+        thump = math.sin(2 * math.pi * f_thump * (1.0 - 0.15 * (i / n)) * t)
+        snap = math.sin(2 * math.pi * f_snap * t) * math.exp(-22.0 * t)
+        prev = prev * 0.5 + _noise() * 0.5  # ruído um pouco filtrado
+        body = 0.5 * thump + 0.22 * snap + 0.28 * prev
+        out.append(body * e * 0.72)
     return out
 
 
 def dodge_wav():
-    # Whoosh rápido com pitch subindo, depois silêncio.
+    # Whoosh rápido com filtro abrindo: aéreo, curto e limpo.
     n = int(SAMPLE_RATE * 0.2)
     out = []
     prev = 0.0
     for i in range(n):
+        t = i / n
+        cut = 0.3 + 0.5 * t
         raw = _noise()
-        prev = prev * 0.7 + raw * 0.3
-        e = max(0.0, 1.0 - (i / n) ** 0.5)
+        prev = prev * (1.0 - cut) + raw * cut
+        e = max(0.0, 1.0 - t ** 0.5)
         out.append(prev * e * 0.45)
     return out
 
 
 def timing_perfect_wav():
-    # Chime: duas senoides altas com decay.
-    n = int(SAMPLE_RATE * 0.15)
+    # Chime que brilha: voz base + oitava, com leve sweep ascendente (recompensa).
+    n = int(SAMPLE_RATE * 0.18)
     out = []
+    j = _pitch_jitter(0.03)
+    base = 1320.0 * j
     for i in range(n):
         t = i / SAMPLE_RATE
-        e = math.exp(-18.0 * t)
-        s = 0.6 * math.sin(2 * math.pi * 1320 * t) + 0.4 * math.sin(2 * math.pi * 1976 * t)
+        bend = 1.0 + 0.05 * (i / n)  # sobe ~5% ao longo do som (brilho)
+        e = math.exp(-15.0 * t)
+        s = (
+            0.55 * math.sin(2 * math.pi * base * bend * t)
+            + 0.30 * math.sin(2 * math.pi * base * 1.5 * bend * t)  # quinta
+            + 0.15 * math.sin(2 * math.pi * base * 2.0 * bend * t)  # oitava
+        )
         out.append(s * e * 0.5)
     return out
 
 
 def death_wav():
-    # Growl descendente: sawtooth com pitch caindo.
-    n = int(SAMPLE_RATE * 0.4)
+    # Growl descendente: sawtooth com pitch caindo + textura de ruído modulado.
+    n = int(SAMPLE_RATE * 0.42)
     out = []
     for i in range(n):
         t = i / SAMPLE_RATE
-        freq = 220 * (1.0 - 0.7 * (i / n))
+        freq = 200 * (1.0 - 0.72 * (i / n))
         phase = (t * freq) % 1.0
         saw = 2.0 * phase - 1.0
+        sub = math.sin(2 * math.pi * freq * 0.5 * t)  # sub-oitava reforça o grave
+        tremolo = 0.7 + 0.3 * math.sin(2 * math.pi * 30 * t)  # textura modulada
         e = _env(i, n, 0.02, 0.5)
-        out.append((0.7 * saw + 0.3 * _noise()) * e * 0.6)
+        out.append((0.55 * saw + 0.2 * sub + 0.25 * _noise() * tremolo) * e * 0.62)
+    return out
+
+
+def timing_alert_wav():
+    # Aviso de vulnerabilidade: dois beeps curtos ascendentes, claros e secos.
+    n = int(SAMPLE_RATE * 0.14)
+    out = []
+    half = n // 2
+    for i in range(n):
+        t = i / SAMPLE_RATE
+        # primeiro beep mais grave, segundo mais agudo (sobe = "agora!").
+        freq = 880.0 if i < half else 1320.0
+        local = (i % half) / SAMPLE_RATE
+        e = math.exp(-26.0 * local)
+        out.append(0.5 * math.sin(2 * math.pi * freq * t) * e * 0.5)
     return out
 
 
@@ -125,6 +167,7 @@ def main():
     _write("hit.wav", hit_wav())
     _write("dodge.wav", dodge_wav())
     _write("timing_perfect.wav", timing_perfect_wav())
+    _write("timing_alert.wav", timing_alert_wav())
     _write("death.wav", death_wav())
     _write("ui_click.wav", ui_click_wav())
     print("Pronto.")

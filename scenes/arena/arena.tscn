@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://arena_main"]
+[gd_scene load_steps=18 format=3 uid="uid://arena_main"]
 
 [ext_resource type="Script" path="res://scripts/ui/controls_hud.gd" id="16_controls"]
 [ext_resource type="Script" path="res://scripts/ui/doom_fire.gd" id="15_fire"]
@@ -16,6 +16,7 @@
 [ext_resource type="AudioStream" uid="uid://cn2i1whe3bqxo" path="res://assets/audio/sfx/timing_perfect.wav" id="11_perfect"]
 [ext_resource type="AudioStream" uid="uid://pcb0es6yole7" path="res://assets/audio/sfx/death.wav" id="12_death"]
 [ext_resource type="AudioStream" uid="uid://dw42c6yi6qe82" path="res://assets/audio/sfx/ui_click.wav" id="13_click"]
+[ext_resource type="AudioStream" uid="uid://cauivjpoc630" path="res://assets/audio/sfx/timing_alert.wav" id="17_alert"]
 
 [node name="Arena" type="Node2D"]
 script = ExtResource("1_manager")
@@ -48,6 +49,7 @@ attack_sound = ExtResource("8_attack")
 hit_sound = ExtResource("9_hit")
 dodge_sound = ExtResource("10_dodge")
 timing_perfect_sound = ExtResource("11_perfect")
+timing_alert_sound = ExtResource("17_alert")
 death_sound = ExtResource("12_death")
 ui_click_sound = ExtResource("13_click")
 

@@ -45,6 +45,8 @@ func _ready() -> void:
 	_sfx = $SfxSystem
 	_timing_bubble.vulnerable_entered.connect(_on_bubble_vulnerable)
 	_timing_bubble_b.vulnerable_entered.connect(_on_bubble_vulnerable)
+	# Feedback tátil a cada input na janela de combate (conectado uma única vez).
+	_timing_system.input_registered.connect(_on_input_registered)
 
 	_update_camera_fit()
 	get_viewport().size_changed.connect(_update_camera_fit)
@@ -160,8 +162,8 @@ func _on_double_first_hit() -> void:
 	var damage := _caipora.execute_attack(false)
 	_enemy.take_damage(damage)
 	_sfx.play(_sfx.hit_sound)
-	_feedback.trigger_screenshake(6.0, 0.2)
-	_feedback.trigger_hit_stop(2)
+	_feedback.trigger_screenshake(9.0, 0.25)
+	_feedback.trigger_hit_stop(3)
 
 func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 	_timing_system.timing_result.disconnect(_on_double_final_result)
@@ -173,9 +175,9 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 		_enemy.take_damage(damage)
 		_sfx.play(_sfx.timing_perfect_sound, -4.0)
 		_sfx.play(_sfx.hit_sound)
-		_feedback.trigger_screenshake(10.0, 0.35)
+		_feedback.trigger_screenshake(15.0, 0.45)
 		_feedback.spawn_critical_particles(_enemy.position)
-		_feedback.trigger_hit_stop(3)
+		_feedback.trigger_hit_stop(4)
 	else:
 		_timing_bubble.hide_bubble()
 		_timing_bubble_b.hide_bubble()
@@ -191,9 +193,9 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		_enemy.take_damage(damage)
 		_sfx.play(_sfx.timing_perfect_sound, -4.0)
 		_sfx.play(_sfx.hit_sound)
-		_feedback.trigger_screenshake(12.0, 0.4)
+		_feedback.trigger_screenshake(18.0, 0.5)
 		_feedback.spawn_critical_particles(_enemy.position)
-		_feedback.trigger_hit_stop(3)
+		_feedback.trigger_hit_stop(5)
 	else:
 		_timing_bubble.hide_bubble()
 	if _enemy.health.is_alive():
@@ -242,15 +244,15 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		_caipora.dodge_performed.emit()
 		_sfx.play(_sfx.dodge_sound)
 		_sfx.play(_sfx.timing_perfect_sound, -4.0)
-		_feedback.trigger_screenshake(10.0, 0.35)
+		_feedback.trigger_screenshake(15.0, 0.45)
 		_feedback.spawn_dodge_particles(_caipora.position)
-		_feedback.trigger_hit_stop(4)
+		_feedback.trigger_hit_stop(5)
 	else:
 		_timing_bubble.hide_bubble()
 		var damage := _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
 		_caipora.take_damage(damage)
 		_sfx.play(_sfx.hit_sound)
-		_feedback.trigger_screenshake(8.0, 0.3)
+		_feedback.trigger_screenshake(11.0, 0.35)
 		_feedback.spawn_blood_particles(_caipora.position)
 		_feedback.trigger_hit_stop(2)
 
@@ -287,6 +289,13 @@ func _on_enemy_health_changed(new_health: float, max_health: float) -> void:
 func _on_bubble_vulnerable() -> void:
 	_sfx.play(_sfx.timing_alert_sound)
 
+# ─── Feedback por input ────────────────────────────
+## Resposta tátil imediata a qualquer ação na janela (mesmo fora da zona perfeita).
+## O feedback forte do acerto (crítico/esquiva) é empilhado por cima nos handlers.
+func _on_input_registered() -> void:
+	_feedback.trigger_screenshake(2.5, 0.08)
+	_sfx.play(_sfx.ui_click_sound, -6.0)
+
 # ─── Morte ─────────────────────────────────────────
 func _on_actor_died(actor: CombatActor) -> void:
 	var caipora_won := actor == _enemy
@@ -301,8 +310,8 @@ func _on_actor_died(actor: CombatActor) -> void:
 		_enemy.state_machine.stop()
 	_sfx.play(_sfx.death_sound)
 	_feedback.spawn_death_particles(actor.position)
-	_feedback.trigger_screenshake(20.0, 0.6)
-	_feedback.trigger_hit_stop(5)
+	_feedback.trigger_screenshake(26.0, 0.7)
+	_feedback.trigger_hit_stop(6)
 
 	SignalBus.arena_exited.emit(caipora_won)
 	await get_tree().create_timer(0.6).timeout

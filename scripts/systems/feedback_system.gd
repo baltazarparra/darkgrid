@@ -17,6 +17,10 @@ func trigger_screenshake(intensity: float = shake_intensity, duration: float = s
 		return
 	var original_offset := camera.offset
 	var tween := create_tween()
+	# Decai com ease-out exponencial: tranco forte que assenta rápido (soco que
+	# acomoda), em vez de cair linearmente.
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_EXPO)
 	tween.tween_method(_shake_camera.bind(camera), intensity, 0.0, duration)
 	tween.tween_callback(func(): camera.offset = original_offset)
 
@@ -45,6 +49,30 @@ func spawn_blood_particles(at_position: Vector2) -> void:
 
 func spawn_critical_particles(at_position: Vector2) -> void:
 	_spawn_particles(CRITICAL_PARTICLES, at_position)
+	# Segundo burst: faíscas claras overbright (blend aditivo) por cima do sangue,
+	# para a leitura do acerto crítico "estourar" e ficar nítida.
+	var spark := CPUParticles2D.new()
+	spark.position = at_position
+	spark.amount = 14
+	spark.lifetime = 0.35
+	spark.one_shot = true
+	spark.explosiveness = 1.0
+	spark.direction = Vector2(0, -1)
+	spark.spread = 180.0
+	spark.gravity = Vector2(0, 60)
+	spark.initial_velocity_min = 180.0
+	spark.initial_velocity_max = 340.0
+	spark.scale_amount_min = 1.5
+	spark.scale_amount_max = 3.5
+	spark.color = Color(1.0, 0.92, 0.6, 1.0)
+	var glow := CanvasItemMaterial.new()
+	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	spark.material = glow
+	get_tree().current_scene.add_child(spark)
+	spark.emitting = true
+	await get_tree().create_timer(spark.lifetime + 0.1).timeout
+	if is_instance_valid(spark):
+		spark.queue_free()
 
 func spawn_death_particles(at_position: Vector2) -> void:
 	_spawn_particles(DEATH_PARTICLES, at_position)
@@ -55,14 +83,19 @@ func spawn_dodge_particles(at_position: Vector2) -> void:
 	p.amount = 28
 	p.lifetime = 0.55
 	p.one_shot = true
-	p.explosiveness = 0.95
-	p.spread = 80.0
+	p.explosiveness = 1.0
+	# Spread estreito + blend aditivo: vira um "flash" de alívio limpo, não uma
+	# nuvem dispersa — leitura clara da esquiva perfeita.
+	p.spread = 45.0
 	p.gravity = Vector2(0, -120)
-	p.initial_velocity_min = 70.0
-	p.initial_velocity_max = 160.0
+	p.initial_velocity_min = 90.0
+	p.initial_velocity_max = 200.0
 	p.scale_amount_min = 2.0
 	p.scale_amount_max = 5.0
-	p.color = Color(0.9, 0.95, 1.0, 0.9)
+	p.color = Color(0.9, 0.95, 1.0, 0.95)
+	var glow := CanvasItemMaterial.new()
+	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	p.material = glow
 	get_tree().current_scene.add_child(p)
 	p.emitting = true
 	await get_tree().create_timer(p.lifetime + 0.1).timeout
