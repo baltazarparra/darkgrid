@@ -26,7 +26,7 @@ const DAMAGE_CRIT_MULTIPLIER := 1.0
 const DAMAGE_COUNTER_MULTIPLIER := 1.0
 
 # ─── Health ────────────────────────────────────────
-const CAIPORA_MAX_HEALTH := 1
+const CAIPORA_MAX_HEALTH := 2
 const ENEMY_MAX_HEALTH := 5
 const BOSS_MAX_HEALTH := 10
 

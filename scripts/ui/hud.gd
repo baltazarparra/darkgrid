@@ -47,6 +47,7 @@ func _ready() -> void:
 	SignalBus.caipora_health_changed.connect(_on_caipora_health_changed)
 	SignalBus.enemy_health_changed.connect(_on_enemy_health_changed)
 	SignalBus.fragment_gained.connect(_on_fragment_gained)
+	SignalBus.chest_opened.connect(_on_chest_opened)
 
 func _on_caipora_health_changed(new_health: float, max_health: float) -> void:
 	if max_health != _player_icons._total:
@@ -74,11 +75,17 @@ func _on_fragment_gained(total: int) -> void:
 	_frag_label.text = "+".repeat(total)
 	_show_fragment_popup()
 
+func _on_chest_opened() -> void:
+	_show_popup("+1 HP", Constants.COLOR_BLOOD)
+
 func _show_fragment_popup() -> void:
+	_show_popup("+1 fragmento", Constants.COLOR_AMBER)
+
+func _show_popup(text: String, color: Color) -> void:
 	var popup := Label.new()
-	popup.text = "+1 fragmento"
+	popup.text = text
 	popup.add_theme_font_size_override("font_size", 18)
-	popup.add_theme_color_override("font_color", Constants.COLOR_AMBER)
+	popup.add_theme_color_override("font_color", color)
 	popup.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	popup.set_anchors_preset(Control.PRESET_CENTER)
 	popup.position = Vector2(-80.0, 40.0)

@@ -6,10 +6,10 @@
 script = ExtResource("1_pattern")
 idle_duration = 0.0
 wind_up_duration = 0.25
-attack_duration = 0.55
+attack_duration = 1.05
 cooldown_duration = 2.0
 damage_multiplier = 0.5
 is_special = false
 strike_count = 2
-strike_delay = 0.4
+strike_delay = 0.15
 jump_telegraph = true

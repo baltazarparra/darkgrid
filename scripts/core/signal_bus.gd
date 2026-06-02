@@ -16,3 +16,4 @@ signal caipora_died
 signal caipora_health_changed(new_health: float, max_health: float)
 signal enemy_health_changed(new_health: float, max_health: float)
 signal fragment_gained(total: int)
+signal chest_opened

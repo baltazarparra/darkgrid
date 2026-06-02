@@ -181,6 +181,7 @@ func _open_chest() -> void:
 	GameState.caipora_max_hp += 1
 	GameState.caipora_current_hp = mini(GameState.caipora_current_hp + 1, GameState.caipora_max_hp)
 	SignalBus.caipora_health_changed.emit(GameState.caipora_current_hp, GameState.caipora_max_hp)
+	SignalBus.chest_opened.emit()
 	if _chest_node != null:
 		_chest_node.visible = false
 
