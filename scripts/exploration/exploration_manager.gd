@@ -90,6 +90,7 @@ func _ready() -> void:
 	_spawn_enemies()
 	_spawn_objects()
 	_spawn_exit_marker()
+	add_child(Atmosphere.new())
 
 func _setup_player() -> void:
 	var start := GameState.player_map_pos if GameState.player_map_pos != Vector2i(-1, -1) else PLAYER_START
