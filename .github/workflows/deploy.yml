@@ -42,10 +42,10 @@ jobs:
       - name: Export HTML5
         run: make export
 
-      - name: Add COI service worker
-        run: |
-          wget -q "https://raw.githubusercontent.com/gzuidhof/coi-serviceworker/master/coi-serviceworker.js" -O export/coi-serviceworker.js
-          sed -i 's|</head>|<script src="coi-serviceworker.js"></script>\n</head>|' export/index.html
+      # Nota: o PWA nativo do Godot (progressive_web_app/enabled) gera o próprio
+      # service worker (index.service.worker.js), que cacheia o jogo (offline) e
+      # injeta os headers de cross-origin isolation. Por isso NÃO injetamos mais o
+      # coi-serviceworker.js: dois service workers no mesmo escopo conflitam.
 
       - name: Add .nojekyll
         run: touch export/.nojekyll
