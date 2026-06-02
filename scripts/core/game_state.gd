@@ -22,6 +22,7 @@ var active_map_enemy_id: String = ""
 var active_combat_is_boss: bool = false
 var has_key: bool = false
 var chest_opened: bool = false
+var player_map_pos: Vector2i = Vector2i(-1, -1)
 
 ## Inicia uma nova run: HP cheio, com bônus de meta aplicado.
 func start_run() -> void:
@@ -31,6 +32,7 @@ func start_run() -> void:
 	active_combat_is_boss = false
 	has_key = false
 	chest_opened = false
+	player_map_pos = Vector2i(-1, -1)
 	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH + MetaProgression.get_bonus_max_hp()
 	caipora_current_hp = caipora_max_hp
 
