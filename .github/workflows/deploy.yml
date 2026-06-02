@@ -1,0 +1,65 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot 4.6.3
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip" -O godot.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.6.3-stable_linux.x86_64
+          sudo mv Godot_v4.6.3-stable_linux.x86_64 /usr/local/bin/godot
+
+      - name: Download export templates
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates/4.6.3.stable
+          wget -q "https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_export_templates.tpz" -O templates.tpz
+          unzip -q templates.tpz -d /tmp/tpl
+          mv /tmp/tpl/templates/* ~/.local/share/godot/export_templates/4.6.3.stable/
+
+      - name: Import project resources
+        run: godot --headless --import --path . 2>&1 || true
+
+      - name: Export HTML5
+        run: make export
+
+      - name: Add COI service worker
+        run: |
+          wget -q "https://raw.githubusercontent.com/gzuidhof/coi-serviceworker/master/coi-serviceworker.js" -O export/coi-serviceworker.js
+          sed -i 's|</head>|<script src="coi-serviceworker.js"></script>\n</head>|' export/index.html
+
+      - name: Add .nojekyll
+        run: touch export/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: export/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
