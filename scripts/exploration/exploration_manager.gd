@@ -81,6 +81,15 @@ const DECO_DEFS = [
 	{"type": MapObject.Type.BLOOD_POOL, "x": 19, "y": 15},
 	{"type": MapObject.Type.BLOOD_POOL, "x": 15, "y": 14},
 	{"type": MapObject.Type.BONES, "x": 20, "y": 15},
+	{"type": MapObject.Type.FERN, "x": 5, "y": 7},
+	{"type": MapObject.Type.FERN, "x": 19, "y": 4},
+	{"type": MapObject.Type.FERN, "x": 7, "y": 12},
+	{"type": MapObject.Type.FERN, "x": 22, "y": 11},
+	{"type": MapObject.Type.FERN, "x": 14, "y": 16},
+	{"type": MapObject.Type.VINE, "x": 10, "y": 2},
+	{"type": MapObject.Type.VINE, "x": 18, "y": 1},
+	{"type": MapObject.Type.VINE, "x": 6, "y": 4},
+	{"type": MapObject.Type.VINE, "x": 21, "y": 7},
 ]
 
 # ─── Lifecycle ─────────────────────────────────────
@@ -90,7 +99,19 @@ func _ready() -> void:
 	_spawn_enemies()
 	_spawn_objects()
 	_spawn_exit_marker()
+	_spawn_ambient_life()
 	add_child(Atmosphere.new())
+
+func _spawn_ambient_life() -> void:
+	# Vaga-lumes + insetos sobre a área interna do mapa (decorativo, sem interação).
+	var t := Constants.TILE_SIZE
+	var life := AmbientLife.new()
+	add_child(life)
+	life.setup(Rect2(
+		t, t,
+		(Constants.GRID_WIDTH - 2) * t,
+		(Constants.GRID_HEIGHT - 2) * t
+	))
 
 func _setup_player() -> void:
 	var start := GameState.player_map_pos if GameState.player_map_pos != Vector2i(-1, -1) else PLAYER_START

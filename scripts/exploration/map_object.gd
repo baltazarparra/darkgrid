@@ -1,12 +1,12 @@
 class_name MapObject
 extends Node2D
 
-enum Type { CHEST, KEY, FIRE, SPIKE, DEAD_TREE, BONES, MOSS, BLOOD_POOL, ROCK }
+enum Type { CHEST, KEY, FIRE, SPIKE, DEAD_TREE, BONES, MOSS, BLOOD_POOL, ROCK, FERN, VINE }
 
 const T: int = Constants.TILE_SIZE  # 32
 
 # Decorações puramente visuais (não-bloqueantes), renderizadas atrás das entidades.
-const DECO_TYPES := [Type.DEAD_TREE, Type.BONES, Type.MOSS, Type.BLOOD_POOL, Type.ROCK]
+const DECO_TYPES := [Type.DEAD_TREE, Type.BONES, Type.MOSS, Type.BLOOD_POOL, Type.ROCK, Type.FERN, Type.VINE]
 
 var _type: Type
 
@@ -32,6 +32,8 @@ func _draw() -> void:
 		Type.MOSS:       _draw_moss(cx, cy)
 		Type.BLOOD_POOL: _draw_blood_pool(cx, cy)
 		Type.ROCK:       _draw_rock(cx, cy)
+		Type.FERN:       _draw_fern(cx, cy)
+		Type.VINE:       _draw_vine(cx, cy)
 
 func _draw_fire(cx: float, cy: float) -> void:
 	draw_circle(Vector2(cx, cy), 11.0, Constants.COLOR_FIRE_GLOW)
@@ -161,3 +163,33 @@ func _draw_rock(cx: float, cy: float) -> void:
 		Vector2(cx, cy - 7), Vector2(cx + 7, cy - 2), Vector2(cx + 8, cy + 6), Vector2(cx + 2, cy + 2),
 	]
 	draw_colored_polygon(shade, stone_dark)
+
+func _draw_fern(cx: float, cy: float) -> void:
+	# Samambaia amazônica: leque de frondes saindo da base.
+	var frond := Constants.COLOR_MOSS_DECO
+	var frond_dark := Constants.COLOR_MOSS_DECO_DARK
+	var base := Vector2(cx, cy + 9)
+	var angles: Array = [-1.15, -0.7, -0.25, 0.25, 0.7, 1.15]
+	for a: float in angles:
+		var tip := base + Vector2(sin(a), -cos(a)) * 13.0
+		draw_line(base, tip, frond_dark, 2.0)
+		# folíolos ao longo da fronde
+		var dir := (tip - base).normalized()
+		var perp := Vector2(-dir.y, dir.x)
+		for s: float in [0.4, 0.65, 0.9]:
+			var p := base.lerp(tip, s)
+			draw_line(p, p + perp * 2.5, frond, 1.0)
+			draw_line(p, p - perp * 2.5, frond, 1.0)
+
+func _draw_vine(cx: float, cy: float) -> void:
+	# Cipó pendente: trança que desce do topo do tile com folhas esparsas.
+	var vine := Constants.COLOR_MOSS_DECO_DARK
+	var leaf := Constants.COLOR_MOSS_DECO
+	var prev := Vector2(cx - 6, cy - 14)
+	for i: int in range(1, 9):
+		var t := i / 8.0
+		var nxt := Vector2(cx - 6 + sin(t * 6.0) * 4.0, cy - 14 + t * 26.0)
+		draw_line(prev, nxt, vine, 2.0)
+		if i % 2 == 0:
+			draw_circle(nxt + Vector2(3, 0), 2.2, leaf)
+		prev = nxt
