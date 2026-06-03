@@ -1,27 +1,27 @@
 {
-  "name": "caipora",
-  "version": "1.0.0",
-  "description": "Roguelike brasileiro de horror folclórico",
-  "main": "index.js",
-  "scripts": {
-    "smoke": "make smoke",
-    "test": "make test",
-    "export": "make export",
-    "gate": "make gate"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/baltazarparra/darkgrid.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/baltazarparra/darkgrid/issues"
-  },
-  "homepage": "https://github.com/baltazarparra/darkgrid#readme",
-  "dependencies": {
-    "@coding-solo/godot-mcp": "^0.1.1"
-  }
+    "name": "caipora",
+    "version": "1.0.0",
+    "description": "Roguelike brasileiro de horror folclórico",
+    "main": "index.js",
+    "scripts": {
+        "smoke": "make smoke",
+        "test": "make test",
+        "export": "make export",
+        "gate": "make gate"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/baltazarparra/caipora.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "bugs": {
+        "url": "https://github.com/baltazarparra/caipora/issues"
+    },
+    "homepage": "https://github.com/baltazarparra/caipora#readme",
+    "dependencies": {
+        "@coding-solo/godot-mcp": "^0.1.1"
+    }
 }

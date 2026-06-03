@@ -38,7 +38,7 @@ A Fase 0 estabelece a fundação técnica sobre a qual todo o desenvolvimento do
 - Verificar que o menu `Project > Tools > GUT` aparece no editor
 - Confirmar que o comando de CLI funciona:
   ```bash
-  ~/.local/bin/godot --headless --path /home/baltz/darkgrid -s res://addons/gut/gut_cmdln.gd
+  ~/.local/bin/godot --headless --path /home/baltz/caipora -s res://addons/gut/gut_cmdln.gd
   ```
 
 **Critério de Aceitação:**
@@ -198,7 +198,7 @@ func load_progress() -> void:
 4. Instalar templates de export se necessário
 5. Rodar export de teste:
    ```bash
-   ~/.local/bin/godot --headless --path /home/baltz/darkgrid --export-release "Web" export/index.html
+   ~/.local/bin/godot --headless --path /home/baltz/caipora --export-release "Web" export/index.html
    ```
 
 **Critério de Aceitação:**

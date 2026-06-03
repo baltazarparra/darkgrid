@@ -27,7 +27,7 @@ All MCP tools are auto-approved in `.mcp.json` (the canonical MCP config; `.curs
 ### Godot Path
 
 - Executable: `/home/baltz/.local/bin/godot` (v4.6.3-stable)
-- Project: `/home/baltz/darkgrid`
+- Project: `/home/baltz/caipora`
 - Display: `:0` (WSLg — works for `run_project` and `launch_editor`)
 - Headless mode is used automatically by MCP for scene operations.
 
