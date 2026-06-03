@@ -45,10 +45,10 @@ const MAP_LAYOUT = [
 ]
 
 const ENEMY_DEFS = [
-	{"id": "e0", "x": 9,  "y": 3,  "boss": false},
-	{"id": "e1", "x": 12, "y": 9,  "boss": false},
-	{"id": "e2", "x": 18, "y": 6,  "boss": false},
-	{"id": "e3", "x": 17, "y": 14, "boss": true},  # guarda a porta da saída
+	{"id": "p1_e0", "x": 9,  "y": 3,  "boss": false},
+	{"id": "p1_e1", "x": 12, "y": 9,  "boss": false},
+	{"id": "p1_e2", "x": 18, "y": 6,  "boss": false},
+	{"id": "p1_e3", "x": 17, "y": 14, "boss": true},  # guarda a porta da saída
 ]
 
 const EXIT_POS     := Vector2i(21, 16)
