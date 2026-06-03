@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="AttackPattern" load_steps=2 format=3 uid="uid://4umuwe6ycow3t"]
+[gd_resource type="Resource" script_class="AttackPattern" load_steps=2 format=3 uid="uid://cacador_special"]
 
 [ext_resource type="Script" path="res://scripts/entities/attack_pattern.gd" id="1_pattern"]
 
@@ -9,7 +9,7 @@ wind_up_duration = 0.5
 attack_duration = 1.0
 cooldown_duration = 2.0
 damage_multiplier = 2.0
-input_sequence = ["ui_right", "ui_left", "ui_right", "ui_left"]
+input_sequence = ["ui_up", "ui_down", "ui_up", "ui_down"]
 is_special = true
 strike_count = 4
 strike_delay = 0.5

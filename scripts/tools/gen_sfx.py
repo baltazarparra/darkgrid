@@ -262,66 +262,69 @@ GENERATORS = {
 
 # ─── Ambiência (loops costurados) ──────────────────
 def _loopify(render, n, fade):
-    """Costura um loop sem emenda: 'render' tem n+fade amostras; o overhang
-    (n..n+fade) é cruzado por cima do início, então o fim flui de volta ao começo."""
+    """Costura um loop sem emenda com crossfade de coseno (zero artefatos de emenda)."""
     out = list(render[:n])
     for i in range(fade):
-        w = i / fade
+        w = 0.5 - 0.5 * math.cos(math.pi * i / fade)  # cosine fade-in
         out[i] = render[i] * w + render[n + i] * (1.0 - w)
     return out
 
 
-def amb_forest(dur=6.0):
-    """Floresta amazônica: hum grave + leito de insetos (ruído alto modulado) +
-    chiado de rio + um fiapo do assovio-leitmotif ao fundo. Bed da exploração."""
-    fade = int(SAMPLE_RATE * 0.4)
+def amb_forest(dur=10.0):
+    """Floresta amazônica: hum grave + insetos filtrados (mais leve) + rio +
+    assovio-leitmotif âncora em dois pontos do loop. Bed da exploração."""
+    fade = int(SAMPLE_RATE * 0.6)
     n = int(SAMPLE_RATE * dur)
     total = n + fade
     out = [0.0] * total
     hp = 0.0
     lp = 0.0
-    # assovio distante entra uma vez, no terço final, bem baixo (canto vindo do rio).
-    whistle_at = int(n * 0.6)
+    # assovio entra em 20% e 70% do loop para âncora melódica definida.
+    whistle_a = int(n * 0.20)
+    whistle_b = int(n * 0.70)
     whistle = assovio(1.4, freq=820.0)
     for i in range(total):
         t = i / SAMPLE_RATE
-        # hum grave da mata
         hum = 0.10 * math.sin(2 * math.pi * 70.0 * t) + 0.06 * math.sin(2 * math.pi * 112.0 * t)
         hum *= 0.8 + 0.2 * math.sin(2 * math.pi * 0.12 * t)
-        # insetos: ruído alto (highpass) com tremolo rápido
         raw = _noise()
         lp = lp * 0.5 + raw * 0.5
         hp = raw - lp
-        insects = hp * (0.05 + 0.05 * abs(math.sin(2 * math.pi * 7.0 * t))) * (0.6 + 0.4 * math.sin(2 * math.pi * 0.4 * t))
-        # rio: ruído mid com undulação lenta
+        # insetos: amplitude reduzida (×0.6) para textura menos saturada
+        insects = hp * (0.03 + 0.03 * abs(math.sin(2 * math.pi * 7.0 * t))) * (0.6 + 0.4 * math.sin(2 * math.pi * 0.4 * t))
         river = lp * 0.06 * (0.5 + 0.5 * math.sin(2 * math.pi * 0.2 * t + 1.0))
         s = hum + insects + river
-        if whistle_at <= i < whistle_at + len(whistle):
-            s += whistle[i - whistle_at] * 0.18
+        pos = i % n  # posição no loop (ignora overhang para colocar assobios)
+        if whistle_a <= pos < whistle_a + len(whistle):
+            s += whistle[pos - whistle_a] * 0.12
+        if whistle_b <= pos < whistle_b + len(whistle):
+            s += whistle[pos - whistle_b] * 0.12
         out[i] = s
     return _normalize(_loopify(out, n, fade), 0.5)
 
 
-def amb_dread(dur=6.0):
-    """Arena: drone grave dissonante (sines batendo) + saw escuro + cintilação
-    alta tensa. Opressivo."""
-    fade = int(SAMPLE_RATE * 0.4)
+def amb_dread(dur=8.0):
+    """Arena: drone grave com batimento hipnótico + saw escuro + pulso sub de
+    respiração. Cintilação reduzida para continuidade. Opressivo."""
+    fade = int(SAMPLE_RATE * 0.6)
     n = int(SAMPLE_RATE * dur)
     total = n + fade
     out = [0.0] * total
     lp = 0.0
     for i in range(total):
         t = i / SAMPLE_RATE
-        # duas fundamentais quase iguais = batimento lento (mal-estar)
-        drone = 0.16 * math.sin(2 * math.pi * 55.0 * t) + 0.14 * math.sin(2 * math.pi * 58.3 * t)
+        # batimento 2.5 Hz (55.0 + 57.5): mais lento = mais hipnótico
+        drone = 0.16 * math.sin(2 * math.pi * 55.0 * t) + 0.14 * math.sin(2 * math.pi * 57.5 * t)
+        # pulso sub grave: respiração lenta do ambiente
+        sub_pulse = 0.05 * math.sin(2 * math.pi * 0.08 * t)
         # saw escuro filtrado
         phase = (t * 41.0) % 1.0
         saw = (2.0 * phase - 1.0)
         lp = lp * 0.92 + saw * 0.08
         dark = lp * 0.12
-        # cintilação alta, bem baixa, com swell lento
-        shimmer = _noise() * 0.02 * max(0.0, math.sin(2 * math.pi * 0.07 * t))
-        out[i] = drone + dark + shimmer
+        # shimmer reduzido (×0.4) para não quebrar continuidade
+        shimmer = _noise() * 0.008 * max(0.0, math.sin(2 * math.pi * 0.07 * t))
+        out[i] = drone + sub_pulse + dark + shimmer
     return _normalize(_loopify(out, n, fade), 0.6)
 
 
@@ -336,8 +339,8 @@ AMBIENCES = {
 # Stems compartilham o mesmo loop_dur para tocarem em fase no AudioDirector.
 BPM = 100
 BEAT = 60.0 / BPM
-LOOP_BARS = 2
-LOOP_DUR = BEAT * 4 * LOOP_BARS  # 4.8s
+LOOP_BARS = 4
+LOOP_DUR = BEAT * 4 * LOOP_BARS  # 9.6s
 STEP = BEAT / 4  # semicolcheia
 
 
@@ -355,34 +358,42 @@ def _place(buf, sample, step, gain=1.0):
 
 
 def mar_alfaia():
-    """Marcação grave + virada no 2º compasso. O peso do groove."""
+    """Marcação grave com arco dramático: compassos 1-2 = padrão base,
+    3-4 = virada mais densa com ghost notes crescentes."""
     buf = _loop_buffer()
-    # (step, velocidade) por compasso de 16 semicolcheias
     bar1 = [(0, 1.0), (6, 0.7), (10, 0.8), (12, 0.6)]
     bar2 = [(0, 1.0), (6, 0.7), (10, 0.8), (12, 0.6), (14, 0.55), (15, 0.7)]
-    for step, vel in bar1:
-        _place(buf, alfaia(0.2, base=58.0, punch=vel), step, vel)
-    for step, vel in bar2:
-        _place(buf, alfaia(0.2, base=58.0, punch=vel), step + 16, vel)
+    bar3 = [(0, 1.0), (4, 0.4), (6, 0.7), (10, 0.8), (12, 0.6), (13, 0.4)]
+    bar4 = [(0, 1.0), (4, 0.4), (6, 0.7), (8, 0.45), (10, 0.8), (12, 0.6), (14, 0.55), (15, 0.75)]
+    for bar_offset, pattern in zip([0, 16, 32, 48], [bar1, bar2, bar3, bar4]):
+        for step, vel in pattern:
+            _place(buf, alfaia(0.2, base=58.0, punch=vel), step + bar_offset, vel)
     return _normalize(buf, 0.85)
 
 
 def mar_ganza():
-    """Chiado constante em semicolcheias, com acento nos tempos. O drive."""
+    """Chiado em semicolcheias com acento alternado por compasso (push-pull)."""
     buf = _loop_buffer()
-    for step in range(32):
-        accent = 0.85 if step % 4 == 0 else 0.45
+    # Padrão A: acento nos tempos (1,3). Padrão B: acento nos contratempos (2,4).
+    for step in range(64):
+        bar = step // 16
+        beat_in_bar = (step % 16) // 4
+        if bar % 2 == 0:
+            accent = 0.85 if beat_in_bar % 2 == 0 else 0.45
+        else:
+            accent = 0.85 if beat_in_bar % 2 == 1 else 0.45
         _place(buf, ganza(0.07, rising=False), step, accent)
     return _normalize(buf, 0.6)
 
 
 def mar_agogo():
-    """Ostinato melódico de sino (dois bocais), grave e agudo. A 'voz' do groove."""
+    """Ostinato melódico: padrão base 2 compassos + 3º compasso com pitch médio."""
     buf = _loop_buffer()
-    lo, hi = 880.0, 1320.0
-    # padrão de 1 compasso (step, pitch), repetido nos 2 compassos
-    pattern = [(0, hi), (2, lo), (4, hi), (6, hi), (8, lo), (10, hi), (12, lo), (14, hi)]
+    lo, hi, mid = 880.0, 1320.0, 1100.0
+    pattern_base = [(0, hi), (2, lo), (4, hi), (6, hi), (8, lo), (10, hi), (12, lo), (14, hi)]
+    pattern_mid  = [(0, hi), (2, mid), (4, hi), (6, lo), (8, mid), (10, hi), (12, lo), (14, mid)]
     for bar in range(LOOP_BARS):
+        pattern = pattern_mid if bar == 2 else pattern_base
         for step, pitch in pattern:
             _place(buf, agogo(0.16, freq=pitch, bend=0.0), step + bar * 16, 0.5)
     return _normalize(buf, 0.7)

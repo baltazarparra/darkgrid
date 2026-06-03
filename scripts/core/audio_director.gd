@@ -57,6 +57,7 @@ var _bus_volume: Dictionary = {
 	BUS_MASTER: 1.0, BUS_SFX: 1.0, BUS_MUSIC: 0.8, BUS_AMBIENCE: 0.8
 }
 var _audio_unlocked: bool = false
+var _music_enabled: bool = true
 var _ambience_player: AudioStreamPlayer
 var _current_ambience: String = ""
 var _duck_tween: Tween
@@ -102,6 +103,16 @@ func set_bus_volume(bus_name: String, linear: float) -> void:
 func get_bus_volume(bus_name: String) -> float:
 	return _bus_volume.get(bus_name, 1.0)
 
+# ─── Public API: music toggle ─────────────────────
+func toggle_music_ambience() -> void:
+	_music_enabled = not _music_enabled
+	_apply_volume(BUS_MUSIC)
+	_apply_volume(BUS_AMBIENCE)
+	_save_settings()
+
+func is_music_enabled() -> bool:
+	return _music_enabled
+
 # ─── Public API: ducking ───────────────────────────
 ## Abaixa Music+Ambience por um instante (impactos/hit-stop) e recupera com tween.
 func duck(amount_db: float = DUCK_AMOUNT_DB, secs: float = DUCK_TIME) -> void:
@@ -119,6 +130,8 @@ func _duck_apply(t: float, amount_db: float) -> void:
 		var idx := AudioServer.get_bus_index(bus_name)
 		if idx < 0:
 			continue
+		if not _music_enabled:
+			continue  # já silenciado pelo toggle; não restaurar
 		AudioServer.set_bus_volume_db(idx, _linear_to_db(_bus_volume[bus_name]) + amount_db * t)
 
 # ─── Public API: autoplay unlock ───────────────────
@@ -247,6 +260,9 @@ func _apply_volume(bus_name: String) -> void:
 	var idx := AudioServer.get_bus_index(bus_name)
 	if idx < 0:
 		return
+	if (bus_name == BUS_MUSIC or bus_name == BUS_AMBIENCE) and not _music_enabled:
+		AudioServer.set_bus_volume_db(idx, -80.0)
+		return
 	var db := _linear_to_db(_bus_volume[bus_name])
 	if bus_name == BUS_MASTER:
 		db += MASTER_TRIM_DB
@@ -265,10 +281,13 @@ func _load_settings() -> void:
 	for bus_name in VOLUME_BUSES:
 		if cfg.has_section_key(SETTINGS_SECTION, bus_name):
 			_bus_volume[bus_name] = clampf(cfg.get_value(SETTINGS_SECTION, bus_name), 0.0, 1.0)
+	if cfg.has_section_key(SETTINGS_SECTION, "music_enabled"):
+		_music_enabled = cfg.get_value(SETTINGS_SECTION, "music_enabled")
 
 func _save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.load(SETTINGS_PATH)  # preserva outras seções, se houver
 	for bus_name in VOLUME_BUSES:
 		cfg.set_value(SETTINGS_SECTION, bus_name, _bus_volume[bus_name])
+	cfg.set_value(SETTINGS_SECTION, "music_enabled", _music_enabled)
 	cfg.save(SETTINGS_PATH)

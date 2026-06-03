@@ -4,7 +4,7 @@ extends Node
 # Keeps decoupling between gameplay modules.
 
 # ─── Enums ─────────────────────────────────────────
-enum Screen { MAIN_MENU, EXPLORATION, ARENA, GAME_OVER, WIN, HUB }
+enum Screen { MAIN_MENU, EXPLORATION, ARENA, GAME_OVER, WIN, HUB, EXPLORATION_PHASE2, ARENA_PHASE2 }
 
 # ─── Signals ───────────────────────────────────────
 signal screen_changed(new_screen: Screen)
@@ -17,3 +17,7 @@ signal caipora_health_changed(new_health: float, max_health: float)
 signal enemy_health_changed(new_health: float, max_health: float)
 signal fragment_gained(total: int)
 signal chest_opened
+
+# ─── Diálogo pré-boss ──────────────────────────────
+signal boss_intro_started
+signal dialogue_finished

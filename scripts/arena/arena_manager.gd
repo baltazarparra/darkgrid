@@ -235,11 +235,14 @@ func _on_enemy_attack_started() -> void:
 	var action: String
 	var hint: String
 	if is_special:
-		var seq := ["ui_right", "ui_left", "ui_right", "ui_left"]
-		var hint_seq := ["right", "left", "right", "left"]
+		var seq: Array[String] = _active_enemy_pattern.input_sequence
+		var hint_map: Dictionary = {
+			"ui_right": "right", "ui_left": "left",
+			"ui_up": "up", "ui_down": "down"
+		}
 		var idx := clampi(_boss_special_hit_index, 0, seq.size() - 1)
-		action = seq[idx]
-		hint = hint_seq[idx]
+		action = seq[idx] if not seq.is_empty() else "ui_down"
+		hint = hint_map.get(action, "down")
 		_boss_special_hit_index += 1
 	else:
 		action = "ui_down"

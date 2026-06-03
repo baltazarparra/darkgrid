@@ -18,3 +18,7 @@ extends Resource
 @export var strike_delay: float = 0.4
 ## Se true, a Criatura executa pulo durante wind-up para sinalizar ataque duplo.
 @export var jump_telegraph: bool = false
+## Sequência de inputs para padrões especiais (is_special = true).
+## Cada entrada é uma action do InputMap: "ui_up", "ui_down", "ui_left", "ui_right".
+## Ignorado se is_special = false.
+@export var input_sequence: Array[String] = []

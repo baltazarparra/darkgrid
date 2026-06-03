@@ -1,0 +1,27 @@
+[gd_scene load_steps=5 format=3 uid="uid://exploration02"]
+
+[ext_resource type="Script" path="res://scripts/exploration/exploration_phase2_manager.gd" id="1_mgr"]
+[ext_resource type="PackedScene" uid="uid://caipora_explore" path="res://scenes/exploration/caipora.tscn" id="2_caipora"]
+[ext_resource type="PackedScene" uid="uid://hud_combat" path="res://scenes/ui/hud.tscn" id="3_hud"]
+[ext_resource type="Script" path="res://scripts/ui/controls_hud.gd" id="4_controls"]
+
+[node name="ExplorationManager" type="Node2D"]
+script = ExtResource("1_mgr")
+
+[node name="TileMap" type="TileMap" parent="."]
+format = 2
+
+[node name="Caipora" parent="." instance=ExtResource("2_caipora")]
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="Objects" type="Node2D" parent="."]
+
+[node name="CanvasModulate" type="CanvasModulate" parent="."]
+color = Color(0.72, 0.30, 0.10, 1)
+
+[node name="Hud" parent="." instance=ExtResource("3_hud")]
+show_enemy_hp = false
+
+[node name="ControlsHud" type="CanvasLayer" parent="."]
+script = ExtResource("4_controls")

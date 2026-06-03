@@ -26,9 +26,13 @@ const DAMAGE_CRIT_MULTIPLIER := 1.0
 const DAMAGE_COUNTER_MULTIPLIER := 1.0
 
 # ─── Health ────────────────────────────────────────
+const FIRE_TILE_DAMAGE := 2
+
 const CAIPORA_MAX_HEALTH := 2
 const ENEMY_MAX_HEALTH := 5
 const BOSS_MAX_HEALTH := 10
+const CACADOR_MAX_HEALTH := 9
+const BOITATA_MAX_HEALTH := 15
 
 # ─── Colors (Horror Folk Palette) ──────────────────
 # Fonte ÚNICA de cor do jogo. Qualquer Color() novo deve referenciar/derivar daqui —
@@ -82,6 +86,8 @@ const COLOR_TELEGRAPH_ENEMY := Color(1.4, 0.4, 0.4)     # wind-up da criatura (v
 const COLOR_TELEGRAPH_ENEMY_ALT := Color(1.4, 0.9, 0.2) # flash de ataque duplo (âmbar)
 const COLOR_TELEGRAPH_BOSS := Color(0.5, 0.05, 1.0)     # wind-up do boss (roxo)
 const COLOR_BUBBLE_BOSS := Color(0.55, 0.05, 0.95, 1.0) # bolha de timing do boss
+const COLOR_TELEGRAPH_BOITATA_WHITE := Color(2.0, 2.0, 2.0) # especial branco do Boitatá (overbright)
+const COLOR_AURA_BOITATA := Color(1.0, 0.45, 0.05, 0.75)    # aura de fogo do Boitatá
 
 # Partículas de feedback de combate (>1 = overbright p/ glow aditivo intencional).
 const COLOR_PARTICLE_SPARK := Color(1.0, 0.92, 0.6, 1.0)  # faísca de crítico (dourado)

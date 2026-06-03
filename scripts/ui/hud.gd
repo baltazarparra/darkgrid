@@ -18,6 +18,7 @@ const ENEMY_EMPTY := Constants.COLOR_AMBER_EMPTY
 var _player_icons: HealthIcons
 var _enemy_icons: HealthIcons
 var _frag_label: Label
+var _music_btn: Button
 
 func _ready() -> void:
 	var hbox: HBoxContainer = $Margin/HBox
@@ -44,6 +45,14 @@ func _ready() -> void:
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox.add_child(spacer)
+
+	_music_btn = Button.new()
+	_music_btn.flat = true
+	_music_btn.add_theme_color_override("font_color", Constants.COLOR_AMBER)
+	_music_btn.add_theme_font_size_override("font_size", _frag_font_size() + 4)
+	_music_btn.text = "🔊" if AudioDirector.is_music_enabled() else "🔇"
+	_music_btn.pressed.connect(_on_music_toggle)
+	hbox.add_child(_music_btn)
 
 	if show_enemy_hp:
 		_enemy_icons = HealthIcons.new()
@@ -97,6 +106,8 @@ func _on_viewport_resized() -> void:
 		_enemy_icons.set_metrics(em.x, em.y)
 	if _frag_label != null:
 		_frag_label.add_theme_font_size_override("font_size", _frag_font_size())
+	if _music_btn != null:
+		_music_btn.add_theme_font_size_override("font_size", _frag_font_size() + 4)
 
 func _on_caipora_health_changed(new_health: float, max_health: float) -> void:
 	if max_health != _player_icons._total:
@@ -131,6 +142,10 @@ func _on_chest_opened() -> void:
 
 func _show_fragment_popup() -> void:
 	_show_popup("+1 fragmento", Constants.COLOR_AMBER)
+
+func _on_music_toggle() -> void:
+	AudioDirector.toggle_music_ambience()
+	_music_btn.text = "🔊" if AudioDirector.is_music_enabled() else "🔇"
 
 func _show_popup(text: String, color: Color) -> void:
 	var popup := Label.new()
