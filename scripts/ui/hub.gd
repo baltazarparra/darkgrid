@@ -1,7 +1,7 @@
 class_name Hub
 extends CanvasLayer
 
-## Santuário entre runs: recupera HP, exibe fragmentos, permite comprar Força.
+## Santuário entre runs: recupera HP, exibe fragmentos, permite comprar upgrades.
 
 @onready var _stats: Label = $Center/VBox/Stats
 @onready var _upgrade_list: VBoxContainer = $Center/VBox/UpgradeList
@@ -21,8 +21,12 @@ var _forca3_button: Button
 var _saude3_label: Label
 var _saude3_button: Button
 
+var _scale: float = 1.0
+
 func _ready() -> void:
+	_scale = _ui_scale()
 	GameState.heal_to_full()
+	_apply_scale_to_scene_nodes()
 	_refresh_stats()
 	_build_forca_row()
 	_build_saude_row()
@@ -36,6 +40,25 @@ func _ready() -> void:
 	_add_options_ui()
 	_enter_button.grab_focus()
 
+# Retorna um fator de escala para compensar viewports portrait com CSS scale baixo.
+# Em portrait mobile (css_scale ≈ 0.305) retorna ~1.64; em landscape retorna 1.0.
+func _ui_scale() -> float:
+	var win := Vector2(DisplayServer.window_get_size())
+	if win.x <= 0.0 or win.y <= 0.0:
+		return 1.0
+	var vp := get_viewport().get_visible_rect().size
+	if vp.x <= 0.0 or vp.y <= 0.0:
+		return 1.0
+	var css_per_lp := minf(win.x / vp.x, win.y / vp.y)
+	return maxf(1.0, 0.5 / css_per_lp)
+
+func _apply_scale_to_scene_nodes() -> void:
+	var s := _scale
+	($Center/VBox/Title as Label).add_theme_font_size_override("font_size", roundi(28.0 * s))
+	_stats.add_theme_font_size_override("font_size", roundi(16.0 * s))
+	_enter_button.custom_minimum_size = Vector2(0.0, roundi(84.0 * s))
+	_enter_button.add_theme_font_size_override("font_size", roundi(22.0 * s))
+
 ## Botão "Opções" (abaixo de Entrar na Floresta) + overlay, montados em código.
 func _add_options_ui() -> void:
 	_options = OptionsPanel.new()
@@ -43,7 +66,8 @@ func _add_options_ui() -> void:
 
 	var options_button := Button.new()
 	options_button.text = "Opções"
-	options_button.add_theme_font_size_override("font_size", 16)
+	options_button.add_theme_font_size_override("font_size", roundi(16.0 * _scale))
+	options_button.custom_minimum_size = Vector2(0, roundi(48.0 * _scale))
 	options_button.pressed.connect(_on_options_pressed)
 	$Center/VBox.add_child(options_button)
 
@@ -53,20 +77,33 @@ func _on_options_pressed() -> void:
 func _refresh_stats() -> void:
 	_stats.text = "Caçadas: %d    Vitórias: %d" % [MetaProgression.total_runs, MetaProgression.total_wins]
 
-func _build_forca_row() -> void:
+# ─── Helpers de row ────────────────────────────────
+func _make_row() -> HBoxContainer:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
+	row.add_theme_constant_override("separation", roundi(16.0 * _scale))
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	return row
 
-	_forca_label = Label.new()
-	_forca_label.add_theme_font_size_override("font_size", 14)
-	_forca_label.custom_minimum_size = Vector2(260, 0)
+func _make_upgrade_label() -> Label:
+	var lbl := Label.new()
+	lbl.add_theme_font_size_override("font_size", roundi(21.0 * _scale))
+	lbl.custom_minimum_size = Vector2(roundi(260.0 * _scale), 0)
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return lbl
 
-	_forca_button = Button.new()
-	_forca_button.add_theme_font_size_override("font_size", 14)
-	_forca_button.text = "Comprar"
+func _make_buy_button() -> Button:
+	var btn := Button.new()
+	btn.add_theme_font_size_override("font_size", roundi(21.0 * _scale))
+	btn.custom_minimum_size = Vector2(0, roundi(54.0 * _scale))
+	btn.text = "Comprar"
+	return btn
+
+# ─── Força ─────────────────────────────────────────
+func _build_forca_row() -> void:
+	var row := _make_row()
+	_forca_label = _make_upgrade_label()
+	_forca_button = _make_buy_button()
 	_forca_button.pressed.connect(_on_forca_pressed)
-
 	row.add_child(_forca_label)
 	row.add_child(_forca_button)
 	_upgrade_list.add_child(row)
@@ -89,20 +126,12 @@ func _on_forca_pressed() -> void:
 		if _forca2_label != null:
 			_refresh_forca2_row()
 
+# ─── Saúde ─────────────────────────────────────────
 func _build_saude_row() -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-
-	_saude_label = Label.new()
-	_saude_label.add_theme_font_size_override("font_size", 14)
-	_saude_label.custom_minimum_size = Vector2(260, 0)
-
-	_saude_button = Button.new()
-	_saude_button.add_theme_font_size_override("font_size", 14)
-	_saude_button.text = "Comprar"
+	var row := _make_row()
+	_saude_label = _make_upgrade_label()
+	_saude_button = _make_buy_button()
 	_saude_button.pressed.connect(_on_saude_pressed)
-
 	row.add_child(_saude_label)
 	row.add_child(_saude_button)
 	_upgrade_list.add_child(row)
@@ -126,20 +155,12 @@ func _on_saude_pressed() -> void:
 	if MetaProgression.purchase_upgrade("saude"):
 		_refresh_saude_row()
 
+# ─── Força 2 ───────────────────────────────────────
 func _build_forca2_row() -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-
-	_forca2_label = Label.new()
-	_forca2_label.add_theme_font_size_override("font_size", 14)
-	_forca2_label.custom_minimum_size = Vector2(260, 0)
-
-	_forca2_button = Button.new()
-	_forca2_button.add_theme_font_size_override("font_size", 14)
-	_forca2_button.text = "Comprar"
+	var row := _make_row()
+	_forca2_label = _make_upgrade_label()
+	_forca2_button = _make_buy_button()
 	_forca2_button.pressed.connect(_on_forca2_pressed)
-
 	row.add_child(_forca2_label)
 	row.add_child(_forca2_button)
 	_upgrade_list.add_child(row)
@@ -163,20 +184,12 @@ func _on_forca2_pressed() -> void:
 	if MetaProgression.purchase_upgrade("forca_2"):
 		_refresh_forca2_row()
 
+# ─── Saúde 2 ───────────────────────────────────────
 func _build_saude2_row() -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-
-	_saude2_label = Label.new()
-	_saude2_label.add_theme_font_size_override("font_size", 14)
-	_saude2_label.custom_minimum_size = Vector2(260, 0)
-
-	_saude2_button = Button.new()
-	_saude2_button.add_theme_font_size_override("font_size", 14)
-	_saude2_button.text = "Comprar"
+	var row := _make_row()
+	_saude2_label = _make_upgrade_label()
+	_saude2_button = _make_buy_button()
 	_saude2_button.pressed.connect(_on_saude2_pressed)
-
 	row.add_child(_saude2_label)
 	row.add_child(_saude2_button)
 	_upgrade_list.add_child(row)
@@ -196,20 +209,12 @@ func _on_saude2_pressed() -> void:
 	if MetaProgression.purchase_upgrade("saude_2"):
 		_refresh_saude2_row()
 
+# ─── Força 3 ───────────────────────────────────────
 func _build_forca3_row() -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-
-	_forca3_label = Label.new()
-	_forca3_label.add_theme_font_size_override("font_size", 14)
-	_forca3_label.custom_minimum_size = Vector2(260, 0)
-
-	_forca3_button = Button.new()
-	_forca3_button.add_theme_font_size_override("font_size", 14)
-	_forca3_button.text = "Comprar"
+	var row := _make_row()
+	_forca3_label = _make_upgrade_label()
+	_forca3_button = _make_buy_button()
 	_forca3_button.pressed.connect(_on_forca3_pressed)
-
 	row.add_child(_forca3_label)
 	row.add_child(_forca3_button)
 	_upgrade_list.add_child(row)
@@ -233,20 +238,12 @@ func _on_forca3_pressed() -> void:
 	if MetaProgression.purchase_upgrade("forca_3"):
 		_refresh_forca3_row()
 
+# ─── Saúde 3 ───────────────────────────────────────
 func _build_saude3_row() -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-
-	_saude3_label = Label.new()
-	_saude3_label.add_theme_font_size_override("font_size", 14)
-	_saude3_label.custom_minimum_size = Vector2(260, 0)
-
-	_saude3_button = Button.new()
-	_saude3_button.add_theme_font_size_override("font_size", 14)
-	_saude3_button.text = "Comprar"
+	var row := _make_row()
+	_saude3_label = _make_upgrade_label()
+	_saude3_button = _make_buy_button()
 	_saude3_button.pressed.connect(_on_saude3_pressed)
-
 	row.add_child(_saude3_label)
 	row.add_child(_saude3_button)
 	_upgrade_list.add_child(row)
