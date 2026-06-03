@@ -72,7 +72,11 @@ func _on_viewport_resized() -> void:
 
 func _rebuild(vp: Vector2) -> void:
 	_vp_size = vp
-	_cols = ceili(vp.x / float(SCALE))
+	# Pixel size escala para que os 90 rows cubram sempre a altura total do viewport.
+	# Em portrait (2768px): pix=31 → fire 90×31=2790px tall, cobre tudo.
+	# Em landscape (720px): pix=8 → comportamento original.
+	var pix: int = maxi(SCALE, ceili(vp.y / float(ROWS)))
+	_cols = ceili(vp.x / float(pix))
 	_grid = PackedInt32Array()
 	_grid.resize(_cols * ROWS)
 	for col in _cols:
@@ -80,8 +84,8 @@ func _rebuild(vp: Vector2) -> void:
 	_image = Image.create(_cols, ROWS, false, Image.FORMAT_RGBA8)
 	_texture = ImageTexture.create_from_image(_image)
 	_sprite.texture = _texture
-	_sprite.position = Vector2(_cols * SCALE / 2.0, vp.y - ROWS * SCALE / 2.0)
-	_sprite.scale = Vector2(SCALE, SCALE)
+	_sprite.scale = Vector2(float(pix), float(pix))
+	_sprite.position = Vector2(_cols * pix / 2.0, ROWS * pix / 2.0)
 
 func _process(_delta: float) -> void:
 	_fire_tick = (_fire_tick + 1) % 3
