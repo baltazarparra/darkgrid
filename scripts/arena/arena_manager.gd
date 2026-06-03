@@ -116,26 +116,27 @@ func _start_caipora_turn() -> void:
 	_is_double_attack = randf() < Constants.TIMING_DOUBLE_CHANCE
 	_sfx.play(_sfx.attack_sound)
 	_first_bubble_pos = _enemy.position + Vector2(0, -78)
+	var atk_window: float = _phase_window(Constants.TIMING_WINDOW_ATTACK)
 	_timing_bubble.show_bubble(
 		_first_bubble_pos,
-		Constants.TIMING_WINDOW_ATTACK,
+		atk_window,
 		Constants.TIMING_PERFECT_START,
 		Constants.TIMING_PERFECT_END,
 		false, Color.TRANSPARENT, "up"
 	)
 	if _is_double_attack:
-		var total: float = Constants.TIMING_DOUBLE_INTERVAL + Constants.TIMING_WINDOW_ATTACK
-		var p1s: float = Constants.TIMING_PERFECT_START * Constants.TIMING_WINDOW_ATTACK / total
-		var p1e: float = Constants.TIMING_PERFECT_END * Constants.TIMING_WINDOW_ATTACK / total
-		var p2s: float = (Constants.TIMING_DOUBLE_INTERVAL + Constants.TIMING_PERFECT_START * Constants.TIMING_WINDOW_ATTACK) / total
-		var p2e: float = (Constants.TIMING_DOUBLE_INTERVAL + Constants.TIMING_PERFECT_END * Constants.TIMING_WINDOW_ATTACK) / total
+		var total: float = Constants.TIMING_DOUBLE_INTERVAL + atk_window
+		var p1s: float = Constants.TIMING_PERFECT_START * atk_window / total
+		var p1e: float = Constants.TIMING_PERFECT_END * atk_window / total
+		var p2s: float = (Constants.TIMING_DOUBLE_INTERVAL + Constants.TIMING_PERFECT_START * atk_window) / total
+		var p2e: float = (Constants.TIMING_DOUBLE_INTERVAL + Constants.TIMING_PERFECT_END * atk_window) / total
 		_timing_system.open_window(total, p1s, p1e, true, p2s, p2e, "ui_up", "ui_right")
 		_timing_system.timing_first_hit.connect(_on_double_first_hit)
 		_timing_system.timing_result.connect(_on_double_final_result)
 		get_tree().create_timer(Constants.TIMING_DOUBLE_INTERVAL).timeout.connect(_spawn_second_bubble)
 	else:
 		_timing_system.open_window(
-			Constants.TIMING_WINDOW_ATTACK,
+			atk_window,
 			Constants.TIMING_PERFECT_START,
 			Constants.TIMING_PERFECT_END,
 			false, 0.0, 0.0, "ui_up"
@@ -154,7 +155,7 @@ func _spawn_second_bubble() -> void:
 			break
 	_timing_bubble_b.show_bubble(
 		spread,
-		Constants.TIMING_WINDOW_ATTACK,
+		_phase_window(Constants.TIMING_WINDOW_ATTACK),
 		Constants.TIMING_PERFECT_START,
 		Constants.TIMING_PERFECT_END,
 		false, Color.TRANSPARENT, "right"
@@ -227,7 +228,7 @@ func _start_enemy_turn() -> void:
 func _on_enemy_attack_started() -> void:
 	if not _both_alive():
 		return
-	var window: float = _active_enemy_pattern.attack_duration
+	var window: float = _phase_window(_active_enemy_pattern.attack_duration)
 	if _timing_system.timing_result.is_connected(_on_defense_timing_result):
 		_timing_system.timing_result.disconnect(_on_defense_timing_result)
 	_timing_system.timing_result.connect(_on_defense_timing_result)
@@ -290,6 +291,11 @@ func _boss_spread_pos() -> Vector2:
 	_last_boss_bubble_pos = pos
 	return pos
 
+func _phase_window(base: float) -> float:
+	if GameState.active_phase == 3:
+		return maxf(base - Constants.PHASE3_TIMING_REDUCTION, 0.2)
+	return base
+
 func _is_under_dpad(world_pos: Vector2) -> bool:
 	var rect := _controls_hud.get_dpad_screen_rect()
 	if rect.size == Vector2.ZERO:
@@ -322,10 +328,14 @@ func _on_actor_died(actor: CombatActor) -> void:
 		_caipora.health.heal(1)
 		GameState.caipora_max_hp = _caipora.health.max_health
 		if not GameState.active_combat_is_boss:
-			if GameState.active_phase == 2:
-				MetaProgression.add_fragments(1.5)
-			else:
-				MetaProgression.add_fragment()
+			match GameState.active_phase:
+				3: MetaProgression.add_fragments(2.0)
+				2: MetaProgression.add_fragments(1.5)
+				_: MetaProgression.add_fragment()
+		if GameState.active_combat_is_boss and GameState.active_phase == 2:
+			if MetaProgression.phase_reached < 3:
+				MetaProgression.phase_reached = 3
+				MetaProgression.save_progress()
 	GameState.caipora_current_hp = maxf(0.0, _caipora.health.current_health)
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.state_machine.stop()
@@ -338,11 +348,15 @@ func _on_actor_died(actor: CombatActor) -> void:
 	await get_tree().create_timer(0.6).timeout
 	if caipora_won:
 		if GameState.active_combat_is_boss:
-			GameState.change_screen(SignalBus.Screen.WIN)
+			if GameState.active_phase == 3:
+				GameState.change_screen(SignalBus.Screen.ENDING)
+			else:
+				GameState.change_screen(SignalBus.Screen.WIN)
 		else:
 			GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
-			var back := SignalBus.Screen.EXPLORATION_PHASE2 \
-				if GameState.active_phase == 2 else SignalBus.Screen.EXPLORATION
-			GameState.change_screen(back)
+			match GameState.active_phase:
+				3: GameState.change_screen(SignalBus.Screen.EXPLORATION_PHASE3)
+				2: GameState.change_screen(SignalBus.Screen.EXPLORATION_PHASE2)
+				_: GameState.change_screen(SignalBus.Screen.EXPLORATION)
 	else:
 		GameState.change_screen(SignalBus.Screen.GAME_OVER)

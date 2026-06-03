@@ -4,7 +4,7 @@ extends Node
 # Keeps decoupling between gameplay modules.
 
 # ─── Enums ─────────────────────────────────────────
-enum Screen { MAIN_MENU, EXPLORATION, ARENA, GAME_OVER, WIN, HUB, EXPLORATION_PHASE2, ARENA_PHASE2 }
+enum Screen { MAIN_MENU, EXPLORATION, ARENA, GAME_OVER, WIN, HUB, EXPLORATION_PHASE2, ARENA_PHASE2, EXPLORATION_PHASE3, ARENA_PHASE3, ENDING }
 
 # ─── Signals ───────────────────────────────────────
 signal screen_changed(new_screen: Screen)

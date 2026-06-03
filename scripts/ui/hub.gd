@@ -16,6 +16,10 @@ var _forca2_label: Label
 var _forca2_button: Button
 var _saude2_label: Label
 var _saude2_button: Button
+var _forca3_label: Label
+var _forca3_button: Button
+var _saude3_label: Label
+var _saude3_button: Button
 
 func _ready() -> void:
 	GameState.heal_to_full()
@@ -25,6 +29,9 @@ func _ready() -> void:
 	if MetaProgression.phase_reached >= 2:
 		_build_forca2_row()
 		_build_saude2_row()
+	if MetaProgression.phase_reached >= 3:
+		_build_forca3_row()
+		_build_saude3_row()
 	_enter_button.pressed.connect(_on_enter_pressed)
 	_add_options_ui()
 	_enter_button.grab_focus()
@@ -188,6 +195,80 @@ func _refresh_saude2_row() -> void:
 func _on_saude2_pressed() -> void:
 	if MetaProgression.purchase_upgrade("saude_2"):
 		_refresh_saude2_row()
+
+func _build_forca3_row() -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	_forca3_label = Label.new()
+	_forca3_label.add_theme_font_size_override("font_size", 14)
+	_forca3_label.custom_minimum_size = Vector2(260, 0)
+
+	_forca3_button = Button.new()
+	_forca3_button.add_theme_font_size_override("font_size", 14)
+	_forca3_button.text = "Comprar"
+	_forca3_button.pressed.connect(_on_forca3_pressed)
+
+	row.add_child(_forca3_label)
+	row.add_child(_forca3_button)
+	_upgrade_list.add_child(row)
+	_refresh_forca3_row()
+
+func _refresh_forca3_row() -> void:
+	var forca2_comprada := MetaProgression.get_upgrade_level("forca_2") >= 1
+	var frags := int(MetaProgression.fragments)
+	var level := MetaProgression.get_upgrade_level("forca_3")
+	var maxed := level >= 1
+	_forca3_label.get_parent().visible = forca2_comprada
+	if not forca2_comprada:
+		return
+	if maxed:
+		_forca3_label.text = "Fúria Ancestral  [APRIMORADO]  Fragmentos: %d" % frags
+	else:
+		_forca3_label.text = "Fúria Ancestral  Dano +1/hit (total 4)  Fragmentos: %d / 8" % frags
+	_forca3_button.disabled = maxed or frags < 8 or not forca2_comprada
+
+func _on_forca3_pressed() -> void:
+	if MetaProgression.purchase_upgrade("forca_3"):
+		_refresh_forca3_row()
+
+func _build_saude3_row() -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	_saude3_label = Label.new()
+	_saude3_label.add_theme_font_size_override("font_size", 14)
+	_saude3_label.custom_minimum_size = Vector2(260, 0)
+
+	_saude3_button = Button.new()
+	_saude3_button.add_theme_font_size_override("font_size", 14)
+	_saude3_button.text = "Comprar"
+	_saude3_button.pressed.connect(_on_saude3_pressed)
+
+	row.add_child(_saude3_label)
+	row.add_child(_saude3_button)
+	_upgrade_list.add_child(row)
+	_refresh_saude3_row()
+
+func _refresh_saude3_row() -> void:
+	var saude2_comprada := MetaProgression.get_upgrade_level("saude_2") >= 1
+	var frags := int(MetaProgression.fragments)
+	var level := MetaProgression.get_upgrade_level("saude_3")
+	var maxed := level >= 1
+	_saude3_label.get_parent().visible = saude2_comprada
+	if not saude2_comprada:
+		return
+	if maxed:
+		_saude3_label.text = "Raiz Viva  [APRIMORADO]  Fragmentos: %d" % frags
+	else:
+		_saude3_label.text = "Raiz Viva  +2 HP  Fragmentos: %d / 12" % frags
+	_saude3_button.disabled = maxed or frags < 12 or not saude2_comprada
+
+func _on_saude3_pressed() -> void:
+	if MetaProgression.purchase_upgrade("saude_3"):
+		_refresh_saude3_row()
 
 func _on_enter_pressed() -> void:
 	GameState.start_run()

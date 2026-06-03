@@ -10,6 +10,8 @@ const UPGRADE_DEFS := {
 	"saude":   { "name": "Saúde",             "max_level": 1, "fragment_cost": 6 },
 	"forca_2": { "name": "Fúria da Floresta", "max_level": 1, "fragment_cost": 6, "requires": "forca" },
 	"saude_2": { "name": "Pele de Árvore",    "max_level": 1, "fragment_cost": 9 },
+	"forca_3": { "name": "Fúria Ancestral",   "max_level": 1, "fragment_cost": 8,  "requires": "forca_2" },
+	"saude_3": { "name": "Raiz Viva",         "max_level": 1, "fragment_cost": 12, "requires": "saude_2" },
 }
 
 # ─── State ─────────────────────────────────────────
@@ -35,10 +37,10 @@ func get_upgrade_level(key: String) -> int:
 	return int(upgrades.get(key, 0))
 
 func get_damage_bonus() -> int:
-	return get_upgrade_level("forca") + get_upgrade_level("forca_2")
+	return get_upgrade_level("forca") + get_upgrade_level("forca_2") + get_upgrade_level("forca_3")
 
 func get_health_bonus() -> int:
-	return (get_upgrade_level("saude") + get_upgrade_level("saude_2")) * 2
+	return (get_upgrade_level("saude") + get_upgrade_level("saude_2") + get_upgrade_level("saude_3")) * 2
 
 ## Consome fragmentos e incrementa o nível. Retorna false se não puder comprar.
 func purchase_upgrade(key: String) -> bool:

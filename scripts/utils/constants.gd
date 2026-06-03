@@ -33,6 +33,8 @@ const ENEMY_MAX_HEALTH := 5
 const BOSS_MAX_HEALTH := 10
 const CACADOR_MAX_HEALTH := 9
 const BOITATA_MAX_HEALTH := 15
+const CURUPIRA_MAX_HEALTH := 20
+const ASSOMBRACAO_MAX_HEALTH := 12
 
 # ─── Colors (Horror Folk Palette) ──────────────────
 # Fonte ÚNICA de cor do jogo. Qualquer Color() novo deve referenciar/derivar daqui —
@@ -88,6 +90,8 @@ const COLOR_TELEGRAPH_BOSS := Color(0.5, 0.05, 1.0)     # wind-up do boss (roxo)
 const COLOR_BUBBLE_BOSS := Color(0.55, 0.05, 0.95, 1.0) # bolha de timing do boss
 const COLOR_TELEGRAPH_BOITATA_WHITE := Color(2.0, 2.0, 2.0) # especial branco do Boitatá (overbright)
 const COLOR_AURA_BOITATA := Color(1.0, 0.45, 0.05, 0.75)    # aura de fogo do Boitatá
+const COLOR_TELEGRAPH_CURUPIRA := Color(0.1, 1.5, 0.35)     # telegraph do Curupira (verde-mata overbright)
+const COLOR_AURA_CURUPIRA := Color(0.0, 0.28, 0.06, 0.72)   # aura do Curupira (verde profundo da floresta)
 
 # Partículas de feedback de combate (>1 = overbright p/ glow aditivo intencional).
 const COLOR_PARTICLE_SPARK := Color(1.0, 0.92, 0.6, 1.0)  # faísca de crítico (dourado)
@@ -112,6 +116,9 @@ const UI_CORNER_RADIUS := 0
 const UI_BORDER_WIDTH := 2
 const UI_PADDING_H := 20  # padding horizontal interno de botões/painéis
 const UI_PADDING_V := 12  # padding vertical interno
+
+# ─── Fase 3 ────────────────────────────────────────
+const PHASE3_TIMING_REDUCTION := 0.15
 
 # ─── Physics Layers ────────────────────────────────
 const LAYER_PLAYER := 1
