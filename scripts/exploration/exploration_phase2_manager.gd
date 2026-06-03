@@ -49,7 +49,7 @@ const ENEMY_DEFS = [
 	{"id": "p2_e0", "x": 9,  "y": 3,  "boss": false},
 	{"id": "p2_e1", "x": 14, "y": 8,  "boss": false},
 	{"id": "p2_e2", "x": 19, "y": 5,  "boss": false},
-	{"id": "p2_e3", "x": 17, "y": 14, "boss": true},
+	{"id": "p2_e3", "x": 17, "y": 14, "boss": true, "type": "boitata"},
 ]
 
 const EXIT_POS     := Vector2i(21, 16)
@@ -81,7 +81,7 @@ func _spawn_enemies() -> void:
 			continue
 		var enemy := MapEnemy.new()
 		_enemies_container.add_child(enemy)
-		enemy.setup(def["id"], Vector2i(def["x"], def["y"]), def["boss"])
+		enemy.setup(def["id"], Vector2i(def["x"], def["y"]), def.get("boss", false), def.get("type", ""))
 		_map_enemies.append(enemy)
 
 func _spawn_objects() -> void:
@@ -138,7 +138,7 @@ func _run_enemy_turns() -> void:
 
 func _trigger_combat(enemy: MapEnemy) -> void:
 	_locked = true
-	GameState.player_map_pos = _player_grid_pos
+	GameState.player_map_pos = PLAYER_START if enemy.is_boss else _player_grid_pos
 	GameState.active_map_enemy_id = enemy.enemy_id
 	GameState.active_combat_is_boss = enemy.is_boss
 	if enemy.is_boss:
@@ -152,7 +152,7 @@ func _show_boss_dialogue() -> void:
 	var dlg: DialogueScreen = DIALOGUE_SCENE.instantiate()
 	add_child(dlg)
 	SignalBus.dialogue_finished.connect(_on_dialogue_finished, CONNECT_ONE_SHOT)
-	dlg.start("BOITATÁ", BOITATA_DIALOGUE)
+	dlg.start("BOITATÁ", BOITATA_DIALOGUE, "CAIPORA", Constants.COLOR_DIALOGUE_CAIPORA, Constants.COLOR_DIALOGUE_BOITATA)
 
 func _on_dialogue_finished() -> void:
 	GameState.change_screen(SignalBus.Screen.ARENA_PHASE2)

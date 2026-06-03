@@ -2,20 +2,32 @@ class_name DialogueScreen
 extends CanvasLayer
 
 @onready var _boss_name_label: Label = $BossName
-@onready var _speaker_label: Label = $SpeechBox/VBox/SpeakerLabel
-@onready var _text_label: Label = $SpeechBox/VBox/TextLabel
-@onready var _indicator: Label = $SpeechBox/VBox/Indicator
+@onready var _left_box: ColorRect  = $LeftBox
+@onready var _right_box: ColorRect = $RightBox
+@onready var _left_speaker_label:  Label = $LeftBox/VBox/SpeakerLabel
+@onready var _left_text_label:     Label = $LeftBox/VBox/TextLabel
+@onready var _left_indicator:      Label = $LeftBox/VBox/Indicator
+@onready var _right_speaker_label: Label = $RightBox/VBox/SpeakerLabel
+@onready var _right_text_label:    Label = $RightBox/VBox/TextLabel
+@onready var _right_indicator:     Label = $RightBox/VBox/Indicator
 
 var _lines: Array[Dictionary] = []
 var _current_index: int = 0
 var _ready_for_input: bool = false
+var _left_speaker_name: String = ""
 
 # ─── Public API ────────────────────────────────────
 
-func start(boss_name: String, lines: Array[Dictionary]) -> void:
+func start(boss_name: String, lines: Array[Dictionary],
+		left_speaker: String = "CAIPORA",
+		left_color: Color = Color.WHITE,
+		right_color: Color = Color.WHITE) -> void:
 	_lines = lines
 	_current_index = 0
+	_left_speaker_name = left_speaker
 	_boss_name_label.text = boss_name
+	_left_speaker_label.add_theme_color_override("font_color", left_color)
+	_right_speaker_label.add_theme_color_override("font_color", right_color)
 	_show_line(0)
 
 ## Avança para a próxima fala. Chamado via input ou diretamente em testes.
@@ -44,7 +56,19 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _show_line(idx: int) -> void:
 	var line: Dictionary = _lines[idx]
-	_speaker_label.text = line.get("speaker", "")
-	_text_label.text = line.get("text", "")
-	_indicator.visible = true
+	var speaker: String = line.get("speaker", "")
+	var is_left: bool = speaker == _left_speaker_name
+
+	_left_box.visible = is_left
+	_right_box.visible = not is_left
+
+	if is_left:
+		_left_speaker_label.text = speaker
+		_left_text_label.text = line.get("text", "")
+		_left_indicator.visible = true
+	else:
+		_right_speaker_label.text = speaker
+		_right_text_label.text = line.get("text", "")
+		_right_indicator.visible = true
+
 	_ready_for_input = true

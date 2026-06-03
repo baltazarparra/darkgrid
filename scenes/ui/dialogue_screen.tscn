@@ -12,7 +12,6 @@ anchor_bottom = 1.0
 color = Color(0.04, 0.016, 0.016, 0.88)
 
 [node name="BossName" type="Label" parent="."]
-anchor_left = 0.0
 anchor_right = 1.0
 anchor_top = 0.22
 anchor_bottom = 0.48
@@ -22,37 +21,74 @@ text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SpeechBox" type="ColorRect" parent="."]
-anchor_left = 0.0
-anchor_right = 1.0
-anchor_top = 0.70
+[node name="LeftBox" type="ColorRect" parent="."]
+anchor_right = 0.48
+anchor_top = 0.68
 anchor_bottom = 1.0
-color = Color(0.047, 0.020, 0.020, 0.96)
+color = Color(0.03, 0.10, 0.04, 0.96)
 
-[node name="VBox" type="VBoxContainer" parent="SpeechBox"]
+[node name="VBox" type="VBoxContainer" parent="LeftBox"]
 layout_mode = 1
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 20
+offset_left = 16
 offset_top = 12
-offset_right = -20
+offset_right = -16
 offset_bottom = -12
 theme_override_constants/separation = 8
 
-[node name="SpeakerLabel" type="Label" parent="SpeechBox/VBox"]
+[node name="SpeakerLabel" type="Label" parent="LeftBox/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1.0, 0.42, 0.0, 1)
 theme_override_font_sizes/font_size = 14
 text = ""
 
-[node name="TextLabel" type="Label" parent="SpeechBox/VBox"]
+[node name="TextLabel" type="Label" parent="LeftBox/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.788, 0.82, 0.851, 1)
 theme_override_font_sizes/font_size = 18
 text = ""
 autowrap_mode = 3
 
-[node name="Indicator" type="Label" parent="SpeechBox/VBox"]
+[node name="Indicator" type="Label" parent="LeftBox/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.788, 0.82, 0.851, 0.55)
+theme_override_font_sizes/font_size = 14
+text = "▼"
+horizontal_alignment = 2
+visible = false
+
+[node name="RightBox" type="ColorRect" parent="."]
+anchor_left = 0.52
+anchor_right = 1.0
+anchor_top = 0.68
+anchor_bottom = 1.0
+color = Color(0.047, 0.020, 0.020, 0.96)
+
+[node name="VBox" type="VBoxContainer" parent="RightBox"]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16
+offset_top = 12
+offset_right = -16
+offset_bottom = -12
+theme_override_constants/separation = 8
+
+[node name="SpeakerLabel" type="Label" parent="RightBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = ""
+horizontal_alignment = 1
+
+[node name="TextLabel" type="Label" parent="RightBox/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.788, 0.82, 0.851, 1)
+theme_override_font_sizes/font_size = 18
+text = ""
+autowrap_mode = 3
+horizontal_alignment = 1
+
+[node name="Indicator" type="Label" parent="RightBox/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.788, 0.82, 0.851, 0.55)
 theme_override_font_sizes/font_size = 14

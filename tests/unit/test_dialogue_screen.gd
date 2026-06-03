@@ -17,14 +17,16 @@ func test_start_shows_boss_name() -> void:
 
 func test_start_shows_first_line() -> void:
 	_screen.start("BOITATÁ", BOITATA_LINES)
-	assert_eq(_screen._speaker_label.text, "CAIPORA")
-	assert_eq(_screen._text_label.text, "Você nos traiu...")
+	# Primeira linha: CAIPORA (falante esquerdo)
+	assert_eq(_screen._left_speaker_label.text, "CAIPORA")
+	assert_eq(_screen._left_text_label.text, "Você nos traiu...")
 
 func test_advance_shows_second_line() -> void:
 	_screen.start("BOITATÁ", BOITATA_LINES)
 	_screen.advance()
-	assert_eq(_screen._speaker_label.text, "BOITATÁ")
-	assert_eq(_screen._text_label.text, "Vocês me abandonaram!")
+	# Segunda linha: BOITATÁ (falante direito)
+	assert_eq(_screen._right_speaker_label.text, "BOITATÁ")
+	assert_eq(_screen._right_text_label.text, "Vocês me abandonaram!")
 
 func test_advance_last_line_emits_dialogue_finished() -> void:
 	watch_signals(SignalBus)
@@ -37,4 +39,4 @@ func test_advance_ignored_when_not_ready() -> void:
 	_screen.start("BOITATÁ", BOITATA_LINES)
 	_screen._ready_for_input = false
 	_screen.advance()
-	assert_eq(_screen._speaker_label.text, "CAIPORA", "linha não deve avançar")
+	assert_eq(_screen._left_speaker_label.text, "CAIPORA", "linha não deve avançar")

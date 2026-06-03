@@ -2,8 +2,10 @@ class_name MapEnemy
 extends Node2D
 
 # ─── Constants ─────────────────────────────────────
-const ENEMY_TEXTURE = preload("res://assets/sprites/enemy_idle.png")
-const BOSS_TEXTURE = preload("res://assets/sprites/boss_idle.png")
+const ENEMY_TEXTURE    = preload("res://assets/sprites/enemy_idle.png")
+const BOSS_TEXTURE     = preload("res://assets/sprites/boss_idle.png")
+const BOITATA_TEXTURE  = preload("res://assets/sprites/boitata_idle.png")
+const CURUPIRA_TEXTURE = preload("res://assets/sprites/curupira_idle.png")
 const CHASE_RANGE := 5          # comuns: alcance de aggro
 const BOSS_CHASE_RANGE := 7     # boss: defende a porta com alcance maior
 const DRIFT_IDLE_CHANCE := 0.4  # chance de ficar parado ao voltar pra origem
@@ -13,19 +15,26 @@ var enemy_id: String = ""
 var grid_pos: Vector2i = Vector2i.ZERO
 var is_boss: bool = false
 var home_pos: Vector2i = Vector2i.ZERO  # origem; alvo do leash quando o jogador foge
+var _boss_type: String = ""
 
 # ─── Public API ────────────────────────────────────
-func setup(id: String, pos: Vector2i, boss: bool = false) -> void:
+func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = "") -> void:
 	enemy_id = id
 	grid_pos = pos
 	home_pos = pos
 	is_boss = boss
+	_boss_type = boss_type
 	_update_visual_position()
 
 	var sprite := Sprite2D.new()
-	sprite.texture = BOSS_TEXTURE if boss else ENEMY_TEXTURE
+	if boss:
+		match boss_type:
+			"boitata":  sprite.texture = BOITATA_TEXTURE
+			"curupira": sprite.texture = CURUPIRA_TEXTURE
+			_:          sprite.texture = BOSS_TEXTURE
+	else:
+		sprite.texture = ENEMY_TEXTURE
 	sprite.offset = Vector2(0, -8)  # 48px transborda pra cima, pés na base do tile
-	# Arte 48px já tem identidade própria (caçador / caçador com machados) — sem tint.
 	add_child(sprite)
 
 	if boss:
@@ -70,7 +79,10 @@ func _spawn_boss_aura() -> void:
 	aura.initial_velocity_max = 8.0
 	aura.scale_amount_min = 1.5
 	aura.scale_amount_max = 3.5
-	aura.color = Constants.COLOR_AURA_BOSS
+	match _boss_type:
+		"boitata":  aura.color = Constants.COLOR_AURA_BOITATA
+		"curupira": aura.color = Constants.COLOR_AURA_CURUPIRA
+		_:          aura.color = Constants.COLOR_AURA_BOSS
 	add_child(aura)
 
 func _update_visual_position() -> void:
