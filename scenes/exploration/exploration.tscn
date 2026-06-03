@@ -17,7 +17,7 @@ format = 2
 [node name="Objects" type="Node2D" parent="."]
 
 [node name="CanvasModulate" type="CanvasModulate" parent="."]
-color = Color(0.6, 0.62, 0.72, 1)
+color = Color(0.34, 0.38, 0.48, 1)
 
 [node name="Hud" parent="." instance=ExtResource("3_hud")]
 show_enemy_hp = false

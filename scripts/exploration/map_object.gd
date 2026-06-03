@@ -1,6 +1,8 @@
 class_name MapObject
 extends Node2D
 
+const ForestLight := preload("res://scripts/exploration/forest_light.gd")
+
 enum Type { CHEST, KEY, FIRE, SPIKE, DEAD_TREE, BONES, MOSS, BLOOD_POOL, ROCK, FERN, VINE }
 
 const T: int = Constants.TILE_SIZE  # 32
@@ -16,7 +18,20 @@ func setup(type: Type, grid_pos: Vector2i) -> void:
 	position = Vector2(grid_pos) * T
 	if type in DECO_TYPES:
 		z_index = -1  # ambientação fica embaixo de jogador/inimigos/baú
+	if type == Type.FIRE:
+		_attach_fire_light()
 	queue_redraw()
+
+# Poça de luz quente da fogueira, com flicker irregular (chama viva).
+func _attach_fire_light() -> void:
+	var light := ForestLight.make(Constants.COLOR_FIRE_HOT, 1.0, 0.8)
+	light.position = Vector2(T / 2.0, T / 2.0)
+	add_child(light)
+	var tween := create_tween().set_loops()
+	tween.tween_property(light, "energy", 1.15, 0.18).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(light, "energy", 0.82, 0.13).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(light, "energy", 1.05, 0.21).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(light, "energy", 0.9, 0.16).set_trans(Tween.TRANS_SINE)
 
 # ─── Drawing ───────────────────────────────────────
 func _draw() -> void:

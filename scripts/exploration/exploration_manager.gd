@@ -1,6 +1,7 @@
 extends Node2D
 
 const MapObject := preload("res://scripts/exploration/map_object.gd")
+const ForestLight := preload("res://scripts/exploration/forest_light.gd")
 
 # Variantes de tile no atlas (ver scripts/tools/gen_tiles.py).
 const FLOOR_VARIANTS := 4
@@ -123,6 +124,10 @@ func _setup_player() -> void:
 	_caipora.tilemap = _tilemap
 	_caipora.position = Vector2(start) * Constants.TILE_SIZE
 	_caipora.move_finished.connect(_on_player_moved)
+	# Tocha da Caipora: poça de luz fria (luar) que a segue, garante leitura na noite
+	# fechada — rede de segurança do gameplay contra a vinheta + CanvasModulate escuros.
+	var torch := ForestLight.make(Color(0.88, 0.93, 1.0), 1.25, 1.6)
+	_caipora.add_child(torch)
 
 func _spawn_enemies() -> void:
 	for def in ENEMY_DEFS:
@@ -158,11 +163,19 @@ func _spawn_objects() -> void:
 				_make_object(t, Vector2i(x, y))
 
 func _spawn_exit_marker() -> void:
+	var center := Vector2(EXIT_POS) * Constants.TILE_SIZE + Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
 	var marker := Sprite2D.new()
 	marker.texture = preload("res://assets/sprites/tile_floor.png")
 	marker.modulate = Constants.COLOR_EXIT
-	marker.position = Vector2(EXIT_POS) * Constants.TILE_SIZE
+	marker.position = center - Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
 	add_child(marker)
+	# Luz âmbar pulsante: marca a saída na escuridão sem precisar de texto.
+	var light := ForestLight.make(Constants.COLOR_AMBER, 1.0, 1.0)
+	light.position = center
+	add_child(light)
+	var tween := create_tween().set_loops()
+	tween.tween_property(light, "energy", 1.4, 1.1).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(light, "energy", 0.7, 1.1).set_trans(Tween.TRANS_SINE)
 
 # ─── Turn System ───────────────────────────────────
 func _on_player_moved(new_grid_pos: Vector2i) -> void:
