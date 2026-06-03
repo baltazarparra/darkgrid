@@ -13,13 +13,17 @@ const DECO_TYPES := [Type.DEAD_TREE, Type.BONES, Type.MOSS, Type.BLOOD_POOL, Typ
 var _type: Type
 
 # ─── Public API ────────────────────────────────────
-func setup(type: Type, grid_pos: Vector2i) -> void:
+## `enhanced` liga luz + partículas na fogueira (chama/brasas/fumaça). Só a Fase 1 usa
+## (poucas fogueiras); Fases 2/3 têm dezenas de tiles de fogo e ficam no desenho estático
+## por performance no export web.
+func setup(type: Type, grid_pos: Vector2i, enhanced: bool = false) -> void:
 	_type = type
 	position = Vector2(grid_pos) * T
 	if type in DECO_TYPES:
 		z_index = -1  # ambientação fica embaixo de jogador/inimigos/baú
-	if type == Type.FIRE:
+	if type == Type.FIRE and enhanced:
 		_attach_fire_light()
+		_attach_fire_particles()
 	queue_redraw()
 
 # Poça de luz quente da fogueira, com flicker irregular (chama viva).
@@ -32,6 +36,73 @@ func _attach_fire_light() -> void:
 	tween.tween_property(light, "energy", 0.82, 0.13).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(light, "energy", 1.05, 0.21).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(light, "energy", 0.9, 0.16).set_trans(Tween.TRANS_SINE)
+
+# Chama viva + brasas (aditivo) + fumaça (mix). Tudo CPUParticles2D (web-safe).
+func _attach_fire_particles() -> void:
+	var base := Vector2(T / 2.0, T / 2.0 + 4.0)
+
+	# Fumaça: cinza translúcido, lenta, sobe e dissipa (atrás da chama).
+	var smoke := _make_particles(10, 1.8, base, Vector2(0, -18), 8.0, 20.0, 0.12, 0.25,
+		_smoke_ramp(), false)
+	smoke.texture = ForestLight.LIGHT_TEXTURE  # puff redondo e suave (não quadrado)
+	smoke.spread = 22.0
+	smoke.z_index = -1
+	add_child(smoke)
+
+	# Chama: gradiente quente, sobe rápido, blend aditivo.
+	var flame := _make_particles(18, 0.6, base, Vector2(0, -45), 14.0, 34.0, 2.0, 4.0,
+		_flame_ramp(), true)
+	flame.spread = 16.0
+	add_child(flame)
+
+	# Brasas: poucas, rápidas, sobem alto (faísca da fogueira).
+	var embers := _make_particles(8, 1.1, base, Vector2(0, -60), 20.0, 50.0, 1.0, 2.2,
+		_ember_ramp(), true)
+	embers.spread = 30.0
+	embers.z_index = 1
+	add_child(embers)
+
+func _make_particles(amount: int, lifetime: float, pos: Vector2, gravity: Vector2,
+		vmin: float, vmax: float, smin: float, smax: float, ramp: Gradient,
+		additive: bool) -> CPUParticles2D:
+	var p := CPUParticles2D.new()
+	p.amount = amount
+	p.lifetime = lifetime
+	p.preprocess = lifetime
+	p.position = pos
+	p.direction = Vector2(0, -1)
+	p.gravity = gravity
+	p.initial_velocity_min = vmin
+	p.initial_velocity_max = vmax
+	p.scale_amount_min = smin
+	p.scale_amount_max = smax
+	p.color_ramp = ramp
+	if additive:
+		var mat := CanvasItemMaterial.new()
+		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		p.material = mat
+	return p
+
+func _flame_ramp() -> Gradient:
+	var grad := Gradient.new()
+	grad.set_offset(0, 0.0); grad.set_color(0, Constants.COLOR_FIRE_HOT)
+	grad.set_offset(1, 1.0); grad.set_color(1, Color(Constants.COLOR_FIRE_LOW.r, Constants.COLOR_FIRE_LOW.g, Constants.COLOR_FIRE_LOW.b, 0.0))
+	grad.add_point(0.5, Constants.COLOR_FIRE_MID)
+	return grad
+
+func _ember_ramp() -> Gradient:
+	var amber := Constants.COLOR_AMBER
+	var grad := Gradient.new()
+	grad.set_offset(0, 0.0); grad.set_color(0, Color(1.0, 0.6, 0.2, 0.9))
+	grad.set_offset(1, 1.0); grad.set_color(1, Color(amber.r, amber.g, amber.b, 0.0))
+	return grad
+
+func _smoke_ramp() -> Gradient:
+	var grad := Gradient.new()
+	grad.set_offset(0, 0.0); grad.set_color(0, Color(0.15, 0.13, 0.14, 0.0))
+	grad.set_offset(1, 1.0); grad.set_color(1, Color(0.10, 0.09, 0.10, 0.0))
+	grad.add_point(0.35, Color(0.18, 0.16, 0.17, 0.35))
+	return grad
 
 # ─── Drawing ───────────────────────────────────────
 func _draw() -> void:

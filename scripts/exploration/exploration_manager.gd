@@ -2,6 +2,7 @@ extends Node2D
 
 const MapObject := preload("res://scripts/exploration/map_object.gd")
 const ForestLight := preload("res://scripts/exploration/forest_light.gd")
+const ForestAmbience := preload("res://scripts/exploration/forest_ambience.gd")
 
 # Variantes de tile no atlas (ver scripts/tools/gen_tiles.py).
 const FLOOR_VARIANTS := 4
@@ -110,13 +111,18 @@ func _ready() -> void:
 func _spawn_ambient_life() -> void:
 	# Vaga-lumes + insetos sobre a área interna do mapa (decorativo, sem interação).
 	var t := Constants.TILE_SIZE
-	var life := AmbientLife.new()
-	add_child(life)
-	life.setup(Rect2(
+	var area := Rect2(
 		t, t,
 		(Constants.GRID_WIDTH - 2) * t,
 		(Constants.GRID_HEIGHT - 2) * t
-	))
+	)
+	var life := AmbientLife.new()
+	add_child(life)
+	life.setup(area)
+	# Camadas atmosféricas premium: neblina, esporos e god rays.
+	var ambience := ForestAmbience.new()
+	add_child(ambience)
+	ambience.setup(area)
 
 func _setup_player() -> void:
 	var start := GameState.player_map_pos if GameState.player_map_pos != Vector2i(-1, -1) else PLAYER_START
@@ -264,7 +270,8 @@ func _is_occupied_by_enemy(pos: Vector2i) -> bool:
 func _make_object(type: MapObject.Type, grid_pos: Vector2i) -> Node2D:
 	var obj := MapObject.new()
 	_objects_container.add_child(obj)
-	obj.setup(type, grid_pos)
+	# Fase 1 tem poucas fogueiras → realce (luz + partículas) ligado.
+	obj.setup(type, grid_pos, true)
 	return obj
 
 # ─── TileMap Setup ─────────────────────────────────
