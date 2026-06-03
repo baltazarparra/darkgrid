@@ -16,8 +16,8 @@ func before_each():
 	add_child_autofree(_caipora)
 
 func after_each():
-	# Garante que nenhuma action fique "presa" entre os testes.
-	Input.action_release("ui_right")
+	for action in ["ui_right", "ui_left", "ui_up", "ui_down"]:
+		Input.action_release(action)
 
 func test_injected_action_triggers_timing():
 	var result: Array = [TimingSystem.TimingResult.MISS]
@@ -37,3 +37,28 @@ func test_action_press_drives_movement_polling():
 	assert_eq(_caipora._get_cardinal_input(), Vector2.RIGHT)
 	Input.action_release("ui_right")
 	assert_eq(_caipora._get_cardinal_input(), Vector2.ZERO)
+
+func test_all_four_directions_via_dpad() -> void:
+	var directions: Dictionary = {
+		"ui_right": Vector2.RIGHT,
+		"ui_left":  Vector2.LEFT,
+		"ui_up":    Vector2.UP,
+		"ui_down":  Vector2.DOWN,
+	}
+	for action: String in directions:
+		Input.action_press(action)
+		assert_eq(
+			_caipora._get_cardinal_input(),
+			directions[action],
+			"D-pad action %s must produce cardinal %s" % [action, directions[action]]
+		)
+		Input.action_release(action)
+
+func test_diagonal_input_blocked_to_cardinal() -> void:
+	Input.action_press("ui_right")
+	Input.action_press("ui_up")
+	var dir := _caipora._get_cardinal_input()
+	assert_eq(dir.y, 0.0, "diagonal must be blocked: y must be 0")
+	assert_eq(dir.x, 1.0, "diagonal must resolve to horizontal (x wins)")
+	Input.action_release("ui_right")
+	Input.action_release("ui_up")

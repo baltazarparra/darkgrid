@@ -91,6 +91,8 @@ Run the game with a display (WSLg provides `:0`):
 ~/.local/bin/godot --path .
 ```
 
+When modifying input, arena, exploration, or timing — run `/validate-controls` first.
+
 ---
 
 ## Common Gotchas
@@ -103,6 +105,8 @@ Run the game with a display (WSLg provides `:0`):
 6. **Signal disconnection.** Godot does not warn about disconnected signals. Always verify signal connections in the scene inspector after node renames.
 7. **Scene file corruption.** Manual edits to `.tscn` files can corrupt scenes. Prefer MCP `add_node` or Godot editor for scene modifications.
 8. **Tone consistency.** Do not sanitize horror. Blood, darkness, and hostility are intentional design choices.
+9. **Dual input paths.** Two consumers, two sources: keyboard uses native Godot polling (`Input.is_action_pressed`); the touch D-pad (`ControlsHud`) injects via `Input.action_press` + `Input.parse_input_event`. Always run `/validate-controls` before committing changes to input, arena, exploration, or timing.
+10. **Three target platforms.** iPhone 17 portrait Safari (~393px wide): `PortraitGuard` autoload (layer 128) shows "gire o dispositivo" overlay. Android Chrome PWA landscape: manifest locks orientation, safe areas handled by `ControlsHud`. Tablet+ landscape: arena zoom capped at 2.0x in `arena_manager.gd`. Run `/validate-platforms` before committing any UI, camera, or safe-area change.
 
 ---
 

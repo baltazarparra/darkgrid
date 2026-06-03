@@ -74,6 +74,7 @@ func _update_camera_fit() -> void:
 	# limite é a altura (ação grande, leve folga lateral); em retrato cabe inteiro.
 	var vp := get_viewport().get_visible_rect().size
 	var z: float = minf(vp.x / STAGE_SIZE.x, vp.y / STAGE_SIZE.y) * STAGE_FILL
+	z = clampf(z, 0.5, 2.0)
 	_camera.zoom = Vector2(z, z)
 	_camera.position = STAGE_CENTER
 
