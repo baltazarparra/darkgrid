@@ -2,8 +2,6 @@ class_name DoomFire
 extends CanvasLayer
 
 # ─── Constants ─────────────────────────────────────
-const COLS: int = 160
-const ROWS: int = 90
 const SCALE: int = 8
 
 # Dark doom fire: preto transparente → roxo escuro → carmesim → vermelho sangue
@@ -48,6 +46,9 @@ const PALETTE: Array[Color] = [
 ]
 
 # ─── State ─────────────────────────────────────────
+var _cols: int = 0
+var _rows: int = 0
+var _vp_size: Vector2 = Vector2.ZERO
 var _grid: PackedInt32Array
 var _image: Image
 var _texture: ImageTexture
@@ -57,21 +58,31 @@ var _fire_tick: int = 0
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	layer = -10
-
-	_grid = PackedInt32Array()
-	_grid.resize(COLS * ROWS)
-	for col in COLS:
-		_grid[(ROWS - 1) * COLS + col] = 36
-
-	_image = Image.create(COLS, ROWS, false, Image.FORMAT_RGBA8)
-	_texture = ImageTexture.create_from_image(_image)
-
 	_sprite = Sprite2D.new()
-	_sprite.texture = _texture
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_sprite.position = Vector2(COLS * SCALE / 2.0, ROWS * SCALE / 2.0)
-	_sprite.scale = Vector2(SCALE, SCALE)
 	add_child(_sprite)
+	_rebuild(get_viewport().get_visible_rect().size)
+	get_viewport().size_changed.connect(_on_viewport_resized)
+
+func _on_viewport_resized() -> void:
+	var vp := get_viewport().get_visible_rect().size
+	if vp == _vp_size:
+		return
+	_rebuild(vp)
+
+func _rebuild(vp: Vector2) -> void:
+	_vp_size = vp
+	_cols = ceili(vp.x / float(SCALE))
+	_rows = ceili(vp.y / float(SCALE))
+	_grid = PackedInt32Array()
+	_grid.resize(_cols * _rows)
+	for col in _cols:
+		_grid[(_rows - 1) * _cols + col] = 36
+	_image = Image.create(_cols, _rows, false, Image.FORMAT_RGBA8)
+	_texture = ImageTexture.create_from_image(_image)
+	_sprite.texture = _texture
+	_sprite.position = Vector2(_cols * SCALE / 2.0, _rows * SCALE / 2.0)
+	_sprite.scale = Vector2(SCALE, SCALE)
 
 func _process(_delta: float) -> void:
 	_fire_tick = (_fire_tick + 1) % 3
@@ -82,20 +93,20 @@ func _process(_delta: float) -> void:
 
 # ─── Private helpers ───────────────────────────────
 func _update_fire() -> void:
-	for row in range(ROWS - 1):
-		for col in COLS:
-			var src: int = (row + 1) * COLS + col
+	for row in range(_rows - 1):
+		for col in _cols:
+			var src: int = (row + 1) * _cols + col
 			var val: int = _grid[src]
 			if val == 0:
-				_grid[row * COLS + col] = 0
+				_grid[row * _cols + col] = 0
 				continue
 			var drift: int = (randi() & 1)
-			var target: int = clampi(col - drift + (randi() & 1), 0, COLS - 1)
+			var target: int = clampi(col - drift + (randi() & 1), 0, _cols - 1)
 			var decay: int = randi() % 3
-			_grid[row * COLS + target] = maxi(0, val - decay)
+			_grid[row * _cols + target] = maxi(0, val - decay)
 
 func _blit_image() -> void:
-	for row in ROWS:
-		for col in COLS:
-			_image.set_pixel(col, row, PALETTE[_grid[row * COLS + col]])
+	for row in _rows:
+		for col in _cols:
+			_image.set_pixel(col, row, PALETTE[_grid[row * _cols + col]])
 	_texture.update(_image)

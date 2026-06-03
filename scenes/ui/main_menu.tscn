@@ -77,26 +77,23 @@ layout_mode = 2
 theme_override_constants/separation = 24
 alignment = 1
 
-[node name="Title" type="Label" parent="Center/VBox"]
+[node name="Title" type="RichTextLabel" parent="Center/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.545, 0, 0, 1)
-theme_override_font_sizes/font_size = 48
-text = "CAIPORA"
-horizontal_alignment = 1
-
-[node name="Subtitle" type="Label" parent="Center/VBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.788, 0.82, 0.851, 1)
-theme_override_font_sizes/font_size = 14
-text = "a floresta tem fome"
-horizontal_alignment = 1
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 48
+theme_override_colors/default_color = Color(0.545, 0, 0, 1)
+text = "[center][wave amp=10 freq=2.5]CAIPORA[/wave][/center]"
 
 [node name="StartButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 72)
 theme_override_font_sizes/font_size = 18
 text = "Iniciar"
 
 [node name="QuitButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 72)
 theme_override_font_sizes/font_size = 18
 text = "Sair"

@@ -9,8 +9,7 @@ extends CanvasLayer
 const FADE_LAYER: int = 100
 const FADE_IN_DURATION: float = 1.2
 const FADE_OUT_DURATION: float = 0.6
-const TITLE_FLICKER_LOW: float = 0.72
-const TITLE_FLICKER_PERIOD: float = 0.9
+const TITLE_COLOR_PERIOD: float = 1.4
 
 # ─── State ─────────────────────────────────────────
 @onready var _start_button: Button = $Center/VBox/StartButton
@@ -37,13 +36,15 @@ func _setup_fade() -> void:
 	add_child(fade_layer)
 	create_tween().tween_property(_fade, "color:a", 0.0, FADE_IN_DURATION)
 
-## Pulso sutil no título, como luz de fogo respirando.
+## Ciclo de brasa no título — escuro → médio → vivo → escuro.
 func _animate_title() -> void:
-	var title := $Center/VBox/Title
+	var title := $Center/VBox/Title as RichTextLabel
 	var tween := create_tween().set_loops()
-	tween.tween_property(title, "modulate:a", TITLE_FLICKER_LOW, TITLE_FLICKER_PERIOD) \
+	tween.tween_property(title, "modulate", Constants.COLOR_FIRE_LOW, TITLE_COLOR_PERIOD / 3.0) \
 		.set_trans(Tween.TRANS_SINE)
-	tween.tween_property(title, "modulate:a", 1.0, TITLE_FLICKER_PERIOD) \
+	tween.tween_property(title, "modulate", Constants.COLOR_FIRE_MID, TITLE_COLOR_PERIOD / 3.0) \
+		.set_trans(Tween.TRANS_SINE)
+	tween.tween_property(title, "modulate", Constants.COLOR_FIRE_HOT, TITLE_COLOR_PERIOD / 3.0) \
 		.set_trans(Tween.TRANS_SINE)
 
 func _on_start_pressed() -> void:
