@@ -48,8 +48,20 @@ func trigger_hit_stop(frames: int = 3) -> void:
 	var duration: float = frames / 60.0
 	hit_stop_started.emit(duration)
 	await get_tree().create_timer(duration, true, false, true).timeout
-	hit_stop_ended.emit()
+	# Resiliente: se o hit-stop já foi encerrado à força (force_clear_hit_stop, ex.
+	# na morte do inimigo), não re-emite ended nem mexe no estado já limpo.
+	if _hit_stop_active:
+		_hit_stop_active = false
+		hit_stop_ended.emit()
+
+## Encerra o hit-stop imediatamente (idempotente). Usado ao encerrar o combate para
+## garantir que os sprites voltem a animar (speed_scale=1) antes de qualquer transição,
+## sem depender do timer interno do hit-stop em andamento.
+func force_clear_hit_stop() -> void:
+	if not _hit_stop_active:
+		return
 	_hit_stop_active = false
+	hit_stop_ended.emit()
 
 # ─── Partículas ────────────────────────────────────
 func spawn_blood_particles(at_position: Vector2) -> void:
@@ -78,7 +90,8 @@ func spawn_critical_particles(at_position: Vector2) -> void:
 	var glow := CanvasItemMaterial.new()
 	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	spark.material = glow
-	get_tree().current_scene.add_child(spark)
+	if not _attach_to_scene(spark):
+		return
 	spark.emitting = true
 	await get_tree().create_timer(spark.lifetime + 0.1).timeout
 	if is_instance_valid(spark):
@@ -106,7 +119,8 @@ func spawn_dodge_particles(at_position: Vector2) -> void:
 	var glow := CanvasItemMaterial.new()
 	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	p.material = glow
-	get_tree().current_scene.add_child(p)
+	if not _attach_to_scene(p):
+		return
 	p.emitting = true
 	await get_tree().create_timer(p.lifetime + 0.1).timeout
 	if is_instance_valid(p):
@@ -131,7 +145,8 @@ func spawn_bubble_burst(at_position: Vector2, tint: Color) -> void:
 	var glow := CanvasItemMaterial.new()
 	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	p.material = glow
-	get_tree().current_scene.add_child(p)
+	if not _attach_to_scene(p):
+		return
 	p.emitting = true
 	await get_tree().create_timer(p.lifetime + 0.1).timeout
 	if is_instance_valid(p):
@@ -154,7 +169,8 @@ func spawn_fail_particles(at_position: Vector2) -> void:
 	p.scale_amount_min = 1.5
 	p.scale_amount_max = 3.5
 	p.color = Constants.COLOR_PARTICLE_FAIL
-	get_tree().current_scene.add_child(p)
+	if not _attach_to_scene(p):
+		return
 	p.emitting = true
 	await get_tree().create_timer(p.lifetime + 0.1).timeout
 	if is_instance_valid(p):
@@ -169,8 +185,20 @@ func _spawn_particles(scene: PackedScene, at_position: Vector2, amount_scale: fl
 	particles.position = at_position
 	if amount_scale != 1.0:
 		particles.amount = int(particles.amount * amount_scale)
-	get_tree().current_scene.add_child(particles)
+	if not _attach_to_scene(particles):
+		return
 	particles.emitting = true
 	await get_tree().create_timer(particles.lifetime + 0.1).timeout
 	if is_instance_valid(particles):
 		particles.queue_free()
+
+## Anexa um nó de partículas à cena ativa. Retorna false (e descarta o nó) se a árvore
+## ou a cena atual não existir — ex.: durante/depois de uma troca de cena. Evita erro de
+## add_child em cena inválida quando a coroutine nasce no meio da transição.
+func _attach_to_scene(node: Node) -> bool:
+	var tree := get_tree()
+	if tree == null or tree.current_scene == null:
+		node.queue_free()
+		return false
+	tree.current_scene.add_child(node)
+	return true

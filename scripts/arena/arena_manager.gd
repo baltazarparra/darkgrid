@@ -37,6 +37,11 @@ var _last_boss_bubble_pos: Vector2 = Vector2(-999.0, -999.0)
 var _first_bubble_pos: Vector2 = Vector2.ZERO
 var _is_double_attack: bool = false
 var _boss_special_hit_index: int = 0
+# Encerramento de combate: a morte de um ator dispara teardown + transição UMA única vez.
+# _combat_over barra qualquer reentrância de turno/timing após a morte; _screen_changed
+# garante que a troca de cena ocorra exatamente uma vez (caminho normal OU watchdog).
+var _combat_over: bool = false
+var _screen_changed: bool = false
 
 func _ready() -> void:
 	_timing_system = $TimingSystem
@@ -128,7 +133,7 @@ func _both_alive() -> bool:
 
 # ─── Turno da Caipora (Ataque) ─────────────────────
 func _start_caipora_turn() -> void:
-	if not _both_alive():
+	if _combat_over or not _both_alive():
 		return
 	_is_double_attack = randf() < Constants.TIMING_DOUBLE_CHANCE
 	_sfx.play(_sfx.attack_sound)
@@ -179,6 +184,8 @@ func _spawn_second_bubble() -> void:
 	)
 
 func _on_double_first_hit() -> void:
+	if _combat_over:
+		return
 	_timing_system.timing_first_hit.disconnect(_on_double_first_hit)
 	_timing_bubble.burst_success()
 	var damage := _caipora.execute_attack(false)
@@ -189,6 +196,8 @@ func _on_double_first_hit() -> void:
 	_feedback.trigger_hit_stop(3)
 
 func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
+	if _combat_over:
+		return
 	_timing_system.timing_result.disconnect(_on_double_final_result)
 	if _timing_system.timing_first_hit.is_connected(_on_double_first_hit):
 		_timing_system.timing_first_hit.disconnect(_on_double_first_hit)
@@ -213,6 +222,8 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 		_start_enemy_turn()
 
 func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
+	if _combat_over:
+		return
 	_timing_system.timing_result.disconnect(_on_attack_timing_result)
 	if result == TimingSystem.TimingResult.PERFECT:
 		_timing_bubble.burst_success()
@@ -235,7 +246,7 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 
 # ─── Turno do Inimigo (Defesa) ─────────────────────
 func _start_enemy_turn() -> void:
-	if not _both_alive():
+	if _combat_over or not _both_alive():
 		return
 	_boss_special_hit_index = 0
 	_last_boss_bubble_pos = Vector2(-999.0, -999.0)
@@ -271,6 +282,8 @@ func _on_enemy_attack_started() -> void:
 	_timing_system.open_window(window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, false, 0.0, 0.0, action)
 
 func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
+	if _combat_over:
+		return
 	_timing_system.timing_result.disconnect(_on_defense_timing_result)
 
 	if result == TimingSystem.TimingResult.PERFECT:
@@ -293,7 +306,7 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.trigger_hit_stop(2)
 
 func _on_enemy_pattern_finished() -> void:
-	if _both_alive():
+	if not _combat_over and _both_alive():
 		_start_caipora_turn()
 
 func _boss_spread_pos() -> Vector2:
@@ -355,7 +368,16 @@ func _on_hit_stop_ended() -> void:
 
 # ─── Morte ─────────────────────────────────────────
 func _on_actor_died(actor: CombatActor) -> void:
+	# Idempotente: a morte encerra o combate exatamente uma vez. Qualquer segundo `died`
+	# (ou reentrância) é ignorado.
+	if _combat_over:
+		return
+	_combat_over = true
 	var caipora_won := actor == _enemy
+	# Derruba TODO o estado de combate ANTES de qualquer await: fecha a janela de timing,
+	# desconecta os handlers (impede que o ataque duplo reentre e toque o _enemy já
+	# liberado pelo tween de morte) e restaura os sprites congelados pelo hit-stop.
+	_teardown_combat()
 	if caipora_won:
 		_caipora.health.max_health += 1
 		_caipora.health.heal(1)
@@ -370,30 +392,62 @@ func _on_actor_died(actor: CombatActor) -> void:
 				MetaProgression.phase_reached = 3
 				MetaProgression.save_progress()
 	GameState.caipora_current_hp = maxf(0.0, _caipora.health.current_health)
-	if _enemy != null and is_instance_valid(_enemy):
-		_enemy.state_machine.stop()
 	_sfx.play(_sfx.death_sound)
 	_feedback.spawn_death_particles(actor.position)
 	_feedback.trigger_screenshake(26.0, 0.7)
-	_feedback.trigger_hit_stop(6)
 
 	SignalBus.arena_exited.emit(caipora_won)
+	var next_screen := _resolve_next_screen(caipora_won)
+	# Watchdog: rede de segurança que garante a transição caso o caminho normal abaixo
+	# seja preemptado por algum motivo. _do_screen_change é idempotente, então o primeiro
+	# a disparar vence. (NÃO cobre engine-halt — ver plano.)
+	get_tree().create_timer(1.5, true).timeout.connect(_do_screen_change.bind(next_screen, caipora_won))
 	await get_tree().create_timer(0.6).timeout
-	if caipora_won:
-		if GameState.active_combat_is_boss:
-			if GameState.active_phase == 3:
-				GameState.change_screen(SignalBus.Screen.ENDING)
-			elif GameState.active_phase == 1:
-				GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
-				GameState.change_screen(SignalBus.Screen.EXPLORATION)
-			else:
-				GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
-				GameState.change_screen(SignalBus.Screen.EXPLORATION_PHASE3)
-		else:
-			GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
-			match GameState.active_phase:
-				3: GameState.change_screen(SignalBus.Screen.EXPLORATION_PHASE3)
-				2: GameState.change_screen(SignalBus.Screen.EXPLORATION_PHASE2)
-				_: GameState.change_screen(SignalBus.Screen.EXPLORATION)
-	else:
-		GameState.change_screen(SignalBus.Screen.GAME_OVER)
+	_do_screen_change(next_screen, caipora_won)
+
+## Encerra o combate de forma síncrona: fecha a janela de timing, desconecta todos os
+## handlers de resultado/primeiro-hit, para a state machine do inimigo e limpa o hit-stop
+## (restaurando speed_scale). Chamado uma vez, no início de _on_actor_died, antes de awaits.
+func _teardown_combat() -> void:
+	_timing_system.close_window()
+	_disconnect_timing(_on_attack_timing_result)
+	_disconnect_timing(_on_double_final_result)
+	_disconnect_timing(_on_defense_timing_result)
+	if _timing_system.timing_first_hit.is_connected(_on_double_first_hit):
+		_timing_system.timing_first_hit.disconnect(_on_double_first_hit)
+	if _enemy != null and is_instance_valid(_enemy):
+		_enemy.state_machine.stop()
+	_feedback.force_clear_hit_stop()
+	if _caipora != null and is_instance_valid(_caipora):
+		_caipora.animated_sprite.speed_scale = 1.0
+	if _enemy != null and is_instance_valid(_enemy):
+		_enemy.animated_sprite.speed_scale = 1.0
+
+func _disconnect_timing(callable: Callable) -> void:
+	if _timing_system.timing_result.is_connected(callable):
+		_timing_system.timing_result.disconnect(callable)
+
+## Tela-alvo após o combate (puro, sem efeitos colaterais). Preserva exatamente o
+## comportamento anterior por fase/boss.
+func _resolve_next_screen(caipora_won: bool) -> SignalBus.Screen:
+	if not caipora_won:
+		return SignalBus.Screen.GAME_OVER
+	if GameState.active_combat_is_boss:
+		match GameState.active_phase:
+			3: return SignalBus.Screen.ENDING
+			1: return SignalBus.Screen.EXPLORATION
+			_: return SignalBus.Screen.EXPLORATION_PHASE3
+	match GameState.active_phase:
+		3: return SignalBus.Screen.EXPLORATION_PHASE3
+		2: return SignalBus.Screen.EXPLORATION_PHASE2
+		_: return SignalBus.Screen.EXPLORATION
+
+## Executa a troca de tela uma única vez (caminho normal OU watchdog). Registra o inimigo
+## derrotado apenas em vitórias que voltam à exploração (não no ENDING).
+func _do_screen_change(screen: SignalBus.Screen, caipora_won: bool) -> void:
+	if _screen_changed:
+		return
+	_screen_changed = true
+	if caipora_won and screen != SignalBus.Screen.ENDING:
+		GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
+	GameState.change_screen(screen)
