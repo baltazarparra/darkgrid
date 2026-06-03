@@ -362,10 +362,23 @@ make export
 - [ ] Página do itch.io criada
 - [ ] Upload e verificação
 
-### Fase 6: Grid Roguelike 🚧
+### Fase 6: Grid Roguelike ✅
 - [x] Inimigos no mapa
 - [x] Sistema de turnos
 - [x] Mapa de 3 salas
+
+### Fase 3 Final: Curupira + Fog of War + Encerramento ✅
+- [x] Novos Screens: EXPLORATION_PHASE3, ARENA_PHASE3, ENDING
+- [x] Upgrades nível 3: forca_3 (Fúria Ancestral, 8 frags) e saude_3 (Raiz Viva, 12 frags)
+- [x] phase_reached=3 ao derrotar Boitatá (upgrades disponíveis antes de entrar na Fase 3)
+- [x] Fog of War: CanvasLayer + shader radial, raio 3 tiles (fog_reveal.gdshader)
+- [x] Mapa "Ventre da Mata": corredores estreitos, sem fogo
+- [x] Inimigo Assombração: espectro 12 HP, aura fantasmal cinza-azulada
+- [x] Timing −0.15s na Fase 3 via _phase_window() em runtime (PHASE3_TIMING_REDUCTION)
+- [x] Boss Curupira: 20 HP, pés-para-trás, aura verde-mata, padrões RASTRO (←→←→, 2.5x) e ASSOBIO (3x, janela mínima)
+- [x] Diálogo pré-boss: "ninguém te deixou..." / "isso pouco importa agora"
+- [x] EndingScreen: sequência cinematográfica com fade, texto, silhueta procedural andando pela floresta
+- [x] Mensagem final: "a floresta vive... por enquanto"
 
 ### Fase 7: Identidade Visual & Padronização ✅
 - [x] Paleta como fonte única (`constants.gd`) — ~60 `Color()` centralizados
