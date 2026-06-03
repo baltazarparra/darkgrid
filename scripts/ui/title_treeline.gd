@@ -16,36 +16,39 @@ extends Node2D
 @export var layer_z: int = -80
 @export var rng_seed: int = 1
 
-# ─── Constants ─────────────────────────────────────
-const VIEWPORT_W: float = 1280.0
-const VIEWPORT_H: float = 720.0
-
 # ─── State ─────────────────────────────────────────
+var _vp_w: float = 1280.0
+var _vp_h: float = 720.0
+var _eff_base_y: float = 0.0
 var _offset: float = 0.0
 var _trees: Array[Dictionary] = []
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
+	var vp := get_viewport().get_visible_rect().size
+	_vp_w = vp.x
+	_vp_h = vp.y
+	_eff_base_y = base_y / 720.0 * _vp_h
 	z_index = layer_z
 	_generate_trees()
 
 func _process(delta: float) -> void:
 	_offset += scroll_speed * delta
-	if _offset >= VIEWPORT_W:
-		_offset -= VIEWPORT_W
+	if _offset >= _vp_w:
+		_offset -= _vp_w
 	position.x = -_offset
 	queue_redraw()
 
 # ─── Drawing ───────────────────────────────────────
 func _draw() -> void:
 	_draw_strip(0.0)
-	_draw_strip(VIEWPORT_W)
+	_draw_strip(_vp_w)
 
 func _draw_strip(ox: float) -> void:
 	# Massa sólida do chão/cordilheira (recorta contra o fogo).
-	draw_rect(Rect2(ox, base_y, VIEWPORT_W, VIEWPORT_H - base_y), silhouette_color)
+	draw_rect(Rect2(ox, _eff_base_y, _vp_w, _vp_h - _eff_base_y), silhouette_color)
 	for t: Dictionary in _trees:
-		_draw_tree(ox + t.x, base_y, t.height, t.scale)
+		_draw_tree(ox + t.x, _eff_base_y, t.height, t.scale)
 
 func _draw_tree(tx: float, gy: float, hfac: float, sc: float) -> void:
 	# Altura cresce com o "depth scale" para a treeline MID dominar sobre a FAR.
@@ -70,7 +73,7 @@ func _generate_trees() -> void:
 	_trees.clear()
 	for i: int in tree_count:
 		_trees.append({
-			"x": rng.randf() * VIEWPORT_W,
+			"x": rng.randf() * _vp_w,
 			"height": rng.randf_range(0.6, 1.3),
 			"scale": tree_scale * rng.randf_range(0.8, 1.3),
 		})

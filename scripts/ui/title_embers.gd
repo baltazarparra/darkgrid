@@ -9,12 +9,15 @@ extends Node2D
 @export var layer_z: int = -60
 @export var ember_count: int = 40
 
-# ─── Constants ─────────────────────────────────────
-const VIEWPORT_W: float = 1280.0
-const VIEWPORT_H: float = 720.0
+# ─── State ─────────────────────────────────────────
+var _vp_w: float = 1280.0
+var _vp_h: float = 720.0
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
+	var vp := get_viewport().get_visible_rect().size
+	_vp_w = vp.x
+	_vp_h = vp.y
 	z_index = layer_z
 	_spawn_embers()
 
@@ -24,9 +27,9 @@ func _spawn_embers() -> void:
 	embers.amount = ember_count
 	embers.lifetime = 5.0
 	embers.preprocess = 5.0  # já espalhadas ao iniciar
-	embers.position = Vector2(VIEWPORT_W * 0.5, VIEWPORT_H)
+	embers.position = Vector2(_vp_w * 0.5, _vp_h)
 	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	embers.emission_rect_extents = Vector2(VIEWPORT_W * 0.5, 24.0)
+	embers.emission_rect_extents = Vector2(_vp_w * 0.5, 24.0)
 	embers.direction = Vector2(0, -1)
 	embers.spread = 25.0
 	embers.gravity = Vector2(0, -10.0)  # sobem (leve)
