@@ -67,11 +67,47 @@ func _build() -> void:
 	for row in ROWS:
 		_add_slider_row(vbox, row[0], row[1])
 
+	_add_touch_controls_row(vbox)
+
 	_close_button = Button.new()
 	_close_button.text = "Fechar"
 	_close_button.add_theme_font_size_override("font_size", 16)
 	_close_button.pressed.connect(close)
 	vbox.add_child(_close_button)
+
+func _add_touch_controls_row(parent: VBoxContainer) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+
+	var label := Label.new()
+	label.text = "Controles Touch"
+	label.add_theme_color_override("font_color", TEXT)
+	label.add_theme_font_size_override("font_size", 14)
+	label.custom_minimum_size = Vector2(140, 0)
+	row.add_child(label)
+
+	var option := OptionButton.new()
+	option.add_item("Auto", 0)
+	option.add_item("Sempre", 1)
+	option.add_item("Nunca", 2)
+	option.custom_minimum_size = Vector2(220, 0)
+	option.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+	var mode := MetaProgression.get_touch_controls_mode()
+	match mode:
+		"auto":   option.select(0)
+		"always": option.select(1)
+		"never":  option.select(2)
+
+	option.item_selected.connect(_on_touch_mode_changed)
+	row.add_child(option)
+	parent.add_child(row)
+
+func _on_touch_mode_changed(index: int) -> void:
+	match index:
+		0: MetaProgression.set_touch_controls_mode("auto")
+		1: MetaProgression.set_touch_controls_mode("always")
+		2: MetaProgression.set_touch_controls_mode("never")
 
 func _add_slider_row(parent: VBoxContainer, label_text: String, bus_name: String) -> void:
 	var row := HBoxContainer.new()

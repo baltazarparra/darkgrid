@@ -22,6 +22,7 @@ var total_wins: int = 0
 var upgrades: Dictionary = {}
 var fragments: float = 0.0
 var phase_reached: int = 1
+var touch_controls_mode: String = "auto"
 
 # ─── Fragments ─────────────────────────────────────
 func add_fragments(amount: float) -> void:
@@ -41,6 +42,14 @@ func get_damage_bonus() -> int:
 
 func get_health_bonus() -> int:
 	return (get_upgrade_level("saude") + get_upgrade_level("saude_2") + get_upgrade_level("saude_3")) * 2
+
+func get_touch_controls_mode() -> String:
+	return touch_controls_mode
+
+func set_touch_controls_mode(mode: String) -> void:
+	if mode in ["auto", "always", "never"]:
+		touch_controls_mode = mode
+		save_progress()
 
 ## Consome fragmentos e incrementa o nível. Retorna false se não puder comprar.
 func purchase_upgrade(key: String) -> bool:
@@ -68,7 +77,8 @@ func save_progress() -> void:
 		"total_wins": total_wins,
 		"upgrades": upgrades,
 		"fragments": fragments,
-		"phase_reached": phase_reached
+		"phase_reached": phase_reached,
+		"touch_controls_mode": touch_controls_mode
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -95,6 +105,7 @@ func load_progress() -> void:
 		upgrades = _to_int_dict(data.get("upgrades", {}))
 		fragments = float(data.get("fragments", 0.0))
 		phase_reached = int(data.get("phase_reached", 1))
+		touch_controls_mode = data.get("touch_controls_mode", "auto")
 
 func _to_int_dict(value: Variant) -> Dictionary:
 	var result: Dictionary = {}

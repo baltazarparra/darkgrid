@@ -15,33 +15,55 @@ const KEY_FRACTION: float = 0.15
 const KEY_MIN: float = 64.0
 const KEY_MAX: float = 140.0
 
+const OPACITY_IDLE: float = 0.45
+const OPACITY_ACTIVE: float = 0.88
+const FADE_IN_DURATION: float = 0.3
+const PRESS_SCALE: float = 0.92
+const SWIPE_DEAD_ZONE: float = 20.0
+const SWIPE_THRESHOLD: float = 40.0
+
 const _ENTRIES: Array = [
-	["↑", "ui_up"],
-	["←", "ui_left"],
-	["↓", "ui_down"],
-	["→", "ui_right"],
+	["ui_up",    preload("res://assets/sprites/dpad_up.png")],
+	["ui_left",  preload("res://assets/sprites/dpad_left.png")],
+	["ui_down",  preload("res://assets/sprites/dpad_down.png")],
+	["ui_right", preload("res://assets/sprites/dpad_right.png")],
 ]
 
 # ─── State ─────────────────────────────────────────
 var _root: Control = null
 var _dpad_rect: Rect2 = Rect2()
-var _keys: Array[Button] = []
+var _keys: Array[TextureButton] = []
+var _pressed_count: int = 0
+var _dynamic_debounce: bool = false
+
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	layer = 20
 
-	if not _is_touch_device():
+	var mode: String = MetaProgression.get_touch_controls_mode()
+	match mode:
+		"always":
+			_init_controls()
+			return
+		"never":
+			return
+
+	if _is_touch_device():
+		_init_controls()
+
+
+func _input(event: InputEvent) -> void:
+	if _root != null:
 		return
-
-	_root = Control.new()
-	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_root)
-
-	_build_buttons()
-	_rebuild()
-	get_viewport().size_changed.connect(_rebuild)
+	if _dynamic_debounce:
+		return
+	if MetaProgression.get_touch_controls_mode() == "never":
+		return
+	if event is InputEventScreenTouch and event.pressed:
+		_dynamic_debounce = true
+		_init_controls()
+		get_tree().create_timer(0.5).timeout.connect(func() -> void: _dynamic_debounce = false)
 
 
 # ─── Public API ────────────────────────────────────
@@ -53,24 +75,60 @@ func get_dpad_screen_rect() -> Rect2:
 # ─── Private helpers ───────────────────────────────
 func _is_touch_device() -> bool:
 	if OS.has_feature("web"):
-		# JavaScriptBridge inspeciona o browser diretamente.
-		# Desktops e notebooks reportam maxTouchPoints == 0.
-		# iPhones, iPads e Android reportam > 0 ou têm 'ontouchstart'.
-		# Se eval falhar, retorna false (não mostra D-pad).
 		var result: Variant = JavaScriptBridge.eval(
 			"navigator.maxTouchPoints > 0 || 'ontouchstart' in window", true
 		)
-		return result == true
+		# JavaScriptBridge.eval pode retornar int(1), bool(true), ou null.
+		# Tratamos qualquer truthy value como touch.
+		if result != null and result != false and result != 0:
+			return true
+
+		# Fallback por user-agent se o eval falhar ou retornar 0/false.
+		var ua: Variant = JavaScriptBridge.eval("navigator.userAgent", true)
+		if ua is String:
+			var ua_str: String = ua.to_lower()
+			if ua_str.contains("iphone") or ua_str.contains("ipad") or ua_str.contains("ipod") or ua_str.contains("android"):
+				return true
+
+		# Fallback por viewport pequeno (< 1024px de largura = provavelmente mobile).
+		var vp_w: Variant = JavaScriptBridge.eval("window.innerWidth", true)
+		if vp_w is int or vp_w is float:
+			if int(vp_w) < 1024:
+				return true
+
+		return false
+
 	return DisplayServer.is_touchscreen_available()
+
+
+func _init_controls() -> void:
+	if _root != null:
+		return
+
+	_root = Control.new()
+	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.modulate.a = 0.0
+	add_child(_root)
+
+	_build_buttons()
+	_rebuild()
+	get_viewport().size_changed.connect(_rebuild)
+
+	# Fade-in suave.
+	var tween := create_tween()
+	tween.tween_property(_root, "modulate:a", OPACITY_IDLE, FADE_IN_DURATION)
 
 
 func _build_buttons() -> void:
 	for entry in _ENTRIES:
-		var btn := Button.new()
+		var btn := TextureButton.new()
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
-		btn.button_down.connect(_on_pressed.bind(entry[1]))
-		btn.button_up.connect(_on_released.bind(entry[1]))
+		btn.texture_normal = entry[1] as Texture2D
+		btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		btn.button_down.connect(_on_pressed.bind(entry[0]))
+		btn.button_up.connect(_on_released.bind(entry[0]))
 		_root.add_child(btn)
 		_keys.append(btn)
 
@@ -84,12 +142,16 @@ func _rebuild() -> void:
 	var gap: float = key * 0.12
 	var margin: float = key * 0.4
 
+	# Safe area margins.
+	var safe: Vector2 = _get_safe_margins()
+	margin = maxf(margin, safe.x)
+
 	# Cluster em cruz: 3 colunas x 2 linhas, com dead zone no centro.
 	var cluster_w: float = key * 3.0 + gap * 2.0
 	var cluster_h: float = key * 2.0 + gap
 
 	# Ancorado ao canto inferior ESQUERDO (polegar esquerdo = direcional; libera a zona do inimigo à direita).
-	var origin := Vector2(margin, vp.y - margin - cluster_h)
+	var origin := Vector2(margin, vp.y - margin - cluster_h - safe.y)
 
 	# Retângulo em coordenadas de tela ocupado pelo cluster — consultado pela arena
 	# para impedir que bolhas de timing nasçam atrás do D-pad.
@@ -110,40 +172,94 @@ func _rebuild() -> void:
 		var btn := _keys[i]
 		btn.position = positions[i]
 		btn.size = Vector2(key, key)
-		btn.text = _ENTRIES[i][0]
-		_apply_style(btn, key)
 
 
-func _apply_style(btn: Button, key: float) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.06, 0.04, 0.10, 0.88)
-	style.border_color = Color(0.50, 0.44, 0.62, 1.0)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(8)
+func _get_safe_margins() -> Vector2:
+	# Retorna Vector2(margin_left, margin_bottom) da safe area.
+	var left: float = 0.0
+	var bottom: float = 0.0
 
-	var style_hover := style.duplicate() as StyleBoxFlat
-	style_hover.bg_color = Color(0.10, 0.07, 0.16, 0.92)
+	# Em HTML5, tenta ler CSS safe-area-inset.
+	if OS.has_feature("web"):
+		var eval_left: Variant = JavaScriptBridge.eval(
+			"parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sali') || 0)", true
+		)
+		var eval_bottom: Variant = JavaScriptBridge.eval(
+			"parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || 0)", true
+		)
+		# Fallback direto: tenta env() via CSS em um elemento temporário.
+		if (eval_left == null or eval_left == 0) and (eval_bottom == null or eval_bottom == 0):
+			var sal: Variant = JavaScriptBridge.eval(
+				"(function(){var d=document.createElement('div');d.style.paddingLeft='env(safe-area-inset-left)';d.style.paddingBottom='env(safe-area-inset-bottom)';d.style.position='absolute';document.body.appendChild(d);var s=getComputedStyle(d);var l=parseFloat(s.paddingLeft)||0;var b=parseFloat(s.paddingBottom)||0;document.body.removeChild(d);return l+','+b;})()", true
+			)
+			if sal is String:
+				var parts: PackedStringArray = sal.split(",")
+				if parts.size() == 2:
+					left = float(parts[0])
+					bottom = float(parts[1])
+		else:
+			if eval_left is int or eval_left is float:
+				left = float(eval_left)
+			if eval_bottom is int or eval_bottom is float:
+				bottom = float(eval_bottom)
+	else:
+		# Nativo: usar DisplayServer.get_display_safe_area().
+		var safe_rect: Rect2 = DisplayServer.get_display_safe_area()
+		var screen_size: Vector2i = DisplayServer.screen_get_size()
+		left = float(safe_rect.position.x)
+		bottom = float(screen_size.y - safe_rect.end.y)
 
-	var style_pressed := style.duplicate() as StyleBoxFlat
-	style_pressed.bg_color = Color(0.22, 0.16, 0.32, 0.96)
-	style_pressed.border_color = Color(0.78, 0.70, 0.92, 1.0)
+	# Garantir mínimo de 28px (Apple HIG) quando em dispositivos touch.
+	if _is_touch_device():
+		left = maxf(left, 28.0)
+		bottom = maxf(bottom, 28.0)
 
-	btn.add_theme_stylebox_override("normal", style)
-	btn.add_theme_stylebox_override("hover", style_hover)
-	btn.add_theme_stylebox_override("pressed", style_pressed)
-	btn.add_theme_stylebox_override("focus", style)
-	btn.add_theme_font_size_override("font_size", int(key * 0.45))
-	btn.add_theme_color_override("font_color", Color(0.86, 0.82, 0.94, 1.0))
+	return Vector2(left, bottom)
 
 
 func _on_pressed(action: String) -> void:
+	_pressed_count += 1
+	_update_opacity()
+
+	var btn := _get_button_for_action(action)
+	if btn != null:
+		var tween := create_tween()
+		tween.tween_property(btn, "scale", Vector2(PRESS_SCALE, PRESS_SCALE), 0.05)
+
 	Input.action_press(action)
 	_feed_event(action, true)
 
 
 func _on_released(action: String) -> void:
+	_pressed_count = maxi(_pressed_count - 1, 0)
+	_update_opacity()
+
+	var btn := _get_button_for_action(action)
+	if btn != null:
+		var tween := create_tween()
+		tween.tween_property(btn, "scale", Vector2(1.0, 1.0), 0.05)
+
 	Input.action_release(action)
 	_feed_event(action, false)
+
+
+func _get_button_for_action(action: String) -> TextureButton:
+	if _keys.is_empty():
+		return null
+	for i in _ENTRIES.size():
+		if _ENTRIES[i][0] == action:
+			if i < _keys.size():
+				return _keys[i]
+			break
+	return null
+
+
+func _update_opacity() -> void:
+	if _root == null:
+		return
+	var target: float = OPACITY_ACTIVE if _pressed_count > 0 else OPACITY_IDLE
+	var tween := create_tween()
+	tween.tween_property(_root, "modulate:a", target, 0.15)
 
 
 func _feed_event(action: String, pressed: bool) -> void:
