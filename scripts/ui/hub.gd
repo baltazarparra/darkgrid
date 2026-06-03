@@ -3,11 +3,15 @@ extends CanvasLayer
 
 ## Santuário entre runs: recupera HP, exibe fragmentos, permite comprar upgrades.
 
+const FADE_LAYER: int = 100
+const FADE_IN_DURATION: float = 0.8
+
 @onready var _stats: Label = $Center/VBox/Stats
 @onready var _upgrade_list: VBoxContainer = $Center/VBox/UpgradeList
 @onready var _enter_button: Button = $Center/VBox/EnterButton
 
 var _options: OptionsPanel
+var _fade: ColorRect
 var _forca_label: Label
 var _forca_button: Button
 var _saude_label: Label
@@ -24,6 +28,7 @@ var _saude3_button: Button
 var _scale: float = 1.0
 
 func _ready() -> void:
+	_setup_fade()
 	_scale = _ui_scale()
 	GameState.heal_to_full()
 	_apply_scale_to_scene_nodes()
@@ -39,6 +44,17 @@ func _ready() -> void:
 	_enter_button.pressed.connect(_on_enter_pressed)
 	_add_options_ui()
 	_enter_button.grab_focus()
+
+func _setup_fade() -> void:
+	var fade_layer := CanvasLayer.new()
+	fade_layer.layer = FADE_LAYER
+	_fade = ColorRect.new()
+	_fade.color = Color(0, 0, 0, 1)
+	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fade_layer.add_child(_fade)
+	add_child(fade_layer)
+	create_tween().tween_property(_fade, "color:a", 0.0, FADE_IN_DURATION)
 
 # Retorna um fator de escala para compensar viewports portrait com CSS scale baixo.
 # Em portrait mobile (css_scale ≈ 0.305) retorna ~1.64; em landscape retorna 1.0.

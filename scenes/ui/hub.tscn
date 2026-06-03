@@ -1,14 +1,65 @@
-[gd_scene load_steps=2 format=3 uid="uid://hub_screen"]
+[gd_scene load_steps=8 format=3 uid="uid://hub_screen"]
 
 [ext_resource type="Script" path="res://scripts/ui/hub.gd" id="1_hub"]
+[ext_resource type="Script" path="res://scripts/ui/doom_fire.gd" id="2_fire"]
+[ext_resource type="Script" path="res://scripts/ui/atmosphere.gd" id="3_atmo"]
+[ext_resource type="Script" path="res://scripts/ui/title_treeline.gd" id="4_treeline"]
+[ext_resource type="Script" path="res://scripts/ui/title_embers.gd" id="5_embers"]
+[ext_resource type="Script" path="res://scripts/ui/title_ground.gd" id="6_ground"]
+[ext_resource type="Script" path="res://scripts/ui/title_walker.gd" id="7_walker"]
 
 [node name="Hub" type="CanvasLayer"]
 script = ExtResource("1_hub")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="DoomFire" type="CanvasLayer" parent="."]
+script = ExtResource("2_fire")
+
+[node name="TreelineFar" type="Node2D" parent="."]
+script = ExtResource("4_treeline")
+scroll_speed = 5.0
+silhouette_color = Color(0.05, 0.03, 0.015, 1)
+base_y = 488.0
+tree_count = 12
+tree_scale = 1.7
+layer_z = -80
+rng_seed = 11
+
+[node name="TreelineMid" type="Node2D" parent="."]
+script = ExtResource("4_treeline")
+scroll_speed = 14.0
+silhouette_color = Color(0.08, 0.05, 0.022, 1)
+base_y = 540.0
+tree_count = 16
+tree_scale = 2.6
+layer_z = -70
+rng_seed = 23
+
+[node name="Embers" type="Node2D" parent="."]
+script = ExtResource("5_embers")
+layer_z = -60
+ember_count = 40
+
+[node name="Ground" type="Node2D" parent="."]
+script = ExtResource("6_ground")
+ground_color = Color(0.07, 0.04, 0.02, 1)
+crest_y = 622.0
+layer_z = -50
+rng_seed = 7
+
+[node name="Walker" type="Node2D" parent="."]
+script = ExtResource("7_walker")
+ground_path = NodePath("../Ground")
+foot_y = 622.0
+layer_z = -40
+
+[node name="Atmosphere" type="CanvasLayer" parent="."]
+script = ExtResource("3_atmo")
+
+[node name="Scrim" type="ColorRect" parent="."]
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.239, 0.122, 0.122, 1)
+mouse_filter = 2
+color = Color(0, 0, 0, 0.55)
 
 [node name="Center" type="CenterContainer" parent="."]
 anchor_right = 1.0
