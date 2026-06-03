@@ -198,9 +198,9 @@ func _rebuild() -> void:
 	var vp := get_viewport().get_visible_rect().size
 	var key: float = clampf(minf(vp.x, vp.y) * KEY_FRACTION, KEY_MIN, KEY_MAX)
 
-	# Mobile: retrato → 2x; paisagem → 1.3x.
+	# Mobile: retrato → 1.5x (−25% vs 2.0 original); paisagem → 1.3x.
 	if _touch_detected:
-		key *= 2.0 if vp.y > vp.x else 1.3
+		key *= 1.5 if vp.y > vp.x else 1.3
 
 	var gap: float = key * 0.12
 	var margin: float = key * 0.4

@@ -19,6 +19,7 @@ func _ready() -> void:
 	MetaProgression.load_progress()
 	$Center/VBox/StartButton.pressed.connect(_on_start_pressed)
 	$Center/VBox/QuitButton.pressed.connect(_on_quit_pressed)
+	$Center/VBox/GithubLink.pressed.connect(_on_github_pressed)
 	_setup_fade()
 	_apply_title_shader()
 	_start_button.grab_focus()
@@ -50,3 +51,6 @@ func _on_start_pressed() -> void:
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
+
+func _on_github_pressed() -> void:
+	OS.shell_open("https://github.com/baltazarparra")
