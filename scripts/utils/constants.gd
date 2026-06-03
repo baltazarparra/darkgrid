@@ -82,6 +82,11 @@ const COLOR_MOSS_DECO_DARK := Color(0.08, 0.16, 0.06, 0.7)
 const COLOR_BLOOD_POOL := Color(0.42, 0.02, 0.02, 0.75)
 const COLOR_BLOOD_POOL_DARK := Color(0.24, 0.0, 0.0, 0.8)
 const COLOR_PENTAGRAM := Color(0.50, 0.0, 0.0)
+# Novas decorações da floresta (Fase 1).
+const COLOR_MUSHROOM := Color(0.78, 0.70, 0.64, 0.95)      # chapéu pálido/doentio
+const COLOR_MUSHROOM_GLOW := Color(0.55, 0.85, 0.70, 0.9)  # bioluminescência encantada
+const COLOR_WATER := Color(0.10, 0.16, 0.20, 0.8)          # poça refletindo a noite
+const COLOR_WATER_LIGHT := Color(0.20, 0.30, 0.36, 0.7)    # brilho da superfície
 
 # Cues de combate (telegraph/bolhas). Valores >1 são overbright p/ glow intencional.
 const COLOR_TELEGRAPH_ENEMY := Color(1.4, 0.4, 0.4)     # wind-up da criatura (vermelho)

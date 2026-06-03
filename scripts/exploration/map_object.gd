@@ -3,12 +3,14 @@ extends Node2D
 
 const ForestLight := preload("res://scripts/exploration/forest_light.gd")
 
-enum Type { CHEST, KEY, FIRE, SPIKE, DEAD_TREE, BONES, MOSS, BLOOD_POOL, ROCK, FERN, VINE }
+enum Type { CHEST, KEY, FIRE, SPIKE, DEAD_TREE, BONES, MOSS, BLOOD_POOL, ROCK, FERN, VINE,
+	MUSHROOM, STUMP, TOTEM, ROOTS, PUDDLE }
 
 const T: int = Constants.TILE_SIZE  # 32
 
 # Decorações puramente visuais (não-bloqueantes), renderizadas atrás das entidades.
-const DECO_TYPES := [Type.DEAD_TREE, Type.BONES, Type.MOSS, Type.BLOOD_POOL, Type.ROCK, Type.FERN, Type.VINE]
+const DECO_TYPES := [Type.DEAD_TREE, Type.BONES, Type.MOSS, Type.BLOOD_POOL, Type.ROCK, Type.FERN, Type.VINE,
+	Type.MUSHROOM, Type.STUMP, Type.TOTEM, Type.ROOTS, Type.PUDDLE]
 
 var _type: Type
 
@@ -120,6 +122,11 @@ func _draw() -> void:
 		Type.ROCK:       _draw_rock(cx, cy)
 		Type.FERN:       _draw_fern(cx, cy)
 		Type.VINE:       _draw_vine(cx, cy)
+		Type.MUSHROOM:   _draw_mushroom(cx, cy)
+		Type.STUMP:      _draw_stump(cx, cy)
+		Type.TOTEM:      _draw_totem(cx, cy)
+		Type.ROOTS:      _draw_roots(cx, cy)
+		Type.PUDDLE:     _draw_puddle(cx, cy)
 
 func _draw_fire(cx: float, cy: float) -> void:
 	draw_circle(Vector2(cx, cy), 11.0, Constants.COLOR_FIRE_GLOW)
@@ -279,3 +286,74 @@ func _draw_vine(cx: float, cy: float) -> void:
 		if i % 2 == 0:
 			draw_circle(nxt + Vector2(3, 0), 2.2, leaf)
 		prev = nxt
+
+func _draw_mushroom(cx: float, cy: float) -> void:
+	# Trio de cogumelos pálidos com leve bioluminescência (encantado/doentio).
+	var cap := Constants.COLOR_MUSHROOM
+	var glow := Constants.COLOR_MUSHROOM_GLOW
+	var stalk := Constants.COLOR_BONE_HOLLOW
+	var caps: Array = [
+		[Vector2(cx - 5, cy + 3), 4.5], [Vector2(cx + 4, cy + 5), 3.5], [Vector2(cx, cy - 2), 5.5],
+	]
+	for c: Array in caps:
+		var p: Vector2 = c[0]
+		var r: float = c[1]
+		# pé
+		draw_rect(Rect2(p.x - 1, p.y, 2, r * 0.9), stalk)
+		# chapéu
+		draw_circle(p, r, cap)
+		# pintas brilhantes
+		draw_circle(p + Vector2(-1.5, -1.0), 0.9, glow)
+		draw_circle(p + Vector2(1.6, 0.2), 0.7, glow)
+
+func _draw_stump(cx: float, cy: float) -> void:
+	# Toco cortado: anéis de crescimento concêntricos.
+	var wood := Constants.COLOR_WOOD
+	var wood_dark := Constants.COLOR_WOOD_DARK
+	var bark := Constants.COLOR_BARK
+	draw_circle(Vector2(cx, cy + 2), 9.0, bark)
+	draw_circle(Vector2(cx, cy + 2), 8.0, wood)
+	draw_arc(Vector2(cx, cy + 2), 6.0, 0, TAU, 16, wood_dark, 1.0)
+	draw_arc(Vector2(cx, cy + 2), 3.5, 0, TAU, 12, wood_dark, 1.0)
+	draw_circle(Vector2(cx, cy + 2), 1.2, wood_dark)
+
+func _draw_totem(cx: float, cy: float) -> void:
+	# Totem entalhado folk-horror: poste com rosto e marcas de sangue.
+	var wood := Constants.COLOR_WOOD
+	var wood_dark := Constants.COLOR_WOOD_DARK
+	var blood := Constants.COLOR_BLOOD
+	draw_rect(Rect2(cx - 5, cy - 12, 10, 26), wood_dark)
+	draw_rect(Rect2(cx - 4, cy - 11, 8, 24), wood)
+	# olhos ocos
+	draw_circle(Vector2(cx - 2, cy - 6), 1.6, wood_dark)
+	draw_circle(Vector2(cx + 2, cy - 6), 1.6, wood_dark)
+	# boca rasgada
+	draw_rect(Rect2(cx - 3, cy - 1, 6, 2), wood_dark)
+	# marcas rituais de sangue
+	draw_line(Vector2(cx - 3, cy + 4), Vector2(cx + 3, cy + 6), blood, 1.0)
+	draw_line(Vector2(cx + 3, cy + 4), Vector2(cx - 3, cy + 6), blood, 1.0)
+
+func _draw_roots(cx: float, cy: float) -> void:
+	# Raízes rastejantes pelo chão (textura orgânica, não-bloqueante).
+	var bark := Constants.COLOR_BARK
+	var bark_dark := Constants.COLOR_BARK_DARK
+	var roots: Array = [
+		[Vector2(cx - 12, cy - 6), Vector2(cx, cy)], [Vector2(cx, cy), Vector2(cx + 11, cy + 5)],
+		[Vector2(cx, cy), Vector2(cx + 9, cy - 7)], [Vector2(cx, cy), Vector2(cx - 8, cy + 8)],
+	]
+	for r: Array in roots:
+		draw_line(r[0], r[1], bark_dark, 3.0)
+		draw_line(r[0], r[1], bark, 1.5)
+
+func _draw_puddle(cx: float, cy: float) -> void:
+	# Poça d'água escura refletindo a noite (leve brilho da superfície).
+	var water := Constants.COLOR_WATER
+	var water_light := Constants.COLOR_WATER_LIGHT
+	var pool: PackedVector2Array = [
+		Vector2(cx - 10, cy + 2), Vector2(cx - 5, cy - 4), Vector2(cx + 3, cy - 5),
+		Vector2(cx + 10, cy - 1), Vector2(cx + 8, cy + 5), Vector2(cx, cy + 7), Vector2(cx - 7, cy + 6),
+	]
+	draw_colored_polygon(pool, water)
+	# reflexos na superfície
+	draw_line(Vector2(cx - 4, cy + 1), Vector2(cx + 2, cy), water_light, 1.0)
+	draw_line(Vector2(cx + 1, cy + 3), Vector2(cx + 6, cy + 2), water_light, 1.0)

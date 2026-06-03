@@ -34,14 +34,14 @@ const MAP_LAYOUT = [
 	"WFFFFFFFFFFFFFFFFFFFFFFFFW",
 	"WFFFWFFFFFFFWFFFFFFFWFFFFW",
 	"WFFFFFFFFFFFFFFFFFFFFFFFFW",
-	"WFFFFFFWFFFFFFFFFWFFFFFFFW",
+	"WFFFFFFWFFWFFFFFFWFFFFFFFW",  # pilar (10,4); fogo guarda (7,4)/(17,4)
 	"WFFFFFFFRFFFFFFSFFFFFFFFFW",  # fogo (8,5), espinho (15,5)
 	"WFFFWFFFFFWFFFFFWFFFFFFFFW",
-	"WFFFFFFFFFFFFFFFFFFFFFFFFW",
+	"WFFFFFFFWFFFFFFFFFFFFFFFFW",  # pilar isolado (8,7)
 	"WFFFFFFWFFFRFFFFFWFFFSFFFW",  # fogo (11,8), espinho (21,8)
-	"WFFFFFFFFFFFFFFFFFFFFFFFFW",
+	"WFFFFFFFFFFFFFFFFFFWFFFFFW",  # pilar isolado (19,9)
 	"WFFFWFFFFFWFFFFFWFFFFFFFFW",
-	"WFFFFFFFFSFFFFFFRFFFFFFFFW",  # espinho (9,11), fogo (16,11)
+	"WFFFFFWFFSFFFFFFRFFFFFFFFW",  # pilar (6,11), espinho (9,11), fogo (16,11)
 	"WFFFFFFFFFFFFFFFFFWWWWWWWW",
 	"WFFFFFFWFFFFFSFFFFWFFFFFFW",  # espinho (12,13)
 	"WFFFFFFFFFFFFFFFFFFFFFFFFW",  # porta do boss: gap em (17,14)
@@ -96,6 +96,18 @@ const DECO_DEFS = [
 	{"type": MapObject.Type.VINE, "x": 18, "y": 1},
 	{"type": MapObject.Type.VINE, "x": 6, "y": 4},
 	{"type": MapObject.Type.VINE, "x": 21, "y": 7},
+	{"type": MapObject.Type.MUSHROOM, "x": 4, "y": 9},
+	{"type": MapObject.Type.MUSHROOM, "x": 15, "y": 3},
+	{"type": MapObject.Type.MUSHROOM, "x": 8, "y": 13},
+	{"type": MapObject.Type.STUMP, "x": 7, "y": 5},
+	{"type": MapObject.Type.STUMP, "x": 15, "y": 12},
+	{"type": MapObject.Type.TOTEM, "x": 3, "y": 7},
+	{"type": MapObject.Type.TOTEM, "x": 22, "y": 14},
+	{"type": MapObject.Type.ROOTS, "x": 10, "y": 15},
+	{"type": MapObject.Type.ROOTS, "x": 14, "y": 12},
+	{"type": MapObject.Type.ROOTS, "x": 6, "y": 10},
+	{"type": MapObject.Type.PUDDLE, "x": 5, "y": 16},
+	{"type": MapObject.Type.PUDDLE, "x": 17, "y": 9},
 ]
 
 # ─── Lifecycle ─────────────────────────────────────
