@@ -150,8 +150,8 @@ func _rebuild() -> void:
 	var cluster_w: float = key * 3.0 + gap * 2.0
 	var cluster_h: float = key * 2.0 + gap
 
-	# Ancorado ao canto inferior ESQUERDO (polegar esquerdo = direcional; libera a zona do inimigo à direita).
-	var origin := Vector2(margin, vp.y - margin - cluster_h - safe.y)
+	# Ancorado ao canto inferior DIREITO (polegar direito = direcional).
+	var origin := Vector2(vp.x - margin - cluster_w, vp.y - margin - cluster_h - safe.y)
 
 	# Retângulo em coordenadas de tela ocupado pelo cluster — consultado pela arena
 	# para impedir que bolhas de timing nasçam atrás do D-pad.
@@ -175,46 +175,46 @@ func _rebuild() -> void:
 
 
 func _get_safe_margins() -> Vector2:
-	# Retorna Vector2(margin_left, margin_bottom) da safe area.
-	var left: float = 0.0
+	# Retorna Vector2(margin_right, margin_bottom) da safe area.
+	var right: float = 0.0
 	var bottom: float = 0.0
 
 	# Em HTML5, tenta ler CSS safe-area-inset.
 	if OS.has_feature("web"):
-		var eval_left: Variant = JavaScriptBridge.eval(
-			"parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sali') || 0)", true
+		var eval_right: Variant = JavaScriptBridge.eval(
+			"parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sari') || 0)", true
 		)
 		var eval_bottom: Variant = JavaScriptBridge.eval(
 			"parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || 0)", true
 		)
 		# Fallback direto: tenta env() via CSS em um elemento temporário.
-		if (eval_left == null or eval_left == 0) and (eval_bottom == null or eval_bottom == 0):
-			var sal: Variant = JavaScriptBridge.eval(
-				"(function(){var d=document.createElement('div');d.style.paddingLeft='env(safe-area-inset-left)';d.style.paddingBottom='env(safe-area-inset-bottom)';d.style.position='absolute';document.body.appendChild(d);var s=getComputedStyle(d);var l=parseFloat(s.paddingLeft)||0;var b=parseFloat(s.paddingBottom)||0;document.body.removeChild(d);return l+','+b;})()", true
+		if (eval_right == null or eval_right == 0) and (eval_bottom == null or eval_bottom == 0):
+			var sar: Variant = JavaScriptBridge.eval(
+				"(function(){var d=document.createElement('div');d.style.paddingRight='env(safe-area-inset-right)';d.style.paddingBottom='env(safe-area-inset-bottom)';d.style.position='absolute';document.body.appendChild(d);var s=getComputedStyle(d);var r=parseFloat(s.paddingRight)||0;var b=parseFloat(s.paddingBottom)||0;document.body.removeChild(d);return r+','+b;})()", true
 			)
-			if sal is String:
-				var parts: PackedStringArray = sal.split(",")
+			if sar is String:
+				var parts: PackedStringArray = sar.split(",")
 				if parts.size() == 2:
-					left = float(parts[0])
+					right = float(parts[0])
 					bottom = float(parts[1])
 		else:
-			if eval_left is int or eval_left is float:
-				left = float(eval_left)
+			if eval_right is int or eval_right is float:
+				right = float(eval_right)
 			if eval_bottom is int or eval_bottom is float:
 				bottom = float(eval_bottom)
 	else:
 		# Nativo: usar DisplayServer.get_display_safe_area().
 		var safe_rect: Rect2 = DisplayServer.get_display_safe_area()
 		var screen_size: Vector2i = DisplayServer.screen_get_size()
-		left = float(safe_rect.position.x)
+		right = float(screen_size.x - safe_rect.end.x)
 		bottom = float(screen_size.y - safe_rect.end.y)
 
 	# Garantir mínimo de 28px (Apple HIG) quando em dispositivos touch.
 	if _is_touch_device():
-		left = maxf(left, 28.0)
+		right = maxf(right, 28.0)
 		bottom = maxf(bottom, 28.0)
 
-	return Vector2(left, bottom)
+	return Vector2(right, bottom)
 
 
 func _on_pressed(action: String) -> void:
