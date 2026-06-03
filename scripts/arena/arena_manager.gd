@@ -22,7 +22,8 @@ const STAGE_FILL: float = 0.92
 const DPAD_BUBBLE_PADDING: float = 12.0
 
 @onready var _camera: Camera2D = $Camera2D
-@onready var _controls_hud: ControlsHud = $ControlsHud
+# D-pad é um autoload persistente (TouchControls), não mais um nó por cena.
+@onready var _controls_hud: ControlsHud = TouchControls
 
 var _caipora: CombatActor
 var _enemy: Criatura

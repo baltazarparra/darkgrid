@@ -26,6 +26,7 @@ GameState="*res://scripts/core/game_state.gd"
 SignalBus="*res://scripts/core/signal_bus.gd"
 MetaProgression="*res://scripts/core/meta_progression.gd"
 AudioDirector="*res://scripts/core/audio_director.gd"
+TouchControls="*res://scripts/ui/controls_hud.gd"
 
 [audio]
 

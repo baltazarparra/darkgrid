@@ -22,35 +22,64 @@ const PRESS_SCALE: float = 0.92
 const SWIPE_DEAD_ZONE: float = 20.0
 const SWIPE_THRESHOLD: float = 40.0
 
+# Caminhos (não preload): como este script é autoload, ele é parseado já no boot — um
+# preload de asset ainda não importado quebraria o parse. As texturas são carregadas com
+# load() em runtime, dentro de _build_buttons(), que só roda numa tela de gameplay.
 const _ENTRIES: Array = [
-	["ui_up",    preload("res://assets/sprites/dpad_up.png")],
-	["ui_left",  preload("res://assets/sprites/dpad_left.png")],
-	["ui_down",  preload("res://assets/sprites/dpad_down.png")],
-	["ui_right", preload("res://assets/sprites/dpad_right.png")],
+	["ui_up",    "res://assets/sprites/dpad_up.png"],
+	["ui_left",  "res://assets/sprites/dpad_left.png"],
+	["ui_down",  "res://assets/sprites/dpad_down.png"],
+	["ui_right", "res://assets/sprites/dpad_right.png"],
 ]
 
 # ─── State ─────────────────────────────────────────
+# Telas em que o D-pad fica visível. Fora delas (menu, hub, fim de jogo) ele é ocultado.
+# Como este nó é um autoload persistente, o D-pad criado na exploração permanece vivo ao
+# entrar no combate — sem recriação nem novo fade-in, eliminando o delay no início do turno.
+# (var, não const: o enum vem do autoload SignalBus, resolvido em runtime — mesmo padrão de game_state.gd.)
+var _gameplay_screens: Array = [
+	SignalBus.Screen.EXPLORATION,
+	SignalBus.Screen.EXPLORATION_PHASE2,
+	SignalBus.Screen.EXPLORATION_PHASE3,
+	SignalBus.Screen.ARENA,
+	SignalBus.Screen.ARENA_PHASE2,
+	SignalBus.Screen.ARENA_PHASE3,
+]
+
 var _root: Control = null
 var _dpad_rect: Rect2 = Rect2()
 var _keys: Array[TextureButton] = []
 var _pressed_count: int = 0
 var _dynamic_debounce: bool = false
+var _active_screen_wants_dpad: bool = false
 
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	layer = 20
+	# Autoload persistente: a visibilidade é dirigida pela tela atual, não pelo boot.
+	# Nada aparece no menu principal (que carrega direto, sem emitir screen_changed).
+	SignalBus.screen_changed.connect(_on_screen_changed)
 
-	var mode: String = MetaProgression.get_touch_controls_mode()
-	match mode:
+
+func _on_screen_changed(screen: SignalBus.Screen) -> void:
+	_active_screen_wants_dpad = screen in _gameplay_screens
+	if not _active_screen_wants_dpad:
+		_hide()
+		return
+
+	match MetaProgression.get_touch_controls_mode():
+		"never":
+			_hide()
 		"always":
 			_init_controls()
-			return
-		"never":
-			return
-
-	if _is_touch_device():
-		_init_controls()
+			_show()
+		_:
+			if _is_touch_device():
+				_init_controls()
+				_show()
+			else:
+				_hide()
 
 
 func _input(event: InputEvent) -> void:
@@ -58,11 +87,15 @@ func _input(event: InputEvent) -> void:
 		return
 	if _dynamic_debounce:
 		return
+	# Fallback de detecção: só materializa o D-pad ao toque em telas de gameplay.
+	if not _active_screen_wants_dpad:
+		return
 	if MetaProgression.get_touch_controls_mode() == "never":
 		return
 	if event is InputEventScreenTouch and event.pressed:
 		_dynamic_debounce = true
 		_init_controls()
+		_show()
 		get_tree().create_timer(0.5).timeout.connect(func() -> void: _dynamic_debounce = false)
 
 
@@ -73,6 +106,17 @@ func get_dpad_screen_rect() -> Rect2:
 
 
 # ─── Private helpers ───────────────────────────────
+func _show() -> void:
+	# Fade-in já ocorre uma única vez em _init_controls(); aqui só reexpomos sem reanimar.
+	if _root != null:
+		_root.visible = true
+
+
+func _hide() -> void:
+	if _root != null:
+		_root.visible = false
+
+
 func _is_touch_device() -> bool:
 	if OS.has_feature("web"):
 		var result: Variant = JavaScriptBridge.eval(
@@ -125,7 +169,7 @@ func _build_buttons() -> void:
 		var btn := TextureButton.new()
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
-		btn.texture_normal = entry[1] as Texture2D
+		btn.texture_normal = load(entry[1]) as Texture2D
 		btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
 		btn.button_down.connect(_on_pressed.bind(entry[0]))
 		btn.button_up.connect(_on_released.bind(entry[0]))

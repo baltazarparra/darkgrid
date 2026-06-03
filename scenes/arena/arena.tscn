@@ -1,6 +1,5 @@
-[gd_scene load_steps=18 format=3 uid="uid://arena_main"]
+[gd_scene load_steps=17 format=3 uid="uid://arena_main"]
 
-[ext_resource type="Script" path="res://scripts/ui/controls_hud.gd" id="16_controls"]
 [ext_resource type="Script" path="res://scripts/ui/doom_fire.gd" id="15_fire"]
 [ext_resource type="Script" path="res://scripts/arena/arena_manager.gd" id="1_manager"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="14_hud"]
@@ -60,6 +59,3 @@ script = ExtResource("6_bubble")
 script = ExtResource("6_bubble")
 
 [node name="Hud" parent="." instance=ExtResource("14_hud")]
-
-[node name="ControlsHud" type="CanvasLayer" parent="."]
-script = ExtResource("16_controls")
