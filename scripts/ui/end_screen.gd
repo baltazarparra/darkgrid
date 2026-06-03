@@ -19,13 +19,24 @@ func _ready() -> void:
 	if OS.has_feature("web") or DisplayServer.is_touchscreen_available():
 		_hint.text = "Toque para voltar ao acampamento"
 
-func _unhandled_input(event: InputEvent) -> void:
-	# Space/Enter (desktop) OU qualquer toque/clique (mobile) volta ao acampamento.
+# Usa _input (não _unhandled_input): o Background/CenterContainer cobrem a tela inteira com
+# mouse_filter=STOP por padrão, engolindo o toque na fase de GUI. No mobile, sem barra de
+# espaço, isso transformava a tela num dead-end. _input roda antes da GUI e captura o toque.
+func _input(event: InputEvent) -> void:
+	# Qualquer tecla (desktop) OU qualquer toque/clique (mobile) volta ao acampamento.
 	if _handled:
 		return
-	if event.is_action_pressed("ui_accept") \
-			or (event is InputEventScreenTouch and event.pressed) \
-			or (event is InputEventMouseButton and event.pressed):
+	if _is_dismiss_event(event):
 		_handled = true
 		get_viewport().set_input_as_handled()
 		GameState.change_screen(SignalBus.Screen.HUB)
+
+# No mobile/tablet não há barra de espaço, então qualquer tecla, toque ou clique encerra.
+func _is_dismiss_event(event: InputEvent) -> bool:
+	if event is InputEventKey:
+		return event.pressed and not event.echo
+	if event is InputEventScreenTouch:
+		return event.pressed
+	if event is InputEventMouseButton:
+		return event.pressed
+	return false

@@ -40,3 +40,35 @@ func test_advance_ignored_when_not_ready() -> void:
 	_screen._ready_for_input = false
 	_screen.advance()
 	assert_eq(_screen._left_speaker_label.text, "CAIPORA", "linha não deve avançar")
+
+# ─── Input: qualquer tecla / toque / clique avança (mobile sem barra de espaço) ───
+
+func test_touch_advances() -> void:
+	var ev := InputEventScreenTouch.new()
+	ev.pressed = true
+	assert_true(_screen._is_advance_event(ev), "toque deve avançar a fala")
+
+func test_touch_release_does_not_advance() -> void:
+	var ev := InputEventScreenTouch.new()
+	ev.pressed = false
+	assert_false(_screen._is_advance_event(ev), "soltar o toque não deve avançar")
+
+func test_any_key_advances() -> void:
+	# No mobile/tablet não há barra de espaço: qualquer tecla precisa avançar.
+	var ev := InputEventKey.new()
+	ev.keycode = KEY_X
+	ev.pressed = true
+	assert_true(_screen._is_advance_event(ev), "qualquer tecla deve avançar a fala")
+
+func test_key_echo_does_not_advance() -> void:
+	var ev := InputEventKey.new()
+	ev.keycode = KEY_SPACE
+	ev.pressed = true
+	ev.echo = true
+	assert_false(_screen._is_advance_event(ev), "auto-repeat (echo) não deve avançar")
+
+func test_mouse_click_advances() -> void:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = true
+	assert_true(_screen._is_advance_event(ev), "clique deve avançar a fala")

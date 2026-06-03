@@ -45,11 +45,13 @@ func advance() -> void:
 
 # ─── Input ─────────────────────────────────────────
 
-func _unhandled_input(event: InputEvent) -> void:
-	var triggered: bool = event.is_action_pressed("ui_accept") \
-		or (event is InputEventScreenTouch and event.pressed) \
-		or (event is InputEventMouseButton and event.pressed)
-	if not triggered:
+# Usa _input (não _unhandled_input): o overlay/caixas de diálogo são ColorRects com
+# mouse_filter=STOP por padrão, que engolem o toque na fase de GUI antes de chegar ao
+# input "não tratado". No desktop a barra de espaço (tecla) escapava disso, mas no mobile
+# não há teclado e o toque morria no overlay — travando o diálogo do boss Boitatá.
+# _input roda antes da GUI, então o toque é capturado e a fala avança.
+func _input(event: InputEvent) -> void:
+	if not _is_advance_event(event):
 		return
 	# Com emulate_mouse_from_touch ligado, um único toque gera DOIS eventos no mesmo
 	# frame (touch + mouse emulado). A guarda de frame descarta o segundo, avançando
@@ -62,6 +64,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	advance()
 
 # ─── Private helpers ───────────────────────────────
+
+# No mobile/tablet não há barra de espaço, então qualquer tecla, toque ou clique avança a
+# fala. No desktop isso mantém o Space funcionando (é uma tecla) e ainda aceita Enter, etc.
+func _is_advance_event(event: InputEvent) -> bool:
+	if event is InputEventKey:
+		return event.pressed and not event.echo
+	if event is InputEventScreenTouch:
+		return event.pressed
+	if event is InputEventMouseButton:
+		return event.pressed
+	return false
 
 func _show_line(idx: int) -> void:
 	var line: Dictionary = _lines[idx]
