@@ -299,6 +299,9 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 	else:
 		_timing_bubble.burst_fail()
 		var damage := _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
+		# Fase 2: cada golpe de inimigo bate 1 a mais — a floresta é mais hostil.
+		if GameState.active_phase == 2:
+			damage += Constants.PHASE2_ENEMY_DAMAGE_BONUS
 		_caipora.take_damage(damage)
 		_sfx.play(_sfx.hit_sound)
 		_feedback.trigger_screenshake(14.0, 0.35)
@@ -323,9 +326,10 @@ func _boss_spread_pos() -> Vector2:
 	return pos
 
 func _phase_window(base: float) -> float:
-	if GameState.active_phase == 3:
-		return maxf(base - Constants.PHASE3_TIMING_REDUCTION, 0.2)
-	return base
+	match GameState.active_phase:
+		3: return maxf(base - Constants.PHASE3_TIMING_REDUCTION, 0.2)
+		2: return maxf(base - Constants.PHASE2_TIMING_REDUCTION, 0.2)
+		_: return base
 
 func _is_under_dpad(world_pos: Vector2) -> bool:
 	var rect := _controls_hud.get_dpad_screen_rect()

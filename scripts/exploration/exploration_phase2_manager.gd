@@ -50,6 +50,9 @@ const ENEMY_DEFS = [
 	{"id": "p2_e1", "x": 14, "y": 8,  "boss": false},
 	{"id": "p2_e2", "x": 19, "y": 5,  "boss": false},
 	{"id": "p2_e3", "x": 17, "y": 14, "boss": true, "type": "boitata"},
+	# Guardas que flanqueiam o Boitatá — a aproximação ao boss agora é vigiada.
+	{"id": "p2_e4", "x": 15, "y": 14, "boss": false},
+	{"id": "p2_e5", "x": 19, "y": 14, "boss": false},
 ]
 
 const EXIT_POS     := Vector2i(21, 16)

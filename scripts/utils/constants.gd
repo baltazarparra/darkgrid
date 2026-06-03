@@ -127,6 +127,12 @@ const UI_BORDER_WIDTH := 2
 const UI_PADDING_H := 20  # padding horizontal interno de botões/painéis
 const UI_PADDING_V := 12  # padding vertical interno
 
+# ─── Fase 2 ────────────────────────────────────────
+# Toda janela de ação (ataque e defesa) encurta 0.1s — a floresta fica mais
+# impiedosa. Cada golpe de inimigo também bate +1 (PHASE2_ENEMY_DAMAGE_BONUS).
+const PHASE2_TIMING_REDUCTION := 0.1
+const PHASE2_ENEMY_DAMAGE_BONUS := 1.0
+
 # ─── Fase 3 ────────────────────────────────────────
 const PHASE3_TIMING_REDUCTION := 0.15
 
