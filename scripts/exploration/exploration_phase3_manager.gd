@@ -66,10 +66,9 @@ func _ready() -> void:
 	add_child(Atmosphere.new())
 
 func _setup_player() -> void:
-	var start := GameState.player_map_pos if GameState.player_map_pos != Vector2i(-1, -1) else PLAYER_START
-	_player_grid_pos = start
+	_player_grid_pos = PLAYER_START
 	_caipora.tilemap = _tilemap
-	_caipora.position = Vector2(start) * Constants.TILE_SIZE
+	_caipora.position = Vector2(PLAYER_START) * Constants.TILE_SIZE
 	_caipora.move_finished.connect(_on_player_moved)
 
 func _spawn_enemies() -> void:
@@ -144,7 +143,7 @@ func _run_enemy_turns() -> void:
 
 func _trigger_combat(enemy: MapEnemy) -> void:
 	_locked = true
-	GameState.player_map_pos = PLAYER_START if enemy.is_boss else _player_grid_pos
+	GameState.player_map_pos = Vector2i(-1, -1)
 	GameState.active_map_enemy_id = enemy.enemy_id
 	GameState.active_combat_is_boss = enemy.is_boss
 	if enemy.is_boss:
