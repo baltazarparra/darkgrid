@@ -39,7 +39,7 @@ func _ready() -> void:
 	_frag_label = Label.new()
 	_frag_label.add_theme_font_size_override("font_size", _frag_font_size())
 	_frag_label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
-	_frag_label.text = "+".repeat(MetaProgression.fragments)
+	_frag_label.text = "+".repeat(int(MetaProgression.fragments))
 	hbox.add_child(_frag_label)
 
 	var spacer := Control.new()
@@ -133,15 +133,16 @@ func _on_enemy_health_changed(new_health: float, max_health: float) -> void:
 		)
 	_enemy_icons.set_current(new_health)
 
-func _on_fragment_gained(total: int) -> void:
-	_frag_label.text = "+".repeat(total)
-	_show_fragment_popup()
+func _on_fragment_gained(total: float, amount: float) -> void:
+	_frag_label.text = "+".repeat(int(total))
+	_show_fragment_popup(amount)
 
 func _on_chest_opened() -> void:
 	_show_popup("+1 HP", Constants.COLOR_BLOOD)
 
-func _show_fragment_popup() -> void:
-	_show_popup("+1 fragmento", Constants.COLOR_AMBER)
+func _show_fragment_popup(amount: float) -> void:
+	var txt: String = "+%.4g fragmento%s" % [amount, "s" if amount != 1.0 else ""]
+	_show_popup(txt, Constants.COLOR_AMBER)
 
 func _on_music_toggle() -> void:
 	AudioDirector.toggle_music_ambience()

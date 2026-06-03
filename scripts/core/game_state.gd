@@ -10,6 +10,7 @@ var is_paused: bool = false
 # Inimigo do próximo combate. Se != null, o ArenaManager o usa e reseta.
 # Ponto único para a Fase 4 (hub) escolher encontros (ex: Boss).
 var next_enemy_scene: PackedScene = null
+var active_phase: int = 1
 
 # ─── Estado de Run (volátil; HP não vai para o save) ──
 var run_active: bool = false
@@ -27,6 +28,7 @@ var player_map_pos: Vector2i = Vector2i(-1, -1)
 ## Inicia uma nova run: HP cheio.
 func start_run() -> void:
 	run_active = true
+	active_phase = 1
 	defeated_enemy_ids.clear()
 	active_map_enemy_id = ""
 	active_combat_is_boss = false

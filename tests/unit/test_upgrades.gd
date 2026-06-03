@@ -7,6 +7,7 @@ func before_each():
 	MetaProgression.SAVE_PATH = "user://test_savegame.json"
 	MetaProgression.upgrades = {}
 	MetaProgression.fragments = 0
+	MetaProgression.phase_reached = 1
 
 func after_each():
 	if FileAccess.file_exists(MetaProgression.SAVE_PATH):
@@ -14,6 +15,7 @@ func after_each():
 	MetaProgression.SAVE_PATH = _original_save_path
 	MetaProgression.upgrades = {}
 	MetaProgression.fragments = 0
+	MetaProgression.phase_reached = 1
 
 func test_purchase_requires_fragments():
 	MetaProgression.fragments = 3

@@ -322,7 +322,10 @@ func _on_actor_died(actor: CombatActor) -> void:
 		_caipora.health.heal(1)
 		GameState.caipora_max_hp = _caipora.health.max_health
 		if not GameState.active_combat_is_boss:
-			MetaProgression.add_fragment()
+			if GameState.active_phase == 2:
+				MetaProgression.add_fragments(1.5)
+			else:
+				MetaProgression.add_fragment()
 	GameState.caipora_current_hp = maxf(0.0, _caipora.health.current_health)
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.state_machine.stop()
@@ -338,6 +341,8 @@ func _on_actor_died(actor: CombatActor) -> void:
 			GameState.change_screen(SignalBus.Screen.WIN)
 		else:
 			GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
-			GameState.change_screen(SignalBus.Screen.EXPLORATION)
+			var back := SignalBus.Screen.EXPLORATION_PHASE2 \
+				if GameState.active_phase == 2 else SignalBus.Screen.EXPLORATION
+			GameState.change_screen(back)
 	else:
 		GameState.change_screen(SignalBus.Screen.GAME_OVER)

@@ -33,12 +33,12 @@ const MAP_LAYOUT = [
 	"WFRFFRFFFFRFFFFFRRFFFFFFFFW",
 	"WFFFWFFFFFFWFFFFFWFFFFRRFFW",
 	"WRFFFRFFFFFFFFFFFFRFFFFFFFW",
-	"WFFFFFFWFRFRFFFFFW ffrffffw",
+	"WFFFFFFWFRFRFFFFFWFFRFFFFW",
 	"WFRRFFFFFRRFFRFFFFFFFFFFRFW",
-	"WFFFWFFFRFFWFFFFFW fffffffw",
+	"WFFFWFFFRFFWFFFFFWFFFFFFFW",
 	"WFFFRFFFFFRRFFFFFFRFFFFFFFW",
 	"WFFFFFFFFFFFFFRFFFWWWWWWWWW",
-	"WFFFFFFWFFRFFFRRFFW ffffffw",
+	"WFFFFFFWFFRFFFRRFFWFFFFFFW",
 	"WRFFFFFFFFFFFFFFFFFFFFFFFFW",
 	"WFFFWFFFFFFFFFFRFFWFFFFFFFW",
 	"WRFFFFFFFFFFFFFFRFWFFFEFFRW",
@@ -57,6 +57,10 @@ const PLAYER_START := Vector2i(2,  1)
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
+	GameState.active_phase = 2
+	if MetaProgression.phase_reached < 2:
+		MetaProgression.phase_reached = 2
+		MetaProgression.save_progress()
 	_setup_tilemap()
 	_setup_player()
 	_spawn_enemies()
