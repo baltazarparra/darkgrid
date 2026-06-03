@@ -2,6 +2,10 @@ extends Node2D
 
 const MapObject := preload("res://scripts/exploration/map_object.gd")
 
+# Variantes de tile no atlas (ver scripts/tools/gen_tiles.py).
+const FLOOR_VARIANTS := 4
+const WALL_VARIANTS := 2
+
 # ─── Onready ───────────────────────────────────────
 @onready var _tilemap: TileMap = $TileMap
 @onready var _caipora: Caipora = $Caipora
@@ -262,13 +266,15 @@ func _setup_tilemap() -> void:
 	var floor_source := TileSetAtlasSource.new()
 	floor_source.texture = preload("res://assets/sprites/tile_floor.png")
 	floor_source.texture_region_size = Vector2i(Constants.TILE_SIZE, Constants.TILE_SIZE)
-	floor_source.create_tile(Vector2i(0, 0))
+	for i: int in FLOOR_VARIANTS:
+		floor_source.create_tile(Vector2i(i, 0))
 	tileset.add_source(floor_source, 0)
 
 	var wall_source := TileSetAtlasSource.new()
 	wall_source.texture = preload("res://assets/sprites/tile_wall.png")
 	wall_source.texture_region_size = Vector2i(Constants.TILE_SIZE, Constants.TILE_SIZE)
-	wall_source.create_tile(Vector2i(0, 0))
+	for i: int in WALL_VARIANTS:
+		wall_source.create_tile(Vector2i(i, 0))
 	tileset.add_source(wall_source, 1)
 
 	_tilemap.tile_set = tileset
@@ -280,6 +286,10 @@ func _paint_map() -> void:
 		for x: int in range(row.length()):
 			var pos := Vector2i(x, y)
 			if row[x] == "W":
-				_tilemap.set_cell(0, pos, 1, Vector2i(0, 0))
+				# variante de parede determinística (hash de x,y) — copa mais/menos densa
+				var wv: int = (x * 5 + y * 11) % WALL_VARIANTS
+				_tilemap.set_cell(0, pos, 1, Vector2i(wv, 0))
 			else:
-				_tilemap.set_cell(0, pos, 0, Vector2i(0, 0))
+				# variante de chão determinística — quebra o padrão de grade repetido
+				var fv: int = (x * 7 + y * 13) % FLOOR_VARIANTS
+				_tilemap.set_cell(0, pos, 0, Vector2i(fv, 0))
