@@ -22,26 +22,7 @@ The full product spec is in `PLAN.md`. Read it before every session.
 
 This project uses the **Godot MCP Server** (`@coding-solo/godot-mcp`) to let the agent create scenes, add nodes, and control the Godot editor programmatically.
 
-### MCP Tools Available
-
-| Tool | When to use |
-|------|-------------|
-| `create_scene` | Create a new `.tscn` file |
-| `add_node` | Add a node to an existing scene |
-| `save_scene` | Save changes to a scene |
-| `load_sprite` | Load a sprite onto a node |
-| `export_mesh_library` | Export a MeshLibrary resource |
-| `run_project` | Run the game and capture output |
-| `get_debug_output` | Read stdout/stderr from the running game |
-| `stop_project` | Stop the running game process |
-| `launch_editor` | Open the Godot editor |
-| `get_godot_version` | Verify installed Godot version |
-| `get_project_info` | Read project metadata |
-| `list_projects` | List known Godot projects |
-| `get_uid` | Get the UID for a resource |
-| `update_project_uids` | Refresh `.uid` references project-wide |
-
-All 14 tools are auto-approved in `.mcp.json` (the canonical MCP config; `.cursor/mcp.json` and `.kimi-code/mcp.json` are symlinks to it).
+All MCP tools are auto-approved in `.mcp.json` (the canonical MCP config; `.cursor/mcp.json` and `.kimi-code/mcp.json` are symlinks to it).
 
 ### Godot Path
 
@@ -52,82 +33,13 @@ All 14 tools are auto-approved in `.mcp.json` (the canonical MCP config; `.curso
 
 ---
 
-## Tech Stack
-
-| Layer | Choice |
-|-------|--------|
-| Engine | Godot 4.6.3 |
-| Language | GDScript (static typing required) |
-| Rendering | 2D, OpenGL Compatibility |
-| Art | Pixel art — CC0 (Kenney). One pack only for consistency. |
-| Audio | `.wav` SFX (jsfxr / sfxr) — no music in MVP |
-| Distribution | itch.io HTML5 export |
-| Tests | GUT (Godot Unit Test) |
-| Agent Tools | `@coding-solo/godot-mcp` |
-
----
-
 ## Directory Structure
 
-Place files in the correct directory. Do not create new top-level folders without approval.
-
-```
-assets/
-  sprites/     — All sprites: characters, enemies, tiles, items (.png)
-  audio/sfx/   — Sound effects (.wav, jsfxr/sfxr)
-  fonts/       — Pixel font (.ttf / .otf)
-  licenses/    — CC0 licenses and attribution
-
-scenes/
-  ui/          — Menus, HUD, screens
-  exploration/ — Grid map, fog, tile layers
-  arena/       — Combat arenas
-  shared/      — Reusable components (health bar, damage number, etc.)
-
-scripts/
-  core/        — Autoloads: GameState, SignalBus, MetaProgression
-  systems/     — TimingSystem, CombatSystem, FeedbackSystem
-  entities/    — Caipora, Criatura base classes
-  exploration/ — Grid logic, TurnManager
-  arena/       — ArenaManager, attack patterns
-  utils/       — Helpers, constants
-
-tests/
-  unit/        — GUT unit tests
-
-docs/          — Design docs, references
-```
+Do not create new top-level folders without approval.
 
 ---
 
 ## Code Standards
-
-### Naming
-
-| Type | Convention | Example |
-|------|------------|---------|
-| Classes | PascalCase | `CombatActor`, `TimingSystem` |
-| Variables / Functions | snake_case | `attack_damage`, `start_timing_window()` |
-| Constants | UPPER_SNAKE_CASE | `MAX_HEALTH`, `TIMING_WINDOW_FRAMES` |
-| Signals | past-tense snake_case | `health_changed`, `timing_hit` |
-| Files | snake_case | `combat_actor.gd`, `arena_manager.gd` |
-
-### Script Layout
-
-Order within a `.gd` file:
-
-```gdscript
-class_name ClassName
-extends BaseClass
-
-# ─── Exports ───────────────────────────────────────
-# ─── Signals ───────────────────────────────────────
-# ─── Constants ─────────────────────────────────────
-# ─── State ─────────────────────────────────────────
-# ─── Lifecycle (_ready, _process, etc.) ────────────
-# ─── Public API ────────────────────────────────────
-# ─── Private helpers ───────────────────────────────
-```
 
 ### Principles
 
@@ -196,15 +108,7 @@ Run the game with a display (WSLg provides `:0`):
 
 ## Session Protocol
 
-Every session follows this sequence:
-
-1. **Orient** — Read `PLAN.md`, check `git status`, read current milestone.
-2. **Verify Baseline** — Run `make smoke` (or `run_project`). Ensure the game starts without errors before touching anything.
-3. **Select One Task** — Pick the highest-priority incomplete item from the current milestone in `PLAN.md`.
-4. **Implement** — Build the feature. Use MCP tools for scene creation when appropriate.
-5. **Test** — Run `make gate` (smoke + GUT tests). If visual changes, validate with screenshot.
-6. **Update State** — Commit with a descriptive message. Mark task complete in `PLAN.md` if applicable.
-7. **Clean Exit** — Confirm the game is in a working state.
+Run `/session-orient` at the start of each session (skill in `.claude/skills/session-orient/`).
 
 **Rules:**
 - One task per session. Do not batch unrelated changes.

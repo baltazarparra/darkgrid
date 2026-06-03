@@ -15,12 +15,51 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache Godot binary
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/bin/godot
+          key: godot-4.6.3-stable-linux
+
       - name: Download Godot 4.6.3
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip" -O godot.zip
+          unzip -q godot.zip
+          mkdir -p ~/.local/bin
+          mv Godot_v4.6.3-stable_linux.x86_64 ~/.local/bin/godot
+          chmod +x ~/.local/bin/godot
+
+      - name: Add Godot to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Import project resources
+        run: ~/.local/bin/godot --headless --import --path . 2>&1 || true
+
+      - name: Run gate (smoke + GUT)
+        run: make gate
+
+  build:
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot binary
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/bin/godot
+          key: godot-4.6.3-stable-linux
+
+      - name: Download Godot 4.6.3
+        if: steps.cache-godot.outputs.cache-hit != 'true'
         run: |
           wget -q "https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip" -O godot.zip
           unzip -q godot.zip

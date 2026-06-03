@@ -3,9 +3,6 @@
     "godot": {
       "command": "bash",
       "args": ["scripts/mcp-wrapper.sh"],
-      "env": {
-        "DEBUG": "true"
-      },
       "autoApprove": [
         "launch_editor",
         "run_project",

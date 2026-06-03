@@ -3,6 +3,6 @@
 # Automatically sets GODOT_PATH for the caipora project
 
 export GODOT_PATH="${HOME}/.local/bin/godot"
-export DEBUG="${DEBUG:-true}"
+export DEBUG="${DEBUG:-false}"
 
 exec npx @coding-solo/godot-mcp "$@"
