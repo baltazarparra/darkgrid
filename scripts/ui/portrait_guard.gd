@@ -1,5 +1,6 @@
-class_name PortraitGuard
 extends CanvasLayer
+# Autoload registrado como PortraitGuard em project.godot.
+# Sem class_name: conflita com o nome do autoload em Godot 4.
 
 func _ready() -> void:
 	layer = 128
