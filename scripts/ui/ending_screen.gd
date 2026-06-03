@@ -23,8 +23,8 @@ func _run_sequence() -> void:
 	add_child(forest_bg)
 	forest_bg.modulate.a = 0.0
 
-	var label1 := _make_label("a floresta vive...", 0.0)
-	var label2 := _make_label("por enquanto", 0.0)
+	var label1 := _make_label("A floresta pulsa...", 0.0)
+	var label2 := _make_label("PELEJAR", 0.0)
 	label2.position.y += 56
 	add_child(label1)
 	add_child(label2)

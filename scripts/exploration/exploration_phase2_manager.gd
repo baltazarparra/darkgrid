@@ -106,7 +106,7 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 
 	if new_grid_pos == EXIT_POS:
 		_locked = true
-		GameState.change_screen(SignalBus.Screen.WIN)
+		GameState.change_screen(SignalBus.Screen.EXPLORATION_PHASE3)
 		return
 
 	for enemy in _map_enemies:
