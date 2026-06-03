@@ -53,7 +53,7 @@ const ENEMY_DEFS = [
 	{"id": "p3_e3", "x": 17, "y": 14, "boss": true, "type": "curupira"},
 ]
 
-const PLAYER_START := Vector2i(2, 1)
+const PLAYER_START := Vector2i(1, 7)
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -66,9 +66,10 @@ func _ready() -> void:
 	add_child(Atmosphere.new())
 
 func _setup_player() -> void:
-	_player_grid_pos = PLAYER_START
+	var start := _find_safe_spawn(PLAYER_START)
+	_player_grid_pos = start
 	_caipora.tilemap = _tilemap
-	_caipora.position = Vector2(PLAYER_START) * Constants.TILE_SIZE
+	_caipora.position = Vector2(start) * Constants.TILE_SIZE
 	_caipora.move_finished.connect(_on_player_moved)
 
 func _spawn_enemies() -> void:
@@ -93,9 +94,7 @@ func _spawn_exit_marker() -> void:
 func _spawn_fog() -> void:
 	_fog = FogOfWar.new()
 	add_child(_fog)
-	var cam: Camera2D = _caipora.get_node_or_null("Camera2D")
-	if cam == null:
-		cam = Camera2D.new()
+	_fog.track(_caipora)
 	_update_fog()
 
 func _update_fog() -> void:
@@ -161,6 +160,37 @@ func _show_boss_dialogue() -> void:
 
 func _on_dialogue_finished() -> void:
 	GameState.change_screen(SignalBus.Screen.ARENA_PHASE3)
+
+# ─── Spawn Helpers ─────────────────────────────────
+func _spawn_is_safe(pos: Vector2i) -> bool:
+	var dirs := [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]
+	for d in dirs:
+		var neighbor := pos + d
+		if neighbor.y >= 0 and neighbor.y < MAP_LAYOUT.size():
+			var row: String = MAP_LAYOUT[neighbor.y]
+			if neighbor.x >= 0 and neighbor.x < row.length():
+				if row[neighbor.x] == "R":
+					return false
+	return true
+
+func _find_safe_spawn(preferred: Vector2i) -> Vector2i:
+	if _spawn_is_safe(preferred):
+		return preferred
+	var queue: Array[Vector2i] = [preferred]
+	var visited: Dictionary = {}
+	var dirs := [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]
+	while not queue.is_empty():
+		var pos: Vector2i = queue.pop_front()
+		if visited.has(pos):
+			continue
+		visited[pos] = true
+		if _is_walkable(pos) and _spawn_is_safe(pos):
+			return pos
+		for d in dirs:
+			var next := pos + d
+			if not visited.has(next) and _is_walkable(next):
+				queue.append(next)
+	return preferred
 
 # ─── Walkability Helpers ───────────────────────────
 func _is_walkable(pos: Vector2i) -> bool:

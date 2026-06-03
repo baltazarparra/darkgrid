@@ -8,6 +8,7 @@ extends CanvasLayer
 
 var _rect: ColorRect
 var _shader_mat: ShaderMaterial
+var _tracked_node: Node2D
 
 func _ready() -> void:
 	layer = 10
@@ -19,6 +20,17 @@ func _ready() -> void:
 	_shader_mat.shader = load("res://shaders/fog_reveal.gdshader")
 	_rect.material = _shader_mat
 	add_child(_rect)
+
+func track(node: Node2D) -> void:
+	_tracked_node = node
+
+func _process(_delta: float) -> void:
+	if _tracked_node == null:
+		return
+	var cam := get_viewport().get_camera_2d()
+	if cam == null:
+		return
+	update_position(_tracked_node.global_position, cam)
 
 func update_position(world_pos: Vector2, cam: Camera2D) -> void:
 	var vp := get_viewport()

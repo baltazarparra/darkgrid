@@ -24,7 +24,7 @@ alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.545, 0, 0, 1)
 theme_override_font_sizes/font_size = 28
-text = "A FLORESTA TE DEVOROU"
+text = "... E desperta de outra premonição ..."
 horizontal_alignment = 1
 
 [node name="Hint" type="Label" parent="Center/VBox"]

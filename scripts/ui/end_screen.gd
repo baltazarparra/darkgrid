@@ -12,7 +12,7 @@ extends CanvasLayer
 func _ready() -> void:
 	GameState.end_run(won)
 	# No mobile não há tecla Space; orienta o toque e evita o dead-end.
-	if DisplayServer.is_touchscreen_available():
+	if OS.has_feature("web") or DisplayServer.is_touchscreen_available():
 		_hint.text = "Toque para voltar ao acampamento"
 
 func _unhandled_input(event: InputEvent) -> void:

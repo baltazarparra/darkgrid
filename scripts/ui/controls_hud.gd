@@ -31,8 +31,10 @@ var _keys: Array[Button] = []
 func _ready() -> void:
 	layer = 20
 
-	# Só faz sentido em telas de toque. No desktop, o teclado controla.
-	if not DisplayServer.is_touchscreen_available():
+	# Em web, sempre mostrar: iOS/Android acessam via browser e
+	# is_touchscreen_available() pode retornar false antes do primeiro toque.
+	var is_web := OS.has_feature("web")
+	if not is_web and not DisplayServer.is_touchscreen_available():
 		return
 
 	_root = Control.new()
