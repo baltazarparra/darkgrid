@@ -9,6 +9,10 @@ extends CanvasLayer
 
 @onready var _hint: Label = $Center/VBox/Hint
 
+# Guard contra dupla ativação: com emulate_mouse_from_touch, um toque gera touch +
+# mouse emulado no mesmo frame; só a primeira troca de tela deve valer.
+var _handled: bool = false
+
 func _ready() -> void:
 	GameState.end_run(won)
 	# No mobile não há tecla Space; orienta o toque e evita o dead-end.
@@ -17,8 +21,11 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	# Space/Enter (desktop) OU qualquer toque/clique (mobile) volta ao acampamento.
+	if _handled:
+		return
 	if event.is_action_pressed("ui_accept") \
 			or (event is InputEventScreenTouch and event.pressed) \
 			or (event is InputEventMouseButton and event.pressed):
+		_handled = true
 		get_viewport().set_input_as_handled()
 		GameState.change_screen(SignalBus.Screen.HUB)

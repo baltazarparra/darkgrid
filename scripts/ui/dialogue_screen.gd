@@ -15,6 +15,7 @@ var _lines: Array[Dictionary] = []
 var _current_index: int = 0
 var _ready_for_input: bool = false
 var _left_speaker_name: String = ""
+var _last_input_frame: int = -1
 
 # ─── Public API ────────────────────────────────────
 
@@ -48,9 +49,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	var triggered: bool = event.is_action_pressed("ui_accept") \
 		or (event is InputEventScreenTouch and event.pressed) \
 		or (event is InputEventMouseButton and event.pressed)
-	if triggered:
-		get_viewport().set_input_as_handled()
-		advance()
+	if not triggered:
+		return
+	# Com emulate_mouse_from_touch ligado, um único toque gera DOIS eventos no mesmo
+	# frame (touch + mouse emulado). A guarda de frame descarta o segundo, avançando
+	# exatamente uma fala por toque.
+	var frame := Engine.get_process_frames()
+	if frame == _last_input_frame:
+		return
+	_last_input_frame = frame
+	get_viewport().set_input_as_handled()
+	advance()
 
 # ─── Private helpers ───────────────────────────────
 
