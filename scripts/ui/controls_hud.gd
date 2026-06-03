@@ -22,6 +22,10 @@ const PRESS_SCALE: float = 0.92
 const SWIPE_DEAD_ZONE: float = 20.0
 const SWIPE_THRESHOLD: float = 40.0
 
+# Carimbo de build: logado uma vez no _ready(). Confirma, no console do navegador, que o
+# dispositivo está rodando o build novo (e não um cache de CDN/PWA) ao iterar no mobile.
+const _BUILD_TAG: String = "dpad-sticky-1"
+
 # Caminhos (não preload): como este script é autoload, ele é parseado já no boot — um
 # preload de asset ainda não importado quebraria o parse. As texturas são carregadas com
 # load() em runtime, dentro de _build_buttons(), que só roda numa tela de gameplay.
@@ -50,13 +54,17 @@ var _root: Control = null
 var _dpad_rect: Rect2 = Rect2()
 var _keys: Array[TextureButton] = []
 var _pressed_count: int = 0
-var _dynamic_debounce: bool = false
 var _active_screen_wants_dpad: bool = false
+# Sticky: uma vez reconhecido como touch (por detecção OU por um toque real), permanece true
+# pela sessão. Evita que uma leitura instável de _is_touch_device() (JavaScriptBridge.eval pode
+# devolver null/0 durante uma troca de cena pesada no web) esconda o D-pad no meio do combate.
+var _touch_detected: bool = false
 
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	layer = 20
+	print("[caipora] build ", _BUILD_TAG)
 	# Autoload persistente: a visibilidade é dirigida pela tela atual, não pelo boot.
 	# Nada aparece no menu principal (que carrega direto, sem emitir screen_changed).
 	SignalBus.screen_changed.connect(_on_screen_changed)
@@ -64,39 +72,21 @@ func _ready() -> void:
 
 func _on_screen_changed(screen: SignalBus.Screen) -> void:
 	_active_screen_wants_dpad = screen in _gameplay_screens
-	if not _active_screen_wants_dpad:
-		_hide()
-		return
-
-	match MetaProgression.get_touch_controls_mode():
-		"never":
-			_hide()
-		"always":
-			_init_controls()
-			_show()
-		_:
-			if _is_touch_device():
-				_init_controls()
-				_show()
-			else:
-				_hide()
+	_refresh()
 
 
 func _input(event: InputEvent) -> void:
-	if _root != null:
+	# Um toque real é a prova definitiva de dispositivo touch: fixa o sticky e (re)exibe o D-pad,
+	# mesmo que _root já exista e esteja oculto por uma detecção falha anterior.
+	if _touch_detected:
 		return
-	if _dynamic_debounce:
-		return
-	# Fallback de detecção: só materializa o D-pad ao toque em telas de gameplay.
 	if not _active_screen_wants_dpad:
 		return
 	if MetaProgression.get_touch_controls_mode() == "never":
 		return
 	if event is InputEventScreenTouch and event.pressed:
-		_dynamic_debounce = true
-		_init_controls()
-		_show()
-		get_tree().create_timer(0.5).timeout.connect(func() -> void: _dynamic_debounce = false)
+		_touch_detected = true
+		_refresh()
 
 
 # ─── Public API ────────────────────────────────────
@@ -106,6 +96,30 @@ func get_dpad_screen_rect() -> Rect2:
 
 
 # ─── Private helpers ───────────────────────────────
+# Decide a visibilidade SEM flapping: a detecção de toque é sticky-true, então uma leitura
+# instável nunca esconde um D-pad já reconhecido. Só oculta fora de gameplay ou no modo "never".
+func _resolve_should_show() -> bool:
+	if not _active_screen_wants_dpad:
+		return false
+	match MetaProgression.get_touch_controls_mode():
+		"never":
+			return false
+		"always":
+			return true
+		_:
+			if not _touch_detected and _is_touch_device():
+				_touch_detected = true
+			return _touch_detected
+
+
+func _refresh() -> void:
+	if _resolve_should_show():
+		_init_controls()
+		_show()
+	else:
+		_hide()
+
+
 func _show() -> void:
 	# Fade-in já ocorre uma única vez em _init_controls(); aqui só reexpomos sem reanimar.
 	if _root != null:
