@@ -163,7 +163,7 @@ func _on_dialogue_finished() -> void:
 
 # ─── Spawn Helpers ─────────────────────────────────
 func _spawn_is_safe(pos: Vector2i) -> bool:
-	var dirs := [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]
+	var dirs: Array[Vector2i] = [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]
 	for d in dirs:
 		var neighbor := pos + d
 		if neighbor.y >= 0 and neighbor.y < MAP_LAYOUT.size():
@@ -178,7 +178,7 @@ func _find_safe_spawn(preferred: Vector2i) -> Vector2i:
 		return preferred
 	var queue: Array[Vector2i] = [preferred]
 	var visited: Dictionary = {}
-	var dirs := [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]
+	var dirs: Array[Vector2i] = [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]
 	while not queue.is_empty():
 		var pos: Vector2i = queue.pop_front()
 		if visited.has(pos):

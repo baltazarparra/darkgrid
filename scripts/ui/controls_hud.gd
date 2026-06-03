@@ -31,10 +31,7 @@ var _keys: Array[Button] = []
 func _ready() -> void:
 	layer = 20
 
-	# Em web, sempre mostrar: iOS/Android acessam via browser e
-	# is_touchscreen_available() pode retornar false antes do primeiro toque.
-	var is_web := OS.has_feature("web")
-	if not is_web and not DisplayServer.is_touchscreen_available():
+	if not _is_touch_device():
 		return
 
 	_root = Control.new()
@@ -54,6 +51,19 @@ func get_dpad_screen_rect() -> Rect2:
 
 
 # ─── Private helpers ───────────────────────────────
+func _is_touch_device() -> bool:
+	if OS.has_feature("web"):
+		# JavaScriptBridge inspeciona o browser diretamente.
+		# Desktops e notebooks reportam maxTouchPoints == 0.
+		# iPhones, iPads e Android reportam > 0 ou têm 'ontouchstart'.
+		# Se eval falhar, retorna false (não mostra D-pad).
+		var result: Variant = JavaScriptBridge.eval(
+			"navigator.maxTouchPoints > 0 || 'ontouchstart' in window", true
+		)
+		return result == true
+	return DisplayServer.is_touchscreen_available()
+
+
 func _build_buttons() -> void:
 	for entry in _ENTRIES:
 		var btn := Button.new()
@@ -78,8 +88,8 @@ func _rebuild() -> void:
 	var cluster_w: float = key * 3.0 + gap * 2.0
 	var cluster_h: float = key * 2.0 + gap
 
-	# Ancorado ao canto inferior DIREITO (zona do polegar direito).
-	var origin := Vector2(vp.x - margin - cluster_w, vp.y - margin - cluster_h)
+	# Ancorado ao canto inferior ESQUERDO (polegar esquerdo = direcional; libera a zona do inimigo à direita).
+	var origin := Vector2(margin, vp.y - margin - cluster_h)
 
 	# Retângulo em coordenadas de tela ocupado pelo cluster — consultado pela arena
 	# para impedir que bolhas de timing nasçam atrás do D-pad.
