@@ -5,6 +5,10 @@ const BLOOD_PARTICLES := preload("res://scenes/shared/blood_particles.tscn")
 const CRITICAL_PARTICLES := preload("res://scenes/shared/critical_particles.tscn")
 const DEATH_PARTICLES := preload("res://scenes/shared/death_particles.tscn")
 
+# ─── Signals ───────────────────────────────────────
+signal hit_stop_started(duration: float)
+signal hit_stop_ended
+
 @export var shake_intensity: float = 8.0
 @export var shake_duration: float = 0.3
 
@@ -31,8 +35,8 @@ func _shake_camera(amount: float, camera: Camera2D) -> void:
 	)
 
 # ─── Hit-stop ──────────────────────────────────────
-## Congela o jogo por N frames (60fps de referência) via Engine.time_scale.
-## O timer usa ignore_time_scale=true para não congelar a si mesmo.
+## Pausa visual por N frames (60fps de referência): congela sprites dos atores e
+## bolhas de timing, mas NÃO toca Engine.time_scale — input continua fluindo.
 ## Anti-acúmulo: hit-stops simultâneos são ignorados se já houver um ativo.
 func trigger_hit_stop(frames: int = 3) -> void:
 	if _hit_stop_active:
@@ -41,9 +45,10 @@ func trigger_hit_stop(frames: int = 3) -> void:
 	# deixando o SFX do golpe "estourar" — espelha o hit-stop no áudio.
 	AudioDirector.duck()
 	_hit_stop_active = true
-	Engine.time_scale = 0.0
-	await get_tree().create_timer(frames / 60.0, true, false, true).timeout
-	Engine.time_scale = 1.0
+	var duration: float = frames / 60.0
+	hit_stop_started.emit(duration)
+	await get_tree().create_timer(duration, true, false, true).timeout
+	hit_stop_ended.emit()
 	_hit_stop_active = false
 
 # ─── Partículas ────────────────────────────────────

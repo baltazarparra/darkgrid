@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=3 uid="uid://boitata_arena"]
 
 [ext_resource type="Script" path="res://scripts/entities/boitata.gd" id="1_script"]
-[ext_resource type="SpriteFrames" path="res://assets/sprites/boss_sprite_frames.tres" id="2_frames"]
+[ext_resource type="SpriteFrames" path="res://assets/sprites/boitata_sprite_frames.tres" id="2_frames"]
 [ext_resource type="Script" path="res://scripts/shared/health_component.gd" id="3_health"]
 [ext_resource type="Script" path="res://scripts/entities/enemy_state_machine.gd" id="4_sm"]
 [ext_resource type="AttackPattern" path="res://resources/attack_patterns/boss_pattern.tres" id="5_pattern"]
@@ -19,7 +19,6 @@ double_block_pattern = ExtResource("6_double")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 offset = Vector2(0, -8)
-modulate = Color(1.2, 0.6, 0.1, 1)
 sprite_frames = ExtResource("2_frames")
 animation = &"idle"
 autoplay = "idle"

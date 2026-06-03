@@ -51,6 +51,8 @@ func _ready() -> void:
 	_timing_bubble_b.vulnerable_entered.connect(_on_bubble_vulnerable)
 	# Feedback tátil a cada input na janela de combate (conectado uma única vez).
 	_timing_system.input_registered.connect(_on_input_registered)
+	_feedback.hit_stop_started.connect(_on_hit_stop_started)
+	_feedback.hit_stop_ended.connect(_on_hit_stop_ended)
 
 	_update_camera_fit()
 	get_viewport().size_changed.connect(_update_camera_fit)
@@ -320,6 +322,22 @@ func _on_input_registered() -> void:
 	_feedback.trigger_screenshake(2.5, 0.08)
 	_sfx.play(_sfx.ui_click_sound, -6.0)
 
+func _on_hit_stop_started(_duration: float) -> void:
+	_timing_bubble.set_frozen(true)
+	_timing_bubble_b.set_frozen(true)
+	if _caipora != null and is_instance_valid(_caipora):
+		_caipora.animated_sprite.speed_scale = 0.0
+	if _enemy != null and is_instance_valid(_enemy):
+		_enemy.animated_sprite.speed_scale = 0.0
+
+func _on_hit_stop_ended() -> void:
+	_timing_bubble.set_frozen(false)
+	_timing_bubble_b.set_frozen(false)
+	if _caipora != null and is_instance_valid(_caipora):
+		_caipora.animated_sprite.speed_scale = 1.0
+	if _enemy != null and is_instance_valid(_enemy):
+		_enemy.animated_sprite.speed_scale = 1.0
+
 # ─── Morte ─────────────────────────────────────────
 func _on_actor_died(actor: CombatActor) -> void:
 	var caipora_won := actor == _enemy
@@ -354,7 +372,8 @@ func _on_actor_died(actor: CombatActor) -> void:
 				GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
 				GameState.change_screen(SignalBus.Screen.EXPLORATION)
 			else:
-				GameState.change_screen(SignalBus.Screen.WIN)
+				GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
+				GameState.change_screen(SignalBus.Screen.EXPLORATION_PHASE3)
 		else:
 			GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
 			match GameState.active_phase:

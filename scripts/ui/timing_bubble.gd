@@ -36,12 +36,15 @@ var _burst_color: Color = Color(1, 1, 1, 0.9)
 var _defense_mode: bool = false
 var _vuln_color: Color = Color.TRANSPARENT
 var _key_hint: String = "up"
+var _frozen: bool = false
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	visible = false
 
 func _process(delta: float) -> void:
+	if _frozen:
+		return
 	if _burst_timer >= 0.0:
 		_process_burst(delta)
 		return
@@ -218,6 +221,9 @@ func burst_success() -> void:
 	_burst_radius = RADIUS_TARGET * 0.8
 	visible = true
 	queue_redraw()
+
+func set_frozen(value: bool) -> void:
+	_frozen = value
 
 ## Estilhaço de erro: a bolha colapsa (encolhe e escurece) em vez de explodir.
 func burst_fail() -> void:

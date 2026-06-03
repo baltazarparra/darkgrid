@@ -52,6 +52,7 @@ var _grid: PackedInt32Array
 var _image: Image
 var _texture: ImageTexture
 var _sprite: Sprite2D
+var _fire_tick: int = 0
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -73,6 +74,9 @@ func _ready() -> void:
 	add_child(_sprite)
 
 func _process(_delta: float) -> void:
+	_fire_tick = (_fire_tick + 1) % 3
+	if _fire_tick != 0:
+		return
 	_update_fire()
 	_blit_image()
 

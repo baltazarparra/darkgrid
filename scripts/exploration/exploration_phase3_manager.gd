@@ -27,19 +27,19 @@ var _fog: FogOfWar
 # 26 cols × 18 rows. Ventre da Mata — raízes, corredores estreitos, sem fogo.
 const MAP_LAYOUT = [
 	"WWWWWWWWWWWWWWWWWWWWWWWWWW",
-	"WFFFFFFFFFFFFFFFFFFFFFFFFW",
-	"WFWWWWFFFFFFFFFFFFWWWWFFFW",
-	"WFFWWFFFFFFFFFFFFFFFFFWWWW",
-	"WFWWWFFFFFFFFFFFFWWWWWFFFW",
-	"WFFFFFFWWWWFFFFFFFFFFFFFFW",
-	"WWWWWFFFFFFFWWWWWFFFFFFFFW",
-	"WFFFWWWWWFFFFWWWWFFFFFFFFW",
-	"WFFFFFFFFFWWWFFFWWWFFFFFFFW",
-	"WWWFFFWWWFFFFFFFWWWWFFFFFW",
-	"WFFFFFFFFFFFFFFWWWFFFFFFFW",
-	"WWWWFFFFFFFFFFFWWWFFFFFFFW",
-	"WFFFFWWWWWFFFFFFFFFWWWWWWW",
-	"WFFFFFFFFFFFWWWWFFFFFFFFFW",
+	"WRFRRFFFFFRRFFFFFRFFFFFFFW",
+	"WFWWWWFRFFFFRFFFFRWWWWFFFW",
+	"WFFWWFFFFRRFFFFRFFFFFFWWWW",
+	"WFWWWFRRFFFFFRRFFWWWWWFFFW",
+	"WFFRFFFWWWWFRFFFFRFFRFFFFW",
+	"WWWWWFFFFFFFWWWWWFRFFRRFFW",
+	"WFFFWWWWWFFFFWWWWFFFFFRFFW",
+	"WFFFFFFFFFWWWFRFWWWFFRFFFW",
+	"WWWFFFWWWFFRFFFFWWWWFRRFFW",
+	"WFFRFFFFFFFFFFRWWWFFFFFFFW",
+	"WWWWFRRFFFFFFFFWWWFFFFFFFW",
+	"WFFFFWWWWWFFFFFRFFFWWWWWWW",
+	"WFFRFFFFFFFFWWWWFFFFFFRRFW",
 	"WFFFFFFFFFFFFFFFFFFFFWWFFW",
 	"WWWWFFFFFWWWWFFFFFFWWWWWWW",
 	"WFFFFFFFFFFFFFFFFFFFFFFFFW",
@@ -82,7 +82,11 @@ func _spawn_enemies() -> void:
 		_map_enemies.append(enemy)
 
 func _spawn_objects() -> void:
-	pass
+	for y: int in MAP_LAYOUT.size():
+		var row: String = MAP_LAYOUT[y]
+		for x: int in row.length():
+			if row[x] == "R":
+				_make_object(MapObject.Type.FIRE, Vector2i(x, y))
 
 func _spawn_exit_marker() -> void:
 	pass
@@ -116,7 +120,20 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 			_trigger_combat(enemy)
 			return
 
+	var row: String = MAP_LAYOUT[new_grid_pos.y]
+	if new_grid_pos.x < row.length() and row[new_grid_pos.x] == "R":
+		_apply_fire_damage()
+		if _locked:
+			return
+
 	_run_enemy_turns()
+
+func _apply_fire_damage() -> void:
+	GameState.caipora_current_hp = maxi(0, GameState.caipora_current_hp - Constants.FIRE_TILE_DAMAGE)
+	SignalBus.caipora_health_changed.emit(GameState.caipora_current_hp, GameState.caipora_max_hp)
+	if GameState.caipora_current_hp <= 0:
+		_locked = true
+		GameState.change_screen(SignalBus.Screen.GAME_OVER)
 
 func _run_enemy_turns() -> void:
 	for enemy in _map_enemies:

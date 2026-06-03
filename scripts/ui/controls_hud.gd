@@ -15,9 +15,17 @@ const KEY_FRACTION: float = 0.15
 const KEY_MIN: float = 64.0
 const KEY_MAX: float = 140.0
 
+const _ENTRIES: Array = [
+	["↑", "ui_up"],
+	["←", "ui_left"],
+	["↓", "ui_down"],
+	["→", "ui_right"],
+]
+
 # ─── State ─────────────────────────────────────────
 var _root: Control = null
 var _dpad_rect: Rect2 = Rect2()
+var _keys: Array[Button] = []
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -32,6 +40,7 @@ func _ready() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
 
+	_build_buttons()
 	_rebuild()
 	get_viewport().size_changed.connect(_rebuild)
 
@@ -43,11 +52,20 @@ func get_dpad_screen_rect() -> Rect2:
 
 
 # ─── Private helpers ───────────────────────────────
+func _build_buttons() -> void:
+	for entry in _ENTRIES:
+		var btn := Button.new()
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.button_down.connect(_on_pressed.bind(entry[1]))
+		btn.button_up.connect(_on_released.bind(entry[1]))
+		_root.add_child(btn)
+		_keys.append(btn)
+
+
 func _rebuild() -> void:
-	if _root == null:
+	if _root == null or _keys.is_empty():
 		return
-	for child in _root.get_children():
-		child.queue_free()
 
 	var vp := get_viewport().get_visible_rect().size
 	var key: float = clampf(minf(vp.x, vp.y) * KEY_FRACTION, KEY_MIN, KEY_MAX)
@@ -69,20 +87,22 @@ func _rebuild() -> void:
 	var y_top: float = origin.y                    # linha de cima (↑)
 	var y_bot: float = origin.y + key + gap        # linha de baixo (← ↓ →)
 
-	_key("↑", "ui_up",    cx,                       y_top, key)
-	_key("←", "ui_left",  origin.x,                 y_bot, key)
-	_key("↓", "ui_down",  cx,                       y_bot, key)
-	_key("→", "ui_right", origin.x + key * 2.0 + gap * 2.0, y_bot, key)
+	var positions: Array[Vector2] = [
+		Vector2(cx, y_top),
+		Vector2(origin.x, y_bot),
+		Vector2(cx, y_bot),
+		Vector2(origin.x + key * 2.0 + gap * 2.0, y_bot),
+	]
+
+	for i in _keys.size():
+		var btn := _keys[i]
+		btn.position = positions[i]
+		btn.size = Vector2(key, key)
+		btn.text = _ENTRIES[i][0]
+		_apply_style(btn, key)
 
 
-func _key(label: String, action: String, x: float, y: float, key: float) -> void:
-	var btn := Button.new()
-	btn.position = Vector2(x, y)
-	btn.size = Vector2(key, key)
-	btn.text = label
-	btn.focus_mode = Control.FOCUS_NONE
-	btn.mouse_filter = Control.MOUSE_FILTER_STOP
-
+func _apply_style(btn: Button, key: float) -> void:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.06, 0.04, 0.10, 0.88)
 	style.border_color = Color(0.50, 0.44, 0.62, 1.0)
@@ -102,10 +122,6 @@ func _key(label: String, action: String, x: float, y: float, key: float) -> void
 	btn.add_theme_stylebox_override("focus", style)
 	btn.add_theme_font_size_override("font_size", int(key * 0.45))
 	btn.add_theme_color_override("font_color", Color(0.86, 0.82, 0.94, 1.0))
-
-	btn.button_down.connect(_on_pressed.bind(action))
-	btn.button_up.connect(_on_released.bind(action))
-	_root.add_child(btn)
 
 
 func _on_pressed(action: String) -> void:

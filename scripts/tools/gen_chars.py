@@ -283,10 +283,140 @@ def axe_hunter():
     return c
 
 
+def boitata():
+    """Boitatá — serpente de fogo, 48x48. Corpo em arco, cabeça triangular, olhos que cegam."""
+    c = C()
+    # ── Cores ──
+    CORE  = (255, 240, 200)
+    HOT   = (255, 200, 80)
+    MID   = (255, 107, 0)
+    DEEP  = (188, 42, 0)
+    SCALE = (40, 20, 20)
+    EYE_W = (255, 255, 255)
+    EYE_B = (160, 220, 255)
+    TONGUE = (180, 0, 0)
+
+    # ── Cauda (parte baixa-esquerda) ──
+    c.rect(4, 38, 10, 42, DEEP)
+    c.rect(5, 36, 9, 40, MID)
+    c.rect(6, 34, 8, 37, HOT)
+
+    # ── Corpo principal (arco descendente da esquerda pra direita) ──
+    # segmento esquerdo (subindo)
+    c.rect(6, 20, 14, 34, DEEP)
+    c.rect(7, 19, 13, 33, MID)
+    c.rect(8, 18, 12, 32, HOT)
+    c.rect(9, 18, 11, 30, CORE)
+    # segmento topo (horizontal)
+    c.rect(12, 12, 26, 22, DEEP)
+    c.rect(13, 11, 25, 21, MID)
+    c.rect(14, 10, 24, 20, HOT)
+    c.rect(15, 10, 23, 18, CORE)
+    # segmento direito (descendo)
+    c.rect(26, 18, 36, 32, DEEP)
+    c.rect(27, 17, 35, 31, MID)
+    c.rect(28, 17, 34, 30, HOT)
+    c.rect(29, 17, 33, 28, CORE)
+
+    # ── Escamas (linhas diagonais sobre o corpo) ──
+    for i in range(0, 12, 3):
+        c.px(14 + i, 12 + (i // 3), SCALE)
+        c.px(15 + i, 13 + (i // 3), SCALE)
+    for i in range(0, 6, 3):
+        c.px(28 + i, 20 + i, SCALE)
+
+    # ── Cabeça triangular (topo-direito) ──
+    c.rect(33, 8, 45, 20, DEEP)
+    c.rect(34, 7, 44, 19, MID)
+    c.rect(35, 7, 43, 10, HOT)   # frente da cabeça
+    # afunila em cima (forma triangular)
+    c.rect(33, 8, 33, 12, (0,0,0,0))
+    c.rect(45, 8, 45, 12, (0,0,0,0))
+    for off in range(4):
+        for xx in range(off):
+            c.px(33 + xx, 8 + off, (0, 0, 0, 0))
+            c.px(45 - xx, 8 + off, (0, 0, 0, 0))
+
+    # ── Olhos que cegam ──
+    c.rect(36, 11, 38, 13, EYE_W)
+    c.rect(41, 11, 43, 13, EYE_W)
+    c.px(37, 12, EYE_B)
+    c.px(42, 12, EYE_B)
+
+    # ── Língua bífida ──
+    c.rect(43, 19, 46, 19, TONGUE)
+    c.px(44, 20, TONGUE)
+    c.px(46, 20, TONGUE)
+
+    return c
+
+
+def curupira():
+    """Curupira — humanóide infantil, pele verde, cabelo laranja selvagem, pés ao contrário."""
+    c = C()
+    SKIN   = (34, 90, 40)
+    SKIN_DK= (20, 58, 26)
+    HAIR   = (255, 107, 0)
+    HAIR_H = (255, 168, 56)
+    HAIR_D = (188, 42, 0)
+    EYE_G  = (180, 255, 80)
+    TOOTH  = (220, 200, 160)
+
+    # ── Cabelo selvagem (sobe e alarga) ──
+    c.rect(15, 4, 33, 16, HAIR_D)
+    c.disc(24, 12, 10, HAIR_D)
+    for (x, top) in [(14, 8), (17, 3), (20, 1), (24, 0), (28, 2), (31, 4), (34, 7)]:
+        c.rect(x, max(top, 0), x + 2, 14, HAIR)
+    for (x, top) in [(18, 2), (22, 0), (26, 1), (30, 3)]:
+        c.rect(x, max(top, 0), x + 1, top + 7, HAIR_H)
+
+    # ── Cabeça ──
+    c.disc(24, 20, 8, SKIN)
+    c.rect(17, 16, 31, 25, SKIN)
+    c.rect(17, 16, 19, 25, SKIN_DK)
+    # olhos brilhantes
+    c.rect(19, 18, 21, 20, EYE_G)
+    c.rect(27, 18, 29, 20, EYE_G)
+    c.px(20, 19, (220, 255, 120))
+    c.px(28, 19, (220, 255, 120))
+    # dentes afiados
+    c.rect(21, 23, 27, 24, TOOTH)
+    for xx in (21, 23, 25, 27):
+        c.px(xx, 25, SKIN_DK)
+
+    # ── Tronco (pequeno, encurvado) ──
+    c.rect(19, 26, 29, 36, SKIN)
+    c.rect(19, 26, 20, 36, SKIN_DK)
+    c.rect(28, 26, 29, 36, SKIN_DK)
+
+    # ── Braços longos ──
+    c.rect(12, 27, 19, 31, SKIN_DK)   # esq
+    c.rect(29, 27, 36, 31, SKIN)      # dir
+    c.rect(10, 30, 14, 33, SKIN_DK)   # mão esq
+    c.rect(34, 30, 38, 33, SKIN)      # mão dir
+
+    # ── Pernas curtas ──
+    c.rect(19, 36, 23, 43, SKIN)
+    c.rect(25, 36, 29, 43, SKIN)
+    c.rect(19, 36, 19, 43, SKIN_DK)
+    c.rect(25, 36, 25, 43, SKIN_DK)
+
+    # ── PÉS AO CONTRÁRIO (dedos apontando para TRÁS — para a esquerda) ──
+    for fx in (19, 25):
+        c.rect(fx - 5, 43, fx + 1, 45, SKIN)   # pé estendido pra trás
+        c.rect(fx + 1, 43, fx + 1, 45, SKIN_DK) # calcanhar (na frente)
+        c.px(fx - 3, 45, SKIN_DK)
+        c.px(fx - 1, 45, SKIN_DK)
+
+    return c
+
+
 if __name__ == "__main__":
     caipora(0).save("player_idle.png")
     caipora(-1).save("player_walk_1.png")
     caipora(1).save("player_walk_2.png")
     hunter().save("enemy_idle.png")
     axe_hunter().save("boss_idle.png")
-    print("[gen_chars] caipora (64x64) + caçador + caçador-de-machados (48x48) gerados")
+    boitata().save("boitata_idle.png")
+    curupira().save("curupira_idle.png")
+    print("[gen_chars] caipora (64x64) + caçador + caçador-de-machados + boitatá + curupira (48x48) gerados")
