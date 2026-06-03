@@ -3,6 +3,7 @@ extends CanvasLayer
 
 # ─── Constants ─────────────────────────────────────
 const SCALE: int = 8
+const ROWS: int = 90
 
 # Dark doom fire: preto transparente → roxo escuro → carmesim → vermelho sangue
 const PALETTE: Array[Color] = [
@@ -47,7 +48,6 @@ const PALETTE: Array[Color] = [
 
 # ─── State ─────────────────────────────────────────
 var _cols: int = 0
-var _rows: int = 0
 var _vp_size: Vector2 = Vector2.ZERO
 var _grid: PackedInt32Array
 var _image: Image
@@ -73,15 +73,14 @@ func _on_viewport_resized() -> void:
 func _rebuild(vp: Vector2) -> void:
 	_vp_size = vp
 	_cols = ceili(vp.x / float(SCALE))
-	_rows = ceili(vp.y / float(SCALE))
 	_grid = PackedInt32Array()
-	_grid.resize(_cols * _rows)
+	_grid.resize(_cols * ROWS)
 	for col in _cols:
-		_grid[(_rows - 1) * _cols + col] = 36
-	_image = Image.create(_cols, _rows, false, Image.FORMAT_RGBA8)
+		_grid[(ROWS - 1) * _cols + col] = 36
+	_image = Image.create(_cols, ROWS, false, Image.FORMAT_RGBA8)
 	_texture = ImageTexture.create_from_image(_image)
 	_sprite.texture = _texture
-	_sprite.position = Vector2(_cols * SCALE / 2.0, _rows * SCALE / 2.0)
+	_sprite.position = Vector2(_cols * SCALE / 2.0, vp.y - ROWS * SCALE / 2.0)
 	_sprite.scale = Vector2(SCALE, SCALE)
 
 func _process(_delta: float) -> void:
@@ -93,7 +92,7 @@ func _process(_delta: float) -> void:
 
 # ─── Private helpers ───────────────────────────────
 func _update_fire() -> void:
-	for row in range(_rows - 1):
+	for row in range(ROWS - 1):
 		for col in _cols:
 			var src: int = (row + 1) * _cols + col
 			var val: int = _grid[src]
@@ -106,7 +105,7 @@ func _update_fire() -> void:
 			_grid[row * _cols + target] = maxi(0, val - decay)
 
 func _blit_image() -> void:
-	for row in _rows:
+	for row in ROWS:
 		for col in _cols:
 			_image.set_pixel(col, row, PALETTE[_grid[row * _cols + col]])
 	_texture.update(_image)

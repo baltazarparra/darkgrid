@@ -9,7 +9,6 @@ extends CanvasLayer
 const FADE_LAYER: int = 100
 const FADE_IN_DURATION: float = 1.2
 const FADE_OUT_DURATION: float = 0.6
-const TITLE_COLOR_PERIOD: float = 1.4
 
 # ─── State ─────────────────────────────────────────
 @onready var _start_button: Button = $Center/VBox/StartButton
@@ -21,7 +20,7 @@ func _ready() -> void:
 	$Center/VBox/StartButton.pressed.connect(_on_start_pressed)
 	$Center/VBox/QuitButton.pressed.connect(_on_quit_pressed)
 	_setup_fade()
-	_animate_title()
+	_apply_title_shader()
 	_start_button.grab_focus()
 
 ## Overlay preto para fade-in (abrir) e fade-out (Iniciar).
@@ -36,16 +35,11 @@ func _setup_fade() -> void:
 	add_child(fade_layer)
 	create_tween().tween_property(_fade, "color:a", 0.0, FADE_IN_DURATION)
 
-## Ciclo de brasa no título — escuro → médio → vivo → escuro.
-func _animate_title() -> void:
+func _apply_title_shader() -> void:
 	var title := $Center/VBox/Title as RichTextLabel
-	var tween := create_tween().set_loops()
-	tween.tween_property(title, "modulate", Constants.COLOR_FIRE_LOW, TITLE_COLOR_PERIOD / 3.0) \
-		.set_trans(Tween.TRANS_SINE)
-	tween.tween_property(title, "modulate", Constants.COLOR_FIRE_MID, TITLE_COLOR_PERIOD / 3.0) \
-		.set_trans(Tween.TRANS_SINE)
-	tween.tween_property(title, "modulate", Constants.COLOR_FIRE_HOT, TITLE_COLOR_PERIOD / 3.0) \
-		.set_trans(Tween.TRANS_SINE)
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://assets/shaders/title_fire.gdshader") as Shader
+	title.material = mat
 
 func _on_start_pressed() -> void:
 	AudioDirector.unlock_audio()

@@ -24,6 +24,7 @@ const SHADOW_COLOR := Color(0.0, 0.0, 0.0, 0.35)
 
 # ─── State ─────────────────────────────────────────
 var _end_x: float = 1400.0
+var _walk_tween: Tween = null
 var _sprite: AnimatedSprite2D
 var _rest_y: float = 0.0
 var _bob_t: float = 0.0
@@ -31,7 +32,6 @@ var _bob_t: float = 0.0
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	var vp := get_viewport().get_visible_rect().size
-	_end_x = vp.x + abs(START_X)
 	z_index = layer_z
 	if not ground_path.is_empty():
 		var g := get_node_or_null(ground_path)
@@ -52,6 +52,10 @@ func _ready() -> void:
 	add_child(_sprite)
 
 	_start_loop()
+	get_viewport().size_changed.connect(_on_viewport_resized)
+
+func _on_viewport_resized() -> void:
+	_start_loop()
 
 func _process(delta: float) -> void:
 	_bob_t += delta * BOB_SPEED
@@ -67,5 +71,9 @@ func _draw() -> void:
 
 # ─── Private helpers ───────────────────────────────
 func _start_loop() -> void:
-	var tween := create_tween().set_loops()
-	tween.tween_property(self, "position:x", _end_x, CROSS_DURATION).from(START_X)
+	var vp := get_viewport().get_visible_rect().size
+	_end_x = vp.x + abs(START_X)
+	if _walk_tween != null:
+		_walk_tween.kill()
+	_walk_tween = create_tween().set_loops()
+	_walk_tween.tween_property(self, "position:x", _end_x, CROSS_DURATION).from(START_X)

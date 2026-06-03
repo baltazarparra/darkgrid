@@ -88,7 +88,7 @@ text = "[center][wave amp=10 freq=2.5]CAIPORA[/wave][/center]"
 
 [node name="StartButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 72)
+custom_minimum_size = Vector2(0, 144)
 theme_override_font_sizes/font_size = 18
 text = "Iniciar"
 
