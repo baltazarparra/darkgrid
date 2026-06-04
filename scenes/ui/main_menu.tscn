@@ -84,9 +84,10 @@ fit_content = true
 scroll_active = false
 theme_override_font_sizes/normal_font_size = 96
 theme_override_colors/default_color = Color(0.545, 0, 0, 1)
-text = "[fill][wave amp=10 freq=2.5]CAI
-POR
-A[/wave][/fill]"
+autowrap_mode = 3
+text = "[center][wave amp=10 freq=2.5]CAI[/wave]
+[wave amp=10 freq=2.5]POR[/wave]
+[wave amp=10 freq=2.5]A[/wave][/center]"
 
 [node name="StartButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
