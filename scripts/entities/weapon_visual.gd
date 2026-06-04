@@ -10,20 +10,24 @@ extends Node2D
 ## Espelha o padrão de aura de Curupira._spawn_shadow_aura().
 
 const WEAPON_TEXTURE := preload("res://assets/sprites/weapon_forca3.png")
+## Variante flamejante (CHAMA / elemento fogo): mesmo formato 64×112, recolorida em brasa.
+const WEAPON_FIRE_TEXTURE := preload("res://assets/sprites/weapon_forca3_fogo.png")
 
 ## Offset do centro do sprite (64×112) relativo ao AnimatedSprite2D. Calibrado para
 ## o cabo encostar na mão da Caipora e a lâmina subir acima da cabeça.
 const WEAPON_OFFSET := Vector2(22, -47)
 
 ## Anexa o tronco + partículas a `parent` (o AnimatedSprite2D da Caipora), se a erva
-## "Raiz-de-Ira" (`forca_3`) estiver desbloqueada. No-op caso contrário.
+## "Raiz-de-Ira" (`forca_3`) estiver desbloqueada. No-op caso contrário. Com a CHAMA
+## (elemento fogo) ativa, usa o sprite flamejante e soma partículas de chama às douradas.
 static func attach_to(parent: Node2D) -> void:
 	if MetaProgression.get_upgrade_level("forca_3") < 1:
 		return
 
+	var on_fire := MetaProgression.has_chama
 	var weapon := Sprite2D.new()
 	weapon.name = "WeaponSprite"
-	weapon.texture = WEAPON_TEXTURE
+	weapon.texture = WEAPON_FIRE_TEXTURE if on_fire else WEAPON_TEXTURE
 	weapon.position = WEAPON_OFFSET
 	weapon.z_index = 1
 	parent.add_child(weapon)
@@ -31,6 +35,9 @@ static func attach_to(parent: Node2D) -> void:
 	# Fumaça atrás + aura dourada na frente, acompanhando o tronco.
 	weapon.add_child(_build_smoke())
 	weapon.add_child(_build_gold_aura())
+	# CHAMA: chama viva somada à aura dourada (não a substitui).
+	if on_fire:
+		weapon.add_child(_build_flame())
 
 	# Respiro dourado sutil: pulso lento no modulate (desejável, discreto).
 	var pulse := weapon.create_tween().set_loops()
@@ -83,6 +90,42 @@ static func _build_gold_aura() -> CPUParticles2D:
 	aura.material = glow
 	aura.emitting = true
 	return aura
+
+
+## Chama viva da CHAMA (elemento fogo): sobe rápido, blend aditivo, gradiente quente.
+## Espelha _build_gold_aura, mas com cores de fogo (mesmo padrão de FireEffect._flame_ramp).
+static func _build_flame() -> CPUParticles2D:
+	var flame := CPUParticles2D.new()
+	flame.name = "ChamaFlame"
+	flame.position = Vector2(0, -28)
+	flame.z_index = 1                           # chama na frente do tronco
+	flame.amount = 22
+	flame.lifetime = 0.7
+	flame.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	flame.emission_rect_extents = Vector2(14, 46)
+	flame.direction = Vector2(0, -1)
+	flame.spread = 18.0
+	flame.gravity = Vector2(0, -45)             # sobe rápido (lambe a lâmina)
+	flame.initial_velocity_min = 14.0
+	flame.initial_velocity_max = 34.0
+	flame.scale_amount_min = 2.0
+	flame.scale_amount_max = 4.0
+	flame.color = Constants.COLOR_FIRE_HOT
+	flame.color_ramp = _flame_ramp()
+	var glow := CanvasItemMaterial.new()
+	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	flame.material = glow
+	flame.emitting = true
+	return flame
+
+
+static func _flame_ramp() -> Gradient:
+	var g := Gradient.new()
+	g.set_offset(0, 0.0)
+	g.set_color(0, Constants.COLOR_FIRE_HOT)
+	g.add_point(0.5, Constants.COLOR_FIRE_MID)
+	g.add_point(1.0, Color(Constants.COLOR_FIRE_LOW.r, Constants.COLOR_FIRE_LOW.g, Constants.COLOR_FIRE_LOW.b, 0.0))
+	return g
 
 
 static func _smoke_ramp() -> Gradient:

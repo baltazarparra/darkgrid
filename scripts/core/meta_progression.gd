@@ -30,6 +30,16 @@ const UPGRADE_DEFS := {
 const FURIA_KEYS: Array[String] = ["forca", "forca_2", "forca_3", "forca_4"]
 const CURA_KEYS: Array[String]  = ["saude", "saude_2", "saude_3", "saude_4"]
 
+# ─── CHAMA (elemento fogo) ─────────────────────────
+# Depois que a espada (forca_3, "Raiz-de-Ira" da Fase 3) já existe, a cada
+# KILLS_PER_CHAMA_ROLL monstros comuns derrotados há UM sorteio: com CHAMA_DROP_CHANCE de
+# chance, a espada ganha o elemento fogo (permanente) no lugar do fragmento daquela morte:
+# +CHAMA_DAMAGE_BONUS de dano e visual de chama (na arena e na exploração).
+const KILLS_PER_CHAMA_ROLL: int = 10
+# `var` (não const) de propósito: ponto único de tuning e overridable nos testes (1.0/0.0).
+var CHAMA_DROP_CHANCE: float = 0.5
+const CHAMA_DAMAGE_BONUS: int = 2
+
 # ─── State ─────────────────────────────────────────
 var unlocked_characters: Array[String] = ["caipora"]
 var unlocked_modifiers: Array[String] = []
@@ -39,6 +49,9 @@ var upgrades: Dictionary = {}
 var fragments: float = 0.0
 var phase_reached: int = 1
 var touch_controls_mode: String = "auto"
+# CHAMA: elemento fogo desbloqueado (permanente) + contador acumulado rumo ao próximo sorteio.
+var has_chama: bool = false
+var kills_toward_chama: int = 0
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -65,8 +78,32 @@ func get_upgrade_level(key: String) -> int:
 func get_damage_bonus() -> int:
 	# "Raiz-de-Ira" (forca_3) bate 2 hits a mais que as anteriores: soma +3 em vez de +1.
 	# "Breu-Ancestral" (forca_4, recompensa de Fase 4) soma +2.
-	return get_upgrade_level("forca") + get_upgrade_level("forca_2") \
+	# A CHAMA (elemento fogo na espada) soma +CHAMA_DAMAGE_BONUS.
+	var bonus := get_upgrade_level("forca") + get_upgrade_level("forca_2") \
 		+ get_upgrade_level("forca_3") * 3 + get_upgrade_level("forca_4") * 2
+	if has_chama:
+		bonus += CHAMA_DAMAGE_BONUS
+	return bonus
+
+## Registra uma morte de monstro comum para o sistema da CHAMA. Só conta se a espada
+## (forca_3) já existe e a CHAMA ainda não foi obtida. A cada KILLS_PER_CHAMA_ROLL mortes
+## faz UM sorteio. Retorna true se a CHAMA foi conquistada NESTA morte (recompensa = CHAMA
+## no lugar do fragmento).
+func register_kill_for_chama() -> bool:
+	if has_chama or get_upgrade_level("forca_3") < 1:
+		return false
+	kills_toward_chama += 1
+	if kills_toward_chama < KILLS_PER_CHAMA_ROLL:
+		save_progress()
+		return false
+	kills_toward_chama = 0
+	if randf() < CHAMA_DROP_CHANCE:
+		has_chama = true
+		save_progress()
+		SignalBus.chama_gained.emit()
+		return true
+	save_progress()
+	return false
 
 func get_health_bonus() -> int:
 	# Cada erva de cura soma +2 HP (a multiplicação por 2 cobre as 4 trilhas).
@@ -109,7 +146,9 @@ func save_progress() -> void:
 		"upgrades": upgrades,
 		"fragments": fragments,
 		"phase_reached": phase_reached,
-		"touch_controls_mode": touch_controls_mode
+		"touch_controls_mode": touch_controls_mode,
+		"has_chama": has_chama,
+		"kills_toward_chama": kills_toward_chama
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -149,6 +188,8 @@ func load_progress() -> void:
 	fragments = float(data.get("fragments", 0.0))
 	phase_reached = int(data.get("phase_reached", 1))
 	touch_controls_mode = data.get("touch_controls_mode", "auto")
+	has_chama = bool(data.get("has_chama", false))
+	kills_toward_chama = int(data.get("kills_toward_chama", 0))
 
 ## Zera todo o progresso e apaga o arquivo de save. Não toca em user://settings.cfg (áudio).
 func reset_save() -> void:
@@ -160,6 +201,8 @@ func reset_save() -> void:
 	fragments = 0.0
 	phase_reached = 1
 	touch_controls_mode = "auto"
+	has_chama = false
+	kills_toward_chama = 0
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 

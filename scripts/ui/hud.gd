@@ -69,6 +69,7 @@ func _ready() -> void:
 	SignalBus.caipora_health_changed.connect(_on_caipora_health_changed)
 	SignalBus.enemy_health_changed.connect(_on_enemy_health_changed)
 	SignalBus.fragment_gained.connect(_on_fragment_gained)
+	SignalBus.chama_gained.connect(_on_chama_gained)
 	SignalBus.chest_opened.connect(_on_chest_opened)
 
 # ─── Layout responsivo ─────────────────────────────
@@ -133,6 +134,10 @@ func _on_enemy_health_changed(new_health: float, max_health: float) -> void:
 func _on_fragment_gained(total: float, amount: float) -> void:
 	_frag_label.text = "+".repeat(int(total))
 	_show_fragment_popup(amount)
+
+func _on_chama_gained() -> void:
+	# A CHAMA substitui o fragmento daquela morte; este popup é o feedback da conquista.
+	_show_popup("CHAMA!", Constants.COLOR_FIRE_HOT)
 
 func _on_chest_opened() -> void:
 	_show_popup("+1 HP", Constants.COLOR_BLOOD)

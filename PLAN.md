@@ -393,6 +393,19 @@ make export
       caçador 48×48 (chapéu/espingarda), bruxo 48×48 (capuz/cajado/gema)
 - [x] Geradores algorítmicos: `gen_tiles.py`, `gen_chars.py`; captura: `screenshot.gd`
 
+### CHAMA — Espada com elemento fogo ✅
+- [x] Depois da espada (`forca_3`, "Raiz-de-Ira"), a cada **10 monstros comuns** derrotados há
+      **1 sorteio** (`MetaProgression.register_kill_for_chama()`); contador `kills_toward_chama`
+      **acumulado entre runs** (persistido no save).
+- [x] Chance de drop num único ponto de tuning: `MetaProgression.CHAMA_DROP_CHANCE` (default 0.5).
+- [x] Ao ganhar, recebe a **CHAMA no lugar do fragmento** daquela morte (`arena_manager._on_actor_died`);
+      `has_chama` é **permanente** (salvo). HUD mostra popup "CHAMA!" (`SignalBus.chama_gained`).
+- [x] Efeito fogo: **+2 dano** (`get_damage_bonus()` soma `CHAMA_DAMAGE_BONUS`), **partículas de chama
+      somadas às douradas** e **sprite flamejante** `weapon_forca3_fogo.png`
+      (gerador `scripts/gen_weapon_forca3_fogo.py`) — em `weapon_visual.gd`, visível na **arena e na
+      exploração** (ambas via `WeaponVisual.attach_to`).
+- [x] Testes: `tests/unit/test_chama.gd`.
+
 ---
 
 ## 11.1 Known Issues

@@ -391,11 +391,14 @@ func _on_actor_died(actor: CombatActor) -> void:
 		_caipora.health.heal(1)
 		GameState.caipora_max_hp = _caipora.health.max_health
 		if not GameState.active_combat_is_boss:
-			match GameState.active_phase:
-				4: MetaProgression.add_fragments(2.5)
-				3: MetaProgression.add_fragments(2.0)
-				2: MetaProgression.add_fragments(1.5)
-				_: MetaProgression.add_fragment()
+			# A cada 10 monstros (após a espada/forca_3) há um sorteio de CHAMA; se ganhar,
+			# a recompensa é a CHAMA no lugar do fragmento desta morte.
+			if not MetaProgression.register_kill_for_chama():
+				match GameState.active_phase:
+					4: MetaProgression.add_fragments(2.5)
+					3: MetaProgression.add_fragments(2.0)
+					2: MetaProgression.add_fragments(1.5)
+					_: MetaProgression.add_fragment()
 		if GameState.active_combat_is_boss and GameState.active_phase == 2:
 			if MetaProgression.phase_reached < 3:
 				MetaProgression.phase_reached = 3
