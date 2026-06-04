@@ -1,10 +1,22 @@
 class_name Hub
 extends CanvasLayer
 
-## Santuário entre runs: recupera HP, exibe fragmentos, permite comprar upgrades.
+## Acampamento entre runs: recupera HP, mostra fragmentos e deixa a Caipora carregar o
+## CACHIMBO com ERVAS (aprimoramentos). Duas trilhas — Fúria (dano) e Cura (HP) — exibidas
+## como cards rolável, montados de forma data-driven a partir de MetaProgression.UPGRADE_DEFS.
 
 const FADE_LAYER: int = 100
 const FADE_IN_DURATION: float = 0.8
+
+# Paleta da tela (espelha options_panel.gd / constants.gd — bordas duras, sem arredondar).
+const PANEL_BG := Color(0.075, 0.055, 0.055, 0.92)
+const PANEL_BG_LOCKED := Color(0.05, 0.045, 0.05, 0.9)
+const FURIA_ACCENT := Color(1.0, 0.42, 0.0, 1.0)    # âmbar/fogo
+const CURA_ACCENT := Color(0.30, 0.52, 0.28, 1.0)   # verde folha
+const LOCKED_ACCENT := Color(0.22, 0.18, 0.18, 1.0)
+const TEXT := Color(0.788, 0.82, 0.851, 1.0)
+const TEXT_DIM := Color(0.55, 0.55, 0.58, 1.0)
+const DIM_MODULATE := Color(1, 1, 1, 0.45)
 
 @onready var _stats: Label = $Center/VBox/Stats
 @onready var _upgrade_list: VBoxContainer = $Center/VBox/UpgradeList
@@ -12,20 +24,12 @@ const FADE_IN_DURATION: float = 0.8
 
 var _options: OptionsPanel
 var _fade: ColorRect
-var _forca_label: Label
-var _forca_button: Button
-var _saude_label: Label
-var _saude_button: Button
-var _forca2_label: Label
-var _forca2_button: Button
-var _saude2_label: Label
-var _saude2_button: Button
-var _forca3_label: Label
-var _forca3_button: Button
-var _saude3_label: Label
-var _saude3_button: Button
-
 var _scale: float = 1.0
+
+# Widgets por erva (key → {panel, name, info, button}), para o refresh central.
+var _cards: Dictionary = {}
+var _loaded_row: HBoxContainer       # ícones das ervas já carregadas no cachimbo
+var _bonus_label: Label              # resumo "Fúria +X dano • Cura +Y HP"
 
 func _ready() -> void:
 	_setup_fade()
@@ -33,14 +37,7 @@ func _ready() -> void:
 	GameState.heal_to_full()
 	_apply_scale_to_scene_nodes()
 	_refresh_stats()
-	_build_forca_row()
-	_build_saude_row()
-	if MetaProgression.phase_reached >= 2:
-		_build_forca2_row()
-		_build_saude2_row()
-	if MetaProgression.phase_reached >= 3:
-		_build_forca3_row()
-		_build_saude3_row()
+	_build_camp()
 	_enter_button.pressed.connect(_on_enter_pressed)
 	_add_options_ui()
 	_enter_button.grab_focus()
@@ -93,195 +90,215 @@ func _on_options_pressed() -> void:
 func _refresh_stats() -> void:
 	_stats.text = "Caçadas: %d    Vitórias: %d" % [MetaProgression.total_runs, MetaProgression.total_wins]
 
-# ─── Helpers de row ────────────────────────────────
-func _make_row() -> HBoxContainer:
+# ─── Montagem da tela (cachimbo + trilhas roláveis) ────────────────────────────
+func _build_camp() -> void:
+	var vbox := _upgrade_list.get_parent() as VBoxContainer
+
+	# Cabeçalho: cachimbo + ervas carregadas + resumo de bônus.
+	var header := _build_cachimbo_header()
+	vbox.add_child(header)
+	vbox.move_child(header, _upgrade_list.get_index())
+
+	# Lista rolável com as duas trilhas de cards.
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var vp := get_viewport().get_visible_rect().size
+	var col_w := clampf(vp.x * 0.92, 300.0, 600.0)
+	# Altura limitada para sobrar espaço ao cachimbo, título e botões (CenterContainer
+	# dimensiona ao mínimo do filho; o conteúdo rola dentro do ScrollContainer).
+	var scroll_h := clampf(vp.y * 0.48, 200.0, 640.0)
+	scroll.custom_minimum_size = Vector2(col_w, scroll_h)
+
+	var lines := VBoxContainer.new()
+	lines.add_theme_constant_override("separation", roundi(18.0 * _scale))
+	lines.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(lines)
+
+	lines.add_child(_build_section("FÚRIA — ervas de dano", FURIA_ACCENT, MetaProgression.FURIA_KEYS, col_w))
+	lines.add_child(_build_section("CURA — ervas de vida", CURA_ACCENT, MetaProgression.CURA_KEYS, col_w))
+
+	vbox.add_child(scroll)
+	vbox.move_child(scroll, _upgrade_list.get_index())
+	_upgrade_list.queue_free()  # placeholder do .tscn não é mais usado
+
+	_refresh_all()
+
+func _build_cachimbo_header() -> Control:
+	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", roundi(6.0 * _scale))
+
+	var pipe := TextureRect.new()
+	pipe.texture = load("res://assets/sprites/cachimbo.png")
+	pipe.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	pipe.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pipe.custom_minimum_size = Vector2(roundi(144.0 * _scale), roundi(96.0 * _scale))
+	pipe.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(pipe)
+
+	_loaded_row = HBoxContainer.new()
+	_loaded_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_loaded_row.add_theme_constant_override("separation", roundi(4.0 * _scale))
+	_loaded_row.custom_minimum_size = Vector2(0, roundi(26.0 * _scale))
+	box.add_child(_loaded_row)
+
+	_bonus_label = Label.new()
+	_bonus_label.add_theme_font_size_override("font_size", roundi(15.0 * _scale))
+	_bonus_label.add_theme_color_override("font_color", TEXT)
+	_bonus_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(_bonus_label)
+	return box
+
+func _build_section(title: String, accent: Color, keys: Array, col_w: float) -> Control:
+	var section := VBoxContainer.new()
+	section.add_theme_constant_override("separation", roundi(8.0 * _scale))
+	section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var header := Label.new()
+	header.text = title
+	header.add_theme_font_size_override("font_size", roundi(16.0 * _scale))
+	header.add_theme_color_override("font_color", accent)
+	section.add_child(header)
+
+	for key in keys:
+		var def: Dictionary = MetaProgression.UPGRADE_DEFS[key]
+		# Só constrói o card quando a fase exigida já foi alcançada (gate de UI).
+		if MetaProgression.phase_reached < int(def.get("phase", 1)):
+			continue
+		section.add_child(_build_erva_card(key, accent, col_w))
+	return section
+
+func _build_erva_card(key: String, accent: Color, col_w: float) -> Control:
+	var def: Dictionary = MetaProgression.UPGRADE_DEFS[key]
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(col_w, 0)
+	var style := StyleBoxFlat.new()
+	style.bg_color = PANEL_BG
+	style.border_color = accent
+	style.set_border_width_all(2)
+	style.set_content_margin_all(roundi(10.0 * _scale))
+	panel.add_theme_stylebox_override("panel", style)
+
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", roundi(16.0 * _scale))
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	return row
+	row.add_theme_constant_override("separation", roundi(12.0 * _scale))
+	panel.add_child(row)
 
-func _make_upgrade_label() -> Label:
-	var lbl := Label.new()
-	lbl.add_theme_font_size_override("font_size", roundi(21.0 * _scale))
-	lbl.custom_minimum_size = Vector2(roundi(260.0 * _scale), 0)
-	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	return lbl
+	var icon := TextureRect.new()
+	icon.texture = load(String(def["icon"]))
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var icon_px := roundi(48.0 * _scale)
+	icon.custom_minimum_size = Vector2(icon_px, icon_px)
+	row.add_child(icon)
 
-func _make_buy_button() -> Button:
-	var btn := Button.new()
-	btn.add_theme_font_size_override("font_size", roundi(21.0 * _scale))
-	btn.custom_minimum_size = Vector2(0, roundi(54.0 * _scale))
-	btn.text = "Comprar"
-	return btn
+	var info := VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(info)
 
-# ─── Força ─────────────────────────────────────────
-func _build_forca_row() -> void:
-	var row := _make_row()
-	_forca_label = _make_upgrade_label()
-	_forca_button = _make_buy_button()
-	_forca_button.pressed.connect(_on_forca_pressed)
-	row.add_child(_forca_label)
-	row.add_child(_forca_button)
-	_upgrade_list.add_child(row)
-	_refresh_forca_row()
+	var name_label := Label.new()
+	name_label.text = String(def["name"])
+	name_label.add_theme_font_size_override("font_size", roundi(19.0 * _scale))
+	name_label.add_theme_color_override("font_color", TEXT)
+	info.add_child(name_label)
 
-func _refresh_forca_row() -> void:
+	var info_label := Label.new()
+	info_label.add_theme_font_size_override("font_size", roundi(13.0 * _scale))
+	info_label.add_theme_color_override("font_color", TEXT_DIM)
+	info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.add_child(info_label)
+
+	var button := Button.new()
+	button.text = "Fumar"
+	button.add_theme_font_size_override("font_size", roundi(18.0 * _scale))
+	button.custom_minimum_size = Vector2(roundi(110.0 * _scale), roundi(50.0 * _scale))
+	button.pressed.connect(_on_buy_pressed.bind(key))
+	row.add_child(button)
+
+	_cards[key] = {
+		"panel": panel, "style": style, "name": name_label,
+		"info": info_label, "button": button, "accent": accent,
+	}
+	return panel
+
+# ─── Refresh ───────────────────────────────────────────────────────────────────
+func _on_buy_pressed(key: String) -> void:
+	if MetaProgression.purchase_upgrade(key):
+		_refresh_all()
+
+func _refresh_all() -> void:
+	for key in _cards:
+		_refresh_card(key)
+	_refresh_header()
+
+func _refresh_card(key: String) -> void:
+	var def: Dictionary = MetaProgression.UPGRADE_DEFS[key]
+	var card: Dictionary = _cards[key]
+	var info_label: Label = card["info"]
+	var button: Button = card["button"]
+	var panel: PanelContainer = card["panel"]
+	var style: StyleBoxFlat = card["style"]
+	var accent: Color = card["accent"]
+
 	var frags := int(MetaProgression.fragments)
-	var level := MetaProgression.get_upgrade_level("forca")
-	var maxed := level >= 1
-	if maxed:
-		_forca_label.text = "Força  [APRIMORADO]  Fragmentos: %d" % frags
+	var cost := int(def.get("fragment_cost", 0))
+	var owned := MetaProgression.get_upgrade_level(key) >= 1
+	var req := String(def.get("requires", ""))
+	var req_met := req == "" or MetaProgression.get_upgrade_level(req) >= 1
+
+	if owned:
+		info_label.text = "[NO CACHIMBO]"
+		info_label.add_theme_color_override("font_color", accent)
+		button.visible = false
+		panel.modulate = Color.WHITE
+		style.bg_color = PANEL_BG
+		style.border_color = accent
+	elif not req_met:
+		var req_name := String(MetaProgression.UPGRADE_DEFS[req]["name"])
+		info_label.text = "🔒 requer %s" % req_name
+		info_label.add_theme_color_override("font_color", TEXT_DIM)
+		button.visible = true
+		button.disabled = true
+		panel.modulate = DIM_MODULATE
+		style.bg_color = PANEL_BG_LOCKED
+		style.border_color = LOCKED_ACCENT
 	else:
-		_forca_label.text = "Força  Dano +1/hit  Fragmentos: %d / 4" % frags
-	_forca_button.disabled = maxed or frags < 4
+		info_label.text = "%s  •  Fragmentos: %d / %d" % [String(def.get("effect", "")), frags, cost]
+		info_label.add_theme_color_override("font_color", TEXT_DIM)
+		button.visible = true
+		button.disabled = frags < cost
+		panel.modulate = Color.WHITE
+		style.bg_color = PANEL_BG
+		style.border_color = accent
 
-func _on_forca_pressed() -> void:
-	if MetaProgression.purchase_upgrade("forca"):
-		_refresh_forca_row()
-		_refresh_saude_row()
-		if _forca2_label != null:
-			_refresh_forca2_row()
-
-# ─── Saúde ─────────────────────────────────────────
-func _build_saude_row() -> void:
-	var row := _make_row()
-	_saude_label = _make_upgrade_label()
-	_saude_button = _make_buy_button()
-	_saude_button.pressed.connect(_on_saude_pressed)
-	row.add_child(_saude_label)
-	row.add_child(_saude_button)
-	_upgrade_list.add_child(row)
-	_refresh_saude_row()
-
-func _refresh_saude_row() -> void:
-	var forca_comprada := MetaProgression.get_upgrade_level("forca") >= 1
-	var frags := int(MetaProgression.fragments)
-	var level := MetaProgression.get_upgrade_level("saude")
-	var maxed := level >= 1
-	_saude_label.get_parent().visible = forca_comprada
-	if not forca_comprada:
-		return
-	if maxed:
-		_saude_label.text = "Saúde  [APRIMORADO]  Fragmentos: %d" % frags
-	else:
-		_saude_label.text = "Saúde  +2 HP (permanente)  Fragmentos: %d / 6" % frags
-	_saude_button.disabled = maxed or frags < 6
-
-func _on_saude_pressed() -> void:
-	if MetaProgression.purchase_upgrade("saude"):
-		_refresh_saude_row()
-
-# ─── Força 2 ───────────────────────────────────────
-func _build_forca2_row() -> void:
-	var row := _make_row()
-	_forca2_label = _make_upgrade_label()
-	_forca2_button = _make_buy_button()
-	_forca2_button.pressed.connect(_on_forca2_pressed)
-	row.add_child(_forca2_label)
-	row.add_child(_forca2_button)
-	_upgrade_list.add_child(row)
-	_refresh_forca2_row()
-
-func _refresh_forca2_row() -> void:
-	var forca_comprada := MetaProgression.get_upgrade_level("forca") >= 1
-	var frags := int(MetaProgression.fragments)
-	var level := MetaProgression.get_upgrade_level("forca_2")
-	var maxed := level >= 1
-	_forca2_label.get_parent().visible = forca_comprada
-	if not forca_comprada:
-		return
-	if maxed:
-		_forca2_label.text = "Fúria da Floresta  [APRIMORADO]  Fragmentos: %d" % frags
-	else:
-		_forca2_label.text = "Fúria da Floresta  Dano +1/hit (total 3)  Fragmentos: %d / 6" % frags
-	_forca2_button.disabled = maxed or frags < 6 or not forca_comprada
-
-func _on_forca2_pressed() -> void:
-	if MetaProgression.purchase_upgrade("forca_2"):
-		_refresh_forca2_row()
-
-# ─── Saúde 2 ───────────────────────────────────────
-func _build_saude2_row() -> void:
-	var row := _make_row()
-	_saude2_label = _make_upgrade_label()
-	_saude2_button = _make_buy_button()
-	_saude2_button.pressed.connect(_on_saude2_pressed)
-	row.add_child(_saude2_label)
-	row.add_child(_saude2_button)
-	_upgrade_list.add_child(row)
-	_refresh_saude2_row()
-
-func _refresh_saude2_row() -> void:
-	var frags := int(MetaProgression.fragments)
-	var level := MetaProgression.get_upgrade_level("saude_2")
-	var maxed := level >= 1
-	if maxed:
-		_saude2_label.text = "Pele de Árvore  [APRIMORADO]  Fragmentos: %d" % frags
-	else:
-		_saude2_label.text = "Pele de Árvore  +2 HP  Fragmentos: %d / 9" % frags
-	_saude2_button.disabled = maxed or frags < 9
-
-func _on_saude2_pressed() -> void:
-	if MetaProgression.purchase_upgrade("saude_2"):
-		_refresh_saude2_row()
-
-# ─── Força 3 ───────────────────────────────────────
-func _build_forca3_row() -> void:
-	var row := _make_row()
-	_forca3_label = _make_upgrade_label()
-	_forca3_button = _make_buy_button()
-	_forca3_button.pressed.connect(_on_forca3_pressed)
-	row.add_child(_forca3_label)
-	row.add_child(_forca3_button)
-	_upgrade_list.add_child(row)
-	_refresh_forca3_row()
-
-func _refresh_forca3_row() -> void:
-	var forca2_comprada := MetaProgression.get_upgrade_level("forca_2") >= 1
-	var frags := int(MetaProgression.fragments)
-	var level := MetaProgression.get_upgrade_level("forca_3")
-	var maxed := level >= 1
-	_forca3_label.get_parent().visible = forca2_comprada
-	if not forca2_comprada:
-		return
-	if maxed:
-		_forca3_label.text = "Fúria Ancestral  [APRIMORADO]  Fragmentos: %d" % frags
-	else:
-		_forca3_label.text = "Fúria Ancestral  Dano +1/hit (total 4)  Fragmentos: %d / 8" % frags
-	_forca3_button.disabled = maxed or frags < 8 or not forca2_comprada
-
-func _on_forca3_pressed() -> void:
-	if MetaProgression.purchase_upgrade("forca_3"):
-		_refresh_forca3_row()
-
-# ─── Saúde 3 ───────────────────────────────────────
-func _build_saude3_row() -> void:
-	var row := _make_row()
-	_saude3_label = _make_upgrade_label()
-	_saude3_button = _make_buy_button()
-	_saude3_button.pressed.connect(_on_saude3_pressed)
-	row.add_child(_saude3_label)
-	row.add_child(_saude3_button)
-	_upgrade_list.add_child(row)
-	_refresh_saude3_row()
-
-func _refresh_saude3_row() -> void:
-	var saude2_comprada := MetaProgression.get_upgrade_level("saude_2") >= 1
-	var frags := int(MetaProgression.fragments)
-	var level := MetaProgression.get_upgrade_level("saude_3")
-	var maxed := level >= 1
-	_saude3_label.get_parent().visible = saude2_comprada
-	if not saude2_comprada:
-		return
-	if maxed:
-		_saude3_label.text = "Raiz Viva  [APRIMORADO]  Fragmentos: %d" % frags
-	else:
-		_saude3_label.text = "Raiz Viva  +2 HP  Fragmentos: %d / 12" % frags
-	_saude3_button.disabled = maxed or frags < 12 or not saude2_comprada
-
-func _on_saude3_pressed() -> void:
-	if MetaProgression.purchase_upgrade("saude_3"):
-		_refresh_saude3_row()
+func _refresh_header() -> void:
+	# Resumo de bônus.
+	_bonus_label.text = "Fúria +%d dano   •   Cura +%d HP" % [
+		MetaProgression.get_damage_bonus(), MetaProgression.get_health_bonus()
+	]
+	# Ícones das ervas já carregadas no cachimbo.
+	for child in _loaded_row.get_children():
+		child.queue_free()
+	var any := false
+	for key in MetaProgression.UPGRADE_DEFS:
+		if MetaProgression.get_upgrade_level(key) < 1:
+			continue
+		any = true
+		var dot := TextureRect.new()
+		dot.texture = load(String(MetaProgression.UPGRADE_DEFS[key]["icon"]))
+		dot.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		dot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var px := roundi(24.0 * _scale)
+		dot.custom_minimum_size = Vector2(px, px)
+		_loaded_row.add_child(dot)
+	if not any:
+		var empty := Label.new()
+		empty.text = "cachimbo vazio"
+		empty.add_theme_font_size_override("font_size", roundi(12.0 * _scale))
+		empty.add_theme_color_override("font_color", TEXT_DIM)
+		_loaded_row.add_child(empty)
 
 func _on_enter_pressed() -> void:
 	GameState.start_run()

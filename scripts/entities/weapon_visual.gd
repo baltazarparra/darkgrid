@@ -1,8 +1,8 @@
 class_name WeaponVisual
 extends Node2D
 
-## Visual da arma do aprimoramento final de força (`forca_3` — "Fúria Ancestral"):
-## o Tronco Buster + aura de ouro dark + fumaça. Componente reutilizável: a mesma
+## Visual da erva de guerra `forca_3` ("Raiz-de-Ira"): a fumaça dela manifesta o Tronco
+## Buster + aura de ouro dark + fumaça. Componente reutilizável: a mesma
 ## lógica é usada na exploração (Caipora) e na arena (ArenaManager), eliminando a
 ## duplicação que existia nos dois call-sites.
 ##
@@ -15,8 +15,8 @@ const WEAPON_TEXTURE := preload("res://assets/sprites/weapon_forca3.png")
 ## o cabo encostar na mão da Caipora e a lâmina subir acima da cabeça.
 const WEAPON_OFFSET := Vector2(22, -47)
 
-## Anexa o tronco + partículas a `parent` (o AnimatedSprite2D da Caipora), se o
-## aprimoramento final de força estiver desbloqueado. No-op caso contrário.
+## Anexa o tronco + partículas a `parent` (o AnimatedSprite2D da Caipora), se a erva
+## "Raiz-de-Ira" (`forca_3`) estiver desbloqueada. No-op caso contrário.
 static func attach_to(parent: Node2D) -> void:
 	if MetaProgression.get_upgrade_level("forca_3") < 1:
 		return

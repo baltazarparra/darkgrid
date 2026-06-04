@@ -11,14 +11,24 @@ const SAVE_VERSION: int = 1
 # True se user:// é persistente (no Web = IndexedDB disponível; false em aba anônima/quota).
 var is_persistent: bool = true
 
+# Cada aprimoramento é uma ERVA que a Caipora põe no cachimbo para fumar. Duas trilhas:
+# "furia" (dano) e "cura" (HP). As KEYS são imutáveis (compatibilidade de save); só os
+# nomes/metadados de exibição mudam. Metadados de UI (line/tier/phase/effect/icon) são
+# lidos pelo Hub para montar os cards de forma data-driven.
 const UPGRADE_DEFS := {
-	"forca":   { "name": "Força",             "max_level": 1, "fragment_cost": 4 },
-	"saude":   { "name": "Saúde",             "max_level": 1, "fragment_cost": 6 },
-	"forca_2": { "name": "Fúria da Floresta", "max_level": 1, "fragment_cost": 6, "requires": "forca" },
-	"saude_2": { "name": "Pele de Árvore",    "max_level": 1, "fragment_cost": 9 },
-	"forca_3": { "name": "Fúria Ancestral",   "max_level": 1, "fragment_cost": 8,  "requires": "forca_2" },
-	"saude_3": { "name": "Raiz Viva",         "max_level": 1, "fragment_cost": 12, "requires": "saude_2" },
+	"forca":   { "name": "Folha-Brasa",      "max_level": 1, "fragment_cost": 4,  "line": "furia", "tier": 1, "phase": 1, "effect": "Dano +1/hit",          "icon": "res://assets/sprites/erva_folha_brasa.png" },
+	"forca_2": { "name": "Cinza-Viva",       "max_level": 1, "fragment_cost": 6,  "line": "furia", "tier": 2, "phase": 2, "effect": "Dano +1/hit (total 3)", "icon": "res://assets/sprites/erva_cinza_viva.png", "requires": "forca" },
+	"forca_3": { "name": "Raiz-de-Ira",      "max_level": 1, "fragment_cost": 8,  "line": "furia", "tier": 3, "phase": 3, "effect": "Dano +3/hit (total 6)", "icon": "res://assets/sprites/erva_raiz_de_ira.png", "requires": "forca_2" },
+	"forca_4": { "name": "Breu-Ancestral",   "max_level": 1, "fragment_cost": 10, "line": "furia", "tier": 4, "phase": 4, "effect": "Dano +2/hit (total 8)", "icon": "res://assets/sprites/erva_breu_ancestral.png", "requires": "forca_3" },
+	"saude":   { "name": "Seiva-Mãe",        "max_level": 1, "fragment_cost": 6,  "line": "cura",  "tier": 1, "phase": 1, "effect": "+2 HP",                "icon": "res://assets/sprites/erva_seiva_mae.png" },
+	"saude_2": { "name": "Casca-Boa",        "max_level": 1, "fragment_cost": 9,  "line": "cura",  "tier": 2, "phase": 2, "effect": "+2 HP",                "icon": "res://assets/sprites/erva_casca_boa.png" },
+	"saude_3": { "name": "Folha-de-Sangue",  "max_level": 1, "fragment_cost": 12, "line": "cura",  "tier": 3, "phase": 3, "effect": "+2 HP",                "icon": "res://assets/sprites/erva_folha_de_sangue.png", "requires": "saude_2" },
+	"saude_4": { "name": "Coração-de-Cerne", "max_level": 1, "fragment_cost": 15, "line": "cura",  "tier": 4, "phase": 4, "effect": "+2 HP",                "icon": "res://assets/sprites/erva_coracao_de_cerne.png", "requires": "saude_3" },
 }
+
+# Ordem de exibição por trilha (o Hub itera sem hardcode de keys).
+const FURIA_KEYS: Array[String] = ["forca", "forca_2", "forca_3", "forca_4"]
+const CURA_KEYS: Array[String]  = ["saude", "saude_2", "saude_3", "saude_4"]
 
 # ─── State ─────────────────────────────────────────
 var unlocked_characters: Array[String] = ["caipora"]
@@ -53,12 +63,15 @@ func get_upgrade_level(key: String) -> int:
 	return int(upgrades.get(key, 0))
 
 func get_damage_bonus() -> int:
-	# O último aprimoramento (forca_3, "Fúria Ancestral") bate 2 hits a mais que os
-	# anteriores: soma +3 em vez de +1.
-	return get_upgrade_level("forca") + get_upgrade_level("forca_2") + get_upgrade_level("forca_3") * 3
+	# "Raiz-de-Ira" (forca_3) bate 2 hits a mais que as anteriores: soma +3 em vez de +1.
+	# "Breu-Ancestral" (forca_4, recompensa de Fase 4) soma +2.
+	return get_upgrade_level("forca") + get_upgrade_level("forca_2") \
+		+ get_upgrade_level("forca_3") * 3 + get_upgrade_level("forca_4") * 2
 
 func get_health_bonus() -> int:
-	return (get_upgrade_level("saude") + get_upgrade_level("saude_2") + get_upgrade_level("saude_3")) * 2
+	# Cada erva de cura soma +2 HP (a multiplicação por 2 cobre as 4 trilhas).
+	return (get_upgrade_level("saude") + get_upgrade_level("saude_2") \
+		+ get_upgrade_level("saude_3") + get_upgrade_level("saude_4")) * 2
 
 func get_touch_controls_mode() -> String:
 	return touch_controls_mode

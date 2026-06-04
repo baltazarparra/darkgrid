@@ -1,6 +1,6 @@
 """Gera assets/sprites/weapon_forca3.png — Tronco Buster 64x112.
 
-Espada do aprimoramento final de força (`forca_3` — "Fúria Ancestral"): um TRONCO
+Manifestação da erva de guerra `forca_3` ("Raiz-de-Ira"): um TRONCO
 de madeira maciço com a silhueta 100% inspirada na Buster Sword do Cloud (FF7) —
 lâmina larga e chata, chanfro central, guarda e cabo enrolado — porém esculpido em
 madeira, maior que a Caipora. Os dois "slots de materia" viram NÓS escuros naturais

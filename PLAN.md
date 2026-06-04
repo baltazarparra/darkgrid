@@ -41,8 +41,8 @@ Toda ação tem feedback visceral: screen shake, partículas de sangue, hit-stop
 - Mobile builds
 - Gamepad support
 - Multiplayer
-- Cloud saves
-- Leaderboards
+- ~~Cloud saves~~ → backend pronto pós-MVP (Supabase, schema `caipora`); falta integrar no cliente Godot
+- ~~Leaderboards~~ → backend pronto pós-MVP (Supabase, Edge Function `caipora-api`); falta integrar no cliente Godot
 - Achievements
 - ~~Música (SFX apenas no MVP)~~ → adicionada pós-MVP: maracatu adaptativo + ambiência + stingers (ver §12)
 
@@ -405,6 +405,7 @@ aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no fo
 |----|-----------|--------|-----------|
 | KI-004 | Média | ✅ Resolvida (`5cdbd40`) | Beco sem saída no fim de combate — telas WIN/GAME_OVER placeholder fecham o loop |
 | KI-005 | Baixa | ✅ Resolvida (pós-MVP) | SFX reescritos com síntese de instrumentos do maracatu (alfaia/caixa/ganzá/agogô/gonguê) em `scripts/tools/gen_sfx.py`, com variação anti-repetição. Identidade sonora própria — não são mais placeholders genéricos |
+| KI-006 | Baixa | ✅ Resolvida | Label do aprimoramento `forca_3` exibia "Dano +1/hit (total 4)" no Hub, mas `get_damage_bonus()` soma `* 3` (+3 → total real 6). Corrigido na reescrita do Acampamento (ervas/cachimbo): textos agora vêm de `UPGRADE_DEFS[...].effect` e refletem a matemática real (Raiz-de-Ira → total 6; Breu-Ancestral → total 8) |
 
 ---
 

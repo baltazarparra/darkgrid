@@ -2,7 +2,9 @@
   "mcpServers": {
     "godot": {
       "command": "bash",
-      "args": ["scripts/mcp-wrapper.sh"],
+      "args": [
+        "scripts/mcp-wrapper.sh"
+      ],
       "autoApprove": [
         "launch_editor",
         "run_project",
@@ -19,6 +21,10 @@
         "get_uid",
         "update_project_uids"
       ]
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=mlykeulezzfwljriytuf&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching%2Cstorage"
     }
   }
 }
