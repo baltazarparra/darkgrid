@@ -22,10 +22,18 @@ const ROWS: Array = [
 	["Ambiência", "Ambience"],
 ]
 
+# Janela para o 2º clique confirmar o reset antes de desarmar sozinho.
+const RESET_CONFIRM_WINDOW: float = 3.0
+const DANGER := Color(0.78, 0.1, 0.1, 1)
+
 # ─── State ─────────────────────────────────────────
 var _close_button: Button
 var _first_slider: HSlider
 var _last_focus: Control
+
+var _touch_option: OptionButton
+var _reset_button: Button
+var _reset_armed: bool = false
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -68,6 +76,7 @@ func _build() -> void:
 		_add_slider_row(vbox, row[0], row[1])
 
 	_add_touch_controls_row(vbox)
+	_add_reset_row(vbox)
 
 	_close_button = Button.new()
 	_close_button.text = "Fechar"
@@ -102,6 +111,38 @@ func _add_touch_controls_row(parent: VBoxContainer) -> void:
 	option.item_selected.connect(_on_touch_mode_changed)
 	row.add_child(option)
 	parent.add_child(row)
+	_touch_option = option
+
+## Botão de perigo para apagar o progresso. Confirmação em dois passos no próprio botão
+## (sem ConfirmationDialog, que tem foco problemático no mobile/touch).
+func _add_reset_row(parent: VBoxContainer) -> void:
+	_reset_button = Button.new()
+	_reset_button.text = "Apagar progresso"
+	_reset_button.add_theme_font_size_override("font_size", 14)
+	_reset_button.add_theme_color_override("font_color", DANGER)
+	_reset_button.pressed.connect(_on_reset_pressed)
+	parent.add_child(_reset_button)
+
+func _on_reset_pressed() -> void:
+	if not _reset_armed:
+		# 1º clique: arma e dá uma janela para confirmar antes de desarmar sozinho.
+		_reset_armed = true
+		_reset_button.text = "Confirmar? Apaga tudo."
+		await get_tree().create_timer(RESET_CONFIRM_WINDOW).timeout
+		if _reset_armed:
+			_disarm_reset()
+		return
+	# 2º clique dentro da janela: apaga de fato.
+	_reset_armed = false
+	MetaProgression.reset_save()
+	_reset_button.text = "Progresso apagado"
+	if _touch_option != null:
+		_touch_option.select(0)  # reflete touch_controls_mode = "auto"
+
+func _disarm_reset() -> void:
+	_reset_armed = false
+	if is_instance_valid(_reset_button):
+		_reset_button.text = "Apagar progresso"
 
 func _on_touch_mode_changed(index: int) -> void:
 	match index:
@@ -139,6 +180,7 @@ func _add_slider_row(parent: VBoxContainer, label_text: String, bus_name: String
 func open() -> void:
 	# Recarrega os valores correntes (caso tenham mudado em outra tela).
 	_last_focus = get_viewport().gui_get_focus_owner()
+	_disarm_reset()  # nunca reabrir com o reset armado/concluído pendente
 	visible = true
 	if _first_slider != null:
 		_first_slider.grab_focus()

@@ -5,6 +5,12 @@ extends Node
 
 var SAVE_PATH := "user://savegame.json"
 
+# Versão do formato de save. Incrementar ao mudar o schema; migrar em load_progress().
+const SAVE_VERSION: int = 1
+
+# True se user:// é persistente (no Web = IndexedDB disponível; false em aba anônima/quota).
+var is_persistent: bool = true
+
 const UPGRADE_DEFS := {
 	"forca":   { "name": "Força",             "max_level": 1, "fragment_cost": 4 },
 	"saude":   { "name": "Saúde",             "max_level": 1, "fragment_cost": 6 },
@@ -24,6 +30,15 @@ var fragments: float = 0.0
 var phase_reached: int = 1
 var touch_controls_mode: String = "auto"
 
+# ─── Lifecycle ─────────────────────────────────────
+func _ready() -> void:
+	# No Web, a engine sincroniza IndexedDB→memfs antes do main loop, então user://
+	# já está disponível aqui. Carregar no autoload torna o save independente da cena de boot.
+	is_persistent = OS.is_userfs_persistent()
+	if not is_persistent:
+		push_warning("MetaProgression: user:// não é persistente (aba anônima/quota?); o save não vai colar.")
+	load_progress()
+
 # ─── Fragments ─────────────────────────────────────
 func add_fragments(amount: float) -> void:
 	fragments += amount
@@ -38,7 +53,9 @@ func get_upgrade_level(key: String) -> int:
 	return int(upgrades.get(key, 0))
 
 func get_damage_bonus() -> int:
-	return get_upgrade_level("forca") + get_upgrade_level("forca_2") + get_upgrade_level("forca_3")
+	# O último aprimoramento (forca_3, "Fúria Ancestral") bate 2 hits a mais que os
+	# anteriores: soma +3 em vez de +1.
+	return get_upgrade_level("forca") + get_upgrade_level("forca_2") + get_upgrade_level("forca_3") * 3
 
 func get_health_bonus() -> int:
 	return (get_upgrade_level("saude") + get_upgrade_level("saude_2") + get_upgrade_level("saude_3")) * 2
@@ -71,6 +88,7 @@ func purchase_upgrade(key: String) -> bool:
 # ─── Public API ────────────────────────────────────
 func save_progress() -> void:
 	var data := {
+		"version": SAVE_VERSION,
 		"unlocked_characters": unlocked_characters,
 		"unlocked_modifiers": unlocked_modifiers,
 		"total_runs": total_runs,
@@ -85,6 +103,7 @@ func save_progress() -> void:
 		push_error("MetaProgression: failed to open save file for writing")
 		return
 	file.store_string(JSON.stringify(data))
+	file.flush()  # garante que o buffer foi gravado antes do close (sincronização do IndexedDB no Web)
 	file.close()
 
 func load_progress() -> void:
@@ -96,16 +115,40 @@ func load_progress() -> void:
 		return
 	var text := file.get_as_text()
 	file.close()
-	var data: Variant = JSON.parse_string(text)
-	if data is Dictionary:
-		unlocked_characters = _to_string_array(data.get("unlocked_characters", ["caipora"]))
-		unlocked_modifiers = _to_string_array(data.get("unlocked_modifiers", []))
-		total_runs = data.get("total_runs", 0)
-		total_wins = data.get("total_wins", 0)
-		upgrades = _to_int_dict(data.get("upgrades", {}))
-		fragments = float(data.get("fragments", 0.0))
-		phase_reached = int(data.get("phase_reached", 1))
-		touch_controls_mode = data.get("touch_controls_mode", "auto")
+	# JSON.parse() (instância) retorna código de erro sem logar no console — diferente de
+	# JSON.parse_string(), que emite um erro de engine em texto inválido.
+	var json := JSON.new()
+	var err := json.parse(text)
+	if err != OK or not (json.data is Dictionary):
+		# Save corrompido/truncado: mantém os defaults em memória. Não sobrescreve o
+		# arquivo — o próximo save_progress() válido regrava o conteúdo correto.
+		push_warning("MetaProgression: save corrompido em %s; usando defaults." % SAVE_PATH)
+		return
+	var data: Dictionary = json.data
+	# Gancho de migração: saves sem "version" (v0) carregam com defaults nos campos ausentes,
+	# então v0→v1 é no-op. Migrações futuras entram aqui antes de ler os campos.
+	var _version := int(data.get("version", 0))
+	unlocked_characters = _to_string_array(data.get("unlocked_characters", ["caipora"]))
+	unlocked_modifiers = _to_string_array(data.get("unlocked_modifiers", []))
+	total_runs = data.get("total_runs", 0)
+	total_wins = data.get("total_wins", 0)
+	upgrades = _to_int_dict(data.get("upgrades", {}))
+	fragments = float(data.get("fragments", 0.0))
+	phase_reached = int(data.get("phase_reached", 1))
+	touch_controls_mode = data.get("touch_controls_mode", "auto")
+
+## Zera todo o progresso e apaga o arquivo de save. Não toca em user://settings.cfg (áudio).
+func reset_save() -> void:
+	unlocked_characters = ["caipora"]
+	unlocked_modifiers = []
+	total_runs = 0
+	total_wins = 0
+	upgrades = {}
+	fragments = 0.0
+	phase_reached = 1
+	touch_controls_mode = "auto"
+	if FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 
 func _to_int_dict(value: Variant) -> Dictionary:
 	var result: Dictionary = {}

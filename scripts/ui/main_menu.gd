@@ -1,7 +1,7 @@
 class_name MainMenu
 extends CanvasLayer
 
-## Porta de entrada do jogo. Carrega o save no boot e roteia para o Hub.
+## Porta de entrada do jogo. Roteia para o Hub (o save é carregado pelo autoload MetaProgression).
 ## A abertura "Horizonte Infernal" (fogo, treelines, brasas, Caipora andando) é
 ## montada na cena; aqui cuidamos do fade-in/out e da vida do título.
 
@@ -16,7 +16,7 @@ const FADE_OUT_DURATION: float = 0.6
 var _fade: ColorRect
 
 func _ready() -> void:
-	MetaProgression.load_progress()
+	# O save é carregado no _ready() do autoload MetaProgression (independente da cena de boot).
 	$Center/VBox/StartButton.pressed.connect(_on_start_pressed)
 	$Center/VBox/QuitButton.pressed.connect(_on_quit_pressed)
 	$Center/VBox/GithubLink.pressed.connect(_on_github_pressed)
