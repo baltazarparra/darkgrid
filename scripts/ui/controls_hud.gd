@@ -37,18 +37,13 @@ const _ENTRIES: Array = [
 ]
 
 # ─── State ─────────────────────────────────────────
-# Telas em que o D-pad fica visível. Fora delas (menu, hub, fim de jogo) ele é ocultado.
+# Telas em que o D-pad fica visível: toda exploração e toda arena (incluindo fases futuras).
+# Fora delas (menu, hub, fim de jogo) ele é ocultado. Detectado por convenção de nome do enum
+# Screen — qualquer EXPLORATION* ou ARENA* conta como gameplay — para que uma fase nova (PHASE5…)
+# não precise ser registrada aqui à mão e cause o D-pad sumir no mobile (regressão da Fase 4).
 # Como este nó é um autoload persistente, o D-pad criado na exploração permanece vivo ao
 # entrar no combate — sem recriação nem novo fade-in, eliminando o delay no início do turno.
-# (var, não const: o enum vem do autoload SignalBus, resolvido em runtime — mesmo padrão de game_state.gd.)
-var _gameplay_screens: Array = [
-	SignalBus.Screen.EXPLORATION,
-	SignalBus.Screen.EXPLORATION_PHASE2,
-	SignalBus.Screen.EXPLORATION_PHASE3,
-	SignalBus.Screen.ARENA,
-	SignalBus.Screen.ARENA_PHASE2,
-	SignalBus.Screen.ARENA_PHASE3,
-]
+const _GAMEPLAY_SCREEN_PREFIXES: Array = ["EXPLORATION", "ARENA"]
 
 var _root: Control = null
 var _dpad_rect: Rect2 = Rect2()
@@ -71,8 +66,18 @@ func _ready() -> void:
 
 
 func _on_screen_changed(screen: SignalBus.Screen) -> void:
-	_active_screen_wants_dpad = screen in _gameplay_screens
+	_active_screen_wants_dpad = _is_gameplay_screen(screen)
 	_refresh()
+
+
+# Gameplay = qualquer tela cujo nome no enum começa por EXPLORATION ou ARENA. Cobre as fases
+# existentes e quaisquer novas sem manutenção manual, evitando a regressão do D-pad oculto.
+func _is_gameplay_screen(screen: SignalBus.Screen) -> bool:
+	var name: String = SignalBus.Screen.keys()[screen]
+	for prefix: String in _GAMEPLAY_SCREEN_PREFIXES:
+		if name.begins_with(prefix):
+			return true
+	return false
 
 
 func _input(event: InputEvent) -> void:
