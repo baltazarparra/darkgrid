@@ -87,5 +87,9 @@ func _on_screen_changed(new_screen: SignalBus.Screen) -> void:
 			get_tree().change_scene_to_file("res://scenes/exploration/exploration_phase3.tscn")
 		SignalBus.Screen.ARENA_PHASE3:
 			get_tree().change_scene_to_file("res://scenes/arena/arena_phase3.tscn")
+		SignalBus.Screen.EXPLORATION_PHASE4:
+			get_tree().change_scene_to_file("res://scenes/exploration/exploration_phase4.tscn")
+		SignalBus.Screen.ARENA_PHASE4:
+			get_tree().change_scene_to_file("res://scenes/arena/arena_phase4.tscn")
 		SignalBus.Screen.ENDING:
 			get_tree().change_scene_to_file("res://scenes/ui/ending_screen.tscn")

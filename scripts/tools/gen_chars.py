@@ -411,6 +411,83 @@ def curupira():
     return c
 
 
+def saci():
+    """Saci Pererê — boss final, 48x48. UMA perna só (saltando), carapuça vermelha,
+    cachimbo fumegante, corpo carbonizado consumido pelo fogo (brasas, olhos em brasa)."""
+    c = C()
+    SKIN     = (40, 27, 25)        # pele carbonizada
+    SKIN_DK  = (22, 14, 13)
+    CAP      = (200, 30, 20)       # carapuça vermelha (assinatura)
+    CAP_HOT  = (255, 84, 40)
+    CAP_DK   = (130, 14, 8)
+    EMBER    = (255, 120, 30)      # brasa viva (rachaduras / olhos)
+    EMBER_HOT= (255, 196, 90)
+    PIPE     = (92, 56, 28)        # cabo do cachimbo (madeira)
+    PIPE_BOWL= (44, 30, 20)        # fornilho
+    PIPE_FIRE= (255, 140, 40)
+
+    # ── Carapuça vermelha pontuda (tomba pra direita) ──
+    c.rect(16, 12, 31, 14, CAP)       # aba/base
+    c.rect(17, 9, 30, 12, CAP)
+    c.rect(18, 6, 29, 9, CAP)
+    c.rect(20, 3, 29, 6, CAP)
+    c.rect(26, 1, 32, 4, CAP)         # ponta tombando pra frente
+    c.rect(18, 7, 20, 13, CAP_HOT)    # brilho à esquerda
+    c.rect(28, 6, 30, 13, CAP_DK)     # sombra à direita
+
+    # ── Cabeça (carbonizada) ──
+    c.disc(24, 19, 7, SKIN)
+    c.rect(18, 15, 30, 24, SKIN)
+    c.rect(18, 15, 20, 24, SKIN_DK)
+    # olhos em brasa
+    c.rect(20, 18, 22, 20, EMBER)
+    c.rect(26, 18, 28, 20, EMBER)
+    c.px(21, 19, EMBER_HOT)
+    c.px(27, 19, EMBER_HOT)
+    # rachaduras incandescentes no rosto
+    c.px(24, 16, EMBER)
+    c.px(23, 22, EMBER)
+
+    # ── Cachimbo fumegante (sai da boca pra direita) ──
+    c.rect(23, 23, 27, 24, SKIN_DK)   # boca
+    c.rect(28, 23, 33, 24, PIPE)      # cabo
+    c.rect(33, 21, 35, 24, PIPE_BOWL) # fornilho
+    c.px(34, 21, PIPE_FIRE)           # brasa no fornilho
+    c.px(33, 21, PIPE_FIRE)
+    # fumaça subindo (semi-transparente)
+    c.px(35, 19, (150, 140, 140, 160))
+    c.px(36, 17, (150, 140, 140, 120))
+    c.px(35, 15, (150, 140, 140, 90))
+
+    # ── Tronco pequeno e encurvado ──
+    c.rect(19, 25, 29, 35, SKIN)
+    c.rect(19, 25, 20, 35, SKIN_DK)
+    c.rect(28, 25, 29, 35, SKIN_DK)
+    # brasas pelo corpo (consumido pelo fogo)
+    c.px(23, 29, EMBER)
+    c.px(25, 31, EMBER)
+    c.px(22, 33, EMBER_HOT)
+
+    # ── Braços (esq. abaixado, dir. levando ao cachimbo) ──
+    c.rect(14, 26, 19, 30, SKIN_DK)
+    c.rect(13, 29, 16, 32, SKIN_DK)   # mão esq
+    c.rect(29, 27, 35, 30, SKIN)
+    c.rect(34, 28, 37, 31, SKIN)      # mão dir (no cachimbo)
+
+    # ── UMA PERNA SÓ (centro, saltando) ──
+    c.rect(22, 35, 26, 45, SKIN)
+    c.rect(22, 35, 22, 45, SKIN_DK)
+    c.px(24, 40, EMBER)               # rachadura na perna
+    # pé
+    c.rect(20, 45, 28, 47, SKIN)
+    c.rect(20, 45, 28, 45, SKIN_DK)
+    c.px(21, 47, SKIN_DK)
+    c.px(24, 47, SKIN_DK)
+    c.px(27, 47, SKIN_DK)
+
+    return c
+
+
 if __name__ == "__main__":
     caipora(0).save("player_idle.png")
     caipora(-1).save("player_walk_1.png")
@@ -419,4 +496,5 @@ if __name__ == "__main__":
     axe_hunter().save("boss_idle.png")
     boitata().save("boitata_idle.png")
     curupira().save("curupira_idle.png")
-    print("[gen_chars] caipora (64x64) + caçador + caçador-de-machados + boitatá + curupira (48x48) gerados")
+    saci().save("saci_idle.png")
+    print("[gen_chars] caipora (64x64) + caçador + caçador-de-machados + boitatá + curupira + saci (48x48) gerados")

@@ -299,9 +299,11 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 	else:
 		_timing_bubble.burst_fail()
 		var damage := _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
-		# Fase 2: cada golpe de inimigo bate 1 a mais — a floresta é mais hostil.
+		# Fase 2/4: cada golpe de inimigo bate 1 a mais — a floresta é mais hostil.
 		if GameState.active_phase == 2:
 			damage += Constants.PHASE2_ENEMY_DAMAGE_BONUS
+		elif GameState.active_phase == 4:
+			damage += Constants.PHASE4_ENEMY_DAMAGE_BONUS
 		_caipora.take_damage(damage)
 		_sfx.play(_sfx.hit_sound)
 		_feedback.trigger_screenshake(14.0, 0.35)
@@ -327,6 +329,7 @@ func _boss_spread_pos() -> Vector2:
 
 func _phase_window(base: float) -> float:
 	match GameState.active_phase:
+		4: return maxf(base - Constants.PHASE4_TIMING_REDUCTION, 0.2)
 		3: return maxf(base - Constants.PHASE3_TIMING_REDUCTION, 0.2)
 		2: return maxf(base - Constants.PHASE2_TIMING_REDUCTION, 0.2)
 		_: return base
@@ -389,12 +392,17 @@ func _on_actor_died(actor: CombatActor) -> void:
 		GameState.caipora_max_hp = _caipora.health.max_health
 		if not GameState.active_combat_is_boss:
 			match GameState.active_phase:
+				4: MetaProgression.add_fragments(2.5)
 				3: MetaProgression.add_fragments(2.0)
 				2: MetaProgression.add_fragments(1.5)
 				_: MetaProgression.add_fragment()
 		if GameState.active_combat_is_boss and GameState.active_phase == 2:
 			if MetaProgression.phase_reached < 3:
 				MetaProgression.phase_reached = 3
+				MetaProgression.save_progress()
+		if GameState.active_combat_is_boss and GameState.active_phase == 3:
+			if MetaProgression.phase_reached < 4:
+				MetaProgression.phase_reached = 4
 				MetaProgression.save_progress()
 	GameState.caipora_current_hp = maxf(0.0, _caipora.health.current_health)
 	_sfx.play(_sfx.death_sound)
@@ -439,10 +447,12 @@ func _resolve_next_screen(caipora_won: bool) -> SignalBus.Screen:
 		return SignalBus.Screen.GAME_OVER
 	if GameState.active_combat_is_boss:
 		match GameState.active_phase:
-			3: return SignalBus.Screen.ENDING
+			4: return SignalBus.Screen.ENDING
+			3: return SignalBus.Screen.EXPLORATION_PHASE4
 			1: return SignalBus.Screen.EXPLORATION
 			_: return SignalBus.Screen.EXPLORATION_PHASE3
 	match GameState.active_phase:
+		4: return SignalBus.Screen.EXPLORATION_PHASE4
 		3: return SignalBus.Screen.EXPLORATION_PHASE3
 		2: return SignalBus.Screen.EXPLORATION_PHASE2
 		_: return SignalBus.Screen.EXPLORATION

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AttackPattern" load_steps=2 format=3 uid="uid://saci_rastro_pattern"]
+
+[ext_resource type="Script" path="res://scripts/entities/attack_pattern.gd" id="1_pattern"]
+
+[resource]
+script = ExtResource("1_pattern")
+idle_duration = 0.2
+wind_up_duration = 0.5
+attack_duration = 0.9
+cooldown_duration = 2.0
+damage_multiplier = 2.5
+input_sequence = ["ui_left", "ui_right", "ui_left", "ui_right"]
+is_special = true
+strike_count = 4
+strike_delay = 0.25

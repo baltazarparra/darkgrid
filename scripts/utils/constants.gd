@@ -99,11 +99,14 @@ const COLOR_TELEGRAPH_BOITATA_WHITE := Color(2.0, 2.0, 2.0) # especial branco do
 const COLOR_AURA_BOITATA := Color(1.0, 0.45, 0.05, 0.75)    # aura de fogo do Boitatá
 const COLOR_TELEGRAPH_CURUPIRA := Color(0.1, 1.5, 0.35)     # telegraph do Curupira (verde-mata overbright)
 const COLOR_AURA_CURUPIRA := Color(0.0, 0.28, 0.06, 0.72)   # aura do Curupira (verde profundo da floresta)
+const COLOR_TELEGRAPH_SACI := Color(2.0, 0.7, 0.15)         # telegraph do Saci (fogo overbright)
+const COLOR_AURA_SACI := Color(0.35, 0.10, 0.02, 0.75)      # aura do Saci (brasa escura, casa consumida pelo fogo)
 
 # Cores de diálogo (speaker labels nos pre-boss dialogues).
 const COLOR_DIALOGUE_CAIPORA  := Color(0.55, 0.90, 0.60, 1.0)  # voz da Caipora (verde floresta)
 const COLOR_DIALOGUE_BOITATA  := Color(1.0,  0.42, 0.0,  1.0)  # voz do Boitatá (fogo)
 const COLOR_DIALOGUE_CURUPIRA := Color(0.1,  0.85, 0.30, 1.0)  # voz do Curupira (verde mata)
+const COLOR_DIALOGUE_SACI     := Color(1.0,  0.55, 0.12, 1.0)  # voz do Saci (fogo)
 
 # Partículas de feedback de combate (>1 = overbright p/ glow aditivo intencional).
 const COLOR_PARTICLE_SPARK := Color(1.0, 0.92, 0.6, 1.0)  # faísca de crítico (dourado)
@@ -137,6 +140,12 @@ const PHASE2_ENEMY_DAMAGE_BONUS := 1.0
 
 # ─── Fase 3 ────────────────────────────────────────
 const PHASE3_TIMING_REDUCTION := 0.15
+
+# ─── Fase 4 ────────────────────────────────────────
+# A casa arde. A janela de ação encurta ainda mais que a Fase 3 (0.15 + 0.15 =
+# 0.30 "mais rápido") e cada golpe de inimigo bate +1 (PHASE4_ENEMY_DAMAGE_BONUS).
+const PHASE4_TIMING_REDUCTION := 0.30
+const PHASE4_ENEMY_DAMAGE_BONUS := 1.0
 
 # ─── Physics Layers ────────────────────────────────
 const LAYER_PLAYER := 1

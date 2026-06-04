@@ -6,6 +6,7 @@ const ENEMY_TEXTURE    = preload("res://assets/sprites/enemy_idle.png")
 const BOSS_TEXTURE     = preload("res://assets/sprites/boss_idle.png")
 const BOITATA_TEXTURE  = preload("res://assets/sprites/boitata_idle.png")
 const CURUPIRA_TEXTURE = preload("res://assets/sprites/curupira_idle.png")
+const SACI_TEXTURE     = preload("res://assets/sprites/saci_idle.png")
 const CHASE_RANGE := 5          # comuns: alcance de aggro
 const BOSS_CHASE_RANGE := 7     # boss: defende a porta com alcance maior
 const DRIFT_IDLE_CHANCE := 0.4  # chance de ficar parado ao voltar pra origem
@@ -31,6 +32,7 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 		match boss_type:
 			"boitata":  sprite.texture = BOITATA_TEXTURE
 			"curupira": sprite.texture = CURUPIRA_TEXTURE
+			"saci":     sprite.texture = SACI_TEXTURE
 			_:          sprite.texture = BOSS_TEXTURE
 	else:
 		sprite.texture = ENEMY_TEXTURE
@@ -82,6 +84,7 @@ func _spawn_boss_aura() -> void:
 	match _boss_type:
 		"boitata":  aura.color = Constants.COLOR_AURA_BOITATA
 		"curupira": aura.color = Constants.COLOR_AURA_CURUPIRA
+		"saci":     aura.color = Constants.COLOR_AURA_SACI
 		_:          aura.color = Constants.COLOR_AURA_BOSS
 	add_child(aura)
 
