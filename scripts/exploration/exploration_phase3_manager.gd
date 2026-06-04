@@ -1,6 +1,7 @@
 extends Node2D
 
 const MapObject := preload("res://scripts/exploration/map_object.gd")
+const FireEffect := preload("res://scripts/exploration/fire_effect.gd")
 
 const CURUPIRA_SCENE   := preload("res://scenes/arena/curupira.tscn")
 const ASSOMBRACAO_SCENE := preload("res://scenes/arena/assombracao.tscn")
@@ -55,6 +56,12 @@ const ENEMY_DEFS = [
 
 const PLAYER_START := Vector2i(1, 7)
 
+# A Caipora é feita de fogo: na neblina ela arde como fogueira viva, dobrando a
+# visibilidade ao redor (área 2x a visão de jogo).
+const FOG_REVEAL_RADIUS: float = 192.0       # dobro do padrão (96) — Caipora arde na névoa
+const CAIPORA_AURA_LIGHT_SCALE: float = 1.5  # ~192px de raio iluminado ≈ o raio revelado
+const CAIPORA_AURA_OFFSET := Vector2(0, -10) # = sprite.offset.y(-12) × scale(0.8); x=0
+
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	GameState.active_phase = 3
@@ -71,6 +78,8 @@ func _setup_player() -> void:
 	_caipora.tilemap = _tilemap
 	_caipora.position = Vector2(start) * Constants.TILE_SIZE
 	_caipora.move_finished.connect(_on_player_moved)
+	# Aura de fogo viva: luz quente + chama/brasas/fumaça seguem a Caipora pela névoa.
+	FireEffect.attach(_caipora, CAIPORA_AURA_OFFSET, CAIPORA_AURA_LIGHT_SCALE)
 
 func _spawn_enemies() -> void:
 	for def in ENEMY_DEFS:
@@ -94,6 +103,7 @@ func _spawn_exit_marker() -> void:
 func _spawn_fog() -> void:
 	_fog = FogOfWar.new()
 	add_child(_fog)
+	_fog.reveal_radius = FOG_REVEAL_RADIUS
 	_fog.track(_caipora)
 	_update_fog()
 
