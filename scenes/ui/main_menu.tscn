@@ -79,12 +79,13 @@ alignment = 1
 
 [node name="Title" type="RichTextLabel" parent="Center/VBox"]
 layout_mode = 2
+custom_minimum_size = Vector2(400, 0)
 bbcode_enabled = true
 fit_content = true
 scroll_active = false
+autowrap_mode = 0
 theme_override_font_sizes/normal_font_size = 96
 theme_override_colors/default_color = Color(0.545, 0, 0, 1)
-autowrap_mode = 3
 text = "[center][wave amp=10 freq=2.5]CAI[/wave]
 [wave amp=10 freq=2.5]POR[/wave]
 [wave amp=10 freq=2.5]A[/wave][/center]"
