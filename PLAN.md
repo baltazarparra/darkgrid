@@ -406,6 +406,43 @@ make export
       exploração** (ambas via `WeaponVisual.attach_to`).
 - [x] Testes: `tests/unit/test_chama.gd`.
 
+### Fase 8: Geração Procedural de Mapas 🚧
+
+Hoje os 4 mapas são `MAP_LAYOUT` estáticos (strings 26×18) hardcoded em cada
+`exploration_phaseN_manager.gd`. Objetivo: **todo mapa gerado proceduralmente a
+cada run**, usando os estáticos como referência de feel (mesma topologia,
+contagem de inimigos e densidade de hazard). Princípio: **estrutura garantida +
+variação** — a topologia macro garante salas/boss/saída/conectividade; o
+procedural varia detalhes, hazards e posicionamento.
+
+Arquitetura: gerador PURO e determinístico (seed por run) separado da
+apresentação, com pipeline em camadas (topologia → sala do boss → validação por
+flood-fill → hazards → entidades) e gate de invariantes em GUT. O char-grid
+(`W/F/E/R/S`) continua sendo a IR — plugável nos managers sem fricção.
+
+- [x] **Etapa 0 — Fundação testável** (sem mudança no jogo):
+  - `scripts/exploration/map_config.gd` (`MapConfig`, Resource): params por fase
+    (topologia OPEN/CORRIDOR, contagem de inimigos, hazards, baú/chave, fog),
+    factory `for_phase()` codificando a identidade das Fases 1–4.
+  - `scripts/exploration/generated_map.gd` (`GeneratedMap`): container de dados
+    (grid + spawn + saída + inimigos + baú/chave) com `reachable_from()` (BFS).
+  - `scripts/exploration/map_generator.gd` (`MapGenerator`): gerador puro
+    determinístico — OPEN (região aberta + pilares blue-noise + alcova do boss)
+    e CORRIDOR (drunkard's walk). RNG semeado próprio (Fisher-Yates manual, não
+    `Array.shuffle()` global). Regenera em falha de conectividade.
+  - `tests/unit/test_map_generator.gd`: 10 testes de invariante × 4 fases × 10
+    seeds (determinismo, conectividade saída↔spawn, paridade de contagem de
+    inimigos, 1 boss, placement válido/único/fora do spawn, densidade de hazard,
+    variação por seed, baú/chave condicionais). ~4676 asserts, gate verde.
+- [ ] **Etapa 1 — Plugar na Fase 1**: `GameState.run_seed`, Fase 1 consome
+  `GeneratedMap` no lugar de `MAP_LAYOUT`; resolve a fonte-dupla-de-verdade de
+  walkability (TileMap vs string). Cachear o mapa em `GameState` p/ sobreviver à
+  ida-e-volta da arena (mapa NÃO re-sorteia na volta do combate).
+- [ ] **Etapa 2 — Topologia CORRIDOR + Fase 3** (com fog of war).
+- [ ] **Etapa 3 — Rollout Fases 2 e 4 + colapso dos 4 managers em 1** parametrizado.
+- [ ] **Etapa 4 — Polish**: transição temática ("a mata se reorganiza..."),
+  tuning de densidade, daily-seed.
+
 ---
 
 ## 11.1 Known Issues
