@@ -176,7 +176,7 @@ func _is_occupied_by_enemy(pos: Vector2i) -> bool:
 func _make_object(type: MapObject.Type, grid_pos: Vector2i) -> Node2D:
 	var obj := MapObject.new()
 	_objects_container.add_child(obj)
-	obj.setup(type, grid_pos)
+	obj.setup(type, grid_pos, type == MapObject.Type.FIRE)
 	return obj
 
 # ─── TileMap Setup ─────────────────────────────────

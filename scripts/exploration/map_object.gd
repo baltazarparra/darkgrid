@@ -15,9 +15,7 @@ const DECO_TYPES := [Type.DEAD_TREE, Type.BONES, Type.MOSS, Type.BLOOD_POOL, Typ
 var _type: Type
 
 # ─── Public API ────────────────────────────────────
-## `enhanced` liga luz + partículas na fogueira (chama/brasas/fumaça). Só a Fase 1 usa
-## (poucas fogueiras); Fases 2/3 têm dezenas de tiles de fogo e ficam no desenho estático
-## por performance no export web.
+## `enhanced` liga luz + partículas na fogueira (chama/brasas/fumaça). Fases 1 e 2 usam.
 func setup(type: Type, grid_pos: Vector2i, enhanced: bool = false) -> void:
 	_type = type
 	position = Vector2(grid_pos) * T

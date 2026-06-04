@@ -68,6 +68,8 @@ const COLOR_FIRE_LOW := Color(0.75, 0.20, 0.0)
 # Materiais de props/decoração (derivados intencionais da paleta).
 const COLOR_GOLD := Color(0.92, 0.78, 0.12)
 const COLOR_GOLD_DARK := Color(0.55, 0.42, 0.04)
+const COLOR_AURA_BUSTER_DARK := Color(0.45, 0.30, 0.04, 0.0)  # fim do ramp da aura (fade)
+const COLOR_SMOKE_DARK := Color(0.09, 0.07, 0.05, 0.42)        # fumaça murky do tronco
 const COLOR_WOOD := Color(0.32, 0.17, 0.04)
 const COLOR_WOOD_DARK := Color(0.16, 0.07, 0.01)
 const COLOR_METAL := Color(0.48, 0.38, 0.10)

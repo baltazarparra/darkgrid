@@ -49,14 +49,7 @@ func try_move(direction: Vector2) -> void:
 
 # ─── Private helpers ───────────────────────────────
 func _apply_weapon_visual() -> void:
-	if MetaProgression.get_upgrade_level("forca_3") < 1:
-		return
-	var weapon := Sprite2D.new()
-	weapon.name = "WeaponSprite"
-	weapon.texture = preload("res://assets/sprites/weapon_forca3.png")
-	weapon.position = Vector2(28, -8)
-	weapon.z_index = 1
-	_animated_sprite.add_child(weapon)
+	WeaponVisual.attach_to(_animated_sprite)
 
 func _get_cardinal_input() -> Vector2:
 	var x := int(Input.is_action_pressed("ui_right")) - int(Input.is_action_pressed("ui_left"))

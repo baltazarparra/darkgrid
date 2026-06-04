@@ -99,17 +99,10 @@ func _on_caipora_health_changed(new_health: float, max_health: float) -> void:
 	SignalBus.caipora_health_changed.emit(new_health, max_health)
 
 func _apply_weapon_visual() -> void:
-	if MetaProgression.get_upgrade_level("forca_3") < 1:
-		return
 	var animated_sprite := _caipora.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
 	if animated_sprite == null:
 		return
-	var weapon := Sprite2D.new()
-	weapon.name = "WeaponSprite"
-	weapon.texture = preload("res://assets/sprites/weapon_forca3.png")
-	weapon.position = Vector2(28, -8)
-	weapon.z_index = 1
-	animated_sprite.add_child(weapon)
+	WeaponVisual.attach_to(animated_sprite)
 
 func _spawn_enemy() -> void:
 	var scene := enemy_scene
