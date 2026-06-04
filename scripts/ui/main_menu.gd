@@ -22,7 +22,21 @@ func _ready() -> void:
 	$Center/VBox/GithubLink.pressed.connect(_on_github_pressed)
 	_setup_fade()
 	_apply_title_shader()
+	_setup_version_label()
 	_start_button.grab_focus()
+
+## Versão atual (canto inferior direito), lida de application/config/version.
+func _setup_version_label() -> void:
+	var label := Label.new()
+	label.text = str(ProjectSettings.get_setting("application/config/version", "dev"))
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", Color(0.494, 0.514, 0.541, 0.7))
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	label.position -= Vector2(12, 10)
+	add_child(label)
 
 ## Overlay preto para fade-in (abrir) e fade-out (Iniciar).
 func _setup_fade() -> void:

@@ -18,5 +18,11 @@ test: ## run the GUT regression gate
 export: ## build the reproducible HTML5 release
 	mkdir -p export
 	$(GODOT) --headless --path $(PROJECT) --export-release "Web" export/index.html
+	cp html/update-notifier.js export/
+	@VERSION=$$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot); \
+	SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown); \
+	DATE=$$(date -u +%F); \
+	printf '{"version":"%s","build":"%s","date":"%s"}\n' "$$VERSION" "$$SHA" "$$DATE" > export/version.json; \
+	echo "version.json -> $$VERSION ($$SHA, $$DATE)"
 
 gate: smoke test ## full verification before commit
