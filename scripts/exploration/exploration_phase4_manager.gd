@@ -22,7 +22,6 @@ const SACI_DIALOGUE: Array[Dictionary] = [
 var _map_enemies: Array[MapEnemy] = []
 var _player_grid_pos: Vector2i = PLAYER_START
 var _locked: bool = false
-var _fog: FogOfWar
 
 # ─── Map Definition ────────────────────────────────
 # 26 cols × 18 rows. A Casa consumida pelo fogo — esqueleto aberto da Fase 1
@@ -60,9 +59,7 @@ const ENEMY_DEFS = [
 
 const PLAYER_START := Vector2i(2, 1)
 
-# A Caipora é feita de fogo: na neblina ela arde como fogueira viva, dobrando a
-# visibilidade ao redor (área 2x a visão de jogo).
-const FOG_REVEAL_RADIUS: float = 192.0
+# A Caipora é feita de fogo: aura quente (luz + chama/brasas) a acompanha pela Casa.
 const CAIPORA_AURA_LIGHT_SCALE: float = 1.5
 const CAIPORA_AURA_OFFSET := Vector2(0, -10)
 
@@ -73,7 +70,6 @@ func _ready() -> void:
 	_setup_player()
 	_spawn_enemies()
 	_spawn_objects()
-	_spawn_fog()
 	add_child(Atmosphere.new())
 
 func _setup_player() -> void:
@@ -100,28 +96,11 @@ func _spawn_objects() -> void:
 			if row[x] == "R":
 				_make_object(MapObject.Type.FIRE, Vector2i(x, y))
 
-func _spawn_fog() -> void:
-	_fog = FogOfWar.new()
-	add_child(_fog)
-	_fog.reveal_radius = FOG_REVEAL_RADIUS
-	_fog.track(_caipora)
-	_update_fog()
-
-func _update_fog() -> void:
-	if _fog == null:
-		return
-	var cam := get_viewport().get_camera_2d()
-	if cam == null:
-		return
-	var world_center := Vector2(_player_grid_pos) * Constants.TILE_SIZE + Vector2(Constants.TILE_SIZE * 0.5, Constants.TILE_SIZE * 0.5)
-	_fog.update_position(world_center, cam)
-
 # ─── Turn System ───────────────────────────────────
 func _on_player_moved(new_grid_pos: Vector2i) -> void:
 	if _locked:
 		return
 	_player_grid_pos = new_grid_pos
-	_update_fog()
 
 	for enemy in _map_enemies:
 		if enemy.grid_pos == new_grid_pos:
