@@ -49,7 +49,11 @@ func get_attack_pattern() -> AttackPattern:
 func _play_windup_telegraph() -> void:
 	if animated_sprite == null:
 		return
-	if _current_is_rastro or _current_is_assobio:
+	if _current_is_assobio:
+		_kill_telegraph()
+		_play_double_jump_telegraph()
+		return
+	if _current_is_rastro:
 		_kill_telegraph()
 		_telegraph_tween = create_tween().set_loops()
 		_telegraph_tween.tween_property(animated_sprite, "modulate", Constants.COLOR_TELEGRAPH_CURUPIRA, 0.22)
@@ -58,6 +62,21 @@ func _play_windup_telegraph() -> void:
 		_telegraph_tween.parallel().tween_property(animated_sprite, "scale", _base_scale, 0.22)
 		return
 	super._play_windup_telegraph()
+
+func _play_double_jump_telegraph() -> void:
+	var home_y := position.y
+	_telegraph_tween = create_tween()
+	# Salto 1
+	_telegraph_tween.tween_property(self, "position:y", home_y - 40.0, 0.12)
+	_telegraph_tween.parallel().tween_property(animated_sprite, "modulate", Constants.COLOR_TELEGRAPH_CURUPIRA, 0.12)
+	_telegraph_tween.tween_property(self, "position:y", home_y, 0.10)
+	_telegraph_tween.parallel().tween_property(animated_sprite, "modulate", _base_modulate, 0.10)
+	_telegraph_tween.tween_interval(0.06)
+	# Salto 2
+	_telegraph_tween.tween_property(self, "position:y", home_y - 40.0, 0.12)
+	_telegraph_tween.parallel().tween_property(animated_sprite, "modulate", Constants.COLOR_TELEGRAPH_CURUPIRA, 0.12)
+	_telegraph_tween.tween_property(self, "position:y", home_y, 0.10)
+	_telegraph_tween.parallel().tween_property(animated_sprite, "modulate", _base_modulate, 0.10)
 
 func _spawn_shadow_aura() -> void:
 	var aura := CPUParticles2D.new()

@@ -188,6 +188,13 @@ func _on_double_first_hit() -> void:
 	_feedback.trigger_screenshake(13.0, 0.3)
 	_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
 	_feedback.trigger_hit_stop(3)
+	_caipora_step_forward()
+
+func _caipora_step_forward() -> void:
+	var home_x := _caipora.position.x
+	var step := create_tween()
+	step.tween_property(_caipora, "position:x", home_x + 32.0, 0.08)
+	step.tween_property(_caipora, "position:x", home_x, 0.12)
 
 func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 	if _combat_over:
