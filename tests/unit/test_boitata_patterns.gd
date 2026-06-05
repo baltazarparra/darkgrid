@@ -11,7 +11,7 @@ func test_boitata_is_a_boss() -> void:
 
 func test_boitata_has_correct_health() -> void:
 	assert_eq(_boitata.health.max_health, Constants.BOITATA_MAX_HEALTH)
-	assert_eq(Constants.BOITATA_MAX_HEALTH, 15)
+	assert_eq(Constants.BOITATA_MAX_HEALTH, 22)
 
 func test_white_special_pattern_fields() -> void:
 	var p := preload("res://resources/attack_patterns/boitata_white_special_pattern.tres")

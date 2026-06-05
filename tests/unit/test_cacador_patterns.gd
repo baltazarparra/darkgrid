@@ -11,7 +11,7 @@ func test_cacador_is_a_criatura() -> void:
 
 func test_cacador_has_correct_health() -> void:
 	assert_eq(_cacador.health.max_health, Constants.CACADOR_MAX_HEALTH)
-	assert_eq(Constants.CACADOR_MAX_HEALTH, 9)
+	assert_eq(Constants.CACADOR_MAX_HEALTH, 10)
 
 func test_special_pattern_fields() -> void:
 	var p := preload("res://resources/attack_patterns/cacador_special_pattern.tres")

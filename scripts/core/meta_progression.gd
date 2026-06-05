@@ -13,18 +13,27 @@ var is_persistent: bool = true
 
 # Cada aprimoramento é uma ERVA que a Caipora põe no cachimbo para fumar. Duas trilhas:
 # "furia" (dano) e "cura" (HP). As KEYS são imutáveis (compatibilidade de save); só os
-# nomes/metadados de exibição mudam. Metadados de UI (line/tier/phase/effect/icon) são
-# lidos pelo Hub para montar os cards de forma data-driven.
+# nomes/metadados de exibição mudam. Metadados de UI (line/tier/phase/icon) são lidos pelo
+# Hub para montar os cards de forma data-driven.
+#
+# FONTE NUMÉRICA ÚNICA (PRD-economia-v2): o campo "dmg" (Fúria) ou "hp" (Cura) é a verdade
+# da matemática; o texto do efeito é DERIVADO via effect_text() (mata a classe de bug do
+# KI-006, em que o label desincronizava do bônus real). Curva de custo crescente e teto
+# deliberado: Fúria leva o dano de 1 a 5 (6 com a CHAMA); Cura leva o HP de 2 a 14.
 const UPGRADE_DEFS := {
-	"forca":   { "name": "Folha-Brasa",      "max_level": 1, "fragment_cost": 4,  "line": "furia", "tier": 1, "phase": 1, "effect": "Dano +1/hit",          "icon": "res://assets/sprites/erva_folha_brasa.png" },
-	"forca_2": { "name": "Cinza-Viva",       "max_level": 1, "fragment_cost": 6,  "line": "furia", "tier": 2, "phase": 2, "effect": "Dano +1/hit (total 3)", "icon": "res://assets/sprites/erva_cinza_viva.png", "requires": "forca" },
-	"forca_3": { "name": "Raiz-de-Ira",      "max_level": 1, "fragment_cost": 8,  "line": "furia", "tier": 3, "phase": 3, "effect": "Dano +3/hit (total 6)", "icon": "res://assets/sprites/erva_raiz_de_ira.png", "requires": "forca_2" },
-	"forca_4": { "name": "Breu-Ancestral",   "max_level": 1, "fragment_cost": 10, "line": "furia", "tier": 4, "phase": 4, "effect": "Dano +2/hit (total 8)", "icon": "res://assets/sprites/erva_breu_ancestral.png", "requires": "forca_3" },
-	"saude":   { "name": "Seiva-Mãe",        "max_level": 1, "fragment_cost": 6,  "line": "cura",  "tier": 1, "phase": 1, "effect": "+2 HP",                "icon": "res://assets/sprites/erva_seiva_mae.png" },
-	"saude_2": { "name": "Casca-Boa",        "max_level": 1, "fragment_cost": 9,  "line": "cura",  "tier": 2, "phase": 2, "effect": "+2 HP",                "icon": "res://assets/sprites/erva_casca_boa.png" },
-	"saude_3": { "name": "Folha-de-Sangue",  "max_level": 1, "fragment_cost": 12, "line": "cura",  "tier": 3, "phase": 3, "effect": "+2 HP",                "icon": "res://assets/sprites/erva_folha_de_sangue.png", "requires": "saude_2" },
-	"saude_4": { "name": "Coração-de-Cerne", "max_level": 1, "fragment_cost": 15, "line": "cura",  "tier": 4, "phase": 4, "effect": "+2 HP",                "icon": "res://assets/sprites/erva_coracao_de_cerne.png", "requires": "saude_3" },
+	"forca":   { "name": "Folha-Brasa",      "max_level": 1, "fragment_cost": 5,  "line": "furia", "tier": 1, "phase": 1, "dmg": 1, "icon": "res://assets/sprites/erva_folha_brasa.png" },
+	"forca_2": { "name": "Cinza-Viva",       "max_level": 1, "fragment_cost": 10, "line": "furia", "tier": 2, "phase": 2, "dmg": 1, "icon": "res://assets/sprites/erva_cinza_viva.png", "requires": "forca" },
+	"forca_3": { "name": "Raiz-de-Ira",      "max_level": 1, "fragment_cost": 16, "line": "furia", "tier": 3, "phase": 3, "dmg": 1, "icon": "res://assets/sprites/erva_raiz_de_ira.png", "requires": "forca_2" },
+	"forca_4": { "name": "Breu-Ancestral",   "max_level": 1, "fragment_cost": 24, "line": "furia", "tier": 4, "phase": 4, "dmg": 1, "icon": "res://assets/sprites/erva_breu_ancestral.png", "requires": "forca_3" },
+	"saude":   { "name": "Seiva-Mãe",        "max_level": 1, "fragment_cost": 6,  "line": "cura",  "tier": 1, "phase": 1, "hp": 2,  "icon": "res://assets/sprites/erva_seiva_mae.png" },
+	"saude_2": { "name": "Casca-Boa",        "max_level": 1, "fragment_cost": 12, "line": "cura",  "tier": 2, "phase": 2, "hp": 3,  "icon": "res://assets/sprites/erva_casca_boa.png" },
+	"saude_3": { "name": "Folha-de-Sangue",  "max_level": 1, "fragment_cost": 20, "line": "cura",  "tier": 3, "phase": 3, "hp": 3,  "icon": "res://assets/sprites/erva_folha_de_sangue.png", "requires": "saude_2" },
+	"saude_4": { "name": "Coração-de-Cerne", "max_level": 1, "fragment_cost": 30, "line": "cura",  "tier": 4, "phase": 4, "hp": 4,  "icon": "res://assets/sprites/erva_coracao_de_cerne.png", "requires": "saude_3" },
 }
+
+# Dano base da Caipora (espelha Constants.DAMAGE_BASE) — usado para derivar os totais
+# exibidos na trilha Fúria.
+const BASE_DAMAGE: int = 1
 
 # Ordem de exibição por trilha (o Hub itera sem hardcode de keys).
 const FURIA_KEYS: Array[String] = ["forca", "forca_2", "forca_3", "forca_4"]
@@ -38,7 +47,8 @@ const CURA_KEYS: Array[String]  = ["saude", "saude_2", "saude_3", "saude_4"]
 const KILLS_PER_CHAMA_ROLL: int = 10
 # `var` (não const) de propósito: ponto único de tuning e overridable nos testes (1.0/0.0).
 var CHAMA_DROP_CHANCE: float = 0.5
-const CHAMA_DAMAGE_BONUS: int = 2
+# +1 de dano (respeita o teto da trilha Fúria: 5 → 6 com a CHAMA). Ver PRD-economia-v2.
+const CHAMA_DAMAGE_BONUS: int = 1
 
 # ─── State ─────────────────────────────────────────
 var unlocked_characters: Array[String] = ["caipora"]
@@ -76,11 +86,11 @@ func get_upgrade_level(key: String) -> int:
 	return int(upgrades.get(key, 0))
 
 func get_damage_bonus() -> int:
-	# "Raiz-de-Ira" (forca_3) bate 2 hits a mais que as anteriores: soma +3 em vez de +1.
-	# "Breu-Ancestral" (forca_4, recompensa de Fase 4) soma +2.
-	# A CHAMA (elemento fogo na espada) soma +CHAMA_DAMAGE_BONUS.
-	var bonus := get_upgrade_level("forca") + get_upgrade_level("forca_2") \
-		+ get_upgrade_level("forca_3") * 3 + get_upgrade_level("forca_4") * 2
+	# Soma o "dmg" de cada erva de Fúria comprada (fonte numérica única). Cada tier soma
+	# +1 (teto +4 → dano 5). A CHAMA (elemento fogo na espada) soma +CHAMA_DAMAGE_BONUS.
+	var bonus := 0
+	for key in FURIA_KEYS:
+		bonus += get_upgrade_level(key) * int(UPGRADE_DEFS[key].get("dmg", 0))
 	if has_chama:
 		bonus += CHAMA_DAMAGE_BONUS
 	return bonus
@@ -106,9 +116,37 @@ func register_kill_for_chama() -> bool:
 	return false
 
 func get_health_bonus() -> int:
-	# Cada erva de cura soma +2 HP (a multiplicação por 2 cobre as 4 trilhas).
-	return (get_upgrade_level("saude") + get_upgrade_level("saude_2") \
-		+ get_upgrade_level("saude_3") + get_upgrade_level("saude_4")) * 2
+	# Soma o "hp" de cada erva de Cura comprada (fonte numérica única). Incrementos
+	# crescentes 2/3/3/4 (teto +12 → HP máx. 14). Ver PRD-economia-v2.
+	var bonus := 0
+	for key in CURA_KEYS:
+		bonus += get_upgrade_level(key) * int(UPGRADE_DEFS[key].get("hp", 0))
+	return bonus
+
+## Texto de efeito DERIVADO da matemática (não há string solta a desincronizar — KI-006).
+## Fúria: "Dano +N/hit (total T)"; Cura: "+N HP (total T)". T é o valor acumulado da trilha
+## somando todas as ervas até esta (inclusive), partindo do base (dano 1 / HP base 2).
+func effect_text(key: String) -> String:
+	if not UPGRADE_DEFS.has(key):
+		return ""
+	var def: Dictionary = UPGRADE_DEFS[key]
+	var line: String = String(def.get("line", ""))
+	if line == "furia":
+		var inc: int = int(def.get("dmg", 0))
+		var total := BASE_DAMAGE + _cumulative(FURIA_KEYS, key, "dmg")
+		return "Dano +%d/hit (total %d)" % [inc, total]
+	var inc_hp: int = int(def.get("hp", 0))
+	var total_hp := Constants.CAIPORA_MAX_HEALTH + _cumulative(CURA_KEYS, key, "hp")
+	return "+%d HP (total %d)" % [inc_hp, total_hp]
+
+## Soma o campo `field` de todas as ervas de `order` até `key` (inclusive).
+func _cumulative(order: Array[String], key: String, field: String) -> int:
+	var sum := 0
+	for k in order:
+		sum += int(UPGRADE_DEFS[k].get(field, 0))
+		if k == key:
+			break
+	return sum
 
 func get_touch_controls_mode() -> String:
 	return touch_controls_mode
