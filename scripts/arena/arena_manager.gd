@@ -468,4 +468,22 @@ func _do_screen_change(screen: SignalBus.Screen, caipora_won: bool) -> void:
 	_screen_changed = true
 	if caipora_won and screen != SignalBus.Screen.ENDING:
 		GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
+	# Avanço de fase (vitória de boss que leva à PRÓXIMA exploração) passa pelo acampamento.
+	# Volta para a mesma fase (vitória comum / boss da P1), ENDING e GAME_OVER seguem diretos.
+	if caipora_won and _is_phase_advance(screen):
+		GameState.advance_phase_via_hub(screen)
+		return
 	GameState.change_screen(screen)
+
+## True se `screen` é a exploração de uma fase POSTERIOR à atual (avanço de fase).
+func _is_phase_advance(screen: SignalBus.Screen) -> bool:
+	return _screen_phase(screen) > GameState.active_phase
+
+## Número da fase de uma tela de exploração (0 para telas que não são exploração).
+func _screen_phase(screen: SignalBus.Screen) -> int:
+	match screen:
+		SignalBus.Screen.EXPLORATION: return 1
+		SignalBus.Screen.EXPLORATION_PHASE2: return 2
+		SignalBus.Screen.EXPLORATION_PHASE3: return 3
+		SignalBus.Screen.EXPLORATION_PHASE4: return 4
+	return 0
