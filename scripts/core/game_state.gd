@@ -76,30 +76,41 @@ func toggle_pause() -> void:
 
 # ─── Private ───────────────────────────────────────
 func _on_screen_changed(new_screen: SignalBus.Screen) -> void:
+	# Toda troca passa pelo SceneTransition (fade + flavor de fase). O autoload
+	# sobrevive ao swap e mascara o hard-cut do change_scene_to_file.
+	var path := _scene_path_for(new_screen)
+	if path.is_empty():
+		return
+	SceneTransition.transition_to(path, new_screen)
+
+## Mapeia cada tela para sua cena. Ponto único de roteamento — vazio = tela sem
+## cena (não deveria ocorrer; coberto por teste).
+func _scene_path_for(new_screen: SignalBus.Screen) -> String:
 	match new_screen:
 		SignalBus.Screen.MAIN_MENU:
-			get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+			return "res://scenes/ui/main_menu.tscn"
 		SignalBus.Screen.HUB:
-			get_tree().change_scene_to_file("res://scenes/ui/hub.tscn")
+			return "res://scenes/ui/hub.tscn"
 		SignalBus.Screen.ARENA:
-			get_tree().change_scene_to_file("res://scenes/arena/arena.tscn")
+			return "res://scenes/arena/arena.tscn"
 		SignalBus.Screen.EXPLORATION:
-			get_tree().change_scene_to_file("res://scenes/exploration/exploration.tscn")
+			return "res://scenes/exploration/exploration.tscn"
 		SignalBus.Screen.WIN:
-			get_tree().change_scene_to_file("res://scenes/ui/win.tscn")
+			return "res://scenes/ui/win.tscn"
 		SignalBus.Screen.GAME_OVER:
-			get_tree().change_scene_to_file("res://scenes/ui/game_over.tscn")
+			return "res://scenes/ui/game_over.tscn"
 		SignalBus.Screen.EXPLORATION_PHASE2:
-			get_tree().change_scene_to_file("res://scenes/exploration/exploration_phase2.tscn")
+			return "res://scenes/exploration/exploration_phase2.tscn"
 		SignalBus.Screen.ARENA_PHASE2:
-			get_tree().change_scene_to_file("res://scenes/arena/arena_phase2.tscn")
+			return "res://scenes/arena/arena_phase2.tscn"
 		SignalBus.Screen.EXPLORATION_PHASE3:
-			get_tree().change_scene_to_file("res://scenes/exploration/exploration_phase3.tscn")
+			return "res://scenes/exploration/exploration_phase3.tscn"
 		SignalBus.Screen.ARENA_PHASE3:
-			get_tree().change_scene_to_file("res://scenes/arena/arena_phase3.tscn")
+			return "res://scenes/arena/arena_phase3.tscn"
 		SignalBus.Screen.EXPLORATION_PHASE4:
-			get_tree().change_scene_to_file("res://scenes/exploration/exploration_phase4.tscn")
+			return "res://scenes/exploration/exploration_phase4.tscn"
 		SignalBus.Screen.ARENA_PHASE4:
-			get_tree().change_scene_to_file("res://scenes/arena/arena_phase4.tscn")
+			return "res://scenes/arena/arena_phase4.tscn"
 		SignalBus.Screen.ENDING:
-			get_tree().change_scene_to_file("res://scenes/ui/ending_screen.tscn")
+			return "res://scenes/ui/ending_screen.tscn"
+	return ""

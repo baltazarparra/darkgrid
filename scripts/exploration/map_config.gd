@@ -77,9 +77,13 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.boss_type = "curupira"
 			c.enemy_count = 6
 			# Ventre da Mata: fogo presente (como o mapa estático), mas o gerador
-			# garante sempre uma rota até o Curupira sem fogo forçado.
+			# garante sempre uma rota até o Curupira sem fogo forçado. Densidade
+			# baixa de propósito: em corredor de 1 tile não há como contornar o
+			# fogo (a rota limpa só cobre o caminho ao boss), então cada chama é
+			# um portão de dano forçado nas demais ramificações — mais punitiva
+			# que os mesmos % num mapa OPEN, onde se anda ao redor.
 			c.hazard_chars = PackedStringArray(["R"])
-			c.hazard_density = 0.06
+			c.hazard_density = 0.04
 			c.corridor_openness = 0.44
 			c.corridor_width = 1
 			c.has_fog = true
