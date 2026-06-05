@@ -1,0 +1,14 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/mula_idle.png" id="1_mula"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_mula")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 5.0
+}]

@@ -4,6 +4,7 @@ extends Node2D
 # ─── Constants ─────────────────────────────────────
 const ENEMY_TEXTURE    = preload("res://assets/sprites/enemy_idle.png")
 const BOSS_TEXTURE     = preload("res://assets/sprites/boss_idle.png")
+const MULA_TEXTURE     = preload("res://assets/sprites/mula_idle.png")
 const BOITATA_TEXTURE  = preload("res://assets/sprites/boitata_idle.png")
 const CURUPIRA_TEXTURE = preload("res://assets/sprites/curupira_idle.png")
 const SACI_TEXTURE     = preload("res://assets/sprites/saci_idle.png")
@@ -33,6 +34,7 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 	var sprite := Sprite2D.new()
 	if boss:
 		match boss_type:
+			"mula":     sprite.texture = MULA_TEXTURE
 			"boitata":  sprite.texture = BOITATA_TEXTURE
 			"curupira": sprite.texture = CURUPIRA_TEXTURE
 			"saci":     sprite.texture = SACI_TEXTURE
@@ -85,6 +87,7 @@ func _spawn_boss_aura() -> void:
 	aura.scale_amount_min = 1.5
 	aura.scale_amount_max = 3.5
 	match _boss_type:
+		"mula":     aura.color = Constants.COLOR_AURA_MULA
 		"boitata":  aura.color = Constants.COLOR_AURA_BOITATA
 		"curupira": aura.color = Constants.COLOR_AURA_CURUPIRA
 		"saci":     aura.color = Constants.COLOR_AURA_SACI

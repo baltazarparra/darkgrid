@@ -1,0 +1,33 @@
+[gd_scene load_steps=7 format=3 uid="uid://mula_arena"]
+
+[ext_resource type="Script" path="res://scripts/entities/mula.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://assets/sprites/mula_sprite_frames.tres" id="2_frames"]
+[ext_resource type="Script" path="res://scripts/shared/health_component.gd" id="3_health"]
+[ext_resource type="Script" path="res://scripts/entities/enemy_state_machine.gd" id="4_sm"]
+[ext_resource type="AttackPattern" path="res://resources/attack_patterns/boss_pattern.tres" id="5_pattern"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_96x96"]
+size = Vector2(96, 96)
+
+[node name="Mula" type="CharacterBody2D"]
+script = ExtResource("1_script")
+base_attack_damage = 1
+sprite_scale = 1.5
+attack_pattern = ExtResource("5_pattern")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+offset = Vector2(0, -8)
+modulate = Color(1, 1, 1, 1)
+sprite_frames = ExtResource("2_frames")
+animation = &"idle"
+autoplay = "idle"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_96x96")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("3_health")
+max_health = 12
+
+[node name="EnemyStateMachine" type="Node" parent="."]
+script = ExtResource("4_sm")

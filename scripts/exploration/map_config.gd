@@ -56,7 +56,7 @@ static func for_phase(target_phase: int) -> MapConfig:
 	match target_phase:
 		1:
 			c.topology_mode = TopologyMode.OPEN
-			c.boss_type = "generico"
+			c.boss_type = "mula"
 			c.enemy_count = 6
 			c.hazard_chars = PackedStringArray(["R", "S"])
 			c.hazard_density = 0.04

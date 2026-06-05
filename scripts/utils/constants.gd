@@ -115,12 +115,15 @@ const COLOR_TELEGRAPH_CURUPIRA := Color(0.1, 1.5, 0.35)     # telegraph do Curup
 const COLOR_AURA_CURUPIRA := Color(0.0, 0.28, 0.06, 0.72)   # aura do Curupira (verde profundo da floresta)
 const COLOR_TELEGRAPH_SACI := Color(2.0, 0.7, 0.15)         # telegraph do Saci (fogo overbright)
 const COLOR_AURA_SACI := Color(0.35, 0.10, 0.02, 0.75)      # aura do Saci (brasa escura, casa consumida pelo fogo)
+const COLOR_TELEGRAPH_MULA := Color(2.0, 0.55, 0.1)         # telegraph da Mula sem Cabeça (jato de fogo overbright)
+const COLOR_AURA_MULA := Color(0.55, 0.12, 0.02, 0.72)      # aura de brasas da Mula (fogo escuro subindo do toco)
 
 # Cores de diálogo (speaker labels nos pre-boss dialogues).
 const COLOR_DIALOGUE_CAIPORA  := Color(0.55, 0.90, 0.60, 1.0)  # voz da Caipora (verde floresta)
 const COLOR_DIALOGUE_BOITATA  := Color(1.0,  0.42, 0.0,  1.0)  # voz do Boitatá (fogo)
 const COLOR_DIALOGUE_CURUPIRA := Color(0.1,  0.85, 0.30, 1.0)  # voz do Curupira (verde mata)
 const COLOR_DIALOGUE_SACI     := Color(1.0,  0.55, 0.12, 1.0)  # voz do Saci (fogo)
+const COLOR_DIALOGUE_MULA     := Color(1.0,  0.50, 0.10, 1.0)  # voz da Mula sem Cabeça (fogo)
 
 # Partículas de feedback de combate (>1 = overbright p/ glow aditivo intencional).
 const COLOR_PARTICLE_SPARK := Color(1.0, 0.92, 0.6, 1.0)  # faísca de crítico (dourado)
