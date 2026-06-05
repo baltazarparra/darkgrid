@@ -9,9 +9,12 @@ que tornam cada personagem identificável:
              FRENTE (o pé-pra-trás é do Curupira, parente — NÃO da Caipora),
              imponente (maior que o caçador)
   Caçador  — 48x48: chapéu, poncho, espingarda (inimigo humano predador)
-  Caçador c/ machados — 48x48: capuz, manto, dois machados, olhos brilhando (boss)
+  Caçador c/ machados — 48x48: capuz, manto, dois machados, olhos brilhando (boss base)
+  Mula sem Cabeça     — 48x48: sem cabeça, jato de fogo no toco do pescoço,
+                        ferraduras de ferro, arreio amaldiçoado (boss da Fase 1)
 
-Saída: player_idle/walk_1/walk_2.png (64x64), enemy_idle.png, boss_idle.png (48x48)
+Saída: player_idle/walk_1/walk_2.png (64x64), enemy_idle.png, boss/boitata/
+       curupira/saci/mula_idle.png (48x48)
 """
 import os
 from PIL import Image
@@ -488,6 +491,107 @@ def saci():
     return c
 
 
+def mula():
+    """Mula sem Cabeça — boss da Fase 1, 48x48, perfil voltado pra direita.
+
+    Assinaturas folclóricas: NÃO TEM CABEÇA — no lugar do pescoço, um TOCO
+    DECEPADO de onde JORRA FOGO (a 'cabeça' é uma coluna de chamas). Galopa com
+    FERRADURAS DE FERRO que reluzem (faísca na noite). Carrega os restos de uma
+    SELA/ARREIO amaldiçoado (vermelho-sangue). Crina e cauda terminam em brasa.
+    O inimigo mais detalhado do elenco — primeiro boss, primeira impressão.
+    """
+    c = C()
+    # ── Cores ──
+    FUR     = (52, 30, 26)        # pelo escuro (deriva da terra)
+    FUR_DK  = (30, 17, 15)        # sombra do corpo / perna distante
+    FUR_HL  = (84, 52, 44)        # realce de músculo no dorso
+    HOOF    = (16, 10, 9)         # casco
+    SHOE    = (122, 124, 138)     # ferradura de ferro
+    SHOE_HL = (188, 192, 206)     # brilho do ferro (faísca)
+    WOUND   = (74, 8, 8)          # carne do toco decepado
+    F_DEEP  = (188, 42, 0)        # base da chama
+    F_MID   = (255, 107, 0)
+    F_HOT   = (255, 168, 56)
+    F_CORE  = (255, 240, 200)     # branco-quente
+    SADDLE    = (40, 22, 14)      # arreio amaldiçoado (couro escuro)
+    SADDLE_HL = (150, 24, 16)     # fita/fivela vermelho-sangue
+
+    def _leg(x, col, dk, shiny):
+        # Perna + casco + ferradura de ferro. shiny=False empurra a perna distante.
+        c.rect(x, 29, x + 2, 42, col)
+        c.rect(x, 29, x, 42, dk)              # aresta em sombra
+        c.rect(x - 1, 40, x + 3, 42, col)     # boleto (engrossa embaixo)
+        c.rect(x - 1, 42, x + 3, 44, HOOF)    # casco
+        c.rect(x - 1, 44, x + 3, 45, SHOE)    # ferradura
+        if shiny:
+            c.px(x, 45, SHOE_HL)
+            c.px(x + 2, 45, SHOE_HL)
+
+    # ── Pernas distantes primeiro (atrás, mais escuras) ──
+    _leg(15, FUR_DK, (22, 12, 11), False)     # traseira distante
+    _leg(31, FUR_DK, (22, 12, 11), False)     # dianteira distante
+
+    # ── Cauda (jorra do quadril, esfarrapada, ponta em brasa) ──
+    c.line(11, 22, 6, 29, FUR_DK)
+    c.line(10, 23, 5, 34, FUR_DK)
+    c.line(10, 24, 7, 39, FUR_DK)
+    c.px(5, 34, F_MID)
+    c.px(7, 39, F_DEEP)
+
+    # ── Tronco (barril fundo de peito) ──
+    c.rect(12, 21, 33, 30, FUR)
+    c.disc(13, 25, 5, FUR)                    # garupa (esquerda)
+    c.disc(33, 25, 5, FUR)                    # peito/paleta (direita)
+    c.rect(13, 20, 32, 21, FUR_HL)            # realce do dorso
+    c.rect(14, 29, 31, 31, FUR_DK)            # sombra do ventre
+    # ── Volume muscular ──
+    c.line(27, 22, 28, 29, FUR_DK)            # vinco do ombro (separa peito do barril)
+    c.line(18, 22, 17, 29, FUR_DK)            # vinco da garupa (separa anca do barril)
+    c.rect(11, 21, 15, 22, FUR_HL)            # alto da anca iluminado
+
+    # ── Arreio amaldiçoado (sela + barrigueira) ──
+    c.rect(17, 18, 27, 21, SADDLE)            # sela no dorso
+    c.rect(17, 18, 27, 18, SADDLE_HL)         # debrum vermelho-sangue
+    c.rect(22, 21, 24, 31, SADDLE)            # barrigueira descendo o flanco
+    c.px(22, 22, SADDLE_HL)                   # fivela
+
+    # ── Pescoço subindo pro toco (sobe à direita) ──
+    for (x0, y, x1) in [(30, 20, 36), (31, 18, 37), (32, 16, 37), (33, 14, 38)]:
+        c.rect(x0, y, x1, y + 1, FUR)
+        c.px(x0, y, FUR_DK)                   # crista do pescoço em sombra
+    c.px(30, 18, F_DEEP)                      # crina em brasa
+    c.px(31, 20, F_MID)
+
+    # ── TOCO DECEPADO (carne crua) ──
+    c.rect(33, 13, 38, 14, WOUND)
+
+    # ── JATO DE FOGO no lugar da cabeça (jorra do toco pra cima) ──
+    c.rect(33, 4, 39, 13, F_DEEP)
+    c.disc(36, 9, 4, F_DEEP)
+    for (x, top) in [(33, 6), (35, 2), (37, 4), (39, 7)]:
+        c.rect(x, top, x + 1, 12, F_MID)
+    for (x, top) in [(34, 4), (36, 1), (38, 5)]:
+        c.rect(x, top, x, top + 7, F_HOT)
+    c.rect(36, 5, 36, 11, F_CORE)             # núcleo branco-quente
+    c.px(35, 8, F_CORE)
+    c.px(37, 9, F_CORE)
+    c.px(40, 3, F_HOT)                        # brasas soltas no ar
+    c.px(32, 5, F_MID)
+    c.px(41, 8, F_DEEP)
+
+    # ── Luz do fogo lambendo o pelo (liga as chamas ao corpo) ──
+    FIRE_LIT = (150, 66, 26)
+    for (x, y) in [(38, 14), (37, 15), (36, 16), (35, 18), (34, 20),
+                   (35, 22), (36, 23), (33, 21), (32, 20)]:
+        c.px(x, y, FIRE_LIT)
+
+    # ── Pernas próximas (na frente, ferro reluzindo) ──
+    _leg(11, FUR, FUR_DK, True)               # traseira próxima
+    _leg(28, FUR, FUR_DK, True)               # dianteira próxima
+
+    return c
+
+
 if __name__ == "__main__":
     caipora(0).save("player_idle.png")
     caipora(-1).save("player_walk_1.png")
@@ -497,4 +601,5 @@ if __name__ == "__main__":
     boitata().save("boitata_idle.png")
     curupira().save("curupira_idle.png")
     saci().save("saci_idle.png")
-    print("[gen_chars] caipora (64x64) + caçador + caçador-de-machados + boitatá + curupira + saci (48x48) gerados")
+    mula().save("mula_idle.png")
+    print("[gen_chars] caipora (64x64) + caçador + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça (48x48) gerados")

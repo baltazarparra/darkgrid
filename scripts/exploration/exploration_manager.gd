@@ -11,7 +11,7 @@ const ForestAmbience := preload("res://scripts/exploration/forest_ambience.gd")
 const FireEffect := preload("res://scripts/exploration/fire_effect.gd")
 
 # Cenas de arena por fase.
-const BOSS_SCENE        := preload("res://scenes/arena/boss.tscn")
+const MULA_SCENE        := preload("res://scenes/arena/mula.tscn")
 const BOITATA_SCENE     := preload("res://scenes/arena/boitata.tscn")
 const CACADOR_SCENE     := preload("res://scenes/arena/cacador.tscn")
 const CURUPIRA_SCENE    := preload("res://scenes/arena/curupira.tscn")
@@ -41,6 +41,10 @@ const DECO_FIRE: Array[MapObject.Type] = [
 	MapObject.Type.BLOOD_POOL, MapObject.Type.ROCK,
 ]
 
+const MULA_DIALOGUE: Array[Dictionary] = [
+	{"speaker": "CAIPORA", "text": "Vim terminar o que comecei."},
+	{"speaker": "MULA SEM CABEÇA", "text": "..."},
+]
 const BOITATA_DIALOGUE: Array[Dictionary] = [
 	{"speaker": "CAIPORA", "text": "Você nos traiu..."},
 	{"speaker": "BOITATÁ", "text": "Vocês me abandonaram!"},
@@ -450,13 +454,14 @@ func _build_profile() -> Dictionary:
 			}
 		_:
 			# Fase 1 (padrão): arena aberta, tocha, baú/chave, vida ambiente.
+			# Boss: a Mula sem Cabeça (jato de fogo no lugar da cabeça).
 			return {
 				"arena_screen": SignalBus.Screen.ARENA,
-				"boss_scene": BOSS_SCENE,
+				"boss_scene": MULA_SCENE,
 				"regular_scene": null,
-				"boss_dialogue": [],
-				"boss_speaker": "",
-				"boss_color": Constants.COLOR_TEXT,
+				"boss_dialogue": MULA_DIALOGUE,
+				"boss_speaker": "MULA SEM CABEÇA",
+				"boss_color": Constants.COLOR_DIALOGUE_MULA,
 				"next_screen_on_exit": SignalBus.Screen.EXPLORATION_PHASE2,
 				"hazard_damage": 1,
 				"aura": Aura.TORCH,
