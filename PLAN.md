@@ -451,7 +451,21 @@ flood-fill → hazards → entidades) e gate de invariantes em GUT. O char-grid
   - Fases 2–4 **intactas** (ainda estáticas) — jogo segue jogável ponta-a-ponta.
   - Testes: `test_map_generator.gd` (15 invariantes) + `test_exploration_phase1.gd`
     (integração da cena). Gate verde: 120 testes / ~10.9k asserts.
-- [ ] **Etapa 2 — Topologia CORRIDOR + Fase 3** (com fog of war).
+- [x] **Etapa 2 — Topologia CORRIDOR + Fase 3** (com fog of war):
+  - `exploration_phase3_manager.gd` consome `GeneratedMap` (CORRIDOR), preservando
+    fog of war, aura de fogo, `_find_safe_spawn`, dano de fogo 2, roteamento
+    Curupira/Assombração + diálogo e o `CanvasModulate` verde. Contagem 6.
+  - **Correção:** a Fase 3 estática TEM fogo (o PLAN dizia "sem fogo"). Procedural
+    mantém fogo (`hazard_chars=["R"]`) **+ garantia universal de rota até o boss
+    sem fogo forçado** (`_ensure_clean_path`: limpa hazards sobre uma rota se a
+    única passagem cruzar fogo).
+  - `has_exit=false`: Fase 3 não tem tile `E` — progride ao **derrotar o Curupira**
+    (boss na célula mais profunda). Boss carrega `boss_type` → sprite/aura certos.
+  - Decoração modesta temática (raízes/musgo/cipó) via paleta `DECO_THEME`.
+  - Tuning CORRIDOR: junções ocasionais (`CORRIDOR_JUNCTION_CHANCE`) p/ salinhas e
+    rotas alternativas.
+  - Testes: +invariantes (boss_type, rota limpa de fogo, `has_exit`/tile `E`) e
+    `test_exploration_phase3.gd` (integração). Gate verde: 125 testes / ~10.8k asserts.
 - [ ] **Etapa 3 — Rollout Fases 2 e 4 + colapso dos 4 managers em 1** parametrizado.
 - [ ] **Etapa 4 — Polish**: transição temática ("a mata se reorganiza..."),
   tuning de densidade, daily-seed.

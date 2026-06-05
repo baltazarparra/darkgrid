@@ -7,6 +7,16 @@ const CURUPIRA_SCENE   := preload("res://scenes/arena/curupira.tscn")
 const ASSOMBRACAO_SCENE := preload("res://scenes/arena/assombracao.tscn")
 const DIALOGUE_SCENE   := preload("res://scenes/ui/dialogue_screen.tscn")
 
+# Variantes de tile no atlas (ver scripts/tools/gen_tiles.py).
+const FLOOR_VARIANTS := 4
+const WALL_VARIANTS := 2
+
+# Decoração temática do Ventre da Mata: raízes, musgo, cipó, samambaia, cogumelo.
+const DECO_THEME: Array[MapObject.Type] = [
+	MapObject.Type.ROOTS, MapObject.Type.MOSS, MapObject.Type.VINE,
+	MapObject.Type.FERN, MapObject.Type.MUSHROOM,
+]
+
 const CURUPIRA_DIALOGUE: Array[Dictionary] = [
 	{"speaker": "CAIPORA",  "text": "ninguém te deixou..."},
 	{"speaker": "CURUPIRA", "text": "isso pouco importa agora"},
@@ -19,42 +29,13 @@ const CURUPIRA_DIALOGUE: Array[Dictionary] = [
 @onready var _objects_container: Node2D = $Objects
 
 # ─── State ─────────────────────────────────────────
+# Ventre da Mata gerado proceduralmente (corredores). Determinístico por
+# (run_seed, fase) — a volta da arena regenera o MESMO mapa.
+var _map: GeneratedMap
 var _map_enemies: Array[MapEnemy] = []
-var _player_grid_pos: Vector2i = PLAYER_START
+var _player_grid_pos: Vector2i = Vector2i.ZERO
 var _locked: bool = false
 var _fog: FogOfWar
-
-# ─── Map Definition ────────────────────────────────
-# 26 cols × 18 rows. Ventre da Mata — raízes, corredores estreitos, sem fogo.
-const MAP_LAYOUT = [
-	"WWWWWWWWWWWWWWWWWWWWWWWWWW",
-	"WRFRRFFFFFRRFFFFFRFFFFFFFW",
-	"WFWWWWFRFFFFRFFFFRWWWWFFFW",
-	"WFFWWFFFFRRFFFFRFFFFFFWWWW",
-	"WFWWWFRRFFFFFRRFFWWWWWFFFW",
-	"WFFRFFFWWWWFRFFFFRFFRFFFFW",
-	"WWWWWFFFFFFFWWWWWFRFFRRFFW",
-	"WFFFWWWWWFFFFWWWWFFFFFRFFW",
-	"WFFFFFFFFFWWWFRFWWWFFRFFFW",
-	"WWWFFFWWWFFRFFFFWWWWFRRFFW",
-	"WFFRFFFFFFFFFFRWWWFFFFFFFW",
-	"WWWWFRRFFFFFFFFWWWFFFFFFFW",
-	"WFFFFWWWWWFFFFFRFFFWWWWWWW",
-	"WFFRFFFFFFFFWWWWFFFFFFRRFW",
-	"WFFFFFFFFFFFFFFFFFFFFWWFFW",
-	"WWWWFFFFFWWWWFFFFFFWWWWWWW",
-	"WFFFFFFFFFFFFFFFFFFFFFFFFW",
-	"WWWWWWWWWWWWWWWWWWWWWWWWWW",
-]
-
-const ENEMY_DEFS = [
-	{"id": "p3_e0", "x": 9,  "y": 3,  "boss": false},
-	{"id": "p3_e1", "x": 14, "y": 8,  "boss": false},
-	{"id": "p3_e2", "x": 19, "y": 5,  "boss": false},
-	{"id": "p3_e3", "x": 17, "y": 14, "boss": true, "type": "curupira"},
-]
-
-const PLAYER_START := Vector2i(1, 7)
 
 # A Caipora é feita de fogo: na neblina ela arde como fogueira viva, dobrando a
 # visibilidade ao redor (área 2x a visão de jogo).
@@ -65,6 +46,7 @@ const CAIPORA_AURA_OFFSET := Vector2(0, -10) # = sprite.offset.y(-12) × scale(0
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	GameState.active_phase = 3
+	_map = MapGenerator.new().generate(MapConfig.for_phase(3), GameState.map_seed_for_phase(3))
 	_setup_tilemap()
 	_setup_player()
 	_spawn_enemies()
@@ -73,7 +55,8 @@ func _ready() -> void:
 	add_child(Atmosphere.new())
 
 func _setup_player() -> void:
-	var start := _find_safe_spawn(PLAYER_START)
+	var preferred := GameState.player_map_pos if GameState.player_map_pos != Vector2i(-1, -1) else _map.player_start
+	var start := _find_safe_spawn(preferred)
 	_player_grid_pos = start
 	_caipora.tilemap = _tilemap
 	_caipora.position = Vector2(start) * Constants.TILE_SIZE
@@ -82,23 +65,28 @@ func _setup_player() -> void:
 	FireEffect.attach(_caipora, CAIPORA_AURA_OFFSET, CAIPORA_AURA_LIGHT_SCALE)
 
 func _spawn_enemies() -> void:
-	for def in ENEMY_DEFS:
+	for def: Dictionary in _map.enemies:
 		if def["id"] in GameState.defeated_enemy_ids:
 			continue
 		var enemy := MapEnemy.new()
 		_enemies_container.add_child(enemy)
-		enemy.setup(def["id"], Vector2i(def["x"], def["y"]), def.get("boss", false), def.get("type", ""))
+		enemy.setup(def["id"], Vector2i(def["x"], def["y"]), def["boss"], def.get("boss_type", ""))
 		_map_enemies.append(enemy)
 
 func _spawn_objects() -> void:
-	for y: int in MAP_LAYOUT.size():
-		var row: String = MAP_LAYOUT[y]
-		for x: int in row.length():
+	# Decoração temática (raízes/musgo/cipó), tipos determinísticos da paleta.
+	var deco_rng := RandomNumberGenerator.new()
+	deco_rng.seed = GameState.map_seed_for_phase(3) ^ 0xDEC0
+	for pos: Vector2i in _map.decorations:
+		var type: MapObject.Type = DECO_THEME[deco_rng.randi_range(0, DECO_THEME.size() - 1)]
+		_make_object(type, pos)
+
+	# Fogo do mapa
+	for y: int in _map.tiles.size():
+		var row: Array = _map.tiles[y]
+		for x: int in row.size():
 			if row[x] == "R":
 				_make_object(MapObject.Type.FIRE, Vector2i(x, y))
-
-func _spawn_exit_marker() -> void:
-	pass
 
 func _spawn_fog() -> void:
 	_fog = FogOfWar.new()
@@ -128,8 +116,7 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 			_trigger_combat(enemy)
 			return
 
-	var row: String = MAP_LAYOUT[new_grid_pos.y]
-	if new_grid_pos.x < row.length() and row[new_grid_pos.x] == "R":
+	if _map.char_at(new_grid_pos) == "R":
 		_apply_fire_damage()
 		if _locked:
 			return
@@ -173,18 +160,14 @@ func _on_dialogue_finished() -> void:
 
 # ─── Spawn Helpers ─────────────────────────────────
 func _spawn_is_safe(pos: Vector2i) -> bool:
-	var dirs: Array[Vector2i] = [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]
-	for d in dirs:
-		var neighbor := pos + d
-		if neighbor.y >= 0 and neighbor.y < MAP_LAYOUT.size():
-			var row: String = MAP_LAYOUT[neighbor.y]
-			if neighbor.x >= 0 and neighbor.x < row.length():
-				if row[neighbor.x] == "R":
-					return false
+	# Spawn longe de fogo: nenhum vizinho imediato é hazard.
+	for d: Vector2i in [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]:
+		if _map.char_at(pos + d) == "R":
+			return false
 	return true
 
 func _find_safe_spawn(preferred: Vector2i) -> Vector2i:
-	if _spawn_is_safe(preferred):
+	if _is_walkable(preferred) and _spawn_is_safe(preferred):
 		return preferred
 	var queue: Array[Vector2i] = [preferred]
 	var visited: Dictionary = {}
@@ -204,10 +187,8 @@ func _find_safe_spawn(preferred: Vector2i) -> Vector2i:
 
 # ─── Walkability Helpers ───────────────────────────
 func _is_walkable(pos: Vector2i) -> bool:
-	if pos.x < 0 or pos.y < 0 or pos.x >= Constants.GRID_WIDTH or pos.y >= Constants.GRID_HEIGHT:
-		return false
-	var row: String = MAP_LAYOUT[pos.y]
-	return pos.x < row.length() and row[pos.x] != "W"
+	# Fonte ÚNICA de verdade: o mapa gerado (o TileMap é pintado a partir dele).
+	return _map.is_walkable(pos)
 
 func _is_occupied_by_enemy(pos: Vector2i) -> bool:
 	for enemy in _map_enemies:
@@ -232,24 +213,28 @@ func _setup_tilemap() -> void:
 	var floor_source := TileSetAtlasSource.new()
 	floor_source.texture = preload("res://assets/sprites/tile_floor.png")
 	floor_source.texture_region_size = Vector2i(Constants.TILE_SIZE, Constants.TILE_SIZE)
-	floor_source.create_tile(Vector2i(0, 0))
+	for i: int in FLOOR_VARIANTS:
+		floor_source.create_tile(Vector2i(i, 0))
 	tileset.add_source(floor_source, 0)
 
 	var wall_source := TileSetAtlasSource.new()
 	wall_source.texture = preload("res://assets/sprites/tile_wall.png")
 	wall_source.texture_region_size = Vector2i(Constants.TILE_SIZE, Constants.TILE_SIZE)
-	wall_source.create_tile(Vector2i(0, 0))
+	for i: int in WALL_VARIANTS:
+		wall_source.create_tile(Vector2i(i, 0))
 	tileset.add_source(wall_source, 1)
 
 	_tilemap.tile_set = tileset
 	_paint_map()
 
 func _paint_map() -> void:
-	for y: int in range(MAP_LAYOUT.size()):
-		var row: String = MAP_LAYOUT[y]
-		for x: int in range(row.length()):
+	for y: int in _map.tiles.size():
+		var row: Array = _map.tiles[y]
+		for x: int in row.size():
 			var pos := Vector2i(x, y)
 			if row[x] == "W":
-				_tilemap.set_cell(0, pos, 1, Vector2i(0, 0))
+				var wv: int = (x * 5 + y * 11) % WALL_VARIANTS
+				_tilemap.set_cell(0, pos, 1, Vector2i(wv, 0))
 			else:
-				_tilemap.set_cell(0, pos, 0, Vector2i(0, 0))
+				var fv: int = (x * 7 + y * 13) % FLOOR_VARIANTS
+				_tilemap.set_cell(0, pos, 0, Vector2i(fv, 0))
