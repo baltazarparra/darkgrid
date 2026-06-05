@@ -301,5 +301,11 @@ func _refresh_header() -> void:
 		_loaded_row.add_child(empty)
 
 func _on_enter_pressed() -> void:
-	GameState.start_run()
-	GameState.change_screen(SignalBus.Screen.EXPLORATION)
+	if GameState.run_active:
+		# Acampamento ENTRE fases: continua a run na próxima exploração pendente,
+		# definida por GameState.advance_phase_via_hub() no avanço de fase.
+		GameState.change_screen(GameState.pending_exploration)
+	else:
+		# Acampamento pós-derrota (santuário): a run acabou — começa uma caçada nova.
+		GameState.start_run()
+		GameState.change_screen(SignalBus.Screen.EXPLORATION)

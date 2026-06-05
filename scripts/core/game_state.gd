@@ -12,6 +12,10 @@ var is_paused: bool = false
 var next_enemy_scene: PackedScene = null
 var active_phase: int = 1
 
+# Exploração que o acampamento (HUB) deve abrir ao sair. Definida por advance_phase_via_hub()
+# em todo avanço de fase; o hub a consome ao pisar no tile de saída. Volátil (não vai ao save).
+var pending_exploration: SignalBus.Screen = SignalBus.Screen.EXPLORATION
+
 # ─── Estado de Run (volátil; HP não vai para o save) ──
 var run_active: bool = false
 var caipora_max_hp: float = Constants.CAIPORA_MAX_HEALTH
@@ -45,9 +49,20 @@ func start_run() -> void:
 	chest_opened = false
 	player_map_pos = Vector2i(-1, -1)
 	map_enemy_positions.clear()
+	pending_exploration = SignalBus.Screen.EXPLORATION
 	run_seed = randi()
 	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH + MetaProgression.get_health_bonus()
 	caipora_current_hp = caipora_max_hp
+
+## Avança de fase passando OBRIGATORIAMENTE pelo acampamento (HUB). Guarda a próxima
+## exploração em pending_exploration (o hub a abre ao sair) e zera a continuidade da
+## exploração — a fase nova começa fresca (jogador no spawn, inimigos no spawn), como já
+## fazia o tile de saída. Não toca em defeated_enemy_ids (ids são por-fase).
+func advance_phase_via_hub(next_exploration: SignalBus.Screen) -> void:
+	pending_exploration = next_exploration
+	player_map_pos = Vector2i(-1, -1)
+	map_enemy_positions.clear()
+	change_screen(SignalBus.Screen.HUB)
 
 ## Seed determinística do mapa de uma fase nesta run. Mesma run+fase → mesmo mapa,
 ## então voltar da arena para a exploração regenera o mapa idêntico.

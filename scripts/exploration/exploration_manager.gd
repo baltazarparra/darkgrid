@@ -214,12 +214,11 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 	if _profile["has_fog"]:
 		_update_fog()
 
-	# Saída (fases com tile 'E') → próxima fase
+	# Saída (fases com tile 'E') → acampamento → próxima fase
 	if _config.has_exit and new_grid_pos == _map.exit_pos:
 		_locked = true
-		GameState.player_map_pos = Vector2i(-1, -1)
-		GameState.map_enemy_positions.clear()  # próxima fase começa com inimigos no spawn
-		GameState.change_screen(_profile["next_screen_on_exit"])
+		# advance_phase_via_hub já zera a continuidade (jogador/inimigos no spawn na fase nova).
+		GameState.advance_phase_via_hub(_profile["next_screen_on_exit"])
 		return
 
 	# Chave
