@@ -71,7 +71,7 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.hazard_chars = PackedStringArray(["R"])
 			c.hazard_density = 0.12
 			c.pillar_density = 0.05
-			c.decoration_count = 40
+			c.decoration_count = 22
 		3:
 			c.topology_mode = TopologyMode.CORRIDOR
 			c.boss_type = "curupira"
@@ -92,5 +92,6 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.hazard_chars = PackedStringArray(["R"])
 			c.hazard_density = 0.16
 			c.pillar_density = 0.05
-			c.decoration_count = 40
+			c.has_exit = false  # progride ao derrotar o Saci → ENDING (sem tile de saída)
+			c.decoration_count = 22
 	return c
