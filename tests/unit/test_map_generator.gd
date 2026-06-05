@@ -44,14 +44,22 @@ func test_dimensions_and_border_walls() -> void:
 				assert_eq(m.char_at(Vector2i(0, y)), "W", "borda esquerda parede")
 				assert_eq(m.char_at(Vector2i(Constants.GRID_WIDTH - 1, y)), "W", "borda direita parede")
 
-# ── Conectividade: a saída SEMPRE é alcançável do spawn ──
-func test_exit_reachable_from_start() -> void:
+# ── Conectividade: saída (quando existe) e boss SEMPRE alcançáveis do spawn ──
+func test_exit_and_boss_reachable_from_start() -> void:
 	for phase: int in PHASES:
+		var cfg := MapConfig.for_phase(phase)
 		for s: int in SEEDS:
 			var m := _gen(phase, s)
 			var dist := m.reachable_from(m.player_start)
-			assert_true(dist.has(m.exit_pos),
-				"saída alcançável (fase %d seed %d)" % [phase, s])
+			var b := m.boss()
+			assert_true(dist.has(Vector2i(b["x"], b["y"])),
+				"boss alcançável (fase %d seed %d)" % [phase, s])
+			if cfg.has_exit:
+				assert_true(dist.has(m.exit_pos),
+					"saída alcançável (fase %d seed %d)" % [phase, s])
+			else:
+				assert_eq(m.exit_pos, Vector2i(-1, -1),
+					"fase sem saída não expõe exit_pos (fase %d)" % phase)
 
 func test_player_start_walkable_and_not_exit() -> void:
 	for phase: int in PHASES:
@@ -205,3 +213,59 @@ func test_decorations_valid() -> void:
 				assert_false(occupied.has(d), "decoração não sobrepõe entidade")
 				assert_false(seen.has(d), "decorações sem sobreposição entre si")
 				seen[d] = true
+
+# ── Boss carrega o boss_type da config (sprite/aura corretos no mapa) ──
+func test_boss_carries_boss_type() -> void:
+	for phase: int in PHASES:
+		var expected := MapConfig.for_phase(phase).boss_type
+		for s: int in SEEDS:
+			var m := _gen(phase, s)
+			assert_eq(m.boss().get("boss_type", ""), expected,
+				"boss_type da fase %d" % phase)
+
+# ── has_exit: Fase 3 não tem tile 'E'; demais têm exatamente um ──
+func test_exit_tile_matches_has_exit() -> void:
+	for phase: int in PHASES:
+		var cfg := MapConfig.for_phase(phase)
+		for s: int in SEEDS:
+			var m := _gen(phase, s)
+			var exits := 0
+			for y: int in m.tiles.size():
+				var row: Array = m.tiles[y]
+				for x: int in row.size():
+					if row[x] == "E":
+						exits += 1
+			if cfg.has_exit:
+				assert_eq(exits, 1, "uma saída (fase %d seed %d)" % [phase, s])
+			else:
+				assert_eq(exits, 0, "sem tile de saída (fase %d seed %d)" % [phase, s])
+
+# ── Garantia: sempre existe rota até o boss SEM pisar em fogo ──
+func test_clean_path_to_boss_exists() -> void:
+	for phase: int in PHASES:
+		for s: int in SEEDS:
+			var m := _gen(phase, s)
+			var b := m.boss()
+			var goal := Vector2i(b["x"], b["y"])
+			assert_true(_reachable_avoiding_hazards(m, m.player_start, goal),
+				"rota até o boss sem fogo (fase %d seed %d)" % [phase, s])
+
+func _reachable_avoiding_hazards(m: GeneratedMap, start: Vector2i, goal: Vector2i) -> bool:
+	# BFS sobre células caminháveis que NÃO são hazard (R/S).
+	var seen := {start: true}
+	var frontier: Array[Vector2i] = [start]
+	var nb_dirs := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	while not frontier.is_empty():
+		var cur: Vector2i = frontier.pop_front()
+		if cur == goal:
+			return true
+		for d: Vector2i in nb_dirs:
+			var nb: Vector2i = cur + d
+			if seen.has(nb):
+				continue
+			var ch := m.char_at(nb)
+			if ch == "W" or ch == "R" or ch == "S":
+				continue
+			seen[nb] = true
+			frontier.append(nb)
+	return false

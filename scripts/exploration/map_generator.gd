@@ -21,6 +21,7 @@ const PILLAR_MIN_SPACING := 2
 const BOSS_ROOM_W := 7
 const BOSS_ROOM_H := 4
 const CORRIDOR_TURN_CHANCE := 0.28
+const CORRIDOR_JUNCTION_CHANCE := 0.18
 const CORRIDOR_MAX_STEPS := 4000
 const CARDINALS := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
 
@@ -82,25 +83,34 @@ func _attempt(config: MapConfig, rng: RandomNumberGenerator, drop_pillars: bool)
 
 	var dist := m.reachable_from(player_start)
 
+	# 'goal' é a célula profunda que precisa ser alcançável (saída no OPEN; ponta
+	# mais distante no CORRIDOR). É também o alvo do boss quando não há saída.
+	var goal := exit_pos
 	if config.topology_mode == MapConfig.TopologyMode.CORRIDOR:
-		exit_pos = _farthest(dist)
-		boss_cell = _near_exit_cell(dist, exit_pos)
+		goal = _farthest(dist)
+		boss_cell = _near_exit_cell(dist, goal) if config.has_exit else goal
 
-	# Validação: saída precisa ser alcançável. Senão, esta tentativa falhou.
-	if exit_pos == Vector2i(-1, -1) or not dist.has(exit_pos):
+	# Validação: a célula-alvo precisa ser alcançável. Senão, esta tentativa falhou.
+	if goal == Vector2i(-1, -1) or not dist.has(goal):
 		return null
 
-	_set_tile(tiles, exit_pos, GeneratedMap.EXIT)
-	m.exit_pos = exit_pos
+	# Fases sem saída (ex.: Fase 3) progridem ao derrotar o boss — sem tile 'E'.
+	if config.has_exit:
+		_set_tile(tiles, goal, GeneratedMap.EXIT)
+		m.exit_pos = goal
 
-	# Pool de chão alcançável (exclui a própria saída).
+	# Pool de chão alcançável (exclui a saída, se houver).
 	var pool: Array[Vector2i] = []
 	for p: Vector2i in dist.keys():
-		if p != exit_pos:
+		if not config.has_exit or p != goal:
 			pool.append(p)
 
-	var protected: Array[Vector2i] = [player_start, exit_pos, boss_cell]
+	var protected: Array[Vector2i] = [player_start, boss_cell, goal]
 	var hset := _place_hazards(tiles, config, rng, pool, protected)
+
+	# Garantia: sempre existe uma rota até o boss SEM pisar em fogo. Limpa os
+	# hazards que caírem sobre uma rota (o resto do fogo segue hostil).
+	_ensure_clean_path(tiles, hset, player_start, boss_cell)
 
 	# Pool de posicionamento de entidades: chão alcançável sem spawn nem hazards.
 	var place_pool: Array[Vector2i] = []
@@ -199,6 +209,11 @@ func _drunkard_walk(tiles: Array, config: MapConfig, rng: RandomNumberGenerator,
 	while carved.size() < target and steps < CORRIDOR_MAX_STEPS:
 		if rng.randf() < CORRIDOR_TURN_CHANCE:
 			dir = CARDINALS[rng.randi_range(0, 3)]
+			# Nas curvas, às vezes abre uma pequena junção (cruz) — cria salinhas e
+			# rotas alternativas, o "feel" do Ventre da Mata e ajuda a evitar o fogo.
+			if rng.randf() < CORRIDOR_JUNCTION_CHANCE:
+				for d: Vector2i in CARDINALS:
+					_carve_block(tiles, pos + d, width, w, h, carved)
 		var np := pos + dir
 		if np.x < 1 or np.x > w - 1 - width or np.y < 1 or np.y > h - 1 - width:
 			dir = CARDINALS[rng.randi_range(0, 3)]
@@ -313,7 +328,9 @@ func _place_enemies(config: MapConfig, rng: RandomNumberGenerator, dist: Diction
 	for p: Vector2i in (guards + scattered):
 		result.append({"id": "p%d_e%d" % [config.phase, idx], "x": p.x, "y": p.y, "boss": false})
 		idx += 1
-	result.append({"id": "p%d_e%d" % [config.phase, idx], "x": bcell.x, "y": bcell.y, "boss": true})
+	# O boss carrega o boss_type → sprite/aura corretos no mapa (curupira/boitata/saci).
+	result.append({"id": "p%d_e%d" % [config.phase, idx], "x": bcell.x, "y": bcell.y,
+		"boss": true, "boss_type": config.boss_type})
 	return result
 
 func _place_decorations(config: MapConfig, rng: RandomNumberGenerator,
@@ -408,6 +425,65 @@ func _near_exit_cell(dist: Dictionary, exit_pos: Vector2i) -> Vector2i:
 		if dist.has(nb):
 			return nb
 	return exit_pos
+
+# ─── Rota limpa de hazard ──────────────────────────
+func _ensure_clean_path(tiles: Array, hset: Dictionary, start: Vector2i, goal: Vector2i) -> void:
+	# Garante uma rota start→goal que não passa por hazard. Se a única rota cruza
+	# fogo, limpa os hazards ao longo de UM caminho (o resto do fogo segue lá).
+	if hset.is_empty() or _reachable_clean(tiles, hset, start, goal):
+		return
+	for p: Vector2i in _bfs_path(tiles, start, goal):
+		if hset.has(p):
+			tiles[p.y][p.x] = GeneratedMap.FLOOR
+			hset.erase(p)
+
+func _reachable_clean(tiles: Array, hset: Dictionary, start: Vector2i, goal: Vector2i) -> bool:
+	# BFS sobre células caminháveis E sem hazard.
+	var seen := {start: true}
+	var frontier: Array[Vector2i] = [start]
+	while not frontier.is_empty():
+		var cur: Vector2i = frontier.pop_front()
+		if cur == goal:
+			return true
+		for d: Vector2i in CARDINALS:
+			var nb: Vector2i = cur + d
+			if seen.has(nb) or hset.has(nb) or _is_wall(tiles, nb):
+				continue
+			seen[nb] = true
+			frontier.append(nb)
+	return false
+
+func _bfs_path(tiles: Array, start: Vector2i, goal: Vector2i) -> Array[Vector2i]:
+	# Caminho start→goal sobre células caminháveis (ignora hazard). Reconstrói via parents.
+	var parent := {start: start}
+	var frontier: Array[Vector2i] = [start]
+	while not frontier.is_empty():
+		var cur: Vector2i = frontier.pop_front()
+		if cur == goal:
+			break
+		for d: Vector2i in CARDINALS:
+			var nb: Vector2i = cur + d
+			if parent.has(nb) or _is_wall(tiles, nb):
+				continue
+			parent[nb] = cur
+			frontier.append(nb)
+	var path: Array[Vector2i] = []
+	if not parent.has(goal):
+		return path
+	var node := goal
+	while node != start:
+		path.append(node)
+		node = parent[node]
+	path.append(start)
+	return path
+
+func _is_wall(tiles: Array, p: Vector2i) -> bool:
+	if p.y < 0 or p.y >= tiles.size():
+		return true
+	var row: Array = tiles[p.y]
+	if p.x < 0 or p.x >= row.size():
+		return true
+	return row[p.x] == GeneratedMap.WALL
 
 func _near_any(p: Vector2i, others: Array, radius: int) -> bool:
 	# True se p está a <= radius (manhattan) de alguém em others.

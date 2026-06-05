@@ -45,6 +45,7 @@ enum TopologyMode {
 @export var has_chest: bool = false
 @export var has_key: bool = false
 @export var has_fog: bool = false
+@export var has_exit: bool = true           # false → progride por derrotar o boss (sem tile 'E')
 @export var decoration_count: int = 0       # ambientação visual espalhada no chão
 
 # ─── Factory por fase ──────────────────────────────
@@ -75,12 +76,15 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.topology_mode = TopologyMode.CORRIDOR
 			c.boss_type = "curupira"
 			c.enemy_count = 6
-			c.hazard_chars = PackedStringArray()
-			c.hazard_density = 0.0
-			c.corridor_openness = 0.36
+			# Ventre da Mata: fogo presente (como o mapa estático), mas o gerador
+			# garante sempre uma rota até o Curupira sem fogo forçado.
+			c.hazard_chars = PackedStringArray(["R"])
+			c.hazard_density = 0.06
+			c.corridor_openness = 0.44
 			c.corridor_width = 1
 			c.has_fog = true
-			c.decoration_count = 24
+			c.has_exit = false  # progride ao derrotar o Curupira (sem tile de saída)
+			c.decoration_count = 18
 		4:
 			c.topology_mode = TopologyMode.OPEN
 			c.boss_type = "saci"
