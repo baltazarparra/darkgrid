@@ -520,6 +520,7 @@ aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no fo
 | KI-004 | Média | ✅ Resolvida (`5cdbd40`) | Beco sem saída no fim de combate — telas WIN/GAME_OVER placeholder fecham o loop |
 | KI-005 | Baixa | ✅ Resolvida (pós-MVP) | SFX reescritos com síntese de instrumentos do maracatu (alfaia/caixa/ganzá/agogô/gonguê) em `scripts/tools/gen_sfx.py`, com variação anti-repetição. Identidade sonora própria — não são mais placeholders genéricos |
 | KI-006 | Baixa | ✅ Resolvida | Label do aprimoramento `forca_3` exibia "Dano +1/hit (total 4)" no Hub, mas `get_damage_bonus()` soma `* 3` (+3 → total real 6). Corrigido na reescrita do Acampamento (ervas/cachimbo): textos agora vêm de `UPGRADE_DEFS[...].effect` e refletem a matemática real (Raiz-de-Ira → total 6; Breu-Ancestral → total 8) |
+| KI-007 | Média | ✅ Resolvida | Mapa não voltava idêntico após o combate: o jogador renascia no spawn (exceto Fase 1) e TODOS os inimigos teleportavam de volta ao spawn (o movimento na exploração é não-determinístico, então a regeração do mapa não os reproduz). Corrigido com snapshot de posições no `_trigger_combat` (`GameState.map_enemy_positions` + `player_map_pos` em todas as fases), restaurado em `_spawn_enemies`/`_setup_player`. `safe_spawn` agora só vale na entrada fresca da fase, não na volta do combate. Flag `keep_position` (sempre-true) removida |
 
 ---
 

@@ -97,8 +97,13 @@ func _ready() -> void:
 	add_child(Atmosphere.new())
 
 func _setup_player() -> void:
-	var preferred := GameState.player_map_pos if GameState.player_map_pos != Vector2i(-1, -1) else _map.player_start
-	var start: Vector2i = _find_safe_spawn(preferred) if _profile["safe_spawn"] else preferred
+	var restoring := GameState.player_map_pos != Vector2i(-1, -1)
+	var preferred := GameState.player_map_pos if restoring else _map.player_start
+	# Na restauração (volta do combate) a posição é EXATA: o safe_spawn só vale para
+	# a entrada fresca na fase — senão o jogador "saltaria" ao retornar do combate.
+	var start: Vector2i = preferred
+	if not restoring and _profile["safe_spawn"]:
+		start = _find_safe_spawn(preferred)
 	_player_grid_pos = start
 	_caipora.tilemap = _tilemap
 	_caipora.position = Vector2(start) * Constants.TILE_SIZE
@@ -119,9 +124,12 @@ func _spawn_enemies() -> void:
 	for def: Dictionary in _map.enemies:
 		if def["id"] in GameState.defeated_enemy_ids:
 			continue
+		var spawn := Vector2i(def["x"], def["y"])
+		# Restaura a posição salva no último combate; senão, o spawn do mapa gerado.
+		var pos: Vector2i = GameState.map_enemy_positions.get(def["id"], spawn)
 		var enemy := MapEnemy.new()
 		_enemies_container.add_child(enemy)
-		enemy.setup(def["id"], Vector2i(def["x"], def["y"]), def["boss"], def.get("boss_type", ""))
+		enemy.setup(def["id"], pos, def["boss"], def.get("boss_type", ""), spawn)
 		_map_enemies.append(enemy)
 
 func _spawn_objects() -> void:
@@ -210,6 +218,7 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 	if _config.has_exit and new_grid_pos == _map.exit_pos:
 		_locked = true
 		GameState.player_map_pos = Vector2i(-1, -1)
+		GameState.map_enemy_positions.clear()  # próxima fase começa com inimigos no spawn
 		GameState.change_screen(_profile["next_screen_on_exit"])
 		return
 
@@ -265,7 +274,10 @@ func _run_enemy_turns() -> void:
 
 func _trigger_combat(enemy: MapEnemy) -> void:
 	_locked = true
-	GameState.player_map_pos = _player_grid_pos if _profile["keep_position"] else Vector2i(-1, -1)
+	# Continuidade: congela onde o jogador e os inimigos sobreviventes estão AGORA,
+	# para a exploração voltar idêntica depois do combate.
+	GameState.player_map_pos = _player_grid_pos
+	_snapshot_enemy_positions()
 	GameState.active_map_enemy_id = enemy.enemy_id
 	GameState.active_combat_is_boss = enemy.is_boss
 	if enemy.is_boss:
@@ -277,6 +289,13 @@ func _trigger_combat(enemy: MapEnemy) -> void:
 	else:
 		GameState.next_enemy_scene = _profile["regular_scene"]
 		GameState.change_screen(_profile["arena_screen"])
+
+func _snapshot_enemy_positions() -> void:
+	# Salva a posição atual de cada inimigo vivo (inclui o que será lutado — filtrado
+	# por defeated_enemy_ids na volta). Sobrescreve o snapshot anterior por completo.
+	GameState.map_enemy_positions.clear()
+	for e in _map_enemies:
+		GameState.map_enemy_positions[e.enemy_id] = e.grid_pos
 
 func _show_boss_dialogue() -> void:
 	var dlg: DialogueScreen = DIALOGUE_SCENE.instantiate()
@@ -386,7 +405,6 @@ func _build_profile() -> Dictionary:
 				"aura": Aura.NONE,
 				"safe_spawn": false,
 				"ambient_life": false,
-				"keep_position": false,
 				"phase_reached_on_enter": 2,
 				"has_fog": false,
 				"enhance_fire": true,
@@ -406,7 +424,6 @@ func _build_profile() -> Dictionary:
 				"aura": Aura.FIRE,
 				"safe_spawn": true,
 				"ambient_life": false,
-				"keep_position": false,
 				"phase_reached_on_enter": 0,
 				"has_fog": true,
 				"enhance_fire": false,
@@ -426,7 +443,6 @@ func _build_profile() -> Dictionary:
 				"aura": Aura.FIRE,
 				"safe_spawn": true,
 				"ambient_life": false,
-				"keep_position": false,
 				"phase_reached_on_enter": 0,
 				"has_fog": false,
 				"enhance_fire": false,
@@ -447,7 +463,6 @@ func _build_profile() -> Dictionary:
 				"aura": Aura.TORCH,
 				"safe_spawn": false,
 				"ambient_life": true,
-				"keep_position": true,
 				"phase_reached_on_enter": 0,
 				"has_fog": false,
 				"enhance_fire": true,

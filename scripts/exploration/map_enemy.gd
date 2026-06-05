@@ -19,10 +19,13 @@ var home_pos: Vector2i = Vector2i.ZERO  # origem; alvo do leash quando o jogador
 var _boss_type: String = ""
 
 # ─── Public API ────────────────────────────────────
-func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = "") -> void:
+## `pos` é a posição atual (pode ser a "andada" restaurada do combate); `home`
+## é a origem do leash (spawn do mapa). Por padrão coincidem (entrada fresca).
+func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = "",
+		home: Vector2i = Vector2i(-1, -1)) -> void:
 	enemy_id = id
 	grid_pos = pos
-	home_pos = pos
+	home_pos = home if home != Vector2i(-1, -1) else pos
 	is_boss = boss
 	_boss_type = boss_type
 	_update_visual_position()
