@@ -11,6 +11,7 @@ extends Node2D
 # pulsante (ForestLight + COLOR_EXIT). Nenhuma regra de combate ou economia é reimplementada.
 
 const ForestLight := preload("res://scripts/exploration/forest_light.gd")
+const HubPickup := preload("res://scripts/hub/hub_pickup.gd")
 
 # Variantes de tile no atlas (espelha exploration_manager: source 0 = chão, source 1 = parede).
 const FLOOR_VARIANTS := 4
@@ -22,16 +23,26 @@ const WALL_VARIANTS := 2
 const CLEARING_WIDTH := 14
 const CLEARING_HEIGHT := 10
 
+# Disposição das ervas: trilha da FÚRIA acima da linha do meio, CURA abaixo — fileiras
+# diante do fogo, fora do caminho direto spawn→saída (o jogador escolhe o que pisar).
+const ERVA_ROW_OFFSET := 2            # distância vertical da linha do meio
+const ERVA_FIRST_COL := 3            # 1ª coluna de erva (a partir da borda da clareira)
+const ERVA_COL_STEP := 2             # espaçamento horizontal entre ervas
+
 # ─── Onready ───────────────────────────────────────
 @onready var _tilemap: TileMap = $TileMap
 @onready var _caipora: Caipora = $Caipora
 @onready var _objects: Node2D = $Objects
+@onready var _hud: HubHud = $HubHud
 
 # ─── State ─────────────────────────────────────────
 var _clearing: Rect2i
 var _spawn_pos: Vector2i
 var _exit_pos: Vector2i
 var _locked: bool = false
+
+# Ervas no chão: grid_pos → HubPickup. Pisar numa entrada tenta a compra.
+var _ervas: Dictionary = {}
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -41,6 +52,7 @@ func _ready() -> void:
 	_setup_tilemap()
 	_setup_caipora()
 	_spawn_exit_marker()
+	_spawn_ervas()
 
 # Clareira centrada; spawn de um lado, rastro de saída do outro (mesma linha do meio).
 func _compute_layout() -> void:
@@ -59,9 +71,65 @@ func _setup_caipora() -> void:
 	_caipora.position = Vector2(_spawn_pos) * Constants.TILE_SIZE
 	_caipora.move_finished.connect(_on_caipora_moved)
 
+# ─── Ervas no chão (compra ao pisar) ───────────────
+# Aparecem todas as ervas compráveis da fase alcançada: phase_reached >= phase, requires
+# atendido (ou vazio) e ainda não comprada — o MESMO gate do hub de cards. O conjunto é
+# montado na ENTRADA; comprar a 'forca' só libera 'forca_2' na PRÓXIMA visita (documentado
+# no PRD da Fase 9). purchase_upgrade continua a fonte única de custo/requires/persistência.
+func _spawn_ervas() -> void:
+	var mid_y: int = _spawn_pos.y
+	_place_erva_row(_available_keys(MetaProgression.FURIA_KEYS), mid_y - ERVA_ROW_OFFSET)
+	_place_erva_row(_available_keys(MetaProgression.CURA_KEYS), mid_y + ERVA_ROW_OFFSET)
+	_refresh_affordability()
+
+func _available_keys(keys: Array) -> Array:
+	var out: Array = []
+	for key: String in keys:
+		var def: Dictionary = MetaProgression.UPGRADE_DEFS[key]
+		if MetaProgression.phase_reached < int(def.get("phase", 1)):
+			continue
+		var req: String = def.get("requires", "")
+		if req != "" and MetaProgression.get_upgrade_level(req) < 1:
+			continue
+		if MetaProgression.get_upgrade_level(key) >= 1:
+			continue
+		out.append(key)
+	return out
+
+func _place_erva_row(keys: Array, row_y: int) -> void:
+	var x: int = _clearing.position.x + ERVA_FIRST_COL
+	for key: String in keys:
+		var pos := Vector2i(x, row_y)
+		var pickup := HubPickup.new()
+		_objects.add_child(pickup)
+		pickup.setup(key, pos)
+		_ervas[pos] = pickup
+		x += ERVA_COL_STEP
+
+# Re-avalia o brilho de cada erva restante (comprar uma pode ter esvaziado o bolso).
+func _refresh_affordability() -> void:
+	for pos: Vector2i in _ervas:
+		var pickup: HubPickup = _ervas[pos]
+		pickup.set_affordable(MetaProgression.fragments >= pickup.cost)
+
+func _try_buy(grid_pos: Vector2i) -> void:
+	var pickup: HubPickup = _ervas[grid_pos]
+	# purchase_upgrade valida requires/custo/max_level e persiste o save. Como o conjunto
+	# já passou o gate de requires na entrada, a única recusa aqui é fragmento insuficiente.
+	if MetaProgression.purchase_upgrade(pickup.key):
+		_ervas.erase(grid_pos)
+		pickup.consume()
+		_hud.refresh()
+		_refresh_affordability()
+	else:
+		pickup.deny()
+
 # ─── Saída (rastro) ────────────────────────────────
 func _on_caipora_moved(grid_pos: Vector2i) -> void:
 	if _locked:
+		return
+	if _ervas.has(grid_pos):
+		_try_buy(grid_pos)
 		return
 	if grid_pos == _exit_pos:
 		_trigger_exit()
