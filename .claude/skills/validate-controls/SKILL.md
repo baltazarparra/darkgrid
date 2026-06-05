@@ -36,8 +36,9 @@ Ativar D-pad (Options → Touch Controls → Always) e validar:
 - [ ] Botão esquerdo → move -1 tile em X
 - [ ] Botão cima → move -1 tile em Y
 - [ ] Botão baixo → move +1 tile em Y
-- [ ] D-pad **visível** em telas EXPLORATION, EXPLORATION_PHASE2, EXPLORATION_PHASE3
-- [ ] D-pad **invisível** em MAIN_MENU, HUB, GAME_OVER, WIN
+- [ ] D-pad **visível** em telas EXPLORATION, EXPLORATION_PHASE2, EXPLORATION_PHASE3 e HUB
+      (o acampamento é jogável: a Caipora caminha por ele entre as fases — Fase 9)
+- [ ] D-pad **invisível** em MAIN_MENU, GAME_OVER, WIN
 
 ## Passo 4 — Combate (Arena): Teclado
 
