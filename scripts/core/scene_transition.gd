@@ -17,6 +17,7 @@ const FADE_IN := 0.28        # revela a nova cena
 const TEXT_FADE := 0.18      # surge/some do flavor
 const TEXT_HOLD := 0.5       # tempo de leitura do flavor
 const THEMED_TEXT := "a mata se reorganiza..."
+const CAMP_TEXT := "o acampamento respira..."   # entrada no HUB jogável (Fase 9)
 
 var _fade: ColorRect
 var _label: Label
@@ -52,10 +53,10 @@ func _build() -> void:
 func transition_to(path: String, new_screen: int) -> void:
 	if path.is_empty():
 		return
-	var themed := _is_themed(new_screen)
+	var flavor := _flavor_for(new_screen)
 	if _is_exploration(new_screen):
 		_last_exploration = new_screen
-	_run(path, themed)
+	_run(path, flavor)
 
 # ─── Lógica de flavor (pura, testável) ─────────────
 ## Exploração é qualquer uma das 4 telas de fase. Função (não const) de propósito:
@@ -67,21 +68,31 @@ func _is_exploration(s: int) -> bool:
 		or s == SignalBus.Screen.EXPLORATION_PHASE3 \
 		or s == SignalBus.Screen.EXPLORATION_PHASE4
 
-## Flavor só ao ENTRAR numa exploração de fase nova (run start / avanço de fase).
-## A volta do combate para a MESMA fase não dispara o texto (mapa não se reorganizou).
+## Texto de flavor da transição (vazio = fade limpo, sem texto). Há flavor ao ENTRAR numa
+## exploração de fase nova (run start / avanço de fase) e ao ENTRAR no acampamento (HUB,
+## tela calma). A volta do combate para a MESMA fase não dispara texto (mapa não mudou).
+func _flavor_for(new_screen: int) -> String:
+	if _is_exploration(new_screen) and new_screen != _last_exploration:
+		return THEMED_TEXT
+	if new_screen == SignalBus.Screen.HUB:
+		return CAMP_TEXT
+	return ""
+
+## True quando a transição mostra algum flavor (qualquer texto não-vazio).
 func _is_themed(new_screen: int) -> bool:
-	return _is_exploration(new_screen) and new_screen != _last_exploration
+	return not _flavor_for(new_screen).is_empty()
 
 # ─── Execução do fade ──────────────────────────────
-func _run(path: String, themed: bool) -> void:
+func _run(path: String, flavor: String) -> void:
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
 	_fade.color.a = 0.0
 	_label.modulate.a = 0.0
 	# Engole cliques durante a transição (evita disparo duplo de botões/ações).
 	_fade.mouse_filter = Control.MOUSE_FILTER_STOP
+	var themed := not flavor.is_empty()
 	if themed:
-		_label.text = THEMED_TEXT
+		_label.text = flavor
 
 	_tween = create_tween()
 	_tween.tween_property(_fade, "color:a", 1.0, FADE_OUT)

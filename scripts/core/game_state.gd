@@ -111,7 +111,7 @@ func _scene_path_for(new_screen: SignalBus.Screen) -> String:
 		SignalBus.Screen.MAIN_MENU:
 			return "res://scenes/ui/main_menu.tscn"
 		SignalBus.Screen.HUB:
-			return "res://scenes/ui/hub.tscn"
+			return "res://scenes/hub/hub.tscn"
 		SignalBus.Screen.ARENA:
 			return "res://scenes/arena/arena.tscn"
 		SignalBus.Screen.EXPLORATION:

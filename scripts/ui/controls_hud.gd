@@ -37,13 +37,14 @@ const _ENTRIES: Array = [
 ]
 
 # ─── State ─────────────────────────────────────────
-# Telas em que o D-pad fica visível: toda exploração e toda arena (incluindo fases futuras).
-# Fora delas (menu, hub, fim de jogo) ele é ocultado. Detectado por convenção de nome do enum
-# Screen — qualquer EXPLORATION* ou ARENA* conta como gameplay — para que uma fase nova (PHASE5…)
+# Telas em que o D-pad fica visível: toda exploração, toda arena e o acampamento jogável
+# (HUB) — a Caipora caminha pelo acampamento entre fases, então ele é gameplay. Fora delas
+# (menu, fim de jogo) ele é ocultado. Detectado por convenção de nome do enum Screen —
+# qualquer EXPLORATION*/ARENA*/HUB conta como gameplay — para que uma fase nova (PHASE5…)
 # não precise ser registrada aqui à mão e cause o D-pad sumir no mobile (regressão da Fase 4).
 # Como este nó é um autoload persistente, o D-pad criado na exploração permanece vivo ao
 # entrar no combate — sem recriação nem novo fade-in, eliminando o delay no início do turno.
-const _GAMEPLAY_SCREEN_PREFIXES: Array = ["EXPLORATION", "ARENA"]
+const _GAMEPLAY_SCREEN_PREFIXES: Array = ["EXPLORATION", "ARENA", "HUB"]
 
 var _root: Control = null
 var _dpad_rect: Rect2 = Rect2()

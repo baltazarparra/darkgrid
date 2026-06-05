@@ -2,7 +2,7 @@
 
 > **caipora** — Brazilian Folk Horror Roguelike
 > **Fase:** 9
-> **Status:** 📝 Roadmap (pronto para execução)
+> **Status:** ✅ Concluído (Etapas 0–3 entregues; hub de cards aposentado)
 > **Document Version:** 1.0
 > **Depende de:** [PRD-fase-4.md](./PRD-fase-4.md) (Meta-Progression & Hub), Fase 8 (Geração Procedural)
 
