@@ -466,7 +466,23 @@ flood-fill → hazards → entidades) e gate de invariantes em GUT. O char-grid
     rotas alternativas.
   - Testes: +invariantes (boss_type, rota limpa de fogo, `has_exit`/tile `E`) e
     `test_exploration_phase3.gd` (integração). Gate verde: 125 testes / ~10.8k asserts.
-- [ ] **Etapa 3 — Rollout Fases 2 e 4 + colapso dos 4 managers em 1** parametrizado.
+- [x] **Etapa 3 — Manager único + rollout Fases 2 e 4**:
+  - Um único `exploration_manager.gd` dirigido por `@export var phase` substitui os
+    4 managers (930 → ~430 linhas; deletados `exploration_phase{2,3,4}_manager.gd`).
+    Comportamento por fase é DADO: `MapConfig.for_phase()` (geração) + `_build_profile()`
+    (apresentação/rota: cenas de boss/regular, tela de arena, diálogo, e flags
+    `hazard_damage`/`aura`/`safe_spawn`/`ambient_life`/`keep_position`/`has_fog`/
+    `enhance_fire`/`exit_marker`/`phase_reached_on_enter`/paleta de decoração).
+    As 4 `.tscn` apontam pro script único com `phase = N`; cor do `CanvasModulate`
+    fica na cena.
+  - **Fases 2 e 4 viram procedurais.** P4 `has_exit=false` (progride ao derrotar o
+    Saci → ENDING; corrigida a inconsistência latente). Decoração modesta temática
+    de fogo/morte (troncos queimados/ossos/árvores mortas) nas P2/P4 via `DECO_FIRE`.
+  - **Sem regressão:** preservado fogo 1 (P1) vs 2 (P2/3/4), baú/chave só P1, fog só
+    P3, manter-posição só P1, `phase_reached=2` ao entrar na P2, auras tocha/fogo,
+    spawn seguro P3/P4. Fases 1 e 3 com comportamento idêntico.
+  - Testes: integração das 4 fases (`test_exploration_phase{1,2,3,4}.gd`). Gate verde:
+    smoke OK, 127 testes / ~9.4k asserts.
 - [ ] **Etapa 4 — Polish**: transição temática ("a mata se reorganiza..."),
   tuning de densidade, daily-seed.
 

@@ -6,6 +6,7 @@
 
 [node name="ExplorationManager" type="Node2D"]
 script = ExtResource("1_mgr")
+phase = 1
 
 [node name="TileMap" type="TileMap" parent="."]
 format = 2
