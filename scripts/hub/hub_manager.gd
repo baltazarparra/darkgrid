@@ -1,17 +1,22 @@
 extends Node2D
 
-# Acampamento jogável (HUB entre fases). Mini-clareira cercada de mata: a Caipora anda,
-# recupera HP cheio ao entrar e pisa no RASTRO (saída pulsante) para voltar à mata — à
-# próxima exploração pendente (definida por GameState.advance_phase_via_hub) ou, vindo de
-# uma derrota, ao começo de uma caçada nova (santuário).
+# Acampamento jogável (HUB entre fases). Mini-clareira cercada de mata onde a floresta não
+# alcança: fogueira baixa, cachimbo, ervas no chão ao redor do fogo. A Caipora anda, recupera
+# HP cheio ao entrar, fuma as ervas que pode pagar (compra ao pisar) e pisa no RASTRO (saída
+# pulsante) para voltar à mata — à próxima exploração pendente (advance_phase_via_hub) ou,
+# vindo de uma derrota, ao começo de uma caçada nova (santuário).
 #
-# Etapa 1 da Fase 9: só grid + movimento + saída. As ERVAS no chão (compra ao pisar) e o
-# HUD de fragmentos vêm nas Etapas 2/3. Reusa ao máximo a exploração: a MESMA entidade
-# Caipora (movimento 4-direções, câmera, colisão por TileMap) e o marcador de saída
-# pulsante (ForestLight + COLOR_EXIT). Nenhuma regra de combate ou economia é reimplementada.
+# Reusa ao máximo a exploração: a MESMA entidade Caipora (movimento/câmera/colisão por
+# TileMap), o marcador de saída pulsante (ForestLight + COLOR_EXIT), a fogueira (MapObject
+# FIRE), a vida ambiente (AmbientLife/ForestAmbience) e o color-grade (Atmosphere). Nenhuma
+# regra de combate ou economia é reimplementada — purchase_upgrade é a fonte única.
 
 const ForestLight := preload("res://scripts/exploration/forest_light.gd")
 const HubPickup := preload("res://scripts/hub/hub_pickup.gd")
+const MapObject := preload("res://scripts/exploration/map_object.gd")
+
+# Identidade do acampamento.
+const CACHIMBO_TEXTURE := preload("res://assets/sprites/cachimbo.png")
 
 # Variantes de tile no atlas (espelha exploration_manager: source 0 = chão, source 1 = parede).
 const FLOOR_VARIANTS := 4
@@ -34,11 +39,13 @@ const ERVA_COL_STEP := 2             # espaçamento horizontal entre ervas
 @onready var _caipora: Caipora = $Caipora
 @onready var _objects: Node2D = $Objects
 @onready var _hud: HubHud = $HubHud
+@onready var _sfx: SfxSystem = $SfxSystem
 
 # ─── State ─────────────────────────────────────────
 var _clearing: Rect2i
 var _spawn_pos: Vector2i
 var _exit_pos: Vector2i
+var _fire_pos: Vector2i
 var _locked: bool = false
 
 # Ervas no chão: grid_pos → HubPickup. Pisar numa entrada tenta a compra.
@@ -53,8 +60,11 @@ func _ready() -> void:
 	_setup_caipora()
 	_spawn_exit_marker()
 	_spawn_ervas()
+	_spawn_camp_identity()
 
-# Clareira centrada; spawn de um lado, rastro de saída do outro (mesma linha do meio).
+# Clareira centrada; spawn de um lado, rastro de saída do outro (mesma linha do meio). A
+# fogueira fica no centro (vira parede: bloqueia o atalho reto, então o jogador contorna
+# pelas fileiras de ervas — exatamente o "andar entre as ervas ao redor do fogo").
 func _compute_layout() -> void:
 	var ox: int = (Constants.GRID_WIDTH - CLEARING_WIDTH) / 2
 	var oy: int = (Constants.GRID_HEIGHT - CLEARING_HEIGHT) / 2
@@ -62,6 +72,7 @@ func _compute_layout() -> void:
 	var mid_y: int = oy + CLEARING_HEIGHT / 2
 	_spawn_pos = Vector2i(ox + 1, mid_y)
 	_exit_pos = Vector2i(ox + CLEARING_WIDTH - 2, mid_y)
+	_fire_pos = Vector2i(ox + CLEARING_WIDTH / 2, mid_y)
 
 func _is_floor(pos: Vector2i) -> bool:
 	return _clearing.has_point(pos)
@@ -121,8 +132,28 @@ func _try_buy(grid_pos: Vector2i) -> void:
 		pickup.consume()
 		_hud.refresh()
 		_refresh_affordability()
+		_sfx.play(_sfx.timing_perfect_sound, -3.0)  # "fumar": chiado da recompensa
+		_spawn_floating_cost(grid_pos, pickup.cost)
 	else:
 		pickup.deny()
+		_sfx.play(_sfx.ui_click_sound, -8.0)        # insuficiente: clique seco e baixo
+
+# Número flutuante "−custo" subindo do tile da erva (world-space).
+func _spawn_floating_cost(grid_pos: Vector2i, cost: int) -> void:
+	var label := Label.new()
+	label.text = "-%d" % cost
+	label.add_theme_font_size_override("font_size", Constants.FONT_SM)
+	label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.size = Vector2(Constants.TILE_SIZE, 0)
+	label.position = Vector2(grid_pos) * Constants.TILE_SIZE
+	label.z_index = 5
+	_objects.add_child(label)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(label, "position:y", label.position.y - 28.0, 0.9)
+	tween.tween_property(label, "modulate:a", 0.0, 0.9)
+	tween.chain().tween_callback(label.queue_free)
 
 # ─── Saída (rastro) ────────────────────────────────
 func _on_caipora_moved(grid_pos: Vector2i) -> void:
@@ -165,6 +196,38 @@ func _spawn_exit_marker() -> void:
 	tween.tween_property(light, "energy", 1.4, 1.1).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(light, "energy", 0.7, 1.1).set_trans(Tween.TRANS_SINE)
 
+# ─── Identidade do acampamento ─────────────────────
+# Fogueira no centro, cachimbo ao pé do fogo, vida ambiente sobre a clareira e o color-grade
+# da Atmosphere — o único respiro entre as caçadas. Tudo reusado da exploração.
+func _spawn_camp_identity() -> void:
+	# Fogueira viva (chama desenhada + luz + brasas/fumaça), igual às fases de poucas fogueiras.
+	var fire := MapObject.new()
+	_objects.add_child(fire)
+	fire.setup(MapObject.Type.FIRE, _fire_pos, true)
+
+	# Cachimbo descansando no chão, ao lado do fogo (decoração — a Caipora passa por cima).
+	var cachimbo := Sprite2D.new()
+	cachimbo.texture = CACHIMBO_TEXTURE
+	cachimbo.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	cachimbo.position = Vector2(_fire_pos + Vector2i(1, 0)) * Constants.TILE_SIZE \
+		+ Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
+	cachimbo.scale = Vector2(0.5, 0.5)
+	cachimbo.z_index = -1
+	_objects.add_child(cachimbo)
+
+	# Vaga-lumes/insetos + neblina/esporos sobre a clareira (área interna).
+	var t := Constants.TILE_SIZE
+	var bounds := Rect2(Vector2(_clearing.position) * t, Vector2(_clearing.size) * t)
+	var life := AmbientLife.new()
+	add_child(life)
+	life.setup(bounds)
+	var ambience := ForestAmbience.new()
+	add_child(ambience)
+	ambience.setup(bounds)
+
+	# Vinheta/grão/color-grade: costura o acampamento ao mesmo mundo das fases.
+	add_child(Atmosphere.new())
+
 # ─── TileMap (mesmo tileset/atlas da exploração) ───
 func _setup_tilemap() -> void:
 	var tileset := TileSet.new()
@@ -196,7 +259,8 @@ func _paint_map() -> void:
 	for y: int in Constants.GRID_HEIGHT:
 		for x: int in Constants.GRID_WIDTH:
 			var pos := Vector2i(x, y)
-			if _is_floor(pos):
+			# A fogueira no centro bloqueia (parede sob o fogo); o resto da clareira é chão.
+			if _is_floor(pos) and pos != _fire_pos:
 				var fv: int = (x * 7 + y * 13) % FLOOR_VARIANTS
 				_tilemap.set_cell(0, pos, 0, Vector2i(fv, 0))
 			else:

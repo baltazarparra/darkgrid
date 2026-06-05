@@ -1,8 +1,11 @@
-[gd_scene load_steps=4 format=3 uid="uid://hub_camp01"]
+[gd_scene load_steps=7 format=3 uid="uid://hub_camp01"]
 
 [ext_resource type="Script" path="res://scripts/hub/hub_manager.gd" id="1_mgr"]
 [ext_resource type="PackedScene" uid="uid://caipora_explore" path="res://scenes/exploration/caipora.tscn" id="2_caipora"]
 [ext_resource type="Script" path="res://scripts/hub/hub_hud.gd" id="3_hud"]
+[ext_resource type="Script" path="res://scripts/systems/sfx_system.gd" id="4_sfx"]
+[ext_resource type="AudioStream" uid="uid://tgeb4qdef7sb" path="res://assets/audio/sfx/timing_perfect.wav" id="5_perfect"]
+[ext_resource type="AudioStream" uid="uid://bc44d51ib6gu8" path="res://assets/audio/sfx/ui_click.wav" id="6_click"]
 
 [node name="HubManager" type="Node2D"]
 script = ExtResource("1_mgr")
@@ -19,3 +22,8 @@ color = Color(0.46, 0.39, 0.32, 1)
 
 [node name="HubHud" type="CanvasLayer" parent="."]
 script = ExtResource("3_hud")
+
+[node name="SfxSystem" type="Node" parent="."]
+script = ExtResource("4_sfx")
+timing_perfect_sound = ExtResource("5_perfect")
+ui_click_sound = ExtResource("6_click")

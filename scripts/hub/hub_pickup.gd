@@ -15,6 +15,8 @@ var cost: int
 
 var _icon: Sprite2D
 var _cost_label: Label
+var _pulse: Tween                    # respiro âmbar quando acessível
+var _affordable: bool = false
 
 func setup(erva_key: String, grid_pos: Vector2i) -> void:
 	key = erva_key
@@ -49,17 +51,30 @@ func _fit_icon() -> void:
 	var s := float(T - ICON_MARGIN) / float(longest)
 	_icon.scale = Vector2(s, s)
 
-## Atualiza o estado visual conforme o jogador pode (ou não) pagar a erva.
+## Atualiza o estado visual conforme o jogador pode (ou não) pagar a erva. Acessível
+## ganha um respiro pulsante âmbar (destaque); cara fica esmaecida com custo em sangue.
 func set_affordable(affordable: bool) -> void:
+	if affordable == _affordable and _pulse != null:
+		return
+	_affordable = affordable
+	if _pulse != null and _pulse.is_valid():
+		_pulse.kill()
+		_pulse = null
 	if affordable:
 		_icon.modulate = Color.WHITE
 		_cost_label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
+		_pulse = create_tween().set_loops()
+		_pulse.tween_property(_icon, "scale", _icon.scale * 1.08, 0.7).set_trans(Tween.TRANS_SINE)
+		_pulse.tween_property(_icon, "scale", _icon.scale, 0.7).set_trans(Tween.TRANS_SINE)
 	else:
 		_icon.modulate = Color(1.0, 1.0, 1.0, DIM_ALPHA)
 		_cost_label.add_theme_color_override("font_color", Constants.COLOR_BLOOD)
 
 ## Comprada: some do chão (fumada no cachimbo) e se libera.
 func consume() -> void:
+	if _pulse != null and _pulse.is_valid():
+		_pulse.kill()
+		_pulse = null
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(self, "scale", Vector2(0.1, 0.1), 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)

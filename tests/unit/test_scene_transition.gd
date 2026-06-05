@@ -42,9 +42,17 @@ func test_not_themed_on_combat_return() -> void:
 # ── Telas de menu/arena nunca disparam o flavor ──
 func test_not_themed_on_non_exploration() -> void:
 	_st._last_exploration = -1
-	for s: int in [SignalBus.Screen.HUB, SignalBus.Screen.ARENA,
-			SignalBus.Screen.ENDING, SignalBus.Screen.MAIN_MENU]:
+	for s: int in [SignalBus.Screen.ARENA, SignalBus.Screen.ENDING, SignalBus.Screen.MAIN_MENU]:
 		assert_false(_st._is_themed(s), "tela %d sem flavor" % s)
+
+# ── Entrar no acampamento (HUB) tem flavor próprio, calmo (Fase 9) ──
+func test_hub_has_camp_flavor() -> void:
+	_st._last_exploration = -1
+	assert_true(_st._is_themed(SignalBus.Screen.HUB), "acampamento dispara flavor")
+	assert_eq(_st._flavor_for(SignalBus.Screen.HUB), _st.CAMP_TEXT,
+		"HUB usa o texto calmo do acampamento")
+	assert_eq(_st._flavor_for(SignalBus.Screen.EXPLORATION_PHASE2), _st.THEMED_TEXT,
+		"avanço de fase mantém o texto da mata")
 
 # ── transition_to atualiza a última exploração visitada ──
 func test_transition_tracks_last_exploration() -> void:

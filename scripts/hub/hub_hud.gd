@@ -2,12 +2,15 @@ class_name HubHud
 extends CanvasLayer
 
 # HUD do acampamento: contador de FRAGMENTOS + resumo dos bônus já fumados
-# ("FÚRIA +X DANO · CURA +Y HP", de get_damage_bonus()/get_health_bonus()). O HubManager
-# chama refresh() a cada compra. Margens seguras espelham hud.gd (notch/safe-area).
+# ("FÚRIA +X DANO · CURA +Y HP", de get_damage_bonus()/get_health_bonus()) + acesso a OPÇÕES
+# (herdado do antigo hub de cards: volumes, modo touch, reset). O HubManager chama refresh()
+# a cada compra. Margens seguras espelham hud.gd (notch/safe-area).
 
 var _frag_label: Label
 var _bonus_label: Label
+var _options_button: Button
 var _margin: MarginContainer
+var _options: OptionsPanel
 
 func _ready() -> void:
 	layer = 10
@@ -16,10 +19,16 @@ func _ready() -> void:
 	_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_margin)
 
+	# [ fragmentos/bônus à esquerda ] ··· [ Opções à direita ].
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_margin.add_child(row)
+
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 6)
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_margin.add_child(vbox)
+	row.add_child(vbox)
 
 	_frag_label = Label.new()
 	_frag_label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
@@ -28,6 +37,19 @@ func _ready() -> void:
 	_bonus_label = Label.new()
 	_bonus_label.add_theme_color_override("font_color", Constants.COLOR_TEXT)
 	vbox.add_child(_bonus_label)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(spacer)
+
+	_options = OptionsPanel.new()
+	add_child(_options)
+	_options_button = Button.new()
+	_options_button.text = "Opções"
+	_options_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_options_button.pressed.connect(_options.open)
+	row.add_child(_options_button)
 
 	_apply_safe_margins()
 	get_viewport().size_changed.connect(_apply_safe_margins)
@@ -50,3 +72,4 @@ func _apply_safe_margins() -> void:
 	_margin.add_theme_constant_override("margin_right", side)
 	_frag_label.add_theme_font_size_override("font_size", fs)
 	_bonus_label.add_theme_font_size_override("font_size", fs)
+	_options_button.add_theme_font_size_override("font_size", fs)
