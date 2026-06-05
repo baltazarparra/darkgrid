@@ -16,6 +16,7 @@ var cost: int
 var _icon: Sprite2D
 var _cost_label: Label
 var _pulse: Tween                    # respiro âmbar quando acessível
+var _base_scale: Vector2 = Vector2.ONE  # escala do ícone ajustada ao tile (base do pulso)
 var _affordable: bool = false
 
 func setup(erva_key: String, grid_pos: Vector2i) -> void:
@@ -49,7 +50,8 @@ func _fit_icon() -> void:
 	if longest <= 0:
 		return
 	var s := float(T - ICON_MARGIN) / float(longest)
-	_icon.scale = Vector2(s, s)
+	_base_scale = Vector2(s, s)
+	_icon.scale = _base_scale
 
 ## Atualiza o estado visual conforme o jogador pode (ou não) pagar a erva. Acessível
 ## ganha um respiro pulsante âmbar (destaque); cara fica esmaecida com custo em sangue.
@@ -60,12 +62,14 @@ func set_affordable(affordable: bool) -> void:
 	if _pulse != null and _pulse.is_valid():
 		_pulse.kill()
 		_pulse = null
+	# Restaura a escala-base: matar o pulso no meio do respiro pode deixar o ícone ampliado.
+	_icon.scale = _base_scale
 	if affordable:
 		_icon.modulate = Color.WHITE
 		_cost_label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
 		_pulse = create_tween().set_loops()
-		_pulse.tween_property(_icon, "scale", _icon.scale * 1.08, 0.7).set_trans(Tween.TRANS_SINE)
-		_pulse.tween_property(_icon, "scale", _icon.scale, 0.7).set_trans(Tween.TRANS_SINE)
+		_pulse.tween_property(_icon, "scale", _base_scale * 1.08, 0.7).set_trans(Tween.TRANS_SINE)
+		_pulse.tween_property(_icon, "scale", _base_scale, 0.7).set_trans(Tween.TRANS_SINE)
 	else:
 		_icon.modulate = Color(1.0, 1.0, 1.0, DIM_ALPHA)
 		_cost_label.add_theme_color_override("font_color", Constants.COLOR_BLOOD)

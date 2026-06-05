@@ -2,12 +2,15 @@ class_name HubHud
 extends CanvasLayer
 
 # HUD do acampamento: contador de FRAGMENTOS + resumo dos bônus já fumados
-# ("FÚRIA +X DANO · CURA +Y HP", de get_damage_bonus()/get_health_bonus()) + acesso a OPÇÕES
-# (herdado do antigo hub de cards: volumes, modo touch, reset). O HubManager chama refresh()
-# a cada compra. Margens seguras espelham hud.gd (notch/safe-area).
+# ("FÚRIA +X DANO · CURA +Y HP", de get_damage_bonus()/get_health_bonus()), instrução curta
+# e acesso a OPÇÕES (herdado do antigo hub de cards: volumes, modo touch, reset). O HubManager
+# chama refresh() a cada compra. Margens seguras espelham hud.gd (notch/safe-area).
+
+const HINT_COLOR := Color(0.55, 0.55, 0.58, 1.0)  # texto apagado da instrução
 
 var _frag_label: Label
 var _bonus_label: Label
+var _hint_label: Label
 var _options_button: Button
 var _margin: MarginContainer
 var _options: OptionsPanel
@@ -37,6 +40,11 @@ func _ready() -> void:
 	_bonus_label = Label.new()
 	_bonus_label.add_theme_color_override("font_color", Constants.COLOR_TEXT)
 	vbox.add_child(_bonus_label)
+
+	_hint_label = Label.new()
+	_hint_label.text = "piso na erva pra fumar • rastro leva à mata"
+	_hint_label.add_theme_color_override("font_color", HINT_COLOR)
+	vbox.add_child(_hint_label)
 
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -72,4 +80,5 @@ func _apply_safe_margins() -> void:
 	_margin.add_theme_constant_override("margin_right", side)
 	_frag_label.add_theme_font_size_override("font_size", fs)
 	_bonus_label.add_theme_font_size_override("font_size", fs)
+	_hint_label.add_theme_font_size_override("font_size", maxi(fs - 2, 8))
 	_options_button.add_theme_font_size_override("font_size", fs)
