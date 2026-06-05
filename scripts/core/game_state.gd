@@ -29,6 +29,11 @@ var has_key: bool = false
 var chest_opened: bool = false
 var player_map_pos: Vector2i = Vector2i(-1, -1)
 
+# Snapshot das posições dos inimigos sobreviventes no instante do combate
+# ({ enemy_id: Vector2i }). Restaura a exploração IDÊNTICA na volta da arena —
+# inimigos e jogador ficam exatamente onde estavam. Limpo a cada run/avanço de fase.
+var map_enemy_positions: Dictionary = {}
+
 ## Inicia uma nova run: HP cheio.
 func start_run() -> void:
 	run_active = true
@@ -39,6 +44,7 @@ func start_run() -> void:
 	has_key = false
 	chest_opened = false
 	player_map_pos = Vector2i(-1, -1)
+	map_enemy_positions.clear()
 	run_seed = randi()
 	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH + MetaProgression.get_health_bonus()
 	caipora_current_hp = caipora_max_hp

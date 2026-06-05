@@ -3,9 +3,9 @@ extends Resource
 
 # Parametriza UMA geração de mapa. Cada fase tem uma config que codifica sua
 # identidade — a referência dos mapas estáticos (PLAN.md §11, Fases 1–4):
-#   Fase 1: arena aberta, pilares, sala-chokepoint do boss, baú+chave, 4 inimigos.
+#   Fase 1: arena aberta, pilares, sala-chokepoint do boss, baú+chave, 6 inimigos.
 #   Fase 2: mesma topologia encharcada de fogo, 6 inimigos (Boitatá).
-#   Fase 3: "Ventre da Mata" — corredores estreitos, fog of war, 4 inimigos (Curupira).
+#   Fase 3: "Ventre da Mata" — corredores estreitos, fog of war, 6 inimigos (Curupira).
 #   Fase 4: casa em chamas — fogo denso, 6 inimigos (Saci).
 #
 # É um Resource para virar .tres tunável por game design (sem números mágicos no
@@ -57,21 +57,21 @@ static func for_phase(target_phase: int) -> MapConfig:
 		1:
 			c.topology_mode = TopologyMode.OPEN
 			c.boss_type = "generico"
-			c.enemy_count = 4
+			c.enemy_count = 6
 			c.hazard_chars = PackedStringArray(["R", "S"])
 			c.hazard_density = 0.04
 			c.pillar_density = 0.06
 			c.has_chest = true
 			c.has_key = true
-			c.decoration_count = 40
+			c.decoration_count = 60
 		2:
 			c.topology_mode = TopologyMode.OPEN
 			c.boss_type = "boitata"
-			c.enemy_count = 4
+			c.enemy_count = 6
 			c.hazard_chars = PackedStringArray(["R"])
 			c.hazard_density = 0.12
 			c.pillar_density = 0.05
-			c.decoration_count = 22
+			c.decoration_count = 44
 		3:
 			c.topology_mode = TopologyMode.CORRIDOR
 			c.boss_type = "curupira"
@@ -88,7 +88,7 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.corridor_width = 1
 			c.has_fog = true
 			c.has_exit = false  # progride ao derrotar o Curupira (sem tile de saída)
-			c.decoration_count = 18
+			c.decoration_count = 30
 		4:
 			c.topology_mode = TopologyMode.OPEN
 			c.boss_type = "saci"
@@ -97,5 +97,5 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.hazard_density = 0.16
 			c.pillar_density = 0.05
 			c.has_exit = false  # progride ao derrotar o Saci → ENDING (sem tile de saída)
-			c.decoration_count = 22
+			c.decoration_count = 44
 	return c
