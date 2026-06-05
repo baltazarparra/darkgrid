@@ -507,6 +507,33 @@ flood-fill → hazards → entidades) e gate de invariantes em GUT. O char-grid
     verde: smoke OK, 134 testes / ~12.6k asserts.
   - **Adiado (follow-up):** daily-seed + leaderboard; variar canto do boss.
 
+### Fase 9: Hub de Aprimoramentos Jogável 🚧
+
+Tira os aprimoramentos da tela de menu pré-jogo e os transforma num **Acampamento
+jogável** pelo qual a Caipora caminha **entre uma fase e outra**. No chão ficam as ervas
+compráveis da fase, cada uma com seu valor; **pisar** numa que dá pra pagar realiza o
+aprimoramento. A saída é um rastro no chão → próxima fase. **Sem hub antes da Fase 1.**
+Roadmap completo: [docs/PRD-fase-9-hub-jogavel.md](docs/PRD-fase-9-hub-jogavel.md).
+
+- [ ] **Etapa 0 — Roteamento via hub:** `GameState.pending_exploration` +
+  `advance_phase_via_hub()`; `exploration_manager` (tile de saída) e `arena_manager`
+  (morte de boss P2→P3, P3→P4) roteiam o **avanço de fase** pelo HUB — vitória comum,
+  boss da P1, ENDING e GAME_OVER seguem diretos. `main_menu.gd` inicia a run e cai direto
+  na Exploração da Fase 1. Hub de cards atual segue temporário, agora lendo
+  `pending_exploration`. Testes de roteamento.
+- [ ] **Etapa 1 — Hub jogável (grid + saída):** `scenes/hub/hub.tscn` +
+  `scripts/hub/hub_manager.gd` (Node2D: TileMap + Caipora + saída pulsante), `heal_to_full()`
+  na entrada, `_scene_path_for(HUB)` aponta pra cena nova. Anda → pisa na saída → próxima
+  fase, com continuidade da run preservada.
+- [ ] **Etapa 2 — Ervas no chão + compra ao pisar:** posiciona toda erva comprável da fase
+  (gate `phase_reached` + `requires` + não-comprada) com ícone + custo; compra ao pisar via
+  `MetaProgression.purchase_upgrade` (fonte única de verdade); HUD de fragmentos + resumo
+  de bônus; feedback de sucesso/insuficiente.
+- [ ] **Etapa 3 — Polish + limpeza:** identidade do acampamento (fogueira, cachimbo, vida
+  ambiente, SFX de "fumar", número flutuante, brilho acessível/caro), flavor de transição,
+  **aposentar** `scenes/ui/hub.tscn` + `scripts/ui/hub.gd` (mover `OptionsPanel` pro hub
+  jogável), atualizar `test_hub_*`/`test_scene_transition`. Gate verde.
+
 ---
 
 ## 11.1 Known Issues
