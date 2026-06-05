@@ -45,6 +45,7 @@ enum TopologyMode {
 @export var has_chest: bool = false
 @export var has_key: bool = false
 @export var has_fog: bool = false
+@export var decoration_count: int = 0       # ambientação visual espalhada no chão
 
 # ─── Factory por fase ──────────────────────────────
 # Mantém a identidade das 4 fases num único ponto de tuning.
@@ -61,22 +62,25 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.pillar_density = 0.06
 			c.has_chest = true
 			c.has_key = true
+			c.decoration_count = 40
 		2:
 			c.topology_mode = TopologyMode.OPEN
 			c.boss_type = "boitata"
-			c.enemy_count = 6
+			c.enemy_count = 4
 			c.hazard_chars = PackedStringArray(["R"])
 			c.hazard_density = 0.12
 			c.pillar_density = 0.05
+			c.decoration_count = 40
 		3:
 			c.topology_mode = TopologyMode.CORRIDOR
 			c.boss_type = "curupira"
-			c.enemy_count = 4
+			c.enemy_count = 6
 			c.hazard_chars = PackedStringArray()
 			c.hazard_density = 0.0
 			c.corridor_openness = 0.36
 			c.corridor_width = 1
 			c.has_fog = true
+			c.decoration_count = 24
 		4:
 			c.topology_mode = TopologyMode.OPEN
 			c.boss_type = "saci"
@@ -84,4 +88,5 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.hazard_chars = PackedStringArray(["R"])
 			c.hazard_density = 0.16
 			c.pillar_density = 0.05
+			c.decoration_count = 40
 	return c

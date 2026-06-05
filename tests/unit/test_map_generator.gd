@@ -134,3 +134,74 @@ func test_chest_key_only_when_configured() -> void:
 		var m := _gen(phase, 5)
 		assert_eq(m.chest_pos, Vector2i(-1, -1), "fase %d sem baú" % phase)
 		assert_eq(m.key_pos, Vector2i(-1, -1), "fase %d sem chave" % phase)
+
+func _manhattan(a: Vector2i, b: Vector2i) -> int:
+	return absi(a.x - b.x) + absi(a.y - b.y)
+
+# ── Contagem padrão por fase: 4 / 4 / 6 / 6 ──
+func test_phase_enemy_counts_are_4_4_6_6() -> void:
+	assert_eq(MapConfig.for_phase(1).enemy_count, 4, "fase 1 = 4")
+	assert_eq(MapConfig.for_phase(2).enemy_count, 4, "fase 2 = 4")
+	assert_eq(MapConfig.for_phase(3).enemy_count, 6, "fase 3 = 6")
+	assert_eq(MapConfig.for_phase(4).enemy_count, 6, "fase 4 = 6")
+
+# ── Boss sempre distante do jogador (na metade mais longe do mapa) ──
+func test_boss_far_from_player() -> void:
+	for phase: int in PHASES:
+		for s: int in SEEDS:
+			var m := _gen(phase, s)
+			var dist := m.reachable_from(m.player_start)
+			var max_d := 0
+			for d: int in dist.values():
+				max_d = maxi(max_d, d)
+			var b := m.boss()
+			var bd: int = int(dist.get(Vector2i(b["x"], b["y"]), 0))
+			assert_gte(bd, int(max_d * 0.5),
+				"boss na metade mais distante (fase %d seed %d)" % [phase, s])
+
+# ── Sempre 1+ monstro perto do boss (guardas) ──
+func test_at_least_one_enemy_near_boss() -> void:
+	for phase: int in PHASES:
+		for s: int in SEEDS:
+			var m := _gen(phase, s)
+			var b := m.boss()
+			var bpos := Vector2i(b["x"], b["y"])
+			var near := 0
+			for e: Dictionary in m.enemies:
+				if e["boss"]:
+					continue
+				if _manhattan(Vector2i(e["x"], e["y"]), bpos) <= MapGenerator.BOSS_GUARD_RADIUS:
+					near += 1
+			assert_gte(near, 1, "ao menos 1 guarda perto do boss (fase %d seed %d)" % [phase, s])
+
+# ── Baú e chave: longe do jogador e longe um do outro ──
+func test_chest_key_distant() -> void:
+	for s: int in SEEDS:
+		var m := _gen(1, s)  # só a fase 1 tem baú/chave
+		var dist := m.reachable_from(m.player_start)
+		assert_gte(int(dist.get(m.chest_pos, 0)), MapGenerator.CHEST_KEY_MIN_PLAYER_DIST,
+			"baú longe do spawn (seed %d)" % s)
+		assert_gte(int(dist.get(m.key_pos, 0)), MapGenerator.CHEST_KEY_MIN_PLAYER_DIST,
+			"chave longe do spawn (seed %d)" % s)
+		assert_gte(_manhattan(m.chest_pos, m.key_pos), MapGenerator.CHEST_KEY_MIN_SEPARATION,
+			"baú e chave separados (seed %d)" % s)
+
+# ── Decorações: quantidade certa, em chão livre, sem sobrepor entidades ──
+func test_decorations_valid() -> void:
+	for phase: int in PHASES:
+		var expected := MapConfig.for_phase(phase).decoration_count
+		for s: int in SEEDS:
+			var m := _gen(phase, s)
+			assert_eq(m.decorations.size(), expected,
+				"contagem de decorações (fase %d seed %d)" % [phase, s])
+			var occupied := {m.player_start: true, m.exit_pos: true,
+				m.chest_pos: true, m.key_pos: true}
+			for e: Dictionary in m.enemies:
+				occupied[Vector2i(e["x"], e["y"])] = true
+			var seen := {}
+			for d: Vector2i in m.decorations:
+				assert_true(m.is_walkable(d), "decoração em chão caminhável")
+				assert_ne(m.char_at(d), "E", "decoração não na saída")
+				assert_false(occupied.has(d), "decoração não sobrepõe entidade")
+				assert_false(seen.has(d), "decorações sem sobreposição entre si")
+				seen[d] = true

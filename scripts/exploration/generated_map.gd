@@ -22,6 +22,7 @@ var exit_pos: Vector2i = Vector2i(-1, -1)
 var enemies: Array = []                      # [{id, x, y, boss}]
 var chest_pos: Vector2i = Vector2i(-1, -1)
 var key_pos: Vector2i = Vector2i(-1, -1)
+var decorations: Array[Vector2i] = []        # ambientação visual (não afeta walkability)
 
 # ─── Public API ────────────────────────────────────
 func char_at(pos: Vector2i) -> String:

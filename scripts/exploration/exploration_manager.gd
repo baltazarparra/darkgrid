@@ -15,103 +15,19 @@ const WALL_VARIANTS := 2
 @onready var _objects_container: Node2D = $Objects
 
 # ─── State ─────────────────────────────────────────
+# Mapa gerado proceduralmente a cada run. Determinístico por (run_seed, fase) — a
+# volta da arena regenera o MESMO mapa, então inimigos derrotados continuam fora.
+var _map: GeneratedMap
 var _map_enemies: Array[MapEnemy] = []
-var _player_grid_pos: Vector2i = PLAYER_START
+var _player_grid_pos: Vector2i = Vector2i.ZERO
 var _locked: bool = false
 var _key_node: Node2D = null
 var _chest_node: Node2D = null
 
-# ─── Map Definition ────────────────────────────────
-# 26 cols × 18 rows.
-# W=wall  F=floor  E=exit
-# C=baú   K=chave
-# R=fogo  S=espinho
-# Mapa aberto: grande área caminhável com pilares de 1 tile (cobertura/rota) e
-# uma sala-chokepoint do boss no canto inferior-direito. A saída (E) fica dentro
-# dela; a porta única é o gap em (17,14), onde o boss (e3) faz guarda.
-const MAP_LAYOUT = [
-	"WWWWWWWWWWWWWWWWWWWWWWWWWW",
-	"WFFFFFFFFFFFFFFFFFFFFFFFFW",
-	"WFFFWFFFFFFFWFFFFFFFWFFFFW",
-	"WFFFFFFFFFFFFFFFFFFFFFFFFW",
-	"WFFFFFFWFFWFFFFFFWFFFFFFFW",  # pilar (10,4); fogo guarda (7,4)/(17,4)
-	"WFFFFFFFRFFFFFFSFFFFFFFFFW",  # fogo (8,5), espinho (15,5)
-	"WFFFWFFFFFWFFFFFWFFFFFFFFW",
-	"WFFFFFFFWFFFFFFFFFFFFFFFFW",  # pilar isolado (8,7)
-	"WFFFFFFWFFFRFFFFFWFFFSFFFW",  # fogo (11,8), espinho (21,8)
-	"WFFFFFFFFFFFFFFFFFFWFFFFFW",  # pilar isolado (19,9)
-	"WFFFWFFFFFWFFFFFWFFFFFFFFW",
-	"WFFFFFWFFSFFFFFFRFFFFFFFFW",  # pilar (6,11), espinho (9,11), fogo (16,11)
-	"WFFFFFFFFFFFFFFFFFWWWWWWWW",
-	"WFFFFFFWFFFFFSFFFFWFFFFFFW",  # espinho (12,13)
-	"WFFFFFFFFFFFFFFFFFFFFFFFFW",  # porta do boss: gap em (17,14)
-	"WFFFWFFFFFFFFFFFFFWFFFFFFW",
-	"WFFFFFFFFFFFFFFFFFWFFFEFFW",  # saída (21,16) dentro da sala do boss
-	"WWWWWWWWWWWWWWWWWWWWWWWWWW",
-]
-
-const ENEMY_DEFS = [
-	{"id": "p1_e0", "x": 9,  "y": 3,  "boss": false},
-	{"id": "p1_e1", "x": 12, "y": 9,  "boss": false},
-	{"id": "p1_e2", "x": 18, "y": 6,  "boss": false},
-	{"id": "p1_e3", "x": 17, "y": 14, "boss": true},  # guarda a porta da saída
-]
-
-const EXIT_POS     := Vector2i(21, 16)
-const CHEST_POS    := Vector2i(6,  2)
-const KEY_POS      := Vector2i(12, 7)  # perto de e1, pegável sem lutar
-const PLAYER_START := Vector2i(2,  1)
-
-const HAZARD_CHARS := ["R", "S"]
-
-# Ambientação folk-horror (puramente visual, não afeta walkability).
-const DECO_DEFS = [
-	{"type": MapObject.Type.DEAD_TREE, "x": 2, "y": 3},
-	{"type": MapObject.Type.DEAD_TREE, "x": 23, "y": 2},
-	{"type": MapObject.Type.DEAD_TREE, "x": 2, "y": 14},
-	{"type": MapObject.Type.DEAD_TREE, "x": 23, "y": 9},
-	{"type": MapObject.Type.ROCK, "x": 5, "y": 2},
-	{"type": MapObject.Type.ROCK, "x": 22, "y": 5},
-	{"type": MapObject.Type.ROCK, "x": 6, "y": 15},
-	{"type": MapObject.Type.ROCK, "x": 20, "y": 3},
-	{"type": MapObject.Type.MOSS, "x": 9, "y": 6},
-	{"type": MapObject.Type.MOSS, "x": 14, "y": 7},
-	{"type": MapObject.Type.MOSS, "x": 8, "y": 9},
-	{"type": MapObject.Type.MOSS, "x": 13, "y": 10},
-	{"type": MapObject.Type.MOSS, "x": 16, "y": 9},
-	{"type": MapObject.Type.MOSS, "x": 11, "y": 4},
-	{"type": MapObject.Type.BONES, "x": 13, "y": 5},
-	{"type": MapObject.Type.BONES, "x": 20, "y": 8},
-	{"type": MapObject.Type.BONES, "x": 10, "y": 11},
-	{"type": MapObject.Type.BLOOD_POOL, "x": 12, "y": 13},
-	{"type": MapObject.Type.BLOOD_POOL, "x": 19, "y": 15},
-	{"type": MapObject.Type.BLOOD_POOL, "x": 15, "y": 14},
-	{"type": MapObject.Type.BONES, "x": 20, "y": 15},
-	{"type": MapObject.Type.FERN, "x": 5, "y": 7},
-	{"type": MapObject.Type.FERN, "x": 19, "y": 4},
-	{"type": MapObject.Type.FERN, "x": 7, "y": 12},
-	{"type": MapObject.Type.FERN, "x": 22, "y": 11},
-	{"type": MapObject.Type.FERN, "x": 14, "y": 16},
-	{"type": MapObject.Type.VINE, "x": 10, "y": 2},
-	{"type": MapObject.Type.VINE, "x": 18, "y": 1},
-	{"type": MapObject.Type.VINE, "x": 6, "y": 4},
-	{"type": MapObject.Type.VINE, "x": 21, "y": 7},
-	{"type": MapObject.Type.MUSHROOM, "x": 4, "y": 9},
-	{"type": MapObject.Type.MUSHROOM, "x": 15, "y": 3},
-	{"type": MapObject.Type.MUSHROOM, "x": 8, "y": 13},
-	{"type": MapObject.Type.STUMP, "x": 7, "y": 5},
-	{"type": MapObject.Type.STUMP, "x": 15, "y": 12},
-	{"type": MapObject.Type.TOTEM, "x": 3, "y": 7},
-	{"type": MapObject.Type.TOTEM, "x": 22, "y": 14},
-	{"type": MapObject.Type.ROOTS, "x": 10, "y": 15},
-	{"type": MapObject.Type.ROOTS, "x": 14, "y": 12},
-	{"type": MapObject.Type.ROOTS, "x": 6, "y": 10},
-	{"type": MapObject.Type.PUDDLE, "x": 5, "y": 16},
-	{"type": MapObject.Type.PUDDLE, "x": 17, "y": 9},
-]
-
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
+	GameState.active_phase = 1
+	_map = MapGenerator.new().generate(MapConfig.for_phase(1), GameState.map_seed_for_phase(1))
 	_setup_tilemap()
 	_setup_player()
 	_spawn_enemies()
@@ -137,7 +53,7 @@ func _spawn_ambient_life() -> void:
 	ambience.setup(area)
 
 func _setup_player() -> void:
-	var start := GameState.player_map_pos if GameState.player_map_pos != Vector2i(-1, -1) else PLAYER_START
+	var start := GameState.player_map_pos if GameState.player_map_pos != Vector2i(-1, -1) else _map.player_start
 	_player_grid_pos = start
 	_caipora.tilemap = _tilemap
 	_caipora.position = Vector2(start) * Constants.TILE_SIZE
@@ -148,7 +64,7 @@ func _setup_player() -> void:
 	_caipora.add_child(torch)
 
 func _spawn_enemies() -> void:
-	for def in ENEMY_DEFS:
+	for def: Dictionary in _map.enemies:
 		if def["id"] in GameState.defeated_enemy_ids:
 			continue
 		var enemy := MapEnemy.new()
@@ -157,31 +73,34 @@ func _spawn_enemies() -> void:
 		_map_enemies.append(enemy)
 
 func _spawn_objects() -> void:
-	# Decorações de ambientação (atrás de tudo)
-	for d in DECO_DEFS:
-		_make_object(d["type"], Vector2i(d["x"], d["y"]))
+	# Decorações de ambientação (atrás de tudo). Tipos sorteados de forma
+	# determinística da paleta visual, estáveis na volta da arena.
+	var deco_rng := RandomNumberGenerator.new()
+	deco_rng.seed = GameState.map_seed_for_phase(1) ^ 0xDEC0
+	var palette: Array = MapObject.DECO_TYPES
+	for pos: Vector2i in _map.decorations:
+		var type: MapObject.Type = palette[deco_rng.randi_range(0, palette.size() - 1)]
+		_make_object(type, pos)
 
 	# Baú
-	if not GameState.chest_opened:
-		var chest := _make_object(MapObject.Type.CHEST, CHEST_POS)
-		_chest_node = chest
+	if not GameState.chest_opened and _map.chest_pos != Vector2i(-1, -1):
+		_chest_node = _make_object(MapObject.Type.CHEST, _map.chest_pos)
 
 	# Chave
-	if not GameState.has_key:
-		var key := _make_object(MapObject.Type.KEY, KEY_POS)
-		_key_node = key
+	if not GameState.has_key and _map.key_pos != Vector2i(-1, -1):
+		_key_node = _make_object(MapObject.Type.KEY, _map.key_pos)
 
 	# Hazards do mapa (sempre presentes)
-	for y: int in MAP_LAYOUT.size():
-		var row: String = MAP_LAYOUT[y]
-		for x: int in row.length():
+	for y: int in _map.tiles.size():
+		var row: Array = _map.tiles[y]
+		for x: int in row.size():
 			var ch: String = row[x]
 			if ch == "R" or ch == "S":
 				var t: MapObject.Type = MapObject.Type.FIRE if ch == "R" else MapObject.Type.SPIKE
 				_make_object(t, Vector2i(x, y))
 
 func _spawn_exit_marker() -> void:
-	var center := Vector2(EXIT_POS) * Constants.TILE_SIZE + Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
+	var center := Vector2(_map.exit_pos) * Constants.TILE_SIZE + Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
 	var marker := Sprite2D.new()
 	marker.texture = preload("res://assets/sprites/tile_floor.png")
 	marker.modulate = Constants.COLOR_EXIT
@@ -202,20 +121,20 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 	_player_grid_pos = new_grid_pos
 
 	# Saída — avança para a Fase 2
-	if new_grid_pos == EXIT_POS:
+	if new_grid_pos == _map.exit_pos:
 		_locked = true
 		GameState.player_map_pos = Vector2i(-1, -1)
 		GameState.change_screen(SignalBus.Screen.EXPLORATION_PHASE2)
 		return
 
 	# Chave
-	if new_grid_pos == KEY_POS and not GameState.has_key:
+	if new_grid_pos == _map.key_pos and not GameState.has_key:
 		GameState.has_key = true
 		if _key_node != null:
 			_key_node.visible = false
 
 	# Baú
-	if new_grid_pos == CHEST_POS and not GameState.chest_opened:
+	if new_grid_pos == _map.chest_pos and not GameState.chest_opened:
 		if GameState.has_key:
 			_open_chest()
 
@@ -226,8 +145,7 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 			return
 
 	# Hazard
-	var row: String = MAP_LAYOUT[new_grid_pos.y]
-	if new_grid_pos.x < row.length() and row[new_grid_pos.x] in HAZARD_CHARS:
+	if _map.char_at(new_grid_pos) in ["R", "S"]:
 		_apply_hazard_damage()
 		if _locked:
 			return
@@ -268,10 +186,8 @@ func _trigger_combat(enemy: MapEnemy) -> void:
 
 # ─── Walkability Helpers ───────────────────────────
 func _is_walkable(pos: Vector2i) -> bool:
-	if pos.x < 0 or pos.y < 0 or pos.x >= Constants.GRID_WIDTH or pos.y >= Constants.GRID_HEIGHT:
-		return false
-	var row: String = MAP_LAYOUT[pos.y]
-	return row[pos.x] != "W"
+	# Fonte ÚNICA de verdade: o mapa gerado (o TileMap é pintado a partir dele).
+	return _map.is_walkable(pos)
 
 func _is_occupied_by_enemy(pos: Vector2i) -> bool:
 	for enemy in _map_enemies:
@@ -313,9 +229,9 @@ func _setup_tilemap() -> void:
 	_paint_map()
 
 func _paint_map() -> void:
-	for y: int in range(MAP_LAYOUT.size()):
-		var row: String = MAP_LAYOUT[y]
-		for x: int in range(row.length()):
+	for y: int in _map.tiles.size():
+		var row: Array = _map.tiles[y]
+		for x: int in row.size():
 			var pos := Vector2i(x, y)
 			if row[x] == "W":
 				# variante de parede determinística (hash de x,y) — copa mais/menos densa

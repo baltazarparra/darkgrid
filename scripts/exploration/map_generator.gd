@@ -24,6 +24,13 @@ const CORRIDOR_TURN_CHANCE := 0.28
 const CORRIDOR_MAX_STEPS := 4000
 const CARDINALS := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
 
+# Regras de placement (distâncias em manhattan/BFS sobre o grid 26×18).
+const BOSS_GUARD_MIN := 1            # sempre 1 ou 2 monstros perto do boss
+const BOSS_GUARD_MAX := 2
+const BOSS_GUARD_RADIUS := 6         # raio que conta como "perto do boss"
+const CHEST_KEY_MIN_PLAYER_DIST := 10  # baú/chave sempre longe do spawn
+const CHEST_KEY_MIN_SEPARATION := 8    # ...e longe um do outro
+
 # ─── Public API ────────────────────────────────────
 func generate(config: MapConfig, p_seed: int) -> GeneratedMap:
 	for attempt: int in MAX_ATTEMPTS:
@@ -107,10 +114,18 @@ func _attempt(config: MapConfig, rng: RandomNumberGenerator, drop_pillars: bool)
 	var taken := {player_start: true, exit_pos: true}
 	for e: Dictionary in m.enemies:
 		taken[Vector2i(e["x"], e["y"])] = true
+	# Baú e chave: aleatórios, mas sempre longe do jogador e longe um do outro.
+	var others: Array[Vector2i] = []
 	if config.has_chest:
-		m.chest_pos = _pick_free(rng, place_pool, taken)
+		m.chest_pos = _pick_free_distant(rng, place_pool, taken, dist,
+			CHEST_KEY_MIN_PLAYER_DIST, others, CHEST_KEY_MIN_SEPARATION)
+		if m.chest_pos != Vector2i(-1, -1):
+			others.append(m.chest_pos)
 	if config.has_key:
-		m.key_pos = _pick_free(rng, place_pool, taken)
+		m.key_pos = _pick_free_distant(rng, place_pool, taken, dist,
+			CHEST_KEY_MIN_PLAYER_DIST, others, CHEST_KEY_MIN_SEPARATION)
+
+	m.decorations = _place_decorations(config, rng, place_pool, taken)
 
 	return m
 
@@ -232,44 +247,91 @@ func _place_enemies(config: MapConfig, rng: RandomNumberGenerator, dist: Diction
 	var result: Array = []
 	var taken := {}
 
-	# Boss: posição reservada (porta da sala no OPEN, perto da saída no CORRIDOR).
+	# Boss: posição reservada — sempre distante do jogador (alcova no canto oposto
+	# no OPEN, célula mais distante no CORRIDOR).
 	var bcell := boss_cell
 	if bcell == Vector2i(-1, -1) or not dist.has(bcell):
 		bcell = _farthest(dist)
 	taken[bcell] = true
 
-	# Regulares: longe do spawn, fora da sala do boss, espaçados entre si.
+	# Guardas: 1 ou 2 monstros sempre perto do boss. Sorteia entre as células mais
+	# próximas do boss (flanqueando-o), com leve variação.
+	var guard_target := mini(rng.randi_range(BOSS_GUARD_MIN, BOSS_GUARD_MAX), count - 1)
+	var avail: Array[Vector2i] = []
+	for p: Vector2i in pool:
+		if not taken.has(p):
+			avail.append(p)
+	avail.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		return _dist_key(a, bcell) < _dist_key(b, bcell))
+	var near_pool: Array[Vector2i] = avail.slice(0, mini(avail.size(), guard_target + 4))
+	_shuffle(near_pool, rng)
+	var guards: Array[Vector2i] = []
+	for p: Vector2i in near_pool:
+		if guards.size() >= guard_target:
+			break
+		guards.append(p)
+		taken[p] = true
+
+	# Espalhados: longe do spawn, fora da sala do boss, espaçados entre si.
+	var want_scatter := (count - 1) - guards.size()
 	var candidates: Array[Vector2i] = []
 	for p: Vector2i in pool:
-		if p == bcell or in_boss_room.call(p):
+		if taken.has(p) or in_boss_room.call(p):
 			continue
 		if int(dist.get(p, 0)) < config.min_spawn_distance:
 			continue
 		candidates.append(p)
 	_shuffle(candidates, rng)
 
-	var chosen: Array[Vector2i] = []
-	var want := count - 1
+	var scattered: Array[Vector2i] = []
 	var spacing := config.min_enemy_spacing
-	# Afrouxa o espaçamento se necessário até garantir a contagem da config.
-	while chosen.size() < want and spacing >= 0:
+	while scattered.size() < want_scatter and spacing >= 0:
 		for p: Vector2i in candidates:
-			if chosen.size() >= want:
+			if scattered.size() >= want_scatter:
 				break
 			if taken.has(p):
 				continue
-			if _near_any(p, chosen, spacing - 1):
+			if _near_any(p, scattered, spacing - 1):
 				continue
-			chosen.append(p)
+			scattered.append(p)
 			taken[p] = true
 		spacing -= 1
 
+	# Rede de segurança: completa a contagem com qualquer chão livre (mapas mínimos).
+	var need := (count - 1) - guards.size() - scattered.size()
+	if need > 0:
+		for p: Vector2i in pool:
+			if need <= 0:
+				break
+			if taken.has(p):
+				continue
+			scattered.append(p)
+			taken[p] = true
+			need -= 1
+
 	var idx := 0
-	for p: Vector2i in chosen:
+	for p: Vector2i in (guards + scattered):
 		result.append({"id": "p%d_e%d" % [config.phase, idx], "x": p.x, "y": p.y, "boss": false})
 		idx += 1
 	result.append({"id": "p%d_e%d" % [config.phase, idx], "x": bcell.x, "y": bcell.y, "boss": true})
 	return result
+
+func _place_decorations(config: MapConfig, rng: RandomNumberGenerator,
+		pool: Array[Vector2i], taken: Dictionary) -> Array[Vector2i]:
+	# Ambientação puramente visual: chão alcançável livre de entidades/hazards.
+	var decs: Array[Vector2i] = []
+	if config.decoration_count <= 0:
+		return decs
+	var cands: Array[Vector2i] = []
+	for p: Vector2i in pool:
+		if not taken.has(p):
+			cands.append(p)
+	_shuffle(cands, rng)
+	for p: Vector2i in cands:
+		if decs.size() >= config.decoration_count:
+			break
+		decs.append(p)
+	return decs
 
 func _pick_free(rng: RandomNumberGenerator, pool: Array[Vector2i], taken: Dictionary) -> Vector2i:
 	var cands: Array[Vector2i] = []
@@ -281,6 +343,28 @@ func _pick_free(rng: RandomNumberGenerator, pool: Array[Vector2i], taken: Dictio
 	var c: Vector2i = cands[rng.randi_range(0, cands.size() - 1)]
 	taken[c] = true
 	return c
+
+func _pick_free_distant(rng: RandomNumberGenerator, pool: Array[Vector2i], taken: Dictionary,
+		dist: Dictionary, min_player_dist: int, others: Array[Vector2i], min_sep: int) -> Vector2i:
+	# Sorteia uma célula livre longe do spawn e dos 'others'. Afrouxa as restrições
+	# em etapas se não houver candidatos — nunca falha se houver chão livre.
+	for relax: int in 3:
+		var pd := min_player_dist if relax < 2 else 0
+		var sep := min_sep if relax < 1 else 0
+		var cands: Array[Vector2i] = []
+		for p: Vector2i in pool:
+			if taken.has(p):
+				continue
+			if int(dist.get(p, 0)) < pd:
+				continue
+			if sep > 0 and _near_any(p, others, sep - 1):
+				continue
+			cands.append(p)
+		if not cands.is_empty():
+			var c: Vector2i = cands[rng.randi_range(0, cands.size() - 1)]
+			taken[c] = true
+			return c
+	return _pick_free(rng, pool, taken)
 
 # ─── Helpers de grid ───────────────────────────────
 func _blank(w: int, h: int, ch: String) -> Array:
@@ -334,6 +418,10 @@ func _near_any(p: Vector2i, others: Array, radius: int) -> bool:
 
 func _manhattan(a: Vector2i, b: Vector2i) -> int:
 	return absi(a.x - b.x) + absi(a.y - b.y)
+
+func _dist_key(p: Vector2i, anchor: Vector2i) -> int:
+	# Chave de ordenação total e determinística: distância, depois y, depois x.
+	return _manhattan(p, anchor) * 10000 + p.y * 100 + p.x
 
 # ─── Determinismo ──────────────────────────────────
 func _shuffle(arr: Array, rng: RandomNumberGenerator) -> void:
