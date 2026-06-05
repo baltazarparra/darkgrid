@@ -17,6 +17,10 @@ var run_active: bool = false
 var caipora_max_hp: float = Constants.CAIPORA_MAX_HEALTH
 var caipora_current_hp: float = Constants.CAIPORA_MAX_HEALTH
 
+# Seed da run: define os mapas procedurais. Sorteado por run → mapa novo a cada vez.
+# Determinístico por fase: a volta da arena regenera o MESMO mapa (mix run_seed+fase).
+var run_seed: int = 0
+
 # ─── Exploration State ─────────────────────────────
 var defeated_enemy_ids: Array[String] = []
 var active_map_enemy_id: String = ""
@@ -35,8 +39,14 @@ func start_run() -> void:
 	has_key = false
 	chest_opened = false
 	player_map_pos = Vector2i(-1, -1)
+	run_seed = randi()
 	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH + MetaProgression.get_health_bonus()
 	caipora_current_hp = caipora_max_hp
+
+## Seed determinística do mapa de uma fase nesta run. Mesma run+fase → mesmo mapa,
+## então voltar da arena para a exploração regenera o mapa idêntico.
+func map_seed_for_phase(phase: int) -> int:
+	return (run_seed * 1000003) ^ (phase * 2654435761 + 12345)
 
 ## Recupera HP cheio (chamado ao entrar no Hub).
 func heal_to_full() -> void:

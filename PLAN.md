@@ -434,10 +434,23 @@ flood-fill → hazards → entidades) e gate de invariantes em GUT. O char-grid
     seeds (determinismo, conectividade saída↔spawn, paridade de contagem de
     inimigos, 1 boss, placement válido/único/fora do spawn, densidade de hazard,
     variação por seed, baú/chave condicionais). ~4676 asserts, gate verde.
-- [ ] **Etapa 1 — Plugar na Fase 1**: `GameState.run_seed`, Fase 1 consome
-  `GeneratedMap` no lugar de `MAP_LAYOUT`; resolve a fonte-dupla-de-verdade de
-  walkability (TileMap vs string). Cachear o mapa em `GameState` p/ sobreviver à
-  ida-e-volta da arena (mapa NÃO re-sorteia na volta do combate).
+- [x] **Etapa 1 — Plugar na Fase 1**:
+  - `GameState.run_seed` (sorteado em `start_run()`) + `map_seed_for_phase(fase)`
+    (mistura determinística): mapa novo por run, mas **idêntico ao voltar da arena**
+    (mesma run+fase → mesmo mapa); inimigos derrotados seguem fora via
+    `defeated_enemy_ids` (IDs determinísticos). Sem cache em `GameState` — regen
+    determinística basta.
+  - `exploration_manager.gd` (Fase 1) consome `GeneratedMap` no lugar de
+    `MAP_LAYOUT`/`ENEMY_DEFS`/`DECO_DEFS`/`*_POS`. Fonte-única-de-verdade de
+    walkability: `_is_walkable` lê o mapa gerado (mesma fonte que pinta o TileMap).
+  - Decorações: posições no gerador (`decoration_count`), tipos sorteados da
+    paleta `MapObject.DECO_TYPES` por RNG semeado (estáveis na volta da arena).
+  - **Regras de placement** (pedido do design): contagem por fase 4/4/6/6; baú e
+    chave sempre longe do jogador e longe um do outro; boss sempre na metade mais
+    distante; sempre 1–2 guardas perto do boss.
+  - Fases 2–4 **intactas** (ainda estáticas) — jogo segue jogável ponta-a-ponta.
+  - Testes: `test_map_generator.gd` (15 invariantes) + `test_exploration_phase1.gd`
+    (integração da cena). Gate verde: 120 testes / ~10.9k asserts.
 - [ ] **Etapa 2 — Topologia CORRIDOR + Fase 3** (com fog of war).
 - [ ] **Etapa 3 — Rollout Fases 2 e 4 + colapso dos 4 managers em 1** parametrizado.
 - [ ] **Etapa 4 — Polish**: transição temática ("a mata se reorganiza..."),
