@@ -35,25 +35,27 @@ func test_fragment_signal_carries_amount() -> void:
 	assert_almost_eq(received_amount[0], 1.5, 0.001)
 
 func test_damage_bonus_sums_both_levels() -> void:
-	MetaProgression.fragments = 12.0
+	# forca(5) + forca_2(10) = 15; cada um soma +1 → bônus 2.
+	MetaProgression.fragments = 15.0
 	MetaProgression.purchase_upgrade("forca")
 	MetaProgression.purchase_upgrade("forca_2")
 	assert_eq(MetaProgression.get_damage_bonus(), 2)
 
 func test_health_bonus_sums_both_levels() -> void:
-	MetaProgression.fragments = 20.0
+	# forca(5) + saude(6, +2) + saude_2(12, +3) = 23 fragmentos; bônus de HP = 5.
+	MetaProgression.fragments = 25.0
 	MetaProgression.purchase_upgrade("forca")
 	MetaProgression.purchase_upgrade("saude")
 	MetaProgression.purchase_upgrade("saude_2")
-	assert_eq(MetaProgression.get_health_bonus(), 4)
+	assert_eq(MetaProgression.get_health_bonus(), 5)
 
 func test_forca2_requires_forca() -> void:
-	MetaProgression.fragments = 6.0
+	MetaProgression.fragments = 10.0  # custo cheio: a única recusa é o prereq ausente
 	assert_false(MetaProgression.purchase_upgrade("forca_2"), "sem forca prévia, rejeita")
 	assert_eq(MetaProgression.get_upgrade_level("forca_2"), 0)
 
 func test_saude2_has_no_forca_prereq() -> void:
-	MetaProgression.fragments = 9.0
+	MetaProgression.fragments = 12.0
 	assert_true(MetaProgression.purchase_upgrade("saude_2"), "saude_2 não exige forca")
 	assert_eq(MetaProgression.get_upgrade_level("saude_2"), 1)
 

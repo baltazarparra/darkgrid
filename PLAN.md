@@ -534,6 +534,31 @@ Roadmap completo: [docs/PRD-fase-9-hub-jogavel.md](docs/PRD-fase-9-hub-jogavel.m
   **aposentar** `scenes/ui/hub.tscn` + `scripts/ui/hub.gd` (mover `OptionsPanel` pro hub
   jogável), atualizar `test_hub_*`/`test_scene_transition`. Gate verde.
 
+### Economia & Aprimoramentos v2 ✅
+
+Redefinição coerente da economia e da escala dos aprimoramentos para um roguelike
+consistentemente **difícil**. Spec completa: [docs/PRD-economia-v2.md](docs/PRD-economia-v2.md).
+
+- [x] **Fonte numérica única.** `UPGRADE_DEFS` ganha `dmg`/`hp`; `get_damage_bonus`/
+  `get_health_bonus` são data-driven; o texto do efeito é DERIVADO via `effect_text()`
+  (mata a classe de bug do KI-006 — campo `effect` removido).
+- [x] **Trilha Fúria com teto.** Cada erva +1 dano (5/10/16/24 frags); dano vai de 1 a 5
+  (6 com a CHAMA, agora +1 em vez de +2). Antes o teto era 8–10 e trivializava o late-game.
+- [x] **Trilha Cura com incrementos crescentes.** +2/+3/+3/+4 HP (6/12/20/30 frags);
+  HP máx. de 2 a 14. Antes era +2 fixo (retorno achatado).
+- [x] **Snowball pela metade.** Kill comum dá **meio HP máx.** (acumula em
+  `GameState.caipora_max_hp` float, materializa +1 coração a cada 2 kills) + cura 1;
+  boss é marco (+1 HP máx. + cura 2). Antes: +1 HP máx. por kill (snowball forte).
+- [x] **Currency inteira + boss bounty.** Kill comum 1/2/3/4 por fase; boss paga
+  3/5/8/12 (antes boss = 0 e comuns davam 1.5/2.0/2.5 fracionários).
+- [x] **HP de inimigo escalado** para segurar o TTK (~3 trocas comum, ~5–7 boss):
+  comum 5→6 / 9→10 / 12→14; boss 10→12 / 15→22 / 20→30 / 20→36 (saci). Constantes +
+  cenas `.tscn` em sincronia, afirmado nos testes de padrão.
+- [x] **Crítico 2×–3× fica fora de escopo** (decisão deliberada, registrada no PRD): o
+  burst por skill vem do ataque-duplo; subir o multiplicador estouraria o teto de dano.
+- [x] Testes: literais de custo/HP/dano atualizados + `test_effect_text_matches_math`.
+  Gate verde: smoke OK, 152 testes / ~12.7k asserts.
+
 ---
 
 ## 11.1 Known Issues
@@ -546,7 +571,7 @@ aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no fo
 |----|-----------|--------|-----------|
 | KI-004 | Média | ✅ Resolvida (`5cdbd40`) | Beco sem saída no fim de combate — telas WIN/GAME_OVER placeholder fecham o loop |
 | KI-005 | Baixa | ✅ Resolvida (pós-MVP) | SFX reescritos com síntese de instrumentos do maracatu (alfaia/caixa/ganzá/agogô/gonguê) em `scripts/tools/gen_sfx.py`, com variação anti-repetição. Identidade sonora própria — não são mais placeholders genéricos |
-| KI-006 | Baixa | ✅ Resolvida | Label do aprimoramento `forca_3` exibia "Dano +1/hit (total 4)" no Hub, mas `get_damage_bonus()` soma `* 3` (+3 → total real 6). Corrigido na reescrita do Acampamento (ervas/cachimbo): textos agora vêm de `UPGRADE_DEFS[...].effect` e refletem a matemática real (Raiz-de-Ira → total 6; Breu-Ancestral → total 8) |
+| KI-006 | Baixa | ✅ Resolvida | Label do aprimoramento desincronizava do bônus real. Corrigido de vez na Economia v2: o campo `effect` foi removido e o texto é **derivado** da fonte numérica única (`dmg`/`hp`) via `MetaProgression.effect_text()` — não há mais string solta a divergir. Guardado por `test_effect_text_matches_math` |
 | KI-007 | Média | ✅ Resolvida | Mapa não voltava idêntico após o combate: o jogador renascia no spawn (exceto Fase 1) e TODOS os inimigos teleportavam de volta ao spawn (o movimento na exploração é não-determinístico, então a regeração do mapa não os reproduz). Corrigido com snapshot de posições no `_trigger_combat` (`GameState.map_enemy_positions` + `player_map_pos` em todas as fases), restaurado em `_spawn_enemies`/`_setup_player`. `safe_spawn` agora só vale na entrada fresca da fase, não na volta do combate. Flag `keep_position` (sempre-true) removida |
 
 ---

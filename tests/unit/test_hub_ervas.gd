@@ -79,14 +79,14 @@ func test_step_buys_affordable_erva() -> void:
 	assert_true(_hub._ervas.has(pos), "forca no chão antes de comprar")
 	_hub._on_caipora_moved(pos)
 	assert_eq(MetaProgression.get_upgrade_level("forca"), 1, "forca comprada ao pisar")
-	assert_eq(MetaProgression.fragments, 96.0, "4 fragmentos debitados (custo da forca)")
+	assert_eq(MetaProgression.fragments, 95.0, "5 fragmentos debitados (custo da forca)")
 	assert_false(_hub._ervas.has(pos), "erva some do chão após a compra")
 	assert_eq(MetaProgression.get_damage_bonus(), 1, "bônus de dano reflete a compra")
 
 # ── Pisar numa erva cara não compra e ela permanece ──
 func test_step_on_unaffordable_erva_does_not_buy() -> void:
 	MetaProgression.phase_reached = 1
-	MetaProgression.fragments = 1.0  # < custo 4 da forca
+	MetaProgression.fragments = 1.0  # < custo 5 da forca
 	await _instantiate()
 	var pos := _pos_of("forca")
 	_hub._on_caipora_moved(pos)

@@ -18,18 +18,18 @@ func after_each():
 	MetaProgression.phase_reached = 1
 
 func test_purchase_requires_fragments():
-	MetaProgression.fragments = 3
+	MetaProgression.fragments = 4  # < custo 5 da forca
 	assert_false(MetaProgression.purchase_upgrade("forca"), "rejeita sem fragmentos suficientes")
 	assert_eq(MetaProgression.get_upgrade_level("forca"), 0)
 
 func test_purchase_consumes_fragments_and_increments():
-	MetaProgression.fragments = 4
+	MetaProgression.fragments = 5
 	assert_true(MetaProgression.purchase_upgrade("forca"))
 	assert_eq(MetaProgression.get_upgrade_level("forca"), 1)
 	assert_eq(MetaProgression.fragments, 0)
 
 func test_purchase_caps_at_max_level():
-	MetaProgression.fragments = 8
+	MetaProgression.fragments = 10
 	MetaProgression.purchase_upgrade("forca")
 	assert_false(MetaProgression.purchase_upgrade("forca"), "recusa no cap")
 	assert_eq(MetaProgression.get_upgrade_level("forca"), 1)
@@ -38,7 +38,7 @@ func test_unknown_upgrade_is_rejected():
 	assert_false(MetaProgression.purchase_upgrade("inexistente"))
 
 func test_forca_persists_through_save_load():
-	MetaProgression.fragments = 4
+	MetaProgression.fragments = 5
 	MetaProgression.purchase_upgrade("forca")
 	MetaProgression.save_progress()
 	MetaProgression.upgrades = {}
@@ -56,6 +56,6 @@ func test_add_fragment_accumulates_and_persists():
 
 func test_get_damage_bonus():
 	assert_eq(MetaProgression.get_damage_bonus(), 0)
-	MetaProgression.fragments = 4
+	MetaProgression.fragments = 5
 	MetaProgression.purchase_upgrade("forca")
 	assert_eq(MetaProgression.get_damage_bonus(), 1)

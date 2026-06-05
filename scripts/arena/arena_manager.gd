@@ -85,7 +85,8 @@ func _spawn_caipora() -> void:
 	_caipora = caipora_combat_scene.instantiate()
 	_caipora.position = Vector2(160, 240)
 	add_child(_caipora)
-	_caipora.health.max_health = GameState.caipora_max_hp
+	# max_health é int; GameState.caipora_max_hp é float (carrega o meio-HP acumulado).
+	_caipora.health.max_health = int(floor(GameState.caipora_max_hp))
 	_caipora.health.current_health = clampf(GameState.caipora_current_hp, 0.0, GameState.caipora_max_hp)
 	_caipora.attack_cooldown = Constants.ATTACK_COOLDOWN_SECONDS
 	_caipora.base_attack_damage = 1 + MetaProgression.get_damage_bonus()
@@ -387,18 +388,23 @@ func _on_actor_died(actor: CombatActor) -> void:
 	# liberado pelo tween de morte) e restaura os sprites congelados pelo hit-stop.
 	_teardown_combat()
 	if caipora_won:
-		_caipora.health.max_health += 1
-		_caipora.health.heal(1)
-		GameState.caipora_max_hp = _caipora.health.max_health
-		if not GameState.active_combat_is_boss:
+		# Snowball pela metade (PRD-economia-v2): boss é marco (+1 HP máx., cura 2);
+		# comum dá meio HP máx. (acumulado em caipora_max_hp, materializa +1 a cada 2) e
+		# cura 1. GameState.caipora_max_hp (float) é a verdade; a componente usa floori.
+		if GameState.active_combat_is_boss:
+			GameState.caipora_max_hp += Constants.BOSS_KILL_HP_GROWTH
+			_caipora.health.max_health = int(floor(GameState.caipora_max_hp))
+			_caipora.health.heal(Constants.BOSS_KILL_HEAL)
+			# Boss bounty: bolada de fragmentos que financia as ervas caras (antes boss = 0).
+			MetaProgression.add_fragments(float(Constants.BOSS_FRAGMENT_BOUNTY.get(GameState.active_phase, 0)))
+		else:
+			GameState.caipora_max_hp += Constants.COMMON_KILL_HP_GROWTH
+			_caipora.health.max_health = int(floor(GameState.caipora_max_hp))
+			_caipora.health.heal(Constants.COMMON_KILL_HEAL)
 			# A cada 10 monstros (após a espada/forca_3) há um sorteio de CHAMA; se ganhar,
 			# a recompensa é a CHAMA no lugar do fragmento desta morte.
 			if not MetaProgression.register_kill_for_chama():
-				match GameState.active_phase:
-					4: MetaProgression.add_fragments(2.5)
-					3: MetaProgression.add_fragments(2.0)
-					2: MetaProgression.add_fragments(1.5)
-					_: MetaProgression.add_fragment()
+				MetaProgression.add_fragments(float(Constants.COMMON_FRAGMENT_REWARD.get(GameState.active_phase, 1)))
 		if GameState.active_combat_is_boss and GameState.active_phase == 2:
 			if MetaProgression.phase_reached < 3:
 				MetaProgression.phase_reached = 3

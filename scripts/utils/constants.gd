@@ -28,13 +28,27 @@ const DAMAGE_COUNTER_MULTIPLIER := 1.0
 # ─── Health ────────────────────────────────────────
 const FIRE_TILE_DAMAGE := 2
 
+# HP de inimigos escala por fase para segurar a banda de TTK (~3 trocas comum, ~5–7 boss)
+# contra o dano ESPERADO da fase. Ver docs/PRD-economia-v2.md §7.
 const CAIPORA_MAX_HEALTH := 2
-const ENEMY_MAX_HEALTH := 5
-const BOSS_MAX_HEALTH := 10
-const CACADOR_MAX_HEALTH := 9
-const BOITATA_MAX_HEALTH := 15
-const CURUPIRA_MAX_HEALTH := 20
-const ASSOMBRACAO_MAX_HEALTH := 12
+const ENEMY_MAX_HEALTH := 6       # criatura (comum P1)
+const BOSS_MAX_HEALTH := 12       # boss P1
+const CACADOR_MAX_HEALTH := 10    # comum P2
+const BOITATA_MAX_HEALTH := 22    # boss P2
+const CURUPIRA_MAX_HEALTH := 30   # boss P3
+const ASSOMBRACAO_MAX_HEALTH := 14  # comum P3/P4
+const SACI_MAX_HEALTH := 36       # boss P4
+
+# ─── Economia: recompensas de combate (PRD-economia-v2) ──
+# Snowball in-run pela metade: kill comum dá meio HP máx. (materializa +1 coração a cada
+# 2 kills, via acúmulo em GameState.caipora_max_hp); boss dá +1 HP máx. como marco.
+const COMMON_KILL_HP_GROWTH := 0.5
+const BOSS_KILL_HP_GROWTH := 1.0
+const COMMON_KILL_HEAL := 1.0
+const BOSS_KILL_HEAL := 2.0
+# Fragmentos inteiros, escalando com a profundidade (chave 1..4 = fase).
+const COMMON_FRAGMENT_REWARD := { 1: 1, 2: 2, 3: 3, 4: 4 }
+const BOSS_FRAGMENT_BOUNTY := { 1: 3, 2: 5, 3: 8, 4: 12 }
 
 # ─── Colors (Horror Folk Palette) ──────────────────
 # Fonte ÚNICA de cor do jogo. Qualquer Color() novo deve referenciar/derivar daqui —
