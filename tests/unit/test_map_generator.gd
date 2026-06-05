@@ -146,12 +146,11 @@ func test_chest_key_only_when_configured() -> void:
 func _manhattan(a: Vector2i, b: Vector2i) -> int:
 	return absi(a.x - b.x) + absi(a.y - b.y)
 
-# ── Contagem padrão por fase: 4 / 4 / 6 / 6 ──
-func test_phase_enemy_counts_are_4_4_6_6() -> void:
-	assert_eq(MapConfig.for_phase(1).enemy_count, 4, "fase 1 = 4")
-	assert_eq(MapConfig.for_phase(2).enemy_count, 4, "fase 2 = 4")
-	assert_eq(MapConfig.for_phase(3).enemy_count, 6, "fase 3 = 6")
-	assert_eq(MapConfig.for_phase(4).enemy_count, 6, "fase 4 = 6")
+# ── Contagem padrão por fase: 6 monstros em todas (boss incluído) ──
+func test_phase_enemy_counts_are_all_six() -> void:
+	for phase: int in PHASES:
+		assert_eq(MapConfig.for_phase(phase).enemy_count, 6,
+			"fase %d = 6 monstros" % phase)
 
 # ── Boss sempre distante do jogador (na metade mais longe do mapa) ──
 func test_boss_far_from_player() -> void:

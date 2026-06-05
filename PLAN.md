@@ -498,8 +498,13 @@ flood-fill → hazards → entidades) e gate de invariantes em GUT. O char-grid
     abertura mantida em 0.44 (labirinto é a identidade do Ventre da Mata).
   - **Ferramenta de preview** (`scripts/tools/preview_map.gd`): dump ASCII + densidades
     por fase×seed, headless — tuning de mapa sem display.
+  - **Ajuste de povoamento:** 6 monstros em TODAS as fases (antes 4/4/6/6 → agora
+    6/6/6/6), sempre com ≥1 guarda perto do boss (`BOSS_GUARD_MIN=1`, já imposto).
+    Decorações ambientais mais densas em todas as fases (P1 40→60, P2 22→44,
+    P3 18→30, P4 22→44) — só visual, não afeta walkability.
   - Testes: `test_scene_transition.gd` (lógica de flavor + roteamento de TODA tela do
-    enum p/ uma cena .tscn única). Gate verde: smoke OK, 134 testes / ~9.4k asserts.
+    enum p/ uma cena .tscn única); contagem por fase atualizada para 6/6/6/6. Gate
+    verde: smoke OK, 134 testes / ~12.6k asserts.
   - **Adiado (follow-up):** daily-seed + leaderboard; variar canto do boss.
 
 ---
