@@ -483,8 +483,24 @@ flood-fill → hazards → entidades) e gate de invariantes em GUT. O char-grid
     spawn seguro P3/P4. Fases 1 e 3 com comportamento idêntico.
   - Testes: integração das 4 fases (`test_exploration_phase{1,2,3,4}.gd`). Gate verde:
     smoke OK, 127 testes / ~9.4k asserts.
-- [ ] **Etapa 4 — Polish**: transição temática ("a mata se reorganiza..."),
-  tuning de densidade, daily-seed.
+- [x] **Etapa 4 — Polish** (fecha o épico):
+  - **Transição em toda troca de cena.** Autoload `SceneTransition` (CanvasLayer
+    layer 100 — abaixo do `PortraitGuard` 128, acima do HUD) mascara o hard-cut do
+    `change_scene_to_file` com fade preto curto (out 0.22s / in 0.28s). `GameState`
+    resolve a cena em `_scene_path_for()` (ponto único de roteamento) e delega.
+    Flavor **"a mata se reorganiza..."** só ao entrar numa exploração de fase NOVA
+    (run start / avanço); volta de combate p/ a mesma fase e telas de menu usam fade
+    limpo. `process_mode = ALWAYS` (roda pausado) e engole cliques durante a transição.
+  - **Tuning de densidade guiado por preview.** Confirmado via `preview_map.gd` que
+    P1/P2/P4 (OPEN) escalam bem o fogo (4%→11%→15%, dá pra contornar andando). Único
+    desbalanceamento real: P3 (CORRIDOR largura 1) — fogo vira portão de dano forçado
+    nas ramificações fora da rota-ao-boss. Fogo da Fase 3 baixado `0.06 → 0.04`;
+    abertura mantida em 0.44 (labirinto é a identidade do Ventre da Mata).
+  - **Ferramenta de preview** (`scripts/tools/preview_map.gd`): dump ASCII + densidades
+    por fase×seed, headless — tuning de mapa sem display.
+  - Testes: `test_scene_transition.gd` (lógica de flavor + roteamento de TODA tela do
+    enum p/ uma cena .tscn única). Gate verde: smoke OK, 134 testes / ~9.4k asserts.
+  - **Adiado (follow-up):** daily-seed + leaderboard; variar canto do boss.
 
 ---
 

@@ -25,6 +25,7 @@ boot_splash/fullsize=true
 
 GameState="*res://scripts/core/game_state.gd"
 SignalBus="*res://scripts/core/signal_bus.gd"
+SceneTransition="*res://scripts/core/scene_transition.gd"
 MetaProgression="*res://scripts/core/meta_progression.gd"
 AudioDirector="*res://scripts/core/audio_director.gd"
 TouchControls="*res://scripts/ui/controls_hud.gd"
