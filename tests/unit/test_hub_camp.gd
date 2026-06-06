@@ -56,6 +56,16 @@ func test_exit_follows_pending_when_run_active() -> void:
 	assert_eq(_hub._exit_destination(), SignalBus.Screen.EXPLORATION_PHASE3,
 		"entre fases: rastro leva à exploração pendente")
 
+# ── Início da run pelo acampamento: start_run() leva o rastro à Fase 1 ──
+# A run começa no HUB (main_menu abre o acampamento antes da mata); como start_run() define
+# pending_exploration = EXPLORATION, o rastro de saída cai direto na Exploração da Fase 1.
+func test_launch_via_hub_leads_to_phase1() -> void:
+	await _instantiate()
+	GameState.start_run()
+	assert_true(GameState.run_active, "run ativa ao iniciar pelo acampamento")
+	assert_eq(_hub._exit_destination(), SignalBus.Screen.EXPLORATION,
+		"abertura: do acampamento o rastro leva à Fase 1")
+
 # ── Destino do rastro: santuário pós-derrota recomeça na Fase 1 ──
 func test_exit_starts_fresh_when_no_run() -> void:
 	await _instantiate()

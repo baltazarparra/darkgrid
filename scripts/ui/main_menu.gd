@@ -1,9 +1,10 @@
 class_name MainMenu
 extends CanvasLayer
 
-## Porta de entrada do jogo. Inicia a run e cai direto na Exploração da Fase 1 — o
-## acampamento de aprimoramentos só aparece ENTRE fases (o save é carregado pelo autoload
-## MetaProgression).
+## Porta de entrada do jogo. Inicia a run e abre o Acampamento de aprimoramentos ANTES da
+## Fase 1: a Caipora desperta no acampamento, pode gastar os fragmentos acumulados de runs
+## anteriores e pisa no rastro para entrar na mata (Exploração da Fase 1). O save é carregado
+## pelo autoload MetaProgression.
 ## A abertura "Horizonte Infernal" (fogo, treelines, brasas, Caipora andando) é
 ## montada na cena; aqui cuidamos do fade-in/out e da vida do título.
 
@@ -63,14 +64,15 @@ func _on_start_pressed() -> void:
 	_start_button.disabled = true
 	var tween := create_tween()
 	tween.tween_property(_fade, "color:a", 1.0, FADE_OUT_DURATION)
-	# Sem acampamento antes da Fase 1: inicia a run e cai direto na mata. O hub de
-	# aprimoramentos só aparece ENTRE fases (advance_phase_via_hub).
+	# A run começa pelo acampamento: o jogador aprimora a Caipora antes de pisar na mata.
 	tween.tween_callback(_begin_run)
 
-## Inicia a run e abre a Exploração da Fase 1 (chamado após o fade-out de Iniciar).
+## Inicia a run e abre o Acampamento (HUB) antes da Fase 1 (chamado após o fade-out de
+## Iniciar). start_run() já define pending_exploration = EXPLORATION, então o rastro de
+## saída do hub leva direto à Exploração da Fase 1.
 func _begin_run() -> void:
 	GameState.start_run()
-	GameState.change_screen(SignalBus.Screen.EXPLORATION)
+	GameState.change_screen(SignalBus.Screen.HUB)
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
