@@ -28,17 +28,25 @@ const DAMAGE_COUNTER_MULTIPLIER := 1.0
 # ─── Health ────────────────────────────────────────
 const FIRE_TILE_DAMAGE := 2
 
-# HP de inimigos escala por fase para segurar a banda de TTK (~3 trocas comum, ~5–7 boss)
-# contra o dano ESPERADO da fase. Ver docs/PRD-economia-v2.md §7.
+# Comuns (não-boss) têm HP UNIFORME por banda de fase: 5 nas fases 1-2, 8 nas 3-4.
+# O dano de CADA golpe da Caipora escala com a fase (1/2/3/4…), segurando o TTK
+# (~5 trocas na P1, ~2 na P4). Bosses mantêm HP próprio (marco de fase).
+# Ver docs/PRD-economia-v2.md §7.
 const CAIPORA_MAX_HEALTH := 2
-const ENEMY_MAX_HEALTH := 6       # criatura (comum P1)
-const BOSS_MAX_HEALTH := 12       # boss P1
-const CACADOR_MAX_HEALTH := 10    # comum P2
-const BRUXO_MAX_HEALTH := 14      # comum (bruxo dos machados — mais forte que o caçador)
+const COMMON_HEALTH_EARLY := 5    # comuns das fases 1-2
+const COMMON_HEALTH_LATE := 8     # comuns das fases 3-4
+const BOSS_MAX_HEALTH := 12       # boss P1 (Mula sem Cabeça)
 const BOITATA_MAX_HEALTH := 22    # boss P2
 const CURUPIRA_MAX_HEALTH := 30   # boss P3
-const ASSOMBRACAO_MAX_HEALTH := 14  # comum P3/P4
 const SACI_MAX_HEALTH := 36       # boss P4
+
+## HP uniforme do comum (não-boss) para a fase dada (5 nas fases 1-2, 8 nas 3-4).
+static func common_health_for_phase(phase: int) -> int:
+	return COMMON_HEALTH_LATE if phase >= 3 else COMMON_HEALTH_EARLY
+
+## Dano-base de CADA golpe da Caipora na fase dada (1 na P1, 2 na P2, 3 na P3…).
+static func caipora_base_damage_for_phase(phase: int) -> int:
+	return maxi(phase, 1)
 
 # ─── Economia: recompensas de combate (PRD-economia-v2) ──
 # Snowball in-run pela metade: kill comum dá meio HP máx. (materializa +1 coração a cada

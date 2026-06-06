@@ -54,9 +54,10 @@ func _ready() -> void:
 
 	if show_enemy_hp:
 		_enemy_icons = HealthIcons.new()
-		var em: Vector2 = _metrics_for(Constants.ENEMY_MAX_HEALTH)
+		# Layout inicial só; o spawn do inimigo reemite o max real (5/8/boss) e reajusta.
+		var em: Vector2 = _metrics_for(Constants.COMMON_HEALTH_EARLY)
 		_enemy_icons.setup(
-			Constants.ENEMY_MAX_HEALTH,
+			Constants.COMMON_HEALTH_EARLY,
 			HealthIcons.Shape.STAR_OF_DAVID,
 			Constants.COLOR_AMBER,
 			ENEMY_EMPTY, em.x, em.y

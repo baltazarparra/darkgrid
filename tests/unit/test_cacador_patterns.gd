@@ -10,8 +10,11 @@ func test_cacador_is_a_criatura() -> void:
 	assert_true(_cacador is Criatura, "Cacador herda de Criatura")
 
 func test_cacador_has_correct_health() -> void:
-	assert_eq(_cacador.health.max_health, Constants.CACADOR_MAX_HEALTH)
-	assert_eq(Constants.CACADOR_MAX_HEALTH, 10)
+	# Comuns têm HP uniforme por banda de fase (5 nas fases 1-2); a cena usa o default
+	# da banda inicial e o ArenaManager sobrepõe por fase (8 nas fases 3-4).
+	assert_eq(_cacador.health.max_health, Constants.COMMON_HEALTH_EARLY)
+	assert_eq(Constants.COMMON_HEALTH_EARLY, 5)
+	assert_eq(Constants.COMMON_HEALTH_LATE, 8)
 
 func test_special_pattern_fields() -> void:
 	var p := preload("res://resources/attack_patterns/cacador_special_pattern.tres")

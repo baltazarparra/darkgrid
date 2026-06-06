@@ -554,9 +554,12 @@ consistentemente **difícil**. Spec completa: [docs/PRD-economia-v2.md](docs/PRD
   boss é marco (+1 HP máx. + cura 2). Antes: +1 HP máx. por kill (snowball forte).
 - [x] **Currency inteira + boss bounty.** Kill comum 1/2/3/4 por fase; boss paga
   3/5/8/12 (antes boss = 0 e comuns davam 1.5/2.0/2.5 fracionários).
-- [x] **HP de inimigo escalado** para segurar o TTK (~3 trocas comum, ~5–7 boss):
-  comum 5→6 / 9→10 / 12→14; boss 10→12 / 15→22 / 20→30 / 20→36 (saci). Constantes +
-  cenas `.tscn` em sincronia, afirmado nos testes de padrão.
+- [x] **HP de comum UNIFORME por banda de fase + dano da Caipora escalado por fase.**
+  Todo comum (não-boss) tem o MESMO HP: `5` nas fases 1-2, `8` nas fases 3-4
+  (`Constants.common_health_for_phase`, aplicado no `_spawn_enemy`). Cada golpe da
+  Caipora bate `1/2/3/4…` conforme a fase (`Constants.caipora_base_damage_for_phase`,
+  somado às ervas de Fúria/CHAMA no `_spawn_caipora`). Bosses mantêm HP próprio
+  (12/22/30/36). TTK comum: ~5 trocas na P1 → ~2 na P4.
 - [x] **Crítico 2×–3× fica fora de escopo** (decisão deliberada, registrada no PRD): o
   burst por skill vem do ataque-duplo; subir o multiplicador estouraria o teto de dano.
 - [x] Testes: literais de custo/HP/dano atualizados + `test_effect_text_matches_math`.
