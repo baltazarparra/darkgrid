@@ -146,11 +146,29 @@ func test_chest_key_only_when_configured() -> void:
 func _manhattan(a: Vector2i, b: Vector2i) -> int:
 	return absi(a.x - b.x) + absi(a.y - b.y)
 
-# ── Contagem padrão por fase: 6 monstros em todas (boss incluído) ──
-func test_phase_enemy_counts_are_all_six() -> void:
+# ── Contagem padrão por fase: 7 monstros em todas (6 comuns + boss) ──
+func test_phase_enemy_counts_are_all_seven() -> void:
 	for phase: int in PHASES:
-		assert_eq(MapConfig.for_phase(phase).enemy_count, 6,
-			"fase %d = 6 monstros" % phase)
+		assert_eq(MapConfig.for_phase(phase).enemy_count, 7,
+			"fase %d = 7 monstros (6 comuns + boss)" % phase)
+
+# ── Composição dos comuns: caçador+bruxo, 4/2 alternando por paridade ──
+func test_common_enemy_mix_by_parity() -> void:
+	for phase: int in PHASES:
+		for s: int in SEEDS:
+			var m := _gen(phase, s)
+			var counts := {"cacador": 0, "bruxo": 0}
+			for e: Dictionary in m.enemies:
+				if e["boss"]:
+					continue
+				var t: String = e.get("enemy_type", "")
+				assert_true(counts.has(t),
+					"comum tem tipo válido (fase %d seed %d): %s" % [phase, s, t])
+				counts[t] += 1
+			var major := "bruxo" if phase % 2 == 1 else "cacador"
+			var minor := "cacador" if phase % 2 == 1 else "bruxo"
+			assert_eq(counts[major], 4, "fase %d: 4 do tipo majoritário (%s)" % [phase, major])
+			assert_eq(counts[minor], 2, "fase %d: 2 do tipo minoritário (%s)" % [phase, minor])
 
 # ── Boss sempre distante do jogador (na metade mais longe do mapa) ──
 func test_boss_far_from_player() -> void:

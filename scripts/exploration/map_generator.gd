@@ -324,9 +324,17 @@ func _place_enemies(config: MapConfig, rng: RandomNumberGenerator, dist: Diction
 			taken[p] = true
 			need -= 1
 
+	# Tipos dos comuns (caçador/bruxo) embaralhados — determinístico por seed.
+	var types: Array = []
+	for t: String in config.common_types:
+		types.append(t)
+	_shuffle(types, rng)
+
 	var idx := 0
 	for p: Vector2i in (guards + scattered):
-		result.append({"id": "p%d_e%d" % [config.phase, idx], "x": p.x, "y": p.y, "boss": false})
+		var etype: String = types[idx] if idx < types.size() else "cacador"
+		result.append({"id": "p%d_e%d" % [config.phase, idx], "x": p.x, "y": p.y,
+			"boss": false, "enemy_type": etype})
 		idx += 1
 	# O boss carrega o boss_type → sprite/aura corretos no mapa (curupira/boitata/saci).
 	result.append({"id": "p%d_e%d" % [config.phase, idx], "x": bcell.x, "y": bcell.y,

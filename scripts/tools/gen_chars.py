@@ -602,4 +602,8 @@ if __name__ == "__main__":
     curupira().save("curupira_idle.png")
     saci().save("saci_idle.png")
     mula().save("mula_idle.png")
+    # Bruxo dos machados: mesmo desenho do antigo boss-caçador, agora reaproveitado
+    # como monstro comum das fases (junto com o caçador). boss_idle.png segue como
+    # fixture do Boss base; bruxo_idle.png é o asset dedicado do monstro.
+    axe_hunter().save("bruxo_idle.png")
     print("[gen_chars] caipora (64x64) + caçador + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça (48x48) gerados")

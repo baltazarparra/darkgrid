@@ -29,6 +29,9 @@ enum TopologyMode {
 @export var enemy_count: int = 4           # inclui o boss
 @export var min_spawn_distance: int = 5    # inimigo regular longe do spawn (manhattan via BFS)
 @export var min_enemy_spacing: int = 3     # espaçamento mínimo entre inimigos
+## Composição dos inimigos COMUNS (1 entrada por comum; tamanho = enemy_count - 1).
+## O gerador embaralha estes tipos pelas posições comuns (determinístico por seed).
+@export var common_types: PackedStringArray = PackedStringArray()
 
 # ─── Hazards (R=fogo, S=espinho) ───────────────────
 @export var hazard_chars: PackedStringArray = PackedStringArray()
@@ -57,7 +60,7 @@ static func for_phase(target_phase: int) -> MapConfig:
 		1:
 			c.topology_mode = TopologyMode.OPEN
 			c.boss_type = "mula"
-			c.enemy_count = 6
+			c.enemy_count = 7
 			c.hazard_chars = PackedStringArray(["R", "S"])
 			c.hazard_density = 0.04
 			c.pillar_density = 0.06
@@ -67,7 +70,7 @@ static func for_phase(target_phase: int) -> MapConfig:
 		2:
 			c.topology_mode = TopologyMode.OPEN
 			c.boss_type = "boitata"
-			c.enemy_count = 6
+			c.enemy_count = 7
 			c.hazard_chars = PackedStringArray(["R"])
 			c.hazard_density = 0.12
 			c.pillar_density = 0.05
@@ -75,7 +78,7 @@ static func for_phase(target_phase: int) -> MapConfig:
 		3:
 			c.topology_mode = TopologyMode.CORRIDOR
 			c.boss_type = "curupira"
-			c.enemy_count = 6
+			c.enemy_count = 7
 			# Ventre da Mata: fogo presente (como o mapa estático), mas o gerador
 			# garante sempre uma rota até o Curupira sem fogo forçado. Densidade
 			# baixa de propósito: em corredor de 1 tile não há como contornar o
@@ -92,10 +95,25 @@ static func for_phase(target_phase: int) -> MapConfig:
 		4:
 			c.topology_mode = TopologyMode.OPEN
 			c.boss_type = "saci"
-			c.enemy_count = 6
+			c.enemy_count = 7
 			c.hazard_chars = PackedStringArray(["R"])
 			c.hazard_density = 0.16
 			c.pillar_density = 0.05
 			c.has_exit = false  # progride ao derrotar o Saci → ENDING (sem tile de saída)
 			c.decoration_count = 44
+	c.common_types = _common_mix(target_phase)
 	return c
+
+# Composição dos inimigos comuns: caçador + bruxo, 4/2 alternando por paridade.
+#   Fases ímpares (1, 3): 4 bruxos + 2 caçadores.
+#   Fases pares   (2, 4): 4 caçadores + 2 bruxos.
+# Total = 6 comuns; com o boss, fecha os 7 de enemy_count.
+static func _common_mix(target_phase: int) -> PackedStringArray:
+	var major := "bruxo" if target_phase % 2 == 1 else "cacador"
+	var minor := "cacador" if target_phase % 2 == 1 else "bruxo"
+	var mix := PackedStringArray()
+	for _i in 4:
+		mix.append(major)
+	for _i in 2:
+		mix.append(minor)
+	return mix

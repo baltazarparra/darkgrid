@@ -34,6 +34,7 @@ const CAIPORA_MAX_HEALTH := 2
 const ENEMY_MAX_HEALTH := 6       # criatura (comum P1)
 const BOSS_MAX_HEALTH := 12       # boss P1
 const CACADOR_MAX_HEALTH := 10    # comum P2
+const BRUXO_MAX_HEALTH := 14      # comum (bruxo dos machados — mais forte que o caçador)
 const BOITATA_MAX_HEALTH := 22    # boss P2
 const CURUPIRA_MAX_HEALTH := 30   # boss P3
 const ASSOMBRACAO_MAX_HEALTH := 14  # comum P3/P4
