@@ -89,7 +89,9 @@ func _spawn_caipora() -> void:
 	_caipora.health.max_health = int(floor(GameState.caipora_max_hp))
 	_caipora.health.current_health = clampf(GameState.caipora_current_hp, 0.0, GameState.caipora_max_hp)
 	_caipora.attack_cooldown = Constants.ATTACK_COOLDOWN_SECONDS
-	_caipora.base_attack_damage = 1 + MetaProgression.get_damage_bonus()
+	# Cada golpe escala com a fase (1/2/3/4…); as ervas de Fúria/CHAMA somam por cima.
+	_caipora.base_attack_damage = Constants.caipora_base_damage_for_phase(GameState.active_phase) \
+		+ MetaProgression.get_damage_bonus()
 	_caipora.health.health_changed.connect(_on_caipora_health_changed)
 	_caipora.health.died.connect(_on_actor_died.bind(_caipora))
 	_caipora.health.died.connect(func(): SignalBus.caipora_died.emit())
@@ -116,6 +118,11 @@ func _spawn_enemy() -> void:
 	_enemy = scene.instantiate()
 	_enemy.position = Vector2(480, 240)
 	add_child(_enemy)
+	# Comuns (não-boss) têm HP uniforme por banda de fase; bosses mantêm o HP da cena.
+	if not GameState.active_combat_is_boss:
+		var hp: int = Constants.common_health_for_phase(GameState.active_phase)
+		_enemy.health.max_health = hp
+		_enemy.health.current_health = float(hp)
 	_active_enemy_pattern = _enemy.attack_pattern
 	_enemy.health.died.connect(_on_actor_died.bind(_enemy))
 	_enemy.health.health_changed.connect(_on_enemy_health_changed)
