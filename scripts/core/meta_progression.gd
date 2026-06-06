@@ -85,6 +85,37 @@ func add_fragment() -> void:
 func get_upgrade_level(key: String) -> int:
 	return int(upgrades.get(key, 0))
 
+## True se a erva pode ser comprada AGORA: fase alcançada, requisito (se houver) já fumado e
+## ainda não no nível máximo. NÃO checa fragmentos — affordability é estado de UI, separado da
+## elegibilidade. Fonte única do gate do Hub (cards) e dos testes.
+func is_available(key: String) -> bool:
+	if not UPGRADE_DEFS.has(key):
+		return false
+	var def: Dictionary = UPGRADE_DEFS[key]
+	if phase_reached < int(def.get("phase", 1)):
+		return false
+	var req: String = String(def.get("requires", ""))
+	if req != "" and get_upgrade_level(req) < 1:
+		return false
+	return get_upgrade_level(key) < int(def.get("max_level", 1))
+
+## Ervas de `keys` compráveis agora, na ordem dada (preserva a ordem da trilha).
+func available_keys(keys: Array) -> Array[String]:
+	var out: Array[String] = []
+	for key: String in keys:
+		if is_available(key):
+			out.append(key)
+	return out
+
+## Primeira erva PENDENTE de `keys` (nível < máx.), comprada ou não. "" se a trilha está
+## completa. Usada pelo Hub para explicar o que vem a seguir numa trilha sem card disponível.
+func next_pending_key(keys: Array) -> String:
+	for key: String in keys:
+		var def: Dictionary = UPGRADE_DEFS[key]
+		if get_upgrade_level(key) < int(def.get("max_level", 1)):
+			return key
+	return ""
+
 func get_damage_bonus() -> int:
 	# Soma o "dmg" de cada erva de Fúria comprada (fonte numérica única). Cada tier soma
 	# +1 (teto +4 → dano 5). A CHAMA (elemento fogo na espada) soma +CHAMA_DAMAGE_BONUS.

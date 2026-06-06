@@ -510,11 +510,12 @@ flood-fill → hazards → entidades) e gate de invariantes em GUT. O char-grid
 ### Fase 9: Hub de Aprimoramentos Jogável 🚧
 
 Tira os aprimoramentos da tela de menu pré-jogo e os transforma num **Acampamento
-jogável** pelo qual a Caipora caminha **ao iniciar a run e entre uma fase e outra**. No chão
-ficam as ervas compráveis da fase, cada uma com seu valor; **pisar** numa que dá pra pagar
-realiza o aprimoramento. A saída é um rastro no chão → próxima fase. **A run começa pelo
-acampamento** (`main_menu` abre o HUB antes da Fase 1): a Caipora gasta os fragmentos
-acumulados de runs anteriores antes de pisar na mata.
+jogável** pelo qual a Caipora caminha **ao iniciar a run e entre uma fase e outra**. As ervas
+compráveis da fase aparecem como **cards grandes e clicáveis** (`HubShop`/`HubCard`), cada um
+com ícone, nome, efeito derivado (ex: "Dano +1/hit (total 2)") e custo; **clicar/tocar** num
+que dá pra pagar realiza o aprimoramento. A saída é um rastro no chão → próxima fase. **A run
+começa pelo acampamento** (`main_menu` abre o HUB antes da Fase 1): a Caipora gasta os
+fragmentos acumulados de runs anteriores antes de pisar na mata.
 Roadmap completo: [docs/PRD-fase-9-hub-jogavel.md](docs/PRD-fase-9-hub-jogavel.md).
 
 - [ ] **Etapa 0 — Roteamento via hub:** `GameState.pending_exploration` +
