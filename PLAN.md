@@ -561,6 +561,32 @@ consistentemente **difícil**. Spec completa: [docs/PRD-economia-v2.md](docs/PRD
 - [x] Testes: literais de custo/HP/dano atualizados + `test_effect_text_matches_math`.
   Gate verde: smoke OK, 152 testes / ~12.7k asserts.
 
+### Apresentação de Boss (estilo Mega Man) ✅
+
+Toda boss fight abre com uma pré-tela curta de apresentação **antes do diálogo**:
+fundo escuro, o **modelo do boss** surge em cena com um "pop" elástico e brilho de
+aura, e abaixo o **nome estilizado** se revela letra a letra entre duas barras de
+destaque (com o subtítulo "— CHEFE —"). Vale para os 4 bosses (Mula sem Cabeça,
+Boitatá, Curupira, Saci).
+
+- [x] `scripts/ui/boss_intro_screen.gd` (`BossIntroScreen`, CanvasLayer layer 15) +
+  `scenes/ui/boss_intro_screen.tscn`. Cena montada por código (depende dos dados do
+  boss em `start()`), no padrão de `ending_screen.gd`. Modelo normalizado a uma
+  altura de exibição fixa; glow radial procedural (`GradientTexture2D`) na cor de
+  aura; nome no tamanho de fonte que **cabe na largura** (nomes longos encolhem).
+- [x] Animação: pop elástico do modelo → barras varrem do centro + subtítulo →
+  revelação letra a letra do nome → hold → encerra. Bob ocioso do modelo e pulso
+  do glow em loop. Auto-avança após o hold, ou **skip** por toque/tecla/clique
+  (com carência anti-skip-acidental de 0.4s, igual ao diálogo).
+- [x] Roteamento em `exploration_manager.gd`: combate de boss → `_show_boss_intro()`
+  → `boss_intro_finished` → diálogo (ou direto à arena se a boss não tiver falas)
+  → arena. Dados por fase no `_build_profile()` (`boss_frames` + `boss_aura`).
+  Signal `boss_intro_finished` no `SignalBus` (par do já existente `boss_intro_started`).
+- [x] Testes: `tests/unit/test_boss_intro_screen.gd` (11 testes: nome, modelo,
+  signals start/finish, idempotência, revelação do nome, eventos de skip).
+  Gate verde: smoke OK, 175 testes / ~12.7k asserts. Verificação visual headless
+  (Xvfb + harness de captura) confirmou os 4 bosses.
+
 ---
 
 ## 11.1 Known Issues

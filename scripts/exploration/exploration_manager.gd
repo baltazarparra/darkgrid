@@ -18,6 +18,13 @@ const CURUPIRA_SCENE    := preload("res://scenes/arena/curupira.tscn")
 const ASSOMBRACAO_SCENE := preload("res://scenes/arena/assombracao.tscn")
 const SACI_SCENE        := preload("res://scenes/arena/saci.tscn")
 const DIALOGUE_SCENE    := preload("res://scenes/ui/dialogue_screen.tscn")
+const BOSS_INTRO_SCENE  := preload("res://scenes/ui/boss_intro_screen.tscn")
+
+# SpriteFrames dos bosses — usadas na apresentação (Mega Man) antes do diálogo.
+const MULA_FRAMES     := preload("res://assets/sprites/mula_sprite_frames.tres")
+const BOITATA_FRAMES  := preload("res://assets/sprites/boitata_sprite_frames.tres")
+const CURUPIRA_FRAMES := preload("res://assets/sprites/curupira_sprite_frames.tres")
+const SACI_FRAMES     := preload("res://assets/sprites/saci_sprite_frames.tres")
 
 # Variantes de tile no atlas (ver scripts/tools/gen_tiles.py).
 const FLOOR_VARIANTS := 4
@@ -285,10 +292,9 @@ func _trigger_combat(enemy: MapEnemy) -> void:
 	GameState.active_combat_is_boss = enemy.is_boss
 	if enemy.is_boss:
 		GameState.next_enemy_scene = _profile["boss_scene"]
-		if (_profile["boss_dialogue"] as Array).is_empty():
-			GameState.change_screen(_profile["arena_screen"])
-		else:
-			_show_boss_dialogue()
+		# Toda boss fight abre com a apresentação (estilo Mega Man); ela encadeia
+		# para o diálogo (se houver) e daí para a arena.
+		_show_boss_intro()
 	else:
 		GameState.next_enemy_scene = _profile["regular_scene"]
 		GameState.change_screen(_profile["arena_screen"])
@@ -299,6 +305,21 @@ func _snapshot_enemy_positions() -> void:
 	GameState.map_enemy_positions.clear()
 	for e in _map_enemies:
 		GameState.map_enemy_positions[e.enemy_id] = e.grid_pos
+
+func _show_boss_intro() -> void:
+	var intro: BossIntroScreen = BOSS_INTRO_SCENE.instantiate()
+	add_child(intro)
+	SignalBus.boss_intro_finished.connect(_on_boss_intro_finished, CONNECT_ONE_SHOT)
+	intro.start(_profile["boss_speaker"], _profile["boss_frames"],
+		_profile["boss_aura"], _profile["boss_color"])
+
+func _on_boss_intro_finished() -> void:
+	# Apresentação encerrada: encadeia para o diálogo, ou direto para a arena se a
+	# boss não tiver falas.
+	if (_profile["boss_dialogue"] as Array).is_empty():
+		GameState.change_screen(_profile["arena_screen"])
+	else:
+		_show_boss_dialogue()
 
 func _show_boss_dialogue() -> void:
 	var dlg: DialogueScreen = DIALOGUE_SCENE.instantiate()
@@ -403,6 +424,8 @@ func _build_profile() -> Dictionary:
 				"boss_dialogue": BOITATA_DIALOGUE,
 				"boss_speaker": "BOITATÁ",
 				"boss_color": Constants.COLOR_DIALOGUE_BOITATA,
+				"boss_frames": BOITATA_FRAMES,
+				"boss_aura": Constants.COLOR_AURA_BOITATA,
 				"next_screen_on_exit": SignalBus.Screen.EXPLORATION_PHASE3,
 				"hazard_damage": Constants.FIRE_TILE_DAMAGE,
 				"aura": Aura.NONE,
@@ -422,6 +445,8 @@ func _build_profile() -> Dictionary:
 				"boss_dialogue": CURUPIRA_DIALOGUE,
 				"boss_speaker": "CURUPIRA",
 				"boss_color": Constants.COLOR_DIALOGUE_CURUPIRA,
+				"boss_frames": CURUPIRA_FRAMES,
+				"boss_aura": Constants.COLOR_AURA_CURUPIRA,
 				"next_screen_on_exit": SignalBus.Screen.EXPLORATION_PHASE4,
 				"hazard_damage": Constants.FIRE_TILE_DAMAGE,
 				"aura": Aura.FIRE,
@@ -441,6 +466,8 @@ func _build_profile() -> Dictionary:
 				"boss_dialogue": SACI_DIALOGUE,
 				"boss_speaker": "SACI",
 				"boss_color": Constants.COLOR_DIALOGUE_SACI,
+				"boss_frames": SACI_FRAMES,
+				"boss_aura": Constants.COLOR_AURA_SACI,
 				"next_screen_on_exit": SignalBus.Screen.ENDING,
 				"hazard_damage": Constants.FIRE_TILE_DAMAGE,
 				"aura": Aura.FIRE,
@@ -462,6 +489,8 @@ func _build_profile() -> Dictionary:
 				"boss_dialogue": MULA_DIALOGUE,
 				"boss_speaker": "MULA SEM CABEÇA",
 				"boss_color": Constants.COLOR_DIALOGUE_MULA,
+				"boss_frames": MULA_FRAMES,
+				"boss_aura": Constants.COLOR_AURA_MULA,
 				"next_screen_on_exit": SignalBus.Screen.EXPLORATION_PHASE2,
 				"hazard_damage": 1,
 				"aura": Aura.TORCH,
