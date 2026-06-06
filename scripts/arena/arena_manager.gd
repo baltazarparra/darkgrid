@@ -300,6 +300,8 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 	else:
 		_timing_bubble.burst_fail()
 		var damage := _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
+		# Inimigos mais fortes (ex.: Bruxo) batem um tanto a mais por golpe.
+		damage += _enemy.extra_hit_damage
 		# Fase 2/4: cada golpe de inimigo bate 1 a mais — a floresta é mais hostil.
 		if GameState.active_phase == 2:
 			damage += Constants.PHASE2_ENEMY_DAMAGE_BONUS

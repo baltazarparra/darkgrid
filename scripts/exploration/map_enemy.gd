@@ -3,6 +3,7 @@ extends Node2D
 
 # ─── Constants ─────────────────────────────────────
 const ENEMY_TEXTURE    = preload("res://assets/sprites/enemy_idle.png")
+const BRUXO_TEXTURE    = preload("res://assets/sprites/bruxo_idle.png")
 const BOSS_TEXTURE     = preload("res://assets/sprites/boss_idle.png")
 const MULA_TEXTURE     = preload("res://assets/sprites/mula_idle.png")
 const BOITATA_TEXTURE  = preload("res://assets/sprites/boitata_idle.png")
@@ -16,6 +17,7 @@ const DRIFT_IDLE_CHANCE := 0.4  # chance de ficar parado ao voltar pra origem
 var enemy_id: String = ""
 var grid_pos: Vector2i = Vector2i.ZERO
 var is_boss: bool = false
+var enemy_type: String = ""             # tipo do comum (cacador/bruxo); vazio p/ boss
 var home_pos: Vector2i = Vector2i.ZERO  # origem; alvo do leash quando o jogador foge
 var _boss_type: String = ""
 
@@ -23,12 +25,13 @@ var _boss_type: String = ""
 ## `pos` é a posição atual (pode ser a "andada" restaurada do combate); `home`
 ## é a origem do leash (spawn do mapa). Por padrão coincidem (entrada fresca).
 func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = "",
-		home: Vector2i = Vector2i(-1, -1)) -> void:
+		home: Vector2i = Vector2i(-1, -1), p_enemy_type: String = "") -> void:
 	enemy_id = id
 	grid_pos = pos
 	home_pos = home if home != Vector2i(-1, -1) else pos
 	is_boss = boss
 	_boss_type = boss_type
+	enemy_type = p_enemy_type
 	_update_visual_position()
 
 	var sprite := Sprite2D.new()
@@ -40,7 +43,7 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 			"saci":     sprite.texture = SACI_TEXTURE
 			_:          sprite.texture = BOSS_TEXTURE
 	else:
-		sprite.texture = ENEMY_TEXTURE
+		sprite.texture = BRUXO_TEXTURE if p_enemy_type == "bruxo" else ENEMY_TEXTURE
 	sprite.offset = Vector2(0, -8)  # 48px transborda pra cima, pés na base do tile
 	add_child(sprite)
 

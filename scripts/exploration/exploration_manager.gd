@@ -14,10 +14,16 @@ const FireEffect := preload("res://scripts/exploration/fire_effect.gd")
 const MULA_SCENE        := preload("res://scenes/arena/mula.tscn")
 const BOITATA_SCENE     := preload("res://scenes/arena/boitata.tscn")
 const CACADOR_SCENE     := preload("res://scenes/arena/cacador.tscn")
+const BRUXO_SCENE       := preload("res://scenes/arena/bruxo.tscn")
 const CURUPIRA_SCENE    := preload("res://scenes/arena/curupira.tscn")
-const ASSOMBRACAO_SCENE := preload("res://scenes/arena/assombracao.tscn")
 const SACI_SCENE        := preload("res://scenes/arena/saci.tscn")
 const DIALOGUE_SCENE    := preload("res://scenes/ui/dialogue_screen.tscn")
+
+# Inimigos comuns: a cena de arena é escolhida pelo tipo do comum (caçador/bruxo).
+const REGULAR_SCENES := {
+	"cacador": CACADOR_SCENE,
+	"bruxo": BRUXO_SCENE,
+}
 
 # Variantes de tile no atlas (ver scripts/tools/gen_tiles.py).
 const FLOOR_VARIANTS := 4
@@ -133,7 +139,8 @@ func _spawn_enemies() -> void:
 		var pos: Vector2i = GameState.map_enemy_positions.get(def["id"], spawn)
 		var enemy := MapEnemy.new()
 		_enemies_container.add_child(enemy)
-		enemy.setup(def["id"], pos, def["boss"], def.get("boss_type", ""), spawn)
+		enemy.setup(def["id"], pos, def["boss"], def.get("boss_type", ""), spawn,
+			def.get("enemy_type", ""))
 		_map_enemies.append(enemy)
 
 func _spawn_objects() -> void:
@@ -290,8 +297,12 @@ func _trigger_combat(enemy: MapEnemy) -> void:
 		else:
 			_show_boss_dialogue()
 	else:
-		GameState.next_enemy_scene = _profile["regular_scene"]
+		GameState.next_enemy_scene = _regular_scene_for(enemy.enemy_type)
 		GameState.change_screen(_profile["arena_screen"])
+
+## Cena de arena do comum pelo tipo (caçador/bruxo); fallback = caçador.
+func _regular_scene_for(etype: String) -> PackedScene:
+	return REGULAR_SCENES.get(etype, CACADOR_SCENE)
 
 func _snapshot_enemy_positions() -> void:
 	# Salva a posição atual de cada inimigo vivo (inclui o que será lutado — filtrado
@@ -399,7 +410,6 @@ func _build_profile() -> Dictionary:
 			return {
 				"arena_screen": SignalBus.Screen.ARENA_PHASE2,
 				"boss_scene": BOITATA_SCENE,
-				"regular_scene": CACADOR_SCENE,
 				"boss_dialogue": BOITATA_DIALOGUE,
 				"boss_speaker": "BOITATÁ",
 				"boss_color": Constants.COLOR_DIALOGUE_BOITATA,
@@ -418,7 +428,6 @@ func _build_profile() -> Dictionary:
 			return {
 				"arena_screen": SignalBus.Screen.ARENA_PHASE3,
 				"boss_scene": CURUPIRA_SCENE,
-				"regular_scene": ASSOMBRACAO_SCENE,
 				"boss_dialogue": CURUPIRA_DIALOGUE,
 				"boss_speaker": "CURUPIRA",
 				"boss_color": Constants.COLOR_DIALOGUE_CURUPIRA,
@@ -437,7 +446,6 @@ func _build_profile() -> Dictionary:
 			return {
 				"arena_screen": SignalBus.Screen.ARENA_PHASE4,
 				"boss_scene": SACI_SCENE,
-				"regular_scene": ASSOMBRACAO_SCENE,
 				"boss_dialogue": SACI_DIALOGUE,
 				"boss_speaker": "SACI",
 				"boss_color": Constants.COLOR_DIALOGUE_SACI,
@@ -458,7 +466,6 @@ func _build_profile() -> Dictionary:
 			return {
 				"arena_screen": SignalBus.Screen.ARENA,
 				"boss_scene": MULA_SCENE,
-				"regular_scene": null,
 				"boss_dialogue": MULA_DIALOGUE,
 				"boss_speaker": "MULA SEM CABEÇA",
 				"boss_color": Constants.COLOR_DIALOGUE_MULA,
