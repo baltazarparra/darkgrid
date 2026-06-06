@@ -1,0 +1,234 @@
+class_name HealthBar
+extends Control
+
+# Barra de vida custom-drawn (substitui o antigo HealthIcons). Mantém a MESMA lógica de
+# dano/vida — apenas troca a camada visual. Largura FIXA: a barra preenche por proporção,
+# então nunca sai da tela por mais HP que haja (jogador cresce, bosses chegam a 36 HP).
+#
+# Recursos AAA:
+#  - fill que drena com tween suave;
+#  - rastro de dano (ghost) que desce devagar atrás do fill, marcando o golpe;
+#  - ticks de 1 HP (preserva a leitura discreta que os ícones davam, mas com largura fixa);
+#  - valor numérico (cur/máx) + nome;
+#  - pulso quando a vida está baixa.
+
+# ─── Constants ─────────────────────────────────────
+const HEADER_H: float = 22.0          # faixa do nome/valor acima da barra
+const GAP: float = 4.0                 # respiro entre cabeçalho e barra
+const BAR_H: float = 20.0
+const MAX_TICKS: int = 48              # acima disso os ticks viram ruído: omitimos
+const FILL_TWEEN: float = 0.18         # drena/enche o fill
+const TRAIL_TWEEN: float = 0.45        # o rastro persegue o fill, mais lento
+const TRAIL_DELAY: float = 0.12
+const LOW_RATIO: float = 0.30          # abaixo disto: pulso de alerta
+const PULSE_HZ: float = 2.6
+
+# ─── State ─────────────────────────────────────────
+var _max: float = 1.0
+var _value: float = 1.0
+var _display_value: float = 1.0        # fill animado
+var _trail_value: float = 1.0          # ghost de dano animado
+var _is_boss: bool = false
+
+var _fill_color: Color = Constants.COLOR_BLOOD
+var _track_color: Color = Constants.COLOR_ARENA_BG
+var _border_color: Color = Constants.COLOR_BLOOD
+var _trail_color: Color = Constants.COLOR_BONE
+
+var _font_size: int = Constants.FONT_MD
+
+var _name_label: Label
+var _value_label: Label
+var _fill_tween: Tween
+var _trail_tween: Tween
+
+# ─── Lifecycle ─────────────────────────────────────
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_name_label = Label.new()
+	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	add_child(_name_label)
+
+	_value_label = Label.new()
+	_value_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	add_child(_value_label)
+	_relayout()
+
+# ─── Public API ────────────────────────────────────
+## Configura cores/identidade. `max` define a escala; o valor começa cheio.
+func setup(max_value: float, fill: Color, track: Color, border: Color, label_text: String, is_boss: bool = false) -> void:
+	_max = maxf(max_value, 1.0)
+	_value = _max
+	_display_value = _max
+	_trail_value = _max
+	_fill_color = fill
+	_track_color = track
+	_border_color = border
+	_trail_color = fill.lightened(0.55)
+	_is_boss = is_boss
+	if _name_label != null:
+		_name_label.text = label_text
+	_refresh_text_styles()
+	_update_value_label()
+	queue_redraw()
+
+## Atualiza só o teto (jogador cresce; spawn de inimigo redefine a escala).
+func set_max(max_value: float) -> void:
+	var new_max: float = maxf(max_value, 1.0)
+	if is_equal_approx(new_max, _max):
+		return
+	_max = new_max
+	_value = clampf(_value, 0.0, _max)
+	_display_value = clampf(_display_value, 0.0, _max)
+	_trail_value = clampf(_trail_value, 0.0, _max)
+	_update_value_label()
+	queue_redraw()
+
+## Define o valor atual e anima fill + rastro de dano.
+func set_value(new_value: float) -> void:
+	var clamped: float = clampf(new_value, 0.0, _max)
+	var took_damage: bool = clamped < _value
+	_value = clamped
+	_update_value_label()
+
+	if _fill_tween != null and _fill_tween.is_valid():
+		_fill_tween.kill()
+	_fill_tween = create_tween()
+	_fill_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_fill_tween.tween_method(_set_display_value, _display_value, _value, FILL_TWEEN)
+
+	if took_damage:
+		# o rastro fica para trás e drena devagar, evidenciando o quanto saiu.
+		if _trail_tween != null and _trail_tween.is_valid():
+			_trail_tween.kill()
+		_trail_tween = create_tween()
+		_trail_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		_trail_tween.tween_interval(TRAIL_DELAY)
+		_trail_tween.tween_method(_set_trail_value, _trail_value, _value, TRAIL_TWEEN)
+	else:
+		# cura: o rastro acompanha o fill subindo, sem ghost.
+		if _trail_tween != null and _trail_tween.is_valid():
+			_trail_tween.kill()
+		_set_trail_value(_value)
+
+	set_process(_value > 0.0 and _ratio() <= LOW_RATIO)
+	queue_redraw()
+
+## Aplica dimensões responsivas calculadas pela HUD.
+func configure_size(bar_width: float, font_size: int) -> void:
+	_font_size = font_size
+	custom_minimum_size = Vector2(bar_width, _total_height())
+	size = custom_minimum_size
+	_refresh_text_styles()
+	_relayout()
+	queue_redraw()
+
+func total_height() -> float:
+	return _total_height()
+
+# ─── Internals ─────────────────────────────────────
+func _set_display_value(v: float) -> void:
+	_display_value = v
+	queue_redraw()
+
+func _set_trail_value(v: float) -> void:
+	_trail_value = v
+	queue_redraw()
+
+func _ratio() -> float:
+	return clampf(_value / _max, 0.0, 1.0) if _max > 0.0 else 0.0
+
+func _total_height() -> float:
+	var h: float = HEADER_H
+	if _is_boss:
+		h += 4.0
+	return h + GAP + (BAR_H + 6.0 if _is_boss else BAR_H)
+
+func _bar_rect() -> Rect2:
+	var top: float = HEADER_H + GAP + (4.0 if _is_boss else 0.0)
+	var bh: float = BAR_H + 6.0 if _is_boss else BAR_H
+	return Rect2(0.0, top, size.x, bh)
+
+func _relayout() -> void:
+	if _name_label == null or _value_label == null:
+		return
+	var header_h: float = HEADER_H + (4.0 if _is_boss else 0.0)
+	_name_label.position = Vector2.ZERO
+	_name_label.size = Vector2(size.x * 0.62, header_h)
+	_value_label.position = Vector2(size.x * 0.38, 0.0)
+	_value_label.size = Vector2(size.x * 0.62, header_h)
+
+func _refresh_text_styles() -> void:
+	if _name_label == null or _value_label == null:
+		return
+	_name_label.add_theme_font_size_override("font_size", _font_size)
+	_name_label.add_theme_color_override("font_color", Constants.COLOR_TEXT)
+	_value_label.add_theme_font_size_override("font_size", _font_size)
+	_value_label.add_theme_color_override("font_color", _fill_color.lightened(0.35))
+
+func _update_value_label() -> void:
+	if _value_label != null:
+		_value_label.text = "%d/%d" % [ceili(_value), int(_max)]
+
+# ─── Drawing ───────────────────────────────────────
+func _draw() -> void:
+	var bar: Rect2 = _bar_rect()
+	var bw: float = bar.size.x
+	var bh: float = bar.size.y
+	var x0: float = bar.position.x
+	var y0: float = bar.position.y
+
+	# trilho de fundo
+	draw_rect(Rect2(x0, y0, bw, bh), _track_color)
+
+	# rastro de dano (ghost) — atrás do fill, da borda do fill até o trail
+	var fill_w: float = bw * clampf(_display_value / _max, 0.0, 1.0)
+	var trail_w: float = bw * clampf(_trail_value / _max, 0.0, 1.0)
+	if trail_w > fill_w + 0.5:
+		var ghost: Color = _trail_color
+		ghost.a = 0.7
+		draw_rect(Rect2(x0 + fill_w, y0, trail_w - fill_w, bh), ghost)
+
+	# fill principal
+	if fill_w > 0.5:
+		var fill: Color = _fill_color
+		# pulso de alerta quando a vida está baixa
+		if _value > 0.0 and _ratio() <= LOW_RATIO:
+			var t: float = Time.get_ticks_msec() / 1000.0
+			var pulse: float = 0.5 + 0.5 * sin(t * TAU * PULSE_HZ)
+			fill = _fill_color.lerp(_fill_color.lightened(0.5), pulse * 0.7)
+		draw_rect(Rect2(x0, y0, fill_w, bh), fill)
+		# brilho superior (faceta) para dar volume
+		var sheen: Color = fill.lightened(0.25)
+		sheen.a = 0.35
+		draw_rect(Rect2(x0, y0, fill_w, bh * 0.28), sheen)
+
+	# ticks de 1 HP (leitura discreta) — só quando não viram ruído
+	var units: int = int(round(_max))
+	if units > 1 and units <= MAX_TICKS:
+		var sep: Color = _track_color.darkened(0.4)
+		sep.a = 0.9
+		for i: int in range(1, units):
+			var tx: float = x0 + bw * (float(i) / float(units))
+			draw_line(Vector2(tx, y0 + 1.0), Vector2(tx, y0 + bh - 1.0), sep, 1.0)
+
+	# moldura (bordas retas — direção de arte)
+	_draw_border(Rect2(x0, y0, bw, bh), _border_color, Constants.UI_BORDER_WIDTH)
+
+func _draw_border(r: Rect2, color: Color, width: int) -> void:
+	var w: float = float(width)
+	draw_rect(Rect2(r.position.x, r.position.y, r.size.x, w), color)
+	draw_rect(Rect2(r.position.x, r.position.y + r.size.y - w, r.size.x, w), color)
+	draw_rect(Rect2(r.position.x, r.position.y, w, r.size.y), color)
+	draw_rect(Rect2(r.position.x + r.size.x - w, r.position.y, w, r.size.y), color)
+
+func _process(_delta: float) -> void:
+	# só roda enquanto a vida está baixa, para animar o pulso.
+	if _value <= 0.0 or _ratio() > LOW_RATIO:
+		set_process(false)
+		queue_redraw()
+		return
+	queue_redraw()

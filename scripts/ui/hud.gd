@@ -1,71 +1,64 @@
 class_name Hud
 extends CanvasLayer
 
+# HUD de combate/exploração. Layout coerente e sempre visível, independente da magnitude
+# de HP ou de fragmentos (antes os ícones de HP transbordavam com muito HP e os fragmentos
+# eram "+".repeat(n), estourando a tela):
+#
+#   ┌ topo-esq: barra da CAIPORA            topo-dir: ◈ fragmentos   🔊 ┐
+#   │                                                                   │
+#   └              centro (combate): barra do inimigo / boss           ┘
+#
+# A LÓGICA de dano/vida é a mesma — esta camada só consome os sinais existentes.
+
 # ─── Exports ───────────────────────────────────────
 @export var show_enemy_hp: bool = true
 
-# ─── Constants ─────────────────────────────────────
-# HP responsivo: cada fileira de ícones cabe numa fração da largura, ficando grande com
-# poucos HP e encolhendo quando há muitos (jogador cresce +1/vitória; boss = 10).
-const ICON_ALLOT_FRAC: float = 0.40
-const ICON_SPACING_MAX: float = 64.0
-const ICON_RADIUS_MIN: float = 12.0
-const ICON_RADIUS_MAX: float = 32.0
-const PLAYER_EMPTY := Constants.COLOR_BLOOD_EMPTY
-const ENEMY_EMPTY := Constants.COLOR_AMBER_EMPTY
-
 # ─── State ─────────────────────────────────────────
-var _player_icons: HealthIcons
-var _enemy_icons: HealthIcons
-var _frag_label: Label
+var _root: Control
+var _player_bar: HealthBar
+var _enemy_bar: HealthBar
+var _frag_counter: FragmentCounter
 var _music_btn: SpeakerButton
 
+var _enemy_max: float = -1.0
+var _enemy_is_boss: bool = false
+
 func _ready() -> void:
-	var hbox: HBoxContainer = $Margin/HBox
-	for child in hbox.get_children():
-		child.queue_free()
+	_root = Control.new()
+	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_root)
 
-	_player_icons = HealthIcons.new()
-	var pm: Vector2 = _metrics_for(GameState.caipora_max_hp)
-	_player_icons.setup(
+	_player_bar = HealthBar.new()
+	_root.add_child(_player_bar)
+	_player_bar.setup(
 		GameState.caipora_max_hp,
-		HealthIcons.Shape.PENTAGRAM,
 		Constants.COLOR_BLOOD,
-		PLAYER_EMPTY, pm.x, pm.y
+		Constants.COLOR_ARENA_BG,
+		Constants.COLOR_BLOOD.lightened(0.2),
+		"CAIPORA"
 	)
-	_player_icons.set_current(GameState.caipora_current_hp)
-	hbox.add_child(_player_icons)
+	_player_bar.set_value(GameState.caipora_current_hp)
 
-	_frag_label = Label.new()
-	_frag_label.add_theme_font_size_override("font_size", _frag_font_size())
-	_frag_label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
-	_frag_label.text = "+".repeat(int(MetaProgression.fragments))
-	hbox.add_child(_frag_label)
-
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_child(spacer)
+	_frag_counter = FragmentCounter.new()
+	_root.add_child(_frag_counter)
+	_frag_counter.set_count(int(MetaProgression.fragments))
 
 	_music_btn = SpeakerButton.new()
 	_music_btn.icon_color = Constants.COLOR_AMBER
 	_music_btn.muted = not AudioDirector.is_music_enabled()
 	_music_btn.pressed.connect(_on_music_toggle)
-	hbox.add_child(_music_btn)
+	_root.add_child(_music_btn)
 
 	if show_enemy_hp:
-		_enemy_icons = HealthIcons.new()
-		# Layout inicial só; o spawn do inimigo reemite o max real (5/8/boss) e reajusta.
-		var em: Vector2 = _metrics_for(Constants.COMMON_HEALTH_EARLY)
-		_enemy_icons.setup(
-			Constants.COMMON_HEALTH_EARLY,
-			HealthIcons.Shape.STAR_OF_DAVID,
-			Constants.COLOR_AMBER,
-			ENEMY_EMPTY, em.x, em.y
-		)
-		hbox.add_child(_enemy_icons)
+		_enemy_bar = HealthBar.new()
+		_root.add_child(_enemy_bar)
+		# Setup inicial; o spawn do inimigo reemite o max real (5/8/boss) e reajusta.
+		_setup_enemy_bar(float(Constants.COMMON_HEALTH_EARLY), false)
 
-	_apply_safe_margins()
-	get_viewport().size_changed.connect(_on_viewport_resized)
+	_layout()
+	get_viewport().size_changed.connect(_layout)
 
 	SignalBus.caipora_health_changed.connect(_on_caipora_health_changed)
 	SignalBus.enemy_health_changed.connect(_on_enemy_health_changed)
@@ -74,66 +67,72 @@ func _ready() -> void:
 	SignalBus.chest_opened.connect(_on_chest_opened)
 
 # ─── Layout responsivo ─────────────────────────────
-## Retorna Vector2(radius, spacing) para uma fileira com `total` ícones, cabendo na
-## largura alocada (ICON_ALLOT_FRAC da viewport).
-func _metrics_for(total: int) -> Vector2:
+func _font_size() -> int:
 	var vp := get_viewport().get_visible_rect().size
-	var allotted: float = vp.x * ICON_ALLOT_FRAC
-	var spacing: float = clampf(allotted / float(maxi(total, 1)), 0.0, ICON_SPACING_MAX)
-	var radius: float = clampf(spacing * 0.42, ICON_RADIUS_MIN, ICON_RADIUS_MAX)
-	return Vector2(radius, spacing)
+	return int(clampf(minf(vp.x, vp.y) * 0.026, 14.0, 24.0))
 
-func _frag_font_size() -> int:
+func _layout() -> void:
 	var vp := get_viewport().get_visible_rect().size
-	return int(clampf(minf(vp.x, vp.y) * 0.03, 14.0, 28.0))
+	var side: float = clampf(minf(vp.x, vp.y) * 0.055, 32.0, 72.0)
+	var top: float = clampf(minf(vp.x, vp.y) * 0.05, 24.0, 56.0)
+	var fs: int = _font_size()
 
-func _apply_safe_margins() -> void:
-	var margin: MarginContainer = $Margin
-	var vp := get_viewport().get_visible_rect().size
-	var side: int = int(clampf(minf(vp.x, vp.y) * 0.055, 40.0, 80.0))
-	var top: int = int(clampf(minf(vp.x, vp.y) * 0.05, 28.0, 64.0))
-	margin.add_theme_constant_override("margin_left", side)
-	margin.add_theme_constant_override("margin_right", side)
-	margin.add_theme_constant_override("margin_top", top)
+	# Barra do jogador — topo-esquerda.
+	var pw: float = clampf(vp.x * 0.24, 220.0, 420.0)
+	_player_bar.configure_size(pw, fs)
+	_player_bar.position = Vector2(side, top)
 
-func _on_viewport_resized() -> void:
-	_apply_safe_margins()
-	if _player_icons != null:
-		var pm: Vector2 = _metrics_for(_player_icons._total)
-		_player_icons.set_metrics(pm.x, pm.y)
-	if _enemy_icons != null:
-		var em: Vector2 = _metrics_for(_enemy_icons._total)
-		_enemy_icons.set_metrics(em.x, em.y)
-	if _frag_label != null:
-		_frag_label.add_theme_font_size_override("font_size", _frag_font_size())
-	pass  # SpeakerButton é fixed-size; sem resize necessário
+	# Grupo topo-direita: fragmentos + botão de áudio.
+	_frag_counter.configure_size(fs)
+	_music_btn.size = _music_btn.get_combined_minimum_size()
+	var music_w: float = _music_btn.size.x
+	var music_h: float = _music_btn.size.y
+	var frag_h: float = _frag_counter.size.y
+	var group_h: float = maxf(music_h, frag_h)
+	var mx: float = vp.x - side - music_w
+	_music_btn.position = Vector2(mx, top + (group_h - music_h) * 0.5)
+	_frag_counter.position = Vector2(
+		mx - float(Constants.SPACE_MD) - _frag_counter.size.x,
+		top + (group_h - frag_h) * 0.5
+	)
 
+	# Barra do inimigo — centralizada, numa fileira abaixo dos cantos do topo
+	# (garante que nunca colida com jogador/fragmentos por mais largo que seja o boss).
+	if _enemy_bar != null:
+		var ew: float = (clampf(vp.x * 0.46, 360.0, 760.0) if _enemy_is_boss
+			else clampf(vp.x * 0.30, 260.0, 520.0))
+		_enemy_bar.configure_size(ew, fs)
+		var row_y: float = top + maxf(_player_bar.total_height(), group_h) + float(Constants.SPACE_MD)
+		_enemy_bar.position = Vector2((vp.x - ew) * 0.5, row_y)
+
+func _setup_enemy_bar(max_health: float, is_boss: bool) -> void:
+	_enemy_max = max_health
+	_enemy_is_boss = is_boss
+	_enemy_bar.setup(
+		max_health,
+		Constants.COLOR_AMBER,
+		Constants.COLOR_ARENA_BG,
+		Constants.COLOR_AMBER.darkened(0.15),
+		"CRIATURA",
+		is_boss
+	)
+
+# ─── Signal handlers ───────────────────────────────
 func _on_caipora_health_changed(new_health: float, max_health: float) -> void:
-	if max_health != _player_icons._total:
-		var pm: Vector2 = _metrics_for(int(max_health))
-		_player_icons.setup(
-			max_health,
-			HealthIcons.Shape.PENTAGRAM,
-			Constants.COLOR_BLOOD,
-			PLAYER_EMPTY, pm.x, pm.y
-		)
-	_player_icons.set_current(new_health)
+	_player_bar.set_max(max_health)
+	_player_bar.set_value(new_health)
 
 func _on_enemy_health_changed(new_health: float, max_health: float) -> void:
-	if not show_enemy_hp:
+	if not show_enemy_hp or _enemy_bar == null:
 		return
-	if max_health != _enemy_icons._total:
-		var em: Vector2 = _metrics_for(int(max_health))
-		_enemy_icons.setup(
-			max_health,
-			HealthIcons.Shape.STAR_OF_DAVID,
-			Constants.COLOR_AMBER,
-			ENEMY_EMPTY, em.x, em.y
-		)
-	_enemy_icons.set_current(new_health)
+	var is_boss: bool = GameState.active_combat_is_boss
+	if not is_equal_approx(max_health, _enemy_max) or is_boss != _enemy_is_boss:
+		_setup_enemy_bar(max_health, is_boss)
+		_layout()
+	_enemy_bar.set_value(new_health)
 
 func _on_fragment_gained(total: float, amount: float) -> void:
-	_frag_label.text = "+".repeat(int(total))
+	_frag_counter.set_count(int(total))
 	_show_fragment_popup(amount)
 
 func _on_chama_gained() -> void:
@@ -143,23 +142,25 @@ func _on_chama_gained() -> void:
 func _on_chest_opened() -> void:
 	_show_popup("+1 HP", Constants.COLOR_BLOOD)
 
-func _show_fragment_popup(amount: float) -> void:
-	var txt: String = "+%.4g fragmento%s" % [amount, "s" if amount != 1.0 else ""]
-	_show_popup(txt, Constants.COLOR_AMBER)
-
 func _on_music_toggle() -> void:
 	AudioDirector.toggle_music_ambience()
 	_music_btn.set_muted(not AudioDirector.is_music_enabled())
 
+# ─── Popups ────────────────────────────────────────
+func _show_fragment_popup(amount: float) -> void:
+	var txt: String = "+%.4g fragmento%s" % [amount, "s" if amount != 1.0 else ""]
+	_show_popup(txt, Constants.COLOR_AMBER)
+
 func _show_popup(text: String, color: Color) -> void:
 	var popup := Label.new()
 	popup.text = text
-	popup.add_theme_font_size_override("font_size", _frag_font_size() + 4)
+	popup.add_theme_font_size_override("font_size", _font_size() + 4)
 	popup.add_theme_color_override("font_color", color)
 	popup.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	popup.set_anchors_preset(Control.PRESET_CENTER)
 	popup.position = Vector2(-80.0, 40.0)
-	add_child(popup)
+	_root.add_child(popup)
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(popup, "position:y", popup.position.y - 48.0, 1.5)
