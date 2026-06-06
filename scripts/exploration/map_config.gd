@@ -105,13 +105,18 @@ static func for_phase(target_phase: int) -> MapConfig:
 	return c
 
 # Composição dos inimigos comuns: caçador + bruxo, 4/2 alternando por paridade.
-#   Fases ímpares (1, 3): 4 bruxos + 2 caçadores.
+#   Fase 1: apenas caçadores (6) — sem bruxo, introdução suave do combate.
+#   Fases ímpares (3): 4 bruxos + 2 caçadores.
 #   Fases pares   (2, 4): 4 caçadores + 2 bruxos.
 # Total = 6 comuns; com o boss, fecha os 7 de enemy_count.
 static func _common_mix(target_phase: int) -> PackedStringArray:
+	var mix := PackedStringArray()
+	if target_phase == 1:
+		for _i in 6:
+			mix.append("cacador")
+		return mix
 	var major := "bruxo" if target_phase % 2 == 1 else "cacador"
 	var minor := "cacador" if target_phase % 2 == 1 else "bruxo"
-	var mix := PackedStringArray()
 	for _i in 4:
 		mix.append(major)
 	for _i in 2:
