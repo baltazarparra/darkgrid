@@ -35,6 +35,37 @@ func test_name_reveals_letter_by_letter() -> void:
 	_screen._set_name_chars("BOITATÁ".length())
 	assert_eq(_screen._name_label.text, "BOITATÁ")
 
+# ─── Nome completo: nunca encolhe; quebra em duas linhas se não couber ───
+
+func test_name_uses_word_wrap() -> void:
+	_screen.start("BOITATÁ", FRAMES, ACCENT, NAME_COLOR)
+	# Quebra por PALAVRA garante o nome completo sem cortar nem espremer.
+	assert_eq(_screen._name_label.autowrap_mode, TextServer.AUTOWRAP_WORD)
+
+func test_longest_word() -> void:
+	_screen.start("BOITATÁ", FRAMES, ACCENT, NAME_COLOR)
+	assert_eq(_screen._longest_word("MULA SEM CABEÇA"), "CABEÇA")
+	assert_eq(_screen._longest_word("SACI"), "SACI")
+
+func test_short_name_one_line_long_name_two_lines() -> void:
+	# Nome curto cabe em 1 linha; nome longo reserva 2 linhas (caixa mais alta).
+	var short_screen: BossIntroScreen = preload("res://scenes/ui/boss_intro_screen.tscn").instantiate()
+	add_child_autofree(short_screen)
+	short_screen.start("SACI", FRAMES, ACCENT, NAME_COLOR)
+
+	var long_screen: BossIntroScreen = preload("res://scenes/ui/boss_intro_screen.tscn").instantiate()
+	add_child_autofree(long_screen)
+	long_screen.start("MULA SEM CABEÇA", FRAMES, ACCENT, NAME_COLOR)
+
+	assert_gt(long_screen._name_label.size.y, short_screen._name_label.size.y,
+		"nome longo deve reservar uma caixa mais alta (2 linhas)")
+
+func test_name_box_width_is_bounded() -> void:
+	# A caixa do nome é limitada (para forçar a quebra), nunca a viewport inteira.
+	_screen.start("MULA SEM CABEÇA", FRAMES, ACCENT, NAME_COLOR)
+	var vp_w: float = _screen.get_viewport().get_visible_rect().size.x
+	assert_lt(_screen._name_label.size.x, vp_w, "a caixa do nome não ocupa a largura toda")
+
 func test_finish_emits_boss_intro_finished() -> void:
 	watch_signals(SignalBus)
 	_screen.start("BOITATÁ", FRAMES, ACCENT, NAME_COLOR)

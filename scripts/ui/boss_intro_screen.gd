@@ -24,6 +24,11 @@ const MIN_SKIP_DELAY: float = 0.4           # carência antes de aceitar skip (e
 const BACKLIGHT_SIZE: int = 512
 const BAR_HEIGHT: float = 4.0
 const BAR_WIDTH_RATIO: float = 0.62
+const NAME_MAX_WIDTH_RATIO: float = 0.52   # largura máxima do nome; acima disso, quebra de linha (ex. "MULA SEM CABEÇA")
+const NAME_MAX_LINES: int = 2              # nomes longos quebram em até 2 linhas
+const NAME_FONT_MIN: int = 28              # piso de fonte (legibilidade); só recua se a palavra não couber
+const BAR_GAP: float = 18.0                # folga entre o bloco do nome e as barras
+const SUBTITLE_GAP: float = 24.0           # folga entre a barra de cima e o subtítulo
 
 # ─── State ─────────────────────────────────────────
 var _boss_name: String = ""
@@ -118,8 +123,32 @@ func _build(frames: SpriteFrames, accent: Color, name_color: Color) -> void:
 
 	var bar_width: float = vp.x * BAR_WIDTH_RATIO
 	var name_y: float = vp.y * NAME_CENTER_Y_RATIO
+	var max_name_width: float = vp.x * NAME_MAX_WIDTH_RATIO
 
-	_bar_top = _make_bar(accent, center_x, name_y - 34.0, bar_width)
+	# O nome NUNCA encolhe nem corta: fonte grande consistente e quebra em PALAVRA —
+	# nomes longos (ex. "MULA SEM CABEÇA") quebram em duas linhas em vez de espremer.
+	_name_label = Label.new()
+	_name_label.text = ""
+	_name_label.add_theme_color_override("font_color", name_color)
+	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_name_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP  # TOP mantém a linha 1 fixa durante a revelação
+	_name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	add_child(_name_label)  # na árvore antes de medir → resolução de tema (fonte) confiável
+
+	var font_size: int = _name_font_size(max_name_width)
+	_name_label.add_theme_font_size_override("font_size", font_size)
+
+	# Reserva a caixa do nome para a contagem de linhas do nome COMPLETO, para que a
+	# revelação letra a letra não empurre as barras nem mude a altura no meio.
+	var font: Font = _name_label.get_theme_font(&"font")
+	var line_count: int = _name_line_count(font, font_size, max_name_width)
+	var block_h: float = font.get_height(font_size) * line_count
+	var box_top: float = name_y - block_h * 0.5
+
+	_name_label.size = Vector2(max_name_width, block_h)
+	_name_label.position = Vector2((vp.x - max_name_width) * 0.5, box_top)
+
+	_bar_top = _make_bar(accent, center_x, box_top - BAR_GAP, bar_width)
 	add_child(_bar_top)
 
 	_subtitle = Label.new()
@@ -129,21 +158,11 @@ func _build(frames: SpriteFrames, accent: Color, name_color: Color) -> void:
 	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_subtitle.anchor_left = 0.0
 	_subtitle.anchor_right = 1.0
-	_subtitle.position.y = name_y - 28.0
+	_subtitle.position.y = box_top - BAR_GAP - SUBTITLE_GAP
 	_subtitle.modulate.a = 0.0
 	add_child(_subtitle)
 
-	_name_label = Label.new()
-	_name_label.text = ""
-	_name_label.add_theme_font_size_override("font_size", _name_font_size(vp.x))
-	_name_label.add_theme_color_override("font_color", name_color)
-	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_name_label.anchor_left = 0.0
-	_name_label.anchor_right = 1.0
-	_name_label.position.y = name_y - 6.0
-	add_child(_name_label)
-
-	_bar_bot = _make_bar(accent, center_x, name_y + 52.0, bar_width)
+	_bar_bot = _make_bar(accent, center_x, box_top + block_h + BAR_GAP, bar_width)
 	add_child(_bar_bot)
 
 # ─── Animation ─────────────────────────────────────
@@ -209,13 +228,37 @@ func _scale_for(frames: SpriteFrames) -> Vector2:
 			return Vector2(s, s)
 	return Vector2(h / 48.0, h / 48.0)
 
-## Tamanho de fonte do nome: grande, mas garantindo que o nome caiba na largura.
-func _name_font_size(viewport_width: float) -> int:
-	if _boss_name.is_empty():
+## Tamanho de fonte do nome: grande e fixo (FONT_TITLE). Só recua — até NAME_FONT_MIN —
+## se a MAIOR PALAVRA não couber numa linha em max_width (a palavra não pode quebrar).
+## O nome nunca encolhe para caber em uma linha: nomes largos quebram em duas linhas.
+func _name_font_size(max_width: float) -> int:
+	if _boss_name.is_empty() or _name_label == null:
 		return Constants.FONT_TITLE
-	# Press Start 2P é monoespaçada: avanço por glifo ≈ tamanho da fonte.
-	var fit: int = int(viewport_width * 0.86 / float(_boss_name.length()))
-	return clampi(fit, 18, Constants.FONT_TITLE)
+	var font: Font = _name_label.get_theme_font(&"font")
+	var longest: String = _longest_word(_boss_name)
+	var size: int = Constants.FONT_TITLE
+	while size > NAME_FONT_MIN:
+		if font.get_string_size(longest, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x <= max_width:
+			break
+		size -= 2
+	return size
+
+## Quantas linhas o nome COMPLETO ocupa em max_width (limitado a NAME_MAX_LINES).
+func _name_line_count(font: Font, font_size: int, max_width: float) -> int:
+	if _boss_name.is_empty():
+		return 1
+	var full_w: float = font.get_string_size(_boss_name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	if full_w <= max_width:
+		return 1
+	return NAME_MAX_LINES
+
+## Maior palavra do nome (a quebra de linha é por palavra; nenhuma palavra pode estourar a linha).
+func _longest_word(text: String) -> String:
+	var longest: String = ""
+	for word in text.split(" ", false):
+		if word.length() > longest.length():
+			longest = word
+	return longest if not longest.is_empty() else text
 
 func _make_bar(accent: Color, center_x: float, y: float, width: float) -> ColorRect:
 	var bar := ColorRect.new()
