@@ -152,7 +152,7 @@ func test_phase_enemy_counts_are_all_seven() -> void:
 		assert_eq(MapConfig.for_phase(phase).enemy_count, 7,
 			"fase %d = 7 monstros (6 comuns + boss)" % phase)
 
-# ── Composição dos comuns: caçador+bruxo, 4/2 alternando por paridade ──
+# ── Composição dos comuns: fase 1 só caçador; demais 4/2 por paridade ──
 func test_common_enemy_mix_by_parity() -> void:
 	for phase: int in PHASES:
 		for s: int in SEEDS:
@@ -165,6 +165,10 @@ func test_common_enemy_mix_by_parity() -> void:
 				assert_true(counts.has(t),
 					"comum tem tipo válido (fase %d seed %d): %s" % [phase, s, t])
 				counts[t] += 1
+			if phase == 1:
+				assert_eq(counts["cacador"], 6, "fase 1: 6 caçadores, sem bruxo")
+				assert_eq(counts["bruxo"], 0, "fase 1: nenhum bruxo")
+				continue
 			var major := "bruxo" if phase % 2 == 1 else "cacador"
 			var minor := "cacador" if phase % 2 == 1 else "bruxo"
 			assert_eq(counts[major], 4, "fase %d: 4 do tipo majoritário (%s)" % [phase, major])
