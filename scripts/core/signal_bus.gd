@@ -19,6 +19,7 @@ signal fragment_gained(total: float, amount: float)
 signal chama_gained
 signal chest_opened
 
-# ─── Diálogo pré-boss ──────────────────────────────
+# ─── Apresentação de boss (estilo Mega Man) + diálogo pré-boss ──
 signal boss_intro_started
+signal boss_intro_finished
 signal dialogue_finished

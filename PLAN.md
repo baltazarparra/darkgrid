@@ -561,6 +561,39 @@ consistentemente **difícil**. Spec completa: [docs/PRD-economia-v2.md](docs/PRD
 - [x] Testes: literais de custo/HP/dano atualizados + `test_effect_text_matches_math`.
   Gate verde: smoke OK, 152 testes / ~12.7k asserts.
 
+### Apresentação de Boss (estilo Mega Man) ✅
+
+Toda boss fight abre com uma pré-tela curta de apresentação **antes do diálogo**:
+fundo escuro, o **modelo do boss** surge em cena com um "pop" elástico e brilho de
+aura, e abaixo o **nome estilizado** se revela letra a letra entre duas barras de
+destaque (com o subtítulo "— CHEFE —"). Vale para os 4 bosses (Mula sem Cabeça,
+Boitatá, Curupira, Saci).
+
+- [x] `scripts/ui/boss_intro_screen.gd` (`BossIntroScreen`, CanvasLayer layer 15) +
+  `scenes/ui/boss_intro_screen.tscn`. Cena montada por código (depende dos dados do
+  boss em `start()`), no padrão de `ending_screen.gd`. Modelo normalizado a uma
+  altura de exibição fixa; glow radial procedural (`GradientTexture2D`) na cor de
+  aura.
+- [x] **Nome sempre completo, nunca espremido.** Fonte grande e fixa (`FONT_TITLE`);
+  quebra automática por PALAVRA (`AUTOWRAP_WORD`) em até 2 linhas quando o nome não
+  cabe na largura (ex.: "MULA SEM CABEÇA" → "MULA SEM" / "CABEÇA"). A caixa reserva a
+  altura do nome completo, então a revelação letra a letra não empurra as barras
+  (alinhamento vertical TOP mantém a linha 1 fixa). As barras de destaque se
+  reposicionam conforme 1 ou 2 linhas.
+- [x] Animação: pop elástico do modelo → barras varrem do centro + subtítulo →
+  revelação letra a letra do nome → hold → encerra. Bob ocioso do modelo e pulso
+  do glow em loop. Auto-avança após o hold, ou **skip** por toque/tecla/clique
+  (com carência anti-skip-acidental de 0.4s, igual ao diálogo).
+- [x] Roteamento em `exploration_manager.gd`: combate de boss → `_show_boss_intro()`
+  → `boss_intro_finished` → diálogo (ou direto à arena se a boss não tiver falas)
+  → arena. Dados por fase no `_build_profile()` (`boss_frames` + `boss_aura`).
+  Signal `boss_intro_finished` no `SignalBus` (par do já existente `boss_intro_started`).
+- [x] Testes: `tests/unit/test_boss_intro_screen.gd` (15 testes: nome, modelo,
+  signals start/finish, idempotência, revelação do nome, quebra de linha/word-wrap,
+  caixa do nome limitada, eventos de skip). Gate verde: smoke OK, 179 testes /
+  ~12.7k asserts. Verificação visual headless (Xvfb + harness de captura) confirmou
+  os 4 bosses, incluindo a Mula em duas linhas.
+
 ---
 
 ## 11.1 Known Issues
