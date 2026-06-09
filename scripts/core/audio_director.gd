@@ -35,6 +35,7 @@ const AMB_FOREST: String = "res://assets/audio/ambience/amb_forest.wav"
 const AMB_DREAD: String = "res://assets/audio/ambience/amb_dread.wav"
 const AMB_FIRE: String = "res://assets/audio/ambience/amb_fire.wav"
 const AMB_FOG: String = "res://assets/audio/ambience/amb_fog.wav"
+const AMB_CHURCH: String = "res://assets/audio/ambience/amb_church.wav"
 
 # Música por contexto: um loop híbrido (maracatu + chiptune) por tela/fase/boss.
 const MUSIC_DIR: String = "res://assets/audio/music/"
@@ -193,11 +194,12 @@ func _refresh_ambience(screen: int) -> void:
 			path = AMB_FOG     # névoa
 		SignalBus.Screen.EXPLORATION_PHASE4:
 			path = AMB_DREAD   # ruína fria
-		SignalBus.Screen.EXPLORATION_PHASE5:
-			path = AMB_DREAD   # igreja fria e úmida
+		# A arena da Fase 5 é o altar DENTRO da mesma igreja: a cama sonora não
+		# troca na porta (mesma continuidade espacial do boss-intro→arena).
+		SignalBus.Screen.EXPLORATION_PHASE5, SignalBus.Screen.ARENA_PHASE5:
+			path = AMB_CHURCH  # igreja fria e úmida
 		SignalBus.Screen.ARENA, SignalBus.Screen.ARENA_PHASE2, \
-		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4, \
-		SignalBus.Screen.ARENA_PHASE5:
+		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4:
 			path = AMB_DREAD
 		_:
 			path = ""
