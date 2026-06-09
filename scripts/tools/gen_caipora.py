@@ -265,14 +265,20 @@ def _crown(p: Painter, head, lift=0.0, blown=0.0, chama=False):
         p.ellipse(hx - 0.4, hy - 8.4, 1.4, 1.0, F_CORE)   # coroa transborda
 
 
-def _embers(p: Painter, head, pose: str):
-    """Brasas soltas orbitando a Caipora incendiada (variante CHAMA)."""
+def _embers(p: Painter, head, pose: str, leg_phase: int = 0):
+    """Brasas soltas orbitando a Caipora incendiada (variante CHAMA).
+    leg_phase entra na semente: as brasas DERIVAM entre os frames de walk
+    (senão ficam pixel-congeladas enquanto o corpo anima). Zona de exclusão
+    no rosto — brasa não cai no olho dela."""
     hx, hy = head
+    seed = sum(map(ord, pose)) + (leg_phase + 1) * 31
     for i in range(6):
-        a = _hash01(i * 5.3 + sum(map(ord, pose))) * math.tau   # determinístico
-        r = 9.0 + _hash01(i * 2.1) * 7.0
+        a = _hash01(i * 5.3 + seed) * math.tau                # determinístico
+        r = 9.0 + _hash01(i * 2.1 + seed) * 7.0
         ex = hx + math.cos(a) * r * 1.2
-        ey = hy - 6 + math.sin(a) * r * 0.8 - _hash01(i) * 4.0
+        ey = hy - 6 + math.sin(a) * r * 0.8 - _hash01(i + seed) * 4.0
+        if hx - 6.5 < ex < hx + 7.5 and hy - 4.0 < ey < hy + 6.5:
+            continue                                          # rosto é sagrado
         p.ellipse(ex, ey, 0.7, 0.7, F_HOT if i % 2 else F_LOW)
 
 
@@ -301,6 +307,7 @@ def _whip(p: Painter, hand, pose, chama=False):
     """Cipó-chicote vivo: madeira escura, realce de folha, ponta em brasa."""
     hx, hy = hand
     tip_r = 1.7 if chama else 1.3
+    tip_core_r = 0.95 if chama else 0.7   # base EXATA de antes da CHAMA (arte travada)
     if pose == "windup":
         # arco tensionado atrás do ombro — a chicotada vem aí
         pts = [(hx, hy), (hx + 3.5, hy - 4.5), (hx + 3.5, hy - 10),
@@ -312,10 +319,10 @@ def _whip(p: Painter, hand, pose, chama=False):
             arc = [(hx + 0.5, hy + off * 0.4), (hx + 6, hy - 1.5 + off),
                    (hx + 11.5, hy + 0.5 + off * 1.4), (hx + 15.5, hy + 4 + off * 1.7)]
             p.stroke(arc, wd, col)
-        p.ellipse(hx + 16.5, hy + 6.5, 2.3 if chama else 1.8, 2.3 if chama else 1.8,
-                  F_HOT)                                       # estalo da ponta
-        p.ellipse(hx + 16.5, hy + 6.5, 1.3 if chama else 1.0, 1.3 if chama else 1.0,
-                  F_CORE)
+        snap_r = 2.3 if chama else 1.8        # estalo da ponta (um nome por raio,
+        snap_core_r = 1.3 if chama else 1.0   # nunca pares de ternários por eixo)
+        p.ellipse(hx + 16.5, hy + 6.5, snap_r, snap_r, F_HOT)
+        p.ellipse(hx + 16.5, hy + 6.5, snap_core_r, snap_core_r, F_CORE)
         p.limb((hx + 11, hy - 0.5), (hx + 13.5, hy - 4.0), 1.2, 0.4, LF)  # folha arrancada
         return
     elif pose == "recover":
@@ -332,7 +339,7 @@ def _whip(p: Painter, hand, pose, chama=False):
     p.ellipse(pts[3][0] - 1.0, pts[3][1], 1.3, 1.0, LF)
     # ponta em brasa (assinatura: o estalo crítico nasce aqui)
     p.ellipse(pts[-1][0], pts[-1][1], tip_r, tip_r, F_LOW)
-    p.ellipse(pts[-1][0], pts[-1][1], tip_r * 0.55, tip_r * 0.55, F_HOT)
+    p.ellipse(pts[-1][0], pts[-1][1], tip_core_r, tip_core_r, F_HOT)
     if chama:
         p.ellipse(pts[-1][0], pts[-1][1], 0.5, 0.5, F_CORE)
 
@@ -465,7 +472,7 @@ def caipora(pose="idle", leg_phase=0, chama=False):
     # chicote por cima de tudo; brasas orbitando fecham a variante CHAMA
     _whip(p, near_hand, pose, chama=chama)
     if chama:
-        _embers(p, head, pose)
+        _embers(p, head, pose, leg_phase)
 
     # ── render + pós ──
     img = p.render()

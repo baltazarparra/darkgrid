@@ -42,7 +42,7 @@ func _ready() -> void:
 	_rest_y = -SPRITE_HALF * WALK_SCALE
 	_sprite = AnimatedSprite2D.new()
 	# Frames conforme a meta-progressão: com a CHAMA, ela atravessa a tela em brasa.
-	_sprite.sprite_frames = load(MetaProgression.caipora_frames_path())
+	CaiporaSkin.apply(_sprite)
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_sprite.scale = Vector2(WALK_SCALE, WALK_SCALE)
 	_sprite.flip_h = false  # andando para a direita

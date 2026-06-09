@@ -54,11 +54,6 @@ const KILLS_PER_CHAMA_ROLL: int = 10
 var CHAMA_DROP_CHANCE: float = 0.5
 # +1 de dano (teto da trilha Fúria: 9 → 10 com a CHAMA).
 const CHAMA_DAMAGE_BONUS: int = 1
-# A CHAMA incendeia a PRÓPRIA Caipora: variante de sprite com a juba mais longa
-# e quente + brasas orbitando (docs/CONCEITO-protagonista.md, §6). Os consumidores
-# (exploração, arena, TitleWalker) escolhem os frames via caipora_frames_path().
-const CAIPORA_FRAMES_PATH: String = "res://assets/sprites/caipora_sprite_frames.tres"
-const CAIPORA_FRAMES_CHAMA_PATH: String = "res://assets/sprites/caipora_sprite_frames_chama.tres"
 
 # ─── State ─────────────────────────────────────────
 var unlocked_characters: Array[String] = ["caipora"]
@@ -202,12 +197,6 @@ func register_kill_for_chama() -> bool:
 		return true
 	save_progress()
 	return false
-
-## Path do SpriteFrames da Caipora conforme a meta-progressão: com a CHAMA
-## conquistada, é ELA que se incendeia (juba mais longa/quente, brasas).
-## Mesmo contrato de animações nas duas variantes (idle/walk/windup/strike/recover).
-func caipora_frames_path() -> String:
-	return CAIPORA_FRAMES_CHAMA_PATH if has_chama else CAIPORA_FRAMES_PATH
 
 func get_health_bonus() -> int:
 	# Soma o "hp" de cada erva de Cura comprada (fonte numérica única). Incrementos

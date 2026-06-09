@@ -34,7 +34,7 @@ func _ready() -> void:
 	# visível (vp/zoom) fica <= mapa nos dois eixos, então os limit_* mantêm a câmera dentro.
 	_update_camera_zoom()
 	get_viewport().size_changed.connect(_update_camera_zoom)
-	_apply_caipora_frames()
+	CaiporaSkin.apply(_animated_sprite)
 	_apply_weapon_visual()
 
 func _process(_delta: float) -> void:
@@ -49,13 +49,6 @@ func try_move(direction: Vector2) -> void:
 	_try_move(direction)
 
 # ─── Private helpers ───────────────────────────────
-## Com a CHAMA, a própria Caipora se incendeia: troca para a variante de frames
-## com juba ampliada (mesmo contrato de animações — a cena não percebe).
-func _apply_caipora_frames() -> void:
-	if MetaProgression.has_chama:
-		_animated_sprite.sprite_frames = load(MetaProgression.caipora_frames_path())
-		_animated_sprite.play("idle")
-
 func _apply_weapon_visual() -> void:
 	WeaponVisual.attach_to(_animated_sprite)
 

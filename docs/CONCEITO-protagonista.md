@@ -140,5 +140,6 @@ resolução maior — desde que derive das 5 assinaturas.
 
 **Já realizado:** a CHAMA incendeia a própria Caipora — variante
 `player_*_chama.png` (`caipora(..., chama=True)`): juba +longa/+quente, brasas
-orbitando, estalo do chicote maior. Selecionada em runtime por
-`MetaProgression.caipora_frames_path()` (exploração, arena e TitleWalker).
+orbitando, estalo do chicote maior. Selecionada e aplicada em runtime por
+`CaiporaSkin` (exploração, arena — inclusive na conquista em pleno combate —
+e TitleWalker).

@@ -65,6 +65,9 @@ func _ready() -> void:
 	_timing_system.input_registered.connect(_on_input_registered)
 	_feedback.hit_stop_started.connect(_on_hit_stop_started)
 	_feedback.hit_stop_ended.connect(_on_hit_stop_ended)
+	# A CHAMA pode ser conquistada NO MEIO do combate (register_kill_for_chama):
+	# incendeia a Caipora na hora — o pop "CHAMA!" e o corpo contam a mesma história.
+	SignalBus.chama_gained.connect(_on_chama_gained)
 
 	_update_camera_fit()
 	get_viewport().size_changed.connect(_update_camera_fit)
@@ -108,10 +111,7 @@ func _spawn_caipora() -> void:
 	_caipora = caipora_combat_scene.instantiate()
 	_caipora.position = Vector2(160, 240)
 	add_child(_caipora)
-	# Com a CHAMA, a própria Caipora se incendeia (variante de frames, mesmo contrato).
-	if MetaProgression.has_chama and _caipora.animated_sprite != null:
-		_caipora.animated_sprite.sprite_frames = load(MetaProgression.caipora_frames_path())
-		_caipora.animated_sprite.play("idle")
+	CaiporaSkin.apply(_caipora.animated_sprite)
 	# max_health é int; GameState.caipora_max_hp é float (carrega o meio-HP acumulado).
 	_caipora.health.max_health = int(floor(GameState.caipora_max_hp))
 	_caipora.health.current_health = clampf(GameState.caipora_current_hp, 0.0, GameState.caipora_max_hp)
@@ -129,6 +129,10 @@ func _spawn_caipora() -> void:
 
 func _on_caipora_health_changed(new_health: float, max_health: float) -> void:
 	SignalBus.caipora_health_changed.emit(new_health, max_health)
+
+func _on_chama_gained() -> void:
+	if _caipora != null and is_instance_valid(_caipora):
+		CaiporaSkin.apply(_caipora.animated_sprite)
 
 func _apply_weapon_visual() -> void:
 	var animated_sprite := _caipora.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
