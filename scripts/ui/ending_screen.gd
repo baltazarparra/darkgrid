@@ -7,6 +7,8 @@ extends CanvasLayer
 const FADE_IN_DURATION: float = 1.2
 
 func _ready() -> void:
+	if GameState.run_active:
+		GameState.end_run(true)
 	layer = 20
 	_build_scene()
 

@@ -36,18 +36,20 @@ matemática real (origem do KI-006).
    (Espelho) e Slay the Spire: você fica capaz, mas o desafio permanece.
 3. **Custo marginal crescente, retorno decrescente-mas-relevante.** Cada tier
    custa mais; a última erva é uma meta de longo prazo, não compra-relâmpago.
-4. **Banda de TTK estável.** HP de inimigo escala com o dano *esperado* da fase,
-   para que todo combate continue levando ~3 trocas (comum) e ~5–7 (boss),
-   independentemente do quão equipada a Caipora está.
+4. **Fase endurece o mundo; Fúria endurece a Caipora.** O dano-base da Caipora
+   fica em `1` em todas as fases; a trilha Fúria/CHAMA é a única fonte legível de
+   dano. A dificuldade de fase vem de HP inimigo, janela de timing, padrões,
+   hazards e dano inimigo.
 5. **Números inteiros e legíveis. Fonte numérica única.** Os campos `dmg`/`hp`
    das definições são a verdade; o texto do efeito é **derivado** deles (mata a
    classe de bug do KI-006).
 
 ---
 
-## 3. Trilha Fúria (dano) — teto 5 (6 com a CHAMA)
+## 3. Trilha Fúria (dano) — teto 5 no jogo principal, 9 no pós-clear
 
-Cada erva soma **+1 de dano** (linear, previsível). Dano base da Caipora = `1`.
+Cada erva soma dano previsível. Dano base da Caipora = `1` em toda fase; a fase
+não soma dano. Tiers 1–4 fecham o jogo principal; T5/T6 são pós-clear.
 
 | key       | nome           | +dano | total | custo | fase |
 |-----------|----------------|:-----:|:-----:|:-----:|:----:|
@@ -55,13 +57,16 @@ Cada erva soma **+1 de dano** (linear, previsível). Dano base da Caipora = `1`.
 | `forca_2` | Cinza-Viva     |  +1   |   3   |  10   |  2   |
 | `forca_3` | Raiz-de-Ira    |  +1   |   4   |  16   |  3   |
 | `forca_4` | Breu-Ancestral |  +1   |   5   |  24   |  4   |
+| `forca_5` | Osso-Quebrado  |  +2   |   7   |  36   | 5 + 1 vitória |
+| `forca_6` | Chaga-da-Mata  |  +2   |   9   |  50   | pós-Jesuíta + 3 vitórias |
 | **CHAMA** | (elemento fogo)|  +1   |   6   |  drop |  3+  |
 
-- Total Fúria: **+4** → dano `5`. Com a CHAMA, `6`. Custo da trilha: **55**.
+- Total Fúria principal: **+4** → dano `5`. Com a CHAMA, `6`. Custo: **55**.
+- Total Fúria pós-clear: **+8** → dano `9`. Com a CHAMA, `10`. Custo total: **141**.
 - `forca_3` continua sendo a "espada" que **destrava a CHAMA** (gate inalterado).
-- `CHAMA_DAMAGE_BONUS`: `2 → 1` (respeita o teto de 6).
+- `CHAMA_DAMAGE_BONUS`: `2 → 1` (respeita o teto principal de 6).
 
-## 4. Trilha Cura (HP) — base 2, teto meta 14
+## 4. Trilha Cura (HP) — base 2, teto 14 no jogo principal, 23 no pós-clear
 
 Incrementos **crescentes** (não mais `+2` fixo), custo crescente.
 
@@ -71,11 +76,14 @@ Incrementos **crescentes** (não mais `+2` fixo), custo crescente.
 | `saude_2` | Casca-Boa        | +3  |   7   |  12   |  2   |
 | `saude_3` | Folha-de-Sangue  | +3  |  10   |  20   |  3   |
 | `saude_4` | Coração-de-Cerne | +4  |  14   |  30   |  4   |
+| `saude_5` | Rachadura-Viva   | +4  |  18   |  42   | 5 + 1 vitória |
+| `saude_6` | Pele-de-Defunto  | +5  |  23   |  58   | pós-Jesuíta + 3 vitórias |
 
 - Total Cura: **+12** → HP máx. `14`. Custo da trilha: **68**.
+- Total Cura pós-clear: **+21** → HP máx. `23`. Custo total: **168**.
 
-Maximizar as duas trilhas custa **123** fragmentos — meta de longo prazo
-deliberada (≈ 2 clears completos), não algo alcançável nas primeiras runs.
+Maximizar as duas trilhas principais custa **123** fragmentos. Maximizar tudo,
+incluindo pós-clear, custa **309** fragmentos — meta de longo prazo.
 
 ## 5. Snowball in-run — meio HP por kill
 
@@ -92,10 +100,10 @@ A componente de combate (`HealthComponent.max_health`, int) é sempre
 
 ## 6. Currency (fragmentos) — inteiros, escala por profundidade
 
-| Fonte        | P1 | P2 | P3 | P4 |
-|--------------|:--:|:--:|:--:|:--:|
-| Kill comum   | 1  | 2  | 3  | 4  |
-| **Boss** (novo) | 3  | 5  | 8  | 12 |
+| Fonte        | P1 | P2 | P3 | P4 | P5 |
+|--------------|:--:|:--:|:--:|:--:|:--:|
+| Kill comum   | 1  | 2  | 3  | 4  | 5  |
+| **Boss**     | 3  | 5  | 8  | 12 | 20 |
 
 - Acaba com os fragmentos fracionários. A função `add_fragments(float)` continua
   aceitando float (compatibilidade/testes), mas as **recompensas** são inteiras.
@@ -103,23 +111,24 @@ A componente de combate (`HealthComponent.max_health`, int) é sempre
   caras do late-game, recompensando quem empurra mais fundo.
 - A CHAMA continua substituindo o fragmento da morte em que é sorteada.
 
-Renda por clear completo: P1 ≈ 8, P2 ≈ 15, P3 ≈ 23, P4 ≈ 32 → ~**78/run**.
+Renda por clear completo: P1 ≈ 9, P2 ≈ 17, P3 ≈ 26, P4 ≈ 36, P5 ≈ 40 → ~**118/run**.
 
 ## 7. HP de inimigos — escala para segurar o TTK
 
-Dano *esperado* ao entrar na fase (gates da trilha Fúria): P1 `1–2`, P2 `2–3`,
-P3 `3–4`, P4 `4–5` (+CHAMA). Com ataque-duplo (30%) ≈ `×1.3`/turno. HP alvo para
-~3 trocas (comum) e ~5–7 (boss):
+Dano da Caipora é `1 + Fúria + CHAMA` em toda fase. A fase segura a curva pelo
+HP dos inimigos, pelo dano inimigo e pela janela de timing. Com ataque-duplo
+(30%) ≈ `×1.3`/turno. HP alvo para comuns curtos e bosses de resistência:
 
 | Fase | Comum (antes → agora) | Boss (antes → agora) |
 |------|:---------------------:|:--------------------:|
-| P1   | criatura `5 → 6`      | boss `10 → 12`       |
-| P2   | caçador `9 → 10`      | boitatá `15 → 22`    |
-| P3   | assombração `12 → 14` | curupira `20 → 30`   |
-| P4   | assombração `12 → 14`*| saci `20 → 36`       |
+| P1   | comum `5`             | Mula `12`            |
+| P2   | comum `5`             | Boitatá `22`         |
+| P3   | comum `8`             | Curupira `30`        |
+| P4   | comum `8`             | Saci `36`            |
+| P5   | mini-boss com HP próprio | Jesuíta `44`      |
 
-\* P3 e P4 compartilham `assombracao.tscn`; a dificuldade extra da P4 vem do boss
-(36), do fogo, da redução de janela de timing (`0.30`) e do `+1` de dano inimigo.
+\* Na P5, os "comuns" são os 4 chefes convertidos e mantêm HP próprio
+(12/22/30/36), mas pagam recompensa de comum.
 
 `max_health` das cenas e as constantes de HP (`*_MAX_HEALTH`) andam juntos —
 ambos são editados e os testes de padrão afirmam a igualdade.
@@ -127,13 +136,13 @@ ambos são editados e os testes de padrão afirmam a igualdade.
 ## 8. Fora de escopo (decisões deliberadas)
 
 - **Crítico multiplicador (2×–3×).** Mantido em `1.0`. O burst por skill já vem do
-  **ataque duplo** (bolha); subir o multiplicador estouraria o teto de dano de 6.
+  **ataque duplo** (bolha); subir o multiplicador estouraria o teto principal de dano.
   Registrado aqui como escolha consciente, não esquecimento.
 - Novos inimigos/scenes por fase para diferenciar comum P3 vs P4.
 
 ## 9. Impacto no código
 
-- `scripts/utils/constants.gd`: HP de inimigos; novas constantes de recompensa
+- `scripts/utils/constants.gd`: HP de inimigos; dano-base fixo da Caipora; constantes de recompensa
   (`COMMON_KILL_HP_GROWTH`, `BOSS_KILL_HP_GROWTH`, heals, fragmentos por fase,
   boss bounty).
 - `scripts/core/meta_progression.gd`: `UPGRADE_DEFS` com campos numéricos
@@ -141,7 +150,8 @@ ambos são editados e os testes de padrão afirmam a igualdade.
   data-driven; `effect` derivado; `CHAMA_DAMAGE_BONUS = 1`.
 - `scripts/arena/arena_manager.gd`: meio-HP/kill comum + marco de boss;
   recompensas inteiras por fase; boss bounty; sync `max_health` via `floori`.
-- `scripts/core/game_state.gd`: nada estrutural (caipora_max_hp já é float).
+- `scripts/core/game_state.gd`: `heal_to_full()` preserva o HP máximo ganho dentro da run
+  e aplica novos bônus meta se forem maiores; vitória terminal libera `phase_reached=6`.
 - `scenes/arena/*.tscn`: `max_health` por inimigo.
 - `tests/unit/*`: literais de custo/HP/dano atualizados + novo teste de
   consistência efeito↔matemática.

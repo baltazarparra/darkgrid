@@ -74,8 +74,9 @@ novo e dois flags pequenos.
 - `arena_manager._screen_phase()`: `EXPLORATION_PHASE5 → 5` (faz P4→P5 contar como
   avanço de fase, roteando pelo **acampamento/HUB** via `advance_phase_via_hub`).
 - `arena_manager._on_actor_died()` (marcos de fase): ao matar o **Saci (P4 boss)**,
-  `phase_reached = 5` (espelha os blocos P2→3 e P3→4). Garante que o hub antes da
-  igreja já libere as ervas de tier 4.
+  `phase_reached = 5`; ao matar o **Jesuíta (P5 boss)**, `phase_reached = 6`.
+  T5 é pós-primeira vitória (`wins_required=1`); T6 exige o marco pós-Jesuíta e
+  3 vitórias (`wins_required=3`).
 
 ### 3.2 Geração — `MapConfig.for_phase(5)`
 - `topology_mode = OPEN` (a nave é um salão; pilares = colunata da igreja).
@@ -155,8 +156,8 @@ const PHASE5_ENEMY_DAMAGE_BONUS := 1.0
 ```
 - `arena_manager._phase_window()`: novo caso `5: return maxf(base - PHASE5_TIMING_REDUCTION, 0.2)`.
 - `arena_manager._on_defense_timing_result()`: novo ramo `elif GameState.active_phase == 5: damage += Constants.PHASE5_ENEMY_DAMAGE_BONUS`.
-- `Constants.caipora_base_damage_for_phase(5) = 5` já cai do `maxi(phase,1)`; o HP
-  do comum não se aplica (mini-bosses usam HP próprio).
+- `Constants.caipora_base_damage_for_phase(5) = 1`; a fase não soma dano. O HP
+  de comum não se aplica (mini-bosses usam HP próprio), e o dano vem da Fúria/CHAMA.
 
 > **Nota de tuning:** com `−0.50`, padrões de janela curta (ASSOBIO) tocam o piso
 > de `0.2s`. É a intenção ("mais dura de todas"), mas o piso impede o impossível.
@@ -236,7 +237,7 @@ destrava no `dialogue_finished`. Reusa 100% o `DialogueScreen` e o
 - **Etapa 2 — Exploração da igreja + gauntlet:** `exploration_phase5.tscn`, caso 5
   do `_build_profile`, `REGULAR_SCENES` + flag `keep_own_hp`, render de mini-boss
   no `MapEnemy`, diálogo de abertura. Roteamento P4→P5→ENDING e
-  `phase_reached=5`. `test_exploration_phase5.gd` (boot, 4 mini-bosses + Jesuíta,
+  `phase_reached=5`/`6`. `test_exploration_phase5.gd` (boot, 4 mini-bosses + Jesuíta,
   diálogo trava/destrava, vitória do chefe → ENDING) + update de
   `test_scene_transition` (novas telas) e do roteamento do `arena_manager`.
 - **Etapa 3 — Assets & polish AAA:** sprite do Jesuíta + SpriteFrames, tiles/deco de

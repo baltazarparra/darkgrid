@@ -101,7 +101,7 @@ func _spawn_caipora() -> void:
 	_caipora.health.max_health = int(floor(GameState.caipora_max_hp))
 	_caipora.health.current_health = clampf(GameState.caipora_current_hp, 0.0, GameState.caipora_max_hp)
 	_caipora.attack_cooldown = Constants.ATTACK_COOLDOWN_SECONDS
-	# Cada golpe escala com a fase (1/2/3/4…); as ervas de Fúria/CHAMA somam por cima.
+	# Cada golpe parte da base fixa; as ervas de Fúria/CHAMA somam por cima.
 	_caipora.base_attack_damage = Constants.caipora_base_damage_for_phase(GameState.active_phase) \
 		+ MetaProgression.get_damage_bonus()
 	_caipora.health.health_changed.connect(_on_caipora_health_changed)
@@ -446,6 +446,10 @@ func _on_actor_died(actor: CombatActor) -> void:
 		if GameState.active_combat_is_boss and GameState.active_phase == 4:
 			if MetaProgression.phase_reached < 5:
 				MetaProgression.phase_reached = 5
+				MetaProgression.save_progress()
+		if GameState.active_combat_is_boss and GameState.active_phase == 5:
+			if MetaProgression.phase_reached < 6:
+				MetaProgression.phase_reached = 6
 				MetaProgression.save_progress()
 	else:
 		# Souls-like: a Caipora tomba e derruba TODOS os fragmentos numa bolsa, no tile onde

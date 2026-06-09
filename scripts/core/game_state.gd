@@ -76,7 +76,8 @@ func map_seed_for_phase(phase: int) -> int:
 
 ## Recupera HP cheio (chamado ao entrar no Hub).
 func heal_to_full() -> void:
-	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH + MetaProgression.get_health_bonus()
+	var meta_max_hp := float(Constants.CAIPORA_MAX_HEALTH + MetaProgression.get_health_bonus())
+	caipora_max_hp = maxf(caipora_max_hp, meta_max_hp)
 	caipora_current_hp = caipora_max_hp
 
 ## Encerra a run, registra estatísticas e persiste.
@@ -85,6 +86,8 @@ func end_run(won: bool) -> void:
 	MetaProgression.total_runs += 1
 	if won:
 		MetaProgression.total_wins += 1
+		if MetaProgression.phase_reached < 6:
+			MetaProgression.phase_reached = 6
 	MetaProgression.save_progress()
 
 # ─── Lifecycle ─────────────────────────────────────

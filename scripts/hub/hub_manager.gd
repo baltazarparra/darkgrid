@@ -13,6 +13,7 @@ extends Node2D
 
 const ForestLight := preload("res://scripts/exploration/forest_light.gd")
 const MapObject := preload("res://scripts/exploration/map_object.gd")
+const HubExitBeaconScript := preload("res://scripts/hub/exit_beacon.gd")
 
 # Identidade do acampamento.
 const CACHIMBO_TEXTURE := preload("res://assets/sprites/cachimbo.png")
@@ -128,7 +129,7 @@ func _spawn_exit_beacon() -> void:
 	layer.layer = 9
 	add_child(layer)
 	var half := Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
-	var beacon := HubExitBeacon.new()
+	var beacon: Control = HubExitBeaconScript.new()
 	beacon.setup(Vector2(_exit_pos) * Constants.TILE_SIZE + half)
 	layer.add_child(beacon)
 
