@@ -68,6 +68,7 @@ func _ready() -> void:
 	_update_camera_fit()
 	get_viewport().size_changed.connect(_update_camera_fit)
 
+	add_child(ArenaBackdrop.new())
 	add_child(Atmosphere.new())
 
 	_spawn_caipora()
