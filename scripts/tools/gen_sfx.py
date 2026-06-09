@@ -291,6 +291,7 @@ def nes_noise(dur, decay=40.0, lp=0.0, gain=0.5):
 SEMI = 2.0 ** (1.0 / 12.0)
 MINOR_HARM = [0, 2, 3, 5, 7, 8, 11, 12]      # menor harmônica
 PHRYGIAN = [0, 1, 3, 5, 7, 8, 10, 12]        # frígio (♭2 = tensão/névoa)
+DORIAN = [0, 2, 3, 5, 7, 9, 10, 12]          # dórico (6ª maior + ♭7 = cor morna de bossa/samba)
 
 
 def note(root_hz, semitones):
@@ -546,6 +547,26 @@ def _shaker_run(bars, sub=1):
     return ev
 
 
+def _samba_shaker(bars, swing=0.28):
+    """Ganzá em semicolcheias com balanço: as 'fracas' (índice ímpar) atrasam um tico
+    (swing de samba/lofi) e o ataque do tempo recebe leve acento. Orgânico, nunca robótico."""
+    ev = []
+    for st in range(16 * bars):
+        pos = st + (swing if st % 2 == 1 else 0.0)  # _put aceita passo fracionário
+        g = 0.42 if st % 4 == 0 else (0.26 if st % 2 == 0 else 0.18)
+        ev.append((pos, g))
+    return ev
+
+
+def _chord(buf, step_dur, root, scale, voice, chords):
+    """Comping de acordes: chords = (step, [graus], len_steps, gain). Reparte o ganho
+    entre as vozes do acorde p/ não estourar ao empilhar."""
+    for st, degs, ln, g in chords:
+        for deg in degs:
+            f = scale_note(root, deg, scale)
+            _put(buf, voice(ln * step_dur * 0.92, f), st, step_dur, g / max(1, len(degs)))
+
+
 def _baque_alfaia(bars):
     """Marcação do baque virado: compasso par = base, ímpar = virada densa."""
     base = [(0, 1.0), (6, 0.7), (10, 0.8), (12, 0.6)]
@@ -612,17 +633,37 @@ def mus_menu():
 
 
 def mus_hub():
-    """Acampamento: calmo e quente. Ganzá macio, melodia de pulso doce, baixo
-    arpejado lento. Sem kick agressivo — descanso entre fases."""
+    """Acampamento: samba lofi morno e tranquilo — descanso entre fases. Surdo macio
+    no '2 e 4', ganzá com swing, tamborim abafado nas síncopes, comping de acordes
+    redondos (triângulo) em Dórico e um lead-pluck esparso e doce. Sem kick agressivo
+    e sem o tom sustentado que virava sirene: a faixa respira e nunca incomoda."""
     buf, step = _new_buf(84, 2)
-    _drums(buf, step, lambda: ganza(0.05, rising=False), _shaker_run(2, sub=2))
-    _drums(buf, step, lambda: alfaia(0.2, base=DS2 * 0.5, punch=0.5), [(0, 0.45), (16, 0.45)])
-    _melody(buf, step, DS2, MINOR_HARM, _bass(),
-            [(0, 0, 6, 0.7), (8, 4, 6, 0.6), (16, 2, 6, 0.7), (24, 4, 6, 0.6)])
-    _melody(buf, step, DS2, MINOR_HARM, _lead(duty=0.5),
-            [(0, 7, 4, 0.34), (4, 9, 4, 0.34), (10, 8, 2, 0.3), (12, 7, 4, 0.32),
-             (16, 9, 4, 0.34), (20, 11, 4, 0.36), (28, 7, 4, 0.32)])
-    return _normalize(bitcrush(buf, bits=7), 0.72)
+    root = A2
+    # Surdo de marcação: boom redondo no 2 e no 4 de cada compasso + ghost leve no 1/3.
+    _drums(buf, step, lambda: alfaia(0.22, base=root * 0.5, punch=0.4),
+           [(4, 0.5), (12, 0.55), (20, 0.5), (28, 0.55)])
+    _drums(buf, step, lambda: alfaia(0.12, base=root, punch=0.25),
+           [(0, 0.2), (8, 0.18), (16, 0.2), (24, 0.18)])
+    # Ganzá com swing (chiado contínuo e leve) + tamborim/teleco-teco macio nas síncopes.
+    _drums(buf, step, lambda: ganza(0.05, rising=False), _samba_shaker(2))
+    _drums(buf, step, lambda: caixa(0.045, bright=0.5),
+           [(3, 0.3), (6, 0.26), (11, 0.3), (14, 0.26),
+            (19, 0.3), (22, 0.26), (27, 0.3), (30, 0.26)])
+    # Comping morno (triângulo): i7 no 1º compasso, IV no 2º — vamp simples de bossa.
+    pad = lambda d, f: triangle(d, f, attack=0.02, release=0.4)
+    _chord(buf, step, root, DORIAN, pad,
+           [(0, [0, 2, 4, 6], 5, 0.4), (6, [0, 2, 4, 6], 2, 0.3), (11, [0, 2, 4, 6], 3, 0.32),
+            (16, [3, 5, 7, 9], 5, 0.4), (22, [3, 5, 7, 9], 2, 0.3), (27, [3, 5, 7, 9], 3, 0.32)])
+    # Baixo redondo seguindo os acordes (tônica/quinta) com a antecipação da bossa.
+    _melody(buf, step, root, DORIAN, _bass(),
+            [(0, 0, 6, 0.6), (7, 4, 2, 0.45), (10, 4, 3, 0.45),
+             (16, 3, 6, 0.55), (23, 0, 2, 0.42), (26, 0, 3, 0.45)])
+    # Lead-pluck esparso e doce: pulso curtíssimo (release baixo = pluck, não sirene).
+    pluck = lambda d, f: pulse(d, f, duty=0.25, attack=0.004, release=0.12)
+    _melody(buf, step, root, DORIAN, pluck,
+            [(2, 7, 2, 0.3), (8, 9, 2, 0.28), (12, 11, 2, 0.3),
+             (18, 12, 2, 0.3), (24, 11, 2, 0.28), (28, 9, 4, 0.3)])
+    return _normalize(bitcrush(buf, bits=7), 0.7)
 
 
 def mus_explore_p1():
