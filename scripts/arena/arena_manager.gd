@@ -321,11 +321,14 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		var damage := _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
 		# Inimigos mais fortes (ex.: Bruxo) batem um tanto a mais por golpe.
 		damage += _enemy.extra_hit_damage
-		# Fase 2/4: cada golpe de inimigo bate 1 a mais — a floresta é mais hostil.
+		# Fase 2/4/5: cada golpe de inimigo bate 1 a mais — a floresta é mais hostil
+		# (na Fase 5 vale para os 4 chefes-monstro E para o Jesuíta).
 		if GameState.active_phase == 2:
 			damage += Constants.PHASE2_ENEMY_DAMAGE_BONUS
 		elif GameState.active_phase == 4:
 			damage += Constants.PHASE4_ENEMY_DAMAGE_BONUS
+		elif GameState.active_phase == 5:
+			damage += Constants.PHASE5_ENEMY_DAMAGE_BONUS
 		_caipora.take_damage(damage)
 		_sfx.play(_sfx.hit_sound)
 		_feedback.trigger_screenshake(14.0, 0.35)
@@ -351,6 +354,7 @@ func _boss_spread_pos() -> Vector2:
 
 func _phase_window(base: float) -> float:
 	match GameState.active_phase:
+		5: return maxf(base - Constants.PHASE5_TIMING_REDUCTION, 0.2)
 		4: return maxf(base - Constants.PHASE4_TIMING_REDUCTION, 0.2)
 		3: return maxf(base - Constants.PHASE3_TIMING_REDUCTION, 0.2)
 		2: return maxf(base - Constants.PHASE2_TIMING_REDUCTION, 0.2)

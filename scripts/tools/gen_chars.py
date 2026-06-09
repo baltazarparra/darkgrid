@@ -491,6 +491,102 @@ def saci():
     return c
 
 
+def jesuita():
+    """Jesuíta Bandeirante Catequizador — boss FINAL (Fase 5), 48x48.
+
+    Sincretismo de horror colonial: BATINA PRETA de jesuíta sob GIBÃO DE COURO e
+    MORRIÃO (capacete de aço) de bandeirante; numa mão um ESPELHO de moldura
+    dourada (a isca de conversão), na outra um ASPERSÓRIO pingando ÁGUA BENTA;
+    rosto esquálido de zelote, olhos fundos em brasa dourada. CRUZ de ouro
+    litúrgico no peito; barra da batina manchada de sangue. O sagrado colonial
+    como o invasor — fim da linha da Caipora.
+    """
+    c = C()
+    CASSOCK    = (18, 16, 22)        # batina preta (tom azulado)
+    CASSOCK_HL = (40, 36, 48)        # realce de prega
+    LEATHER    = (60, 39, 20)        # gibão de couro
+    LEATHER_DK = (36, 22, 11)
+    STEEL      = (120, 122, 134)     # morrião (aço)
+    STEEL_HL   = (190, 194, 208)
+    STEEL_DK   = (68, 70, 82)
+    SK         = (150, 138, 120)     # pele pálida/esquálida
+    SK_DK      = (102, 92, 78)
+    EYE        = (255, 196, 90)      # olho em brasa dourada (fanático)
+    EYE_CORE   = (255, 244, 205)
+    GOLD       = (212, 180, 98)      # ouro litúrgico (cruz/moldura)
+    GOLD_DK    = (150, 120, 50)
+    MIRROR     = (186, 206, 214)     # superfície do espelho
+    MIRROR_HL  = (245, 250, 255)
+    HOLY       = (200, 222, 236)     # gota de água benta
+    COLLAR     = (222, 222, 212)     # colarinho clerical branco
+    BLOOD      = (110, 14, 10)
+
+    # ── Morrião (capacete de bandeirante) com crista ──
+    c.disc(24, 12, 7, STEEL)
+    c.rect(17, 12, 31, 15, STEEL)        # base do capacete
+    c.rect(17, 12, 18, 15, STEEL_DK)     # sombra à esquerda
+    c.rect(29, 12, 31, 15, STEEL_DK)
+    c.rect(20, 5, 28, 8, STEEL_HL)       # brilho do domo
+    c.rect(23, 2, 25, 11, STEEL_DK)      # crista (comb)
+    c.rect(24, 2, 24, 11, STEEL_HL)
+    c.rect(13, 14, 17, 15, STEEL); c.px(12, 15, STEEL_DK)   # aba pontuda (frente)
+    c.rect(31, 14, 35, 15, STEEL); c.px(35, 15, STEEL_DK)   # aba pontuda (trás)
+
+    # ── Rosto esquálido (pálido, em sombra) ──
+    c.rect(19, 15, 29, 25, SK)
+    c.disc(24, 21, 5, SK)
+    c.rect(19, 15, 21, 25, SK_DK)        # lado em sombra
+    c.rect(20, 24, 28, 26, SK_DK)        # mandíbula encovada
+    c.rect(20, 18, 22, 18, SK_DK)        # órbitas fundas
+    c.rect(26, 18, 28, 18, SK_DK)
+    c.rect(20, 19, 22, 21, EYE); c.px(21, 20, EYE_CORE)     # olhos em brasa
+    c.rect(26, 19, 28, 21, EYE); c.px(27, 20, EYE_CORE)
+    c.px(24, 22, SK_DK)                  # nariz adunco
+    c.rect(22, 25, 26, 25, SK_DK)        # boca cerrada
+
+    # ── Colarinho clerical branco ──
+    c.rect(21, 26, 27, 28, COLLAR)
+    c.px(24, 27, CASSOCK)                # fenda do colarinho
+
+    # ── Batina preta (torso) sob gibão de couro ──
+    c.rect(18, 28, 30, 44, CASSOCK)
+    c.rect(29, 28, 30, 44, CASSOCK_HL)   # realce de prega
+    c.rect(23, 29, 25, 44, CASSOCK_HL)   # prega central
+    c.rect(18, 28, 30, 33, LEATHER)      # gibão por cima (peito/ombros)
+    c.rect(18, 28, 19, 33, LEATHER_DK)
+    c.rect(20, 28, 28, 29, LEATHER_DK)   # gola do gibão
+    c.rect(23, 31, 25, 38, GOLD)         # cruz de ouro no peito
+    c.rect(21, 33, 27, 35, GOLD)
+    c.px(23, 31, GOLD_DK); c.px(25, 38, GOLD_DK)
+    c.rect(18, 42, 30, 44, BLOOD)        # barra manchada de sangue
+    c.px(20, 43, (150, 24, 18)); c.px(27, 43, (150, 24, 18))
+
+    # ── Braço/mão esquerda: ESPELHO (isca de conversão) ──
+    c.rect(13, 30, 18, 33, CASSOCK)      # braço esq
+    c.rect(11, 32, 15, 35, SK)           # mão
+    c.rect(8, 24, 14, 33, GOLD_DK)       # moldura dourada
+    c.rect(9, 25, 13, 32, MIRROR)        # vidro
+    c.line(9, 31, 12, 26, MIRROR_HL)     # glint diagonal
+    c.px(10, 27, MIRROR_HL)
+    c.rect(11, 33, 13, 36, GOLD)         # cabo do espelho
+
+    # ── Braço/mão direita: ASPERSÓRIO (água benta pingando) ──
+    c.rect(30, 30, 35, 33, CASSOCK)      # braço dir
+    c.rect(34, 32, 37, 35, SK)           # mão
+    c.rect(37, 22, 38, 33, GOLD_DK)      # haste
+    c.disc(38, 21, 3, STEEL)             # bola perfurada
+    c.px(37, 20, STEEL_HL); c.px(39, 22, STEEL_DK)
+    c.px(36, 19, HOLY); c.px(40, 19, HOLY); c.px(38, 17, HOLY)  # gotas espirrando
+    c.px(38, 26, HOLY); c.px(38, 29, HOLY); c.px(37, 32, HOLY)  # gotas pingando
+
+    # ── Pernas / botas de bandeirante ──
+    c.rect(20, 44, 23, 47, CASSOCK)
+    c.rect(25, 44, 28, 47, CASSOCK)
+    c.rect(19, 46, 24, 47, LEATHER_DK)   # bota esq
+    c.rect(24, 46, 29, 47, LEATHER_DK)   # bota dir
+    return c
+
+
 def mula():
     """Mula sem Cabeça — boss da Fase 1, 48x48, perfil voltado pra direita.
 
@@ -602,8 +698,9 @@ if __name__ == "__main__":
     curupira().save("curupira_idle.png")
     saci().save("saci_idle.png")
     mula().save("mula_idle.png")
+    jesuita().save("jesuita_idle.png")
     # Bruxo dos machados: mesmo desenho do antigo boss-caçador, agora reaproveitado
     # como monstro comum das fases (junto com o caçador). boss_idle.png segue como
     # fixture do Boss base; bruxo_idle.png é o asset dedicado do monstro.
     axe_hunter().save("bruxo_idle.png")
-    print("[gen_chars] caipora (64x64) + caçador + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça (48x48) gerados")
+    print("[gen_chars] caipora (64x64) + caçador + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça + jesuíta-bandeirante (48x48) gerados")
