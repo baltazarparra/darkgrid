@@ -731,8 +731,11 @@ def _put(buf, sample, step_idx, step_dur, gain=1.0):
         buf[(at + i) % n] += s * gain
 
 
-def _drums(buf, step_dur, voice, events):
-    """events: lista de (step, gain). voice() é zero-arg (ex.: lambda: alfaia(...))."""
+def _drums(buf, step_dur, voice, events, humanize=False):
+    """events: lista de (step, gain). voice() é zero-arg (ex.: lambda: alfaia(...)).
+    humanize=True passa os eventos pelo jitter de velocity/timing (mão de tocador)."""
+    if humanize:
+        events = _humanize_events(events)
     for st, g in events:
         _put(buf, voice(), st, step_dur, g)
 
@@ -815,9 +818,12 @@ def _arena_track(bpm, root, scale, density):
     """Baque virado de combate: alfaia + caixa + ganzá + lead-ostinato chiptune + baixo.
     'density' (1..3) adiciona hats de ruído NES e ghost notes — intensidade por fase."""
     buf, step = _new_buf(bpm, 4)
-    _drums(buf, step, lambda: alfaia(0.18, base=root * 0.5, punch=0.9), _baque_alfaia(4))
+    _drums(buf, step, lambda: alfaia(0.18, base=root * 0.5, punch=0.9), _baque_alfaia(4),
+           humanize=True)
     _drums(buf, step, lambda: caixa(0.08, bright=1.0),
-           [(st, 0.55) for b in range(4) for st in (b * 16 + 4, b * 16 + 12)])
+           [(st, 0.55) for b in range(4) for st in (b * 16 + 4, b * 16 + 12)],
+           humanize=True)
+    _drums(buf, step, lambda: caixa(0.06, bright=0.8), _ghost_fill(4, every=2))  # viradas
     _drums(buf, step, lambda: ganza(0.06, rising=False), _shaker_run(4))
     if density >= 2:
         _drums(buf, step, lambda: nes_noise(0.05, decay=55.0, lp=0.4, gain=0.35),
@@ -973,7 +979,7 @@ def mus_boss_mula():
     canal de ruído."""
     buf, step = _new_buf(120, 4)
     gallop = [(st, 0.9 if st % 4 == 0 else 0.55) for b in range(4) for st in (b * 16, b * 16 + 3, b * 16 + 4, b * 16 + 8, b * 16 + 11, b * 16 + 12)]
-    _drums(buf, step, lambda: alfaia(0.14, base=D2 * 0.5, punch=1.0), gallop)
+    _drums(buf, step, lambda: alfaia(0.14, base=D2 * 0.5, punch=1.0), gallop, humanize=True)
     _drums(buf, step, lambda: nes_noise(0.06, decay=40.0, lp=0.2, gain=0.4),
            [(b * 16 + 6, 0.45) for b in range(4)] + [(b * 16 + 14, 0.4) for b in range(4)])
     _drums(buf, step, lambda: ganza(0.05, rising=False), _shaker_run(4))
@@ -990,11 +996,14 @@ def mus_boss_boitata():
     """Boitatá: serpenteante e veloz. Lead cromático com vibrato (a cobra desliza),
     ruído denso (fogo), baixo em semicolcheias."""
     buf, step = _new_buf(132, 4)
-    _drums(buf, step, lambda: alfaia(0.12, base=E2 * 0.5, punch=0.95), _baque_alfaia(4))
+    _drums(buf, step, lambda: alfaia(0.12, base=E2 * 0.5, punch=0.95), _baque_alfaia(4),
+           humanize=True)
     _drums(buf, step, lambda: nes_noise(0.04, decay=80.0, lp=0.35, gain=0.4),
            [(st, 0.4) for st in range(64) if st % 2 == 1])
     _drums(buf, step, lambda: caixa(0.07, bright=1.1),
-           [(b * 16 + 4, 0.5) for b in range(4)] + [(b * 16 + 12, 0.55) for b in range(4)])
+           [(b * 16 + 4, 0.5) for b in range(4)] + [(b * 16 + 12, 0.55) for b in range(4)],
+           humanize=True)
+    _drums(buf, step, lambda: caixa(0.05, bright=0.9), _ghost_fill(4, every=2))
     _melody(buf, step, E2, PHRYGIAN, _bass(),
             [(st, (st // 4) % 3, 1, 0.7) for st in range(0, 64, 2)])
     serp = [0, 1, 2, 1, 3, 2, 4, 3]  # subir e escorregar
@@ -1008,15 +1017,18 @@ def mus_boss_curupira():
     assovio (protetor da mata) por cima."""
     buf, step = _new_buf(116, 4)
     _drums(buf, step, lambda: alfaia(0.16, base=A2 * 0.5, punch=1.0),
-           [(st, 0.9 if st % 8 == 0 else 0.6) for b in range(4) for st in (b * 16, b * 16 + 3, b * 16 + 6, b * 16 + 8, b * 16 + 11, b * 16 + 14)])
+           [(st, 0.9 if st % 8 == 0 else 0.6) for b in range(4) for st in (b * 16, b * 16 + 3, b * 16 + 6, b * 16 + 8, b * 16 + 11, b * 16 + 14)],
+           humanize=True)
     _drums(buf, step, lambda: agogo(0.14, freq=1100.0, bend=0.0),
            [(b * 16 + st, 0.4) for b in range(4) for st in (2, 10)])
     _drums(buf, step, lambda: ganza(0.05, rising=False), _shaker_run(4))
     _melody(buf, step, A2, MINOR_HARM, _bass(),
             [(b * 16, 0, 8, 0.8) for b in range(4)])
-    # leitmotif do assovio (a voz da floresta) em dois pontos
+    # leitmotif do assovio (a voz da floresta) em dois pontos — v2 com eco de mata
+    # (aplicado ao sample antes do _put: o wrap do grid mantém o loop sem emenda).
     for at in (0, 32):
-        _put(buf, assovio(1.0, freq=note(A2, 19)), at, step, 0.34)
+        _put(buf, echo(assovio(1.0, freq=note(A2, 19)), time_s=0.24, feedback=0.3,
+                       mix=0.25, taps=3), at, step, 0.34)
     _melody(buf, step, A2, MINOR_HARM, _lead(duty=0.25),
             [(b * 16 + st, deg, 2, 0.36) for b in range(4) for st, deg in ((4, 9), (12, 11))])
     return _normalize(bitcrush(buf, bits=7), 0.86)
@@ -1026,7 +1038,9 @@ def mus_boss_saci():
     """Saci: redemoinho travesso e épico-dark (boss final). Tudo denso — alfaia, ruído
     em varreduras (vento), lead frenético frígio, baixo motor."""
     buf, step = _new_buf(126, 4)
-    _drums(buf, step, lambda: alfaia(0.13, base=C2 * 0.5, punch=1.0), _baque_alfaia(4))
+    _drums(buf, step, lambda: alfaia(0.13, base=C2 * 0.5, punch=1.0), _baque_alfaia(4),
+           humanize=True)
+    _drums(buf, step, lambda: caixa(0.05, bright=1.0), _ghost_fill(4, every=2))
     _drums(buf, step, lambda: nes_noise(0.08, decay=18.0, lp=0.5, gain=0.35),
            [(b * 16, 0.45) for b in range(4)])  # varredura de vento por compasso
     _drums(buf, step, lambda: caixa(0.06, bright=1.2),
@@ -1050,7 +1064,9 @@ def mus_ending():
             [(0, 0, 8, 0.7), (8, 4, 8, 0.6), (16, 3, 8, 0.65), (24, 4, 8, 0.6)])
     _melody(buf, step, A2, MINOR_HARM, _lead(duty=0.5),
             [(2, 7, 3, 0.34), (8, 9, 3, 0.34), (14, 11, 4, 0.38), (24, 9, 3, 0.34)])
-    _put(buf, assovio(1.6, freq=note(A2, 19)), 4, step, 0.3)
+    # v2: o assovio sereno ecoa na mata que sobreviveu (eco no sample, loop-safe)
+    _put(buf, echo(assovio(1.6, freq=note(A2, 19)), time_s=0.3, feedback=0.28,
+                   mix=0.22, taps=3), 4, step, 0.3)
     return _normalize(bitcrush(buf, bits=7), 0.76)
 
 
@@ -1084,7 +1100,9 @@ def mus_boss_jesuita():
     baixo-motor e um lead frenético em frígio. O sagrado colonial em fúria total."""
     buf, step = _new_buf(128, 4)
     root = C2
-    _drums(buf, step, lambda: alfaia(0.13, base=root * 0.5, punch=1.0), _baque_alfaia(4))
+    _drums(buf, step, lambda: alfaia(0.13, base=root * 0.5, punch=1.0), _baque_alfaia(4),
+           humanize=True)
+    _drums(buf, step, lambda: caixa(0.05, bright=1.0), _ghost_fill(4, every=2))
     _drums(buf, step, lambda: caixa(0.06, bright=1.2),
            [(st, 0.48) for st in range(64) if st % 4 == 2])
     _drums(buf, step, lambda: ganza(0.05, rising=False), _shaker_run(4))
