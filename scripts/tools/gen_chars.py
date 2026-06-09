@@ -4,20 +4,20 @@
 Pixel art autoral algorítmica (determinística), priorizando traços-assinatura
 que tornam cada personagem identificável:
 
-  Caipora  — guardiã da mata 64x64: cabelo de fogo, pele escura, corpo coberto
-             de folhas/cipós, olhos brilhando, chicote de cipó, PÉS NORMAIS PRA
-             FRENTE (o pé-pra-trás é do Curupira, parente — NÃO da Caipora),
-             imponente (maior que o caçador)
+  Caipora  — PROTAGONISTA: gerada por gen_caipora.py (pipeline premium próprio,
+             ver docs/CONCEITO-protagonista.md). Este módulo apenas delega.
   Caçador  — 48x48: chapéu, poncho, espingarda (inimigo humano predador)
   Caçador c/ machados — 48x48: capuz, manto, dois machados, olhos brilhando (boss base)
   Mula sem Cabeça     — 48x48: sem cabeça, jato de fogo no toco do pescoço,
                         ferraduras de ferro, arreio amaldiçoado (boss da Fase 1)
 
-Saída: player_idle/walk_1/walk_2.png (64x64), enemy_idle.png, boss/boitata/
+Saída: player_* via gen_caipora (64x64), enemy_idle.png, boss/boitata/
        curupira/saci/mula_idle.png (48x48)
 """
 import os
 from PIL import Image
+
+import gen_caipora
 
 S = 48
 OUT = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sprites")
@@ -106,124 +106,6 @@ class C:
         im2.paste(self.im, (dx, dy))
         self.im = im2
         self.p = im2.load()
-
-
-def _leaf(c, x, y, col, shade):
-    """Folha pequena (3x3) com sombra — usada na cobertura vegetal da Caipora."""
-    c.rect(x, y + 1, x + 2, y + 1, col)
-    c.px(x + 1, y, col)
-    c.px(x + 1, y + 2, shade)
-    c.px(x + 2, y + 2, shade)
-
-
-def caipora(leg_phase=0, pose="idle"):
-    """Guardiã da mata, 64x64. leg_phase: 0 idle, -1/+1 passos.
-
-    pose: "idle" | "windup" (agachada, cipó armado atrás) | "strike" (avanço,
-    smear do golpe de cipó) | "recover" (cipó assentando).
-
-    Imponente, coberta de folhas/cipós, cabelo de fogo, olhos brilhando, cipó
-    na mão. PÉS NORMAIS PRA FRENTE (o pé-pra-trás é do Curupira, não da Caipora).
-    """
-    c = C(64)
-    cx = 32
-    # ── Juba/coroa de fogo (chamas subindo) ──
-    c.rect(20, 8, 44, 22, HAIR_DEEP)
-    c.disc(cx, 18, 13, HAIR_DEEP)
-    for (x, top) in [(19, 6), (23, 1), (27, 4), (31, -1), (35, 3), (39, 1), (43, 6)]:
-        c.rect(x, max(top, 0), x + 2, 18, HAIR)
-    for (x, top) in [(24, 2), (29, 1), (33, 0), (37, 3), (41, 3)]:
-        c.rect(x, max(top, 0), x + 1, top + 9, HAIR_HOT)
-    c.rect(21, 16, 43, 21, HAIR)
-    # ── Cabeça (pele escura, sombreada) ──
-    c.disc(cx, 27, 9, SKIN)
-    c.rect(23, 22, 41, 31, SKIN)
-    c.rect(23, 22, 25, 31, SKIN_DK)       # lado em sombra
-    c.rect(24, 31, 40, 33, SKIN_DK)       # queixo
-    # sobrancelha pesada (encara, ameaça)
-    c.rect(26, 24, 38, 25, SKIN_DK)
-    # ── Olhos brilhando intensamente ──
-    c.rect(27, 26, 30, 28, EYE)
-    c.rect(34, 26, 37, 28, EYE)
-    c.rect(28, 26, 29, 27, (255, 255, 210))   # núcleo branco-quente
-    c.rect(35, 26, 36, 27, (255, 255, 210))
-    c.px(27, 28, HAIR)                        # brilho derrama pra baixo
-    c.px(37, 28, HAIR)
-    # ── Torso (terra) ──
-    c.rect(24, 33, 40, 50, EARTH)
-    c.rect(24, 33, 26, 50, EARTH_DK)          # flanco em sombra
-    c.rect(30, 34, 33, 49, EARTH_DK)          # vinco do peito
-    # ── Cobertura de folhas/cipós (ombros, peito, cintura) ──
-    for (lx_, ly_) in [(22, 33), (38, 33), (25, 33), (35, 33),   # ombros
-                       (27, 39), (34, 39), (30, 42),             # peito
-                       (24, 45), (28, 46), (32, 45), (36, 46), (40, 45)]:  # saiote
-        _leaf(c, lx_, ly_, LEAF, LEAF_DK)
-    c.rect(23, 48, 41, 50, LEAF_DK)           # barra do saiote de folhas
-    # ── Braços ──
-    c.rect(19, 34, 23, 47, SKIN_DK)           # braço esq (em sombra)
-    c.rect(41, 34, 45, 47, SKIN)
-    c.rect(41, 34, 42, 47, SKIN_DK)
-    c.rect(19, 46, 23, 48, SKIN)              # mão esq
-    c.rect(41, 46, 45, 49, SKIN)              # mão dir (segura o cipó)
-    # ── Chicote de cipó (uma variante por pose) ──
-    if pose == "windup":
-        # Cipó armado: arco erguido atrás do ombro direito, tensionado.
-        c.line(44, 47, 51, 41, EARTH_DK)
-        c.line(51, 41, 54, 32, EARTH_DK)
-        c.line(54, 32, 50, 24, EARTH_DK)
-        c.line(45, 47, 52, 41, LEAF_DK)       # realce do cipó
-        _leaf(c, 51, 27, LEAF, LEAF_DK)
-        c.px(50, 24, LEAF)
-    elif pose == "strike":
-        # Smear do golpe: o cipó vira uma mancha de 3 tons varrendo pra frente
-        # (direita = inimigo). Leitura de chicotada, não de objeto.
-        c.line(45, 46, 56, 41, HAIR_DEEP)
-        c.line(45, 47, 58, 43, HAIR)
-        c.line(45, 48, 61, 46, HAIR_HOT)
-        c.line(46, 49, 62, 49, HAIR)
-        c.line(46, 50, 60, 52, HAIR_DEEP)
-        c.px(62, 47, (255, 255, 210))         # ponta quente do estalo
-        c.px(63, 48, HAIR_HOT)
-        _leaf(c, 58, 44, LEAF, LEAF_DK)       # folha arrancada no arco
-    elif pose == "recover":
-        # Cipó assentando à frente, ainda balançando do golpe.
-        c.line(44, 48, 50, 51, EARTH_DK)
-        c.line(50, 51, 47, 56, EARTH_DK)
-        c.line(47, 56, 51, 59, EARTH_DK)
-        c.line(44, 49, 49, 52, LEAF_DK)
-        _leaf(c, 49, 53, LEAF, LEAF_DK)
-        c.px(51, 59, LEAF)
-    else:
-        # Idle/walk: desce da mão direita, vivo.
-        c.line(44, 48, 48, 52, EARTH_DK)
-        c.line(48, 52, 45, 57, EARTH_DK)
-        c.line(45, 57, 49, 60, EARTH_DK)
-        c.line(44, 49, 47, 52, LEAF_DK)       # realce do cipó
-        _leaf(c, 47, 54, LEAF, LEAF_DK)
-        c.px(49, 60, LEAF)
-    # ── Pernas ──
-    if pose == "strike":
-        leg_phase = 1                          # afundo: pernas abertas no avanço
-    lx = 27 + leg_phase * 2
-    rx = 33 - leg_phase * 2
-    c.rect(lx, 50, lx + 4, 59, SKIN)
-    c.rect(rx, 50, rx + 4, 59, SKIN)
-    c.rect(lx, 50, lx, 59, SKIN_DK)
-    c.rect(rx, 50, rx, 59, SKIN_DK)
-    # ── PÉS NORMAIS PRA FRENTE (planta no chão, dedos apontando pra frente/baixo) ──
-    for fx in (lx, rx):
-        c.rect(fx - 1, 59, fx + 5, 61, SKIN)      # pé apontando pra frente
-        c.rect(fx - 1, 59, fx - 1, 61, SKIN_DK)   # calcanhar (atrás)
-        c.px(fx + 2, 61, SKIN_DK)                 # separação dos dedos
-        c.px(fx + 4, 61, SKIN_DK)
-    # ── Linguagem corporal da pose ──
-    if pose == "windup":
-        c.shift(-1, 2)    # agacha, recua: mola comprimida antes do bote
-    elif pose == "strike":
-        c.shift(2, -1)    # avança e estica no golpe
-    elif pose == "recover":
-        c.shift(0, 1)     # assenta o peso de volta
-    return c
 
 
 def hunter(pose="idle"):
@@ -758,12 +640,7 @@ def mula():
 
 
 if __name__ == "__main__":
-    caipora(0).save("player_idle.png")
-    caipora(-1).save("player_walk_1.png")
-    caipora(1).save("player_walk_2.png")
-    caipora(0, "windup").save("player_windup.png")
-    caipora(0, "strike").save("player_strike.png")
-    caipora(0, "recover").save("player_recover.png")
+    gen_caipora.generate_all()   # protagonista (pipeline premium próprio)
     hunter().save("enemy_idle.png")
     hunter("windup").save("enemy_windup.png")
     axe_hunter().save("boss_idle.png")
@@ -778,4 +655,4 @@ if __name__ == "__main__":
     # fixture do Boss base; bruxo_idle.png é o asset dedicado do monstro.
     axe_hunter().save("bruxo_idle.png")
     axe_hunter("windup").save("bruxo_windup.png")
-    print("[gen_chars] caipora (64x64) + caçador + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça + jesuíta-bandeirante (48x48) gerados")
+    print("[gen_chars] caipora (via gen_caipora) + caçador + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça + jesuíta-bandeirante (48x48) gerados")

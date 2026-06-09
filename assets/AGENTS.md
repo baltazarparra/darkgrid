@@ -43,6 +43,10 @@ assets/
 2b. **Pipeline de limpeza para IA (obrigatório):** quantizar para a paleta
    (`constants.gd`), alinhar ao grid, garantir alpha limpo (sem halos), ≤ 64×64.
    Sprite que não passar por isso não entra.
+2c. **Protagonista é especial:** os `player_*.png` saem SOMENTE de
+   `scripts/tools/gen_caipora.py` (pipeline premium: supersample 8× → snap de
+   paleta → selout → rim light térmico). NUNCA editar esses PNGs à mão nem
+   recriá-los pelo `gen_chars.py`. O design é lei: `docs/CONCEITO-protagonista.md`.
 3. **Audio:** Generate with [jsfxr](https://sfxr.me/) or [sfxr](https://www.drpetter.se/project_sfxr.html). Export as `.wav`. Short, punchy, under 100KB each.
 4. **No music in MVP.** SFX only. Music adds complexity and file size we don't need for the first Web build.
 5. **UI:** Use Godot's native UI nodes (`Button`, `Panel`, `Label`, `ProgressBar`). Do not create custom UI sprite sheets.
