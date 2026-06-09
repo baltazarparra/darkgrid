@@ -100,6 +100,13 @@ class C:
     def save(self, name):
         self.im.save(os.path.join(OUT, name))
 
+    def shift(self, dx, dy):
+        """Desloca o desenho inteiro (linguagem corporal: agachar, avançar)."""
+        im2 = Image.new("RGBA", (self.S, self.S), (0, 0, 0, 0))
+        im2.paste(self.im, (dx, dy))
+        self.im = im2
+        self.p = im2.load()
+
 
 def _leaf(c, x, y, col, shade):
     """Folha pequena (3x3) com sombra — usada na cobertura vegetal da Caipora."""
@@ -109,8 +116,11 @@ def _leaf(c, x, y, col, shade):
     c.px(x + 2, y + 2, shade)
 
 
-def caipora(leg_phase=0):
+def caipora(leg_phase=0, pose="idle"):
     """Guardiã da mata, 64x64. leg_phase: 0 idle, -1/+1 passos.
+
+    pose: "idle" | "windup" (agachada, cipó armado atrás) | "strike" (avanço,
+    smear do golpe de cipó) | "recover" (cipó assentando).
 
     Imponente, coberta de folhas/cipós, cabelo de fogo, olhos brilhando, cipó
     na mão. PÉS NORMAIS PRA FRENTE (o pé-pra-trás é do Curupira, não da Caipora).
@@ -155,14 +165,45 @@ def caipora(leg_phase=0):
     c.rect(41, 34, 42, 47, SKIN_DK)
     c.rect(19, 46, 23, 48, SKIN)              # mão esq
     c.rect(41, 46, 45, 49, SKIN)              # mão dir (segura o cipó)
-    # ── Chicote de cipó (desce da mão direita, vivo) ──
-    c.line(44, 48, 48, 52, EARTH_DK)
-    c.line(48, 52, 45, 57, EARTH_DK)
-    c.line(45, 57, 49, 60, EARTH_DK)
-    c.line(44, 49, 47, 52, LEAF_DK)           # realce do cipó
-    _leaf(c, 47, 54, LEAF, LEAF_DK)
-    c.px(49, 60, LEAF)
+    # ── Chicote de cipó (uma variante por pose) ──
+    if pose == "windup":
+        # Cipó armado: arco erguido atrás do ombro direito, tensionado.
+        c.line(44, 47, 51, 41, EARTH_DK)
+        c.line(51, 41, 54, 32, EARTH_DK)
+        c.line(54, 32, 50, 24, EARTH_DK)
+        c.line(45, 47, 52, 41, LEAF_DK)       # realce do cipó
+        _leaf(c, 51, 27, LEAF, LEAF_DK)
+        c.px(50, 24, LEAF)
+    elif pose == "strike":
+        # Smear do golpe: o cipó vira uma mancha de 3 tons varrendo pra frente
+        # (direita = inimigo). Leitura de chicotada, não de objeto.
+        c.line(45, 46, 56, 41, HAIR_DEEP)
+        c.line(45, 47, 58, 43, HAIR)
+        c.line(45, 48, 61, 46, HAIR_HOT)
+        c.line(46, 49, 62, 49, HAIR)
+        c.line(46, 50, 60, 52, HAIR_DEEP)
+        c.px(62, 47, (255, 255, 210))         # ponta quente do estalo
+        c.px(63, 48, HAIR_HOT)
+        _leaf(c, 58, 44, LEAF, LEAF_DK)       # folha arrancada no arco
+    elif pose == "recover":
+        # Cipó assentando à frente, ainda balançando do golpe.
+        c.line(44, 48, 50, 51, EARTH_DK)
+        c.line(50, 51, 47, 56, EARTH_DK)
+        c.line(47, 56, 51, 59, EARTH_DK)
+        c.line(44, 49, 49, 52, LEAF_DK)
+        _leaf(c, 49, 53, LEAF, LEAF_DK)
+        c.px(51, 59, LEAF)
+    else:
+        # Idle/walk: desce da mão direita, vivo.
+        c.line(44, 48, 48, 52, EARTH_DK)
+        c.line(48, 52, 45, 57, EARTH_DK)
+        c.line(45, 57, 49, 60, EARTH_DK)
+        c.line(44, 49, 47, 52, LEAF_DK)       # realce do cipó
+        _leaf(c, 47, 54, LEAF, LEAF_DK)
+        c.px(49, 60, LEAF)
     # ── Pernas ──
+    if pose == "strike":
+        leg_phase = 1                          # afundo: pernas abertas no avanço
     lx = 27 + leg_phase * 2
     rx = 33 - leg_phase * 2
     c.rect(lx, 50, lx + 4, 59, SKIN)
@@ -175,11 +216,21 @@ def caipora(leg_phase=0):
         c.rect(fx - 1, 59, fx - 1, 61, SKIN_DK)   # calcanhar (atrás)
         c.px(fx + 2, 61, SKIN_DK)                 # separação dos dedos
         c.px(fx + 4, 61, SKIN_DK)
+    # ── Linguagem corporal da pose ──
+    if pose == "windup":
+        c.shift(-1, 2)    # agacha, recua: mola comprimida antes do bote
+    elif pose == "strike":
+        c.shift(2, -1)    # avança e estica no golpe
+    elif pose == "recover":
+        c.shift(0, 1)     # assenta o peso de volta
     return c
 
 
-def hunter():
-    """Caçador humano: chapéu, poncho, espingarda apontada."""
+def hunter(pose="idle"):
+    """Caçador humano: chapéu, poncho, espingarda apontada.
+
+    pose "windup": espingarda erguida na pontaria, corpo cravado — telegrafa o tiro.
+    """
     c = C()
     # ── Chapéu de aba larga ──
     c.rect(14, 13, 33, 15, HAT_DK)      # aba
@@ -206,51 +257,67 @@ def hunter():
     c.rect(25, 40, 28, 46, EARTH_DK)
     c.rect(18, 45, 23, 46, HAT_DK)
     c.rect(24, 45, 29, 46, HAT_DK)
-    # ── Espingarda (atravessada, apontando p/ frente-baixo) ──
-    c.rect(30, 27, 45, 29, GUN)         # cano
-    c.rect(30, 26, 45, 26, GUN_HL)
-    c.rect(27, 28, 33, 33, EARTH_DK)    # coronha
-    c.px(45, 27, GUN_HL)
-    # mãos segurando
-    c.rect(30, 29, 32, 31, HUMAN_SKIN)
-    c.rect(36, 28, 38, 30, HUMAN_SKIN)
+    # ── Espingarda ──
+    if pose == "windup":
+        # Erguida na pontaria: cano na altura do olho, coronha cravada no ombro.
+        c.rect(30, 21, 46, 23, GUN)     # cano nivelado com o olhar
+        c.rect(30, 20, 46, 20, GUN_HL)
+        c.rect(26, 22, 32, 27, EARTH_DK)  # coronha no ombro
+        c.px(46, 21, (255, 240, 200))   # reflexo na boca do cano (ameaça)
+        # mãos na pontaria
+        c.rect(30, 23, 32, 25, HUMAN_SKIN)
+        c.rect(38, 22, 40, 24, HUMAN_SKIN)
+        c.shift(0, 1)                   # peso cravado no chão
+    else:
+        # Atravessada, apontando p/ frente-baixo.
+        c.rect(30, 27, 45, 29, GUN)     # cano
+        c.rect(30, 26, 45, 26, GUN_HL)
+        c.rect(27, 28, 33, 33, EARTH_DK)  # coronha
+        c.px(45, 27, GUN_HL)
+        # mãos segurando
+        c.rect(30, 29, 32, 31, HUMAN_SKIN)
+        c.rect(36, 28, 38, 30, HUMAN_SKIN)
     return c
 
 
-def _axe(c, haft_x, blade_side):
-    """Machado de cabo longo. haft_x = coluna do cabo; blade_side -1 esq / +1 dir.
+def _axe(c, haft_x, blade_side, dy=0):
+    """Machado de cabo longo. haft_x = coluna do cabo; blade_side -1 esq / +1 dir;
+    dy desloca o machado inteiro (erguer no windup).
 
     Lâmina larga no topo (single-bit) voltada pra fora, fio reluzente — leitura
     clara de 'machado' e separa o boss do caçador-espingarda.
     """
     # ── Cabo (vertical, madeira escura) ──
-    c.rect(haft_x, 9, haft_x + 1, 41, AXE_HAFT)
-    c.rect(haft_x, 9, haft_x, 41, AXE_HAFT_DK)
+    c.rect(haft_x, 9 + dy, haft_x + 1, 41 + dy, AXE_HAFT)
+    c.rect(haft_x, 9 + dy, haft_x, 41 + dy, AXE_HAFT_DK)
     # ── Cabeça da lâmina (no topo do cabo, voltada pra fora) ──
     if blade_side > 0:
         bx0, bx1 = haft_x + 2, haft_x + 7        # cresce pra direita
-        c.rect(bx0, 7, bx1, 16, AXE_STEEL)
-        c.rect(bx0, 9, bx1 + 1, 14, AXE_STEEL)   # barriga da lâmina
-        c.rect(bx1 + 1, 9, bx1 + 1, 14, AXE_EDGE)
-        c.rect(bx0, 7, bx0, 16, AXE_EDGE)        # topo do gume
+        c.rect(bx0, 7 + dy, bx1, 16 + dy, AXE_STEEL)
+        c.rect(bx0, 9 + dy, bx1 + 1, 14 + dy, AXE_STEEL)   # barriga da lâmina
+        c.rect(bx1 + 1, 9 + dy, bx1 + 1, 14 + dy, AXE_EDGE)
+        c.rect(bx0, 7 + dy, bx0, 16 + dy, AXE_EDGE)        # topo do gume
     else:
         bx0, bx1 = haft_x - 5, haft_x            # cresce pra esquerda
-        c.rect(bx0, 7, bx1, 16, AXE_STEEL)
-        c.rect(bx0 - 1, 9, bx1, 14, AXE_STEEL)   # barriga da lâmina
-        c.rect(bx0 - 1, 9, bx0 - 1, 14, AXE_EDGE)
-        c.rect(bx1, 7, bx1, 16, AXE_EDGE)        # topo do gume
+        c.rect(bx0, 7 + dy, bx1, 16 + dy, AXE_STEEL)
+        c.rect(bx0 - 1, 9 + dy, bx1, 14 + dy, AXE_STEEL)   # barriga da lâmina
+        c.rect(bx0 - 1, 9 + dy, bx0 - 1, 14 + dy, AXE_EDGE)
+        c.rect(bx1, 7 + dy, bx1, 16 + dy, AXE_EDGE)        # topo do gume
 
 
-def axe_hunter():
+def axe_hunter(pose="idle"):
     """Caçador com machados (boss): capuz, manto, dois machados, olhos no vazio.
+
+    pose "windup": machados içados acima da cabeça — o golpe duplo vem aí.
 
     Predador humano amaldiçoado — silhueta imponente, encapuzado na sombra,
     empunhando um machado em cada mão. A aura de sombra fica a cargo do boss.gd.
     """
     c = C()
-    # ── Machados (um de cada lado, lâminas erguidas) ──
-    _axe(c, 9, -1)
-    _axe(c, 38, +1)
+    # ── Machados (um de cada lado; içados no windup) ──
+    axe_dy = -5 if pose == "windup" else 0
+    _axe(c, 9, -1, axe_dy)
+    _axe(c, 38, +1, axe_dy)
     # ── Capuz ──
     c.rect(16, 10, 31, 14, HOOD)
     c.disc(23, 14, 9, HOOD)
@@ -283,6 +350,8 @@ def axe_hunter():
     # ── Correia de couro cruzada no peito (caçador, sem tema mágico) ──
     c.line(17, 28, 28, 38, STRAP)
     c.line(17, 29, 28, 39, AXE_HAFT_DK)
+    if pose == "windup":
+        c.shift(0, 1)   # afunda na base antes de descer os machados
     return c
 
 
@@ -692,8 +761,13 @@ if __name__ == "__main__":
     caipora(0).save("player_idle.png")
     caipora(-1).save("player_walk_1.png")
     caipora(1).save("player_walk_2.png")
+    caipora(0, "windup").save("player_windup.png")
+    caipora(0, "strike").save("player_strike.png")
+    caipora(0, "recover").save("player_recover.png")
     hunter().save("enemy_idle.png")
+    hunter("windup").save("enemy_windup.png")
     axe_hunter().save("boss_idle.png")
+    axe_hunter("windup").save("boss_windup.png")
     boitata().save("boitata_idle.png")
     curupira().save("curupira_idle.png")
     saci().save("saci_idle.png")
@@ -703,4 +777,5 @@ if __name__ == "__main__":
     # como monstro comum das fases (junto com o caçador). boss_idle.png segue como
     # fixture do Boss base; bruxo_idle.png é o asset dedicado do monstro.
     axe_hunter().save("bruxo_idle.png")
+    axe_hunter("windup").save("bruxo_windup.png")
     print("[gen_chars] caipora (64x64) + caçador + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça + jesuíta-bandeirante (48x48) gerados")

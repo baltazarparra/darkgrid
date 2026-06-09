@@ -1,6 +1,7 @@
 [gd_resource type="SpriteFrames" format=3]
 
 [ext_resource type="Texture2D" path="res://assets/sprites/enemy_idle.png" id="1_enemy"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemy_windup.png" id="2_windup"]
 
 [resource]
 animations = [{
@@ -10,5 +11,13 @@ animations = [{
 }],
 "loop": true,
 "name": &"idle",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_windup")
+}],
+"loop": false,
+"name": &"windup",
 "speed": 5.0
 }]

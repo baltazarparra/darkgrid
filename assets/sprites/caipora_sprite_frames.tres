@@ -3,6 +3,9 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/player_idle.png" id="1_ccmm6"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player_walk_1.png" id="2_rq8a5"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player_walk_2.png" id="3_lch3r"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_windup.png" id="4_windup"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_strike.png" id="5_strike"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_recover.png" id="6_recover"]
 
 [resource]
 animations = [{
@@ -29,4 +32,28 @@ animations = [{
 "loop": true,
 "name": &"walk",
 "speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_windup")
+}],
+"loop": false,
+"name": &"windup",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_strike")
+}],
+"loop": false,
+"name": &"strike",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_recover")
+}],
+"loop": false,
+"name": &"recover",
+"speed": 5.0
 }]
