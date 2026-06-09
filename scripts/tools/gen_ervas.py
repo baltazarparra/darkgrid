@@ -337,16 +337,108 @@ def cachimbo():
     return g
 
 
+
+# ─── FÚRIA T5/T6 ─────────────────────────────────────────────────────────────
+def osso_quebrado():
+    """T5: osso fossilizado quebrado, com sangue seco e veios negros."""
+    g = blank()
+    # Osso principal (curva quebrada)
+    pts = [(10, 28), (12, 22), (16, 18), (20, 14), (18, 10), (22, 8), (26, 12)]
+    for i in range(len(pts) - 1):
+        stem(g, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], WOOD_HI, WOOD_MID)
+    # Rachadura no osso
+    for (x, y) in [(16, 18), (17, 17), (18, 16), (19, 15)]:
+        put(g, x, y, BLOOD_DARK)
+        put(g, x + 1, y, BLOOD)
+    # Fragmentos soltos
+    for (x, y) in [(8, 26), (24, 10), (28, 14)]:
+        blob(g, x, y, 1, WOOD_LIGHT)
+    return g
+
+
+def chaga_da_mata():
+    """T6: ferida viva da floresta — massa negra pulsando com espinhos carmim."""
+    g = blank()
+    # Massa negra central (corpo da chaga)
+    blob(g, 16, 16, 10, SOOT)
+    blob(g, 16, 16, 7, BARK_DARK)
+    # Espinhos carmim irradiando
+    for angle in [0.3, 0.9, 1.8, 2.5, 3.8, 4.5, 5.2]:
+        x0 = int(round(16 + 7 * math.cos(angle)))
+        y0 = int(round(16 + 7 * math.sin(angle)))
+        x1 = int(round(16 + 14 * math.cos(angle)))
+        y1 = int(round(16 + 14 * math.sin(angle)))
+        stem(g, x0, y0, x1, y1, BLOOD, BLOOD_DARK)
+        put(g, x1, y1, BLOOD)
+    # Miolo pulsando (âmbar-sangue)
+    blob(g, 16, 16, 3, AMBER)
+    put(g, 16, 16, EMBER_HOT)
+    return g
+
+
+# ─── CURA T5/T6 ──────────────────────────────────────────────────────────────
+def rachadura_viva():
+    """T5: rachadura na terra com seiva verde brilhando — ferida que cura."""
+    g = blank()
+    # Terra escura
+    for y in range(8, 26):
+        w = 7 - abs(y - 17) // 2
+        for x in range(16 - w, 16 + w + 1):
+            put(g, x, y, SOOT if (x + y) % 3 == 0 else BARK_DARK)
+    # Rachadura central
+    for y in range(10, 24):
+        dx = int(round(2 * math.sin(y * 0.7)))
+        put(g, 16 + dx, y, SOOT)
+        put(g, 16 + dx - 1, y, MOSS_LIGHT)
+        put(g, 16 + dx + 1, y, MOSS_LIGHT)
+    # Seiva brilhando nos bordos
+    for (x, y) in [(13, 12), (19, 15), (12, 20), (20, 22)]:
+        blob(g, x, y, 1, LEAF_LIGHT)
+    return g
+
+
+def pele_de_defunto():
+    """T6: membrana pálida/cinzenta esticada, com veias escuras e pontos de luz doentia."""
+    g = blank()
+    # Membrana pálida (elipse)
+    for y in range(6, 28):
+        w = int(round(9 * math.sqrt(max(0.0, 1.0 - ((y - 17) / 11.0) ** 2))))
+        for x in range(16 - w, 16 + w + 1):
+            t = abs(x - 16) / float(max(1, w))
+            if t < 0.3:
+                col = ASH_LIGHT
+            elif t < 0.7:
+                col = ASH
+            else:
+                col = (60, 50, 45, 255)
+            put(g, x, y, col)
+    # Veias escuras
+    for angle in [0.5, 1.2, 2.8, 3.9, 5.1]:
+        x0 = int(round(16 + 3 * math.cos(angle)))
+        y0 = int(round(17 + 3 * math.sin(angle)))
+        x1 = int(round(16 + 10 * math.cos(angle)))
+        y1 = int(round(17 + 10 * math.sin(angle)))
+        stem(g, x0, y0, x1, y1, BLOOD_DARK, (40, 30, 28, 255))
+    # Pontos de luz doentia (musgo doentio)
+    for (x, y) in [(12, 10), (20, 12), (14, 22), (22, 20), (16, 8)]:
+        blob(g, x, y, 1, MOSS_LIGHT)
+    return g
+
+
 # ─── Saída ───────────────────────────────────────────────────────────────────
 ERVAS = {
     "erva_folha_brasa": folha_brasa,
     "erva_cinza_viva": cinza_viva,
     "erva_raiz_de_ira": raiz_de_ira,
     "erva_breu_ancestral": breu_ancestral,
+    "erva_osso_quebrado": osso_quebrado,
+    "erva_chaga_da_mata": chaga_da_mata,
     "erva_seiva_mae": seiva_mae,
     "erva_casca_boa": casca_boa,
     "erva_folha_de_sangue": folha_de_sangue,
     "erva_coracao_de_cerne": coracao_de_cerne,
+    "erva_rachadura_viva": rachadura_viva,
+    "erva_pele_de_defunto": pele_de_defunto,
     "cachimbo": cachimbo,
 }
 

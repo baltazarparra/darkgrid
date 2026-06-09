@@ -107,6 +107,6 @@ func test_next_pending_key() -> void:
 	MetaProgression.upgrades = {}
 	assert_eq(MetaProgression.next_pending_key(MetaProgression.FURIA_KEYS), "forca",
 		"trilha vazia: pendente é a primeira")
-	MetaProgression.upgrades = {"forca": 1, "forca_2": 1, "forca_3": 1, "forca_4": 1}
+	MetaProgression.upgrades = {"forca": 1, "forca_2": 1, "forca_3": 1, "forca_4": 1, "forca_5": 1, "forca_6": 1}
 	assert_eq(MetaProgression.next_pending_key(MetaProgression.FURIA_KEYS), "",
 		"trilha completa: sem pendente")

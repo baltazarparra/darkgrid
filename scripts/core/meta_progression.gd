@@ -6,7 +6,7 @@ extends Node
 var SAVE_PATH := "user://savegame.json"
 
 # Versão do formato de save. Incrementar ao mudar o schema; migrar em load_progress().
-const SAVE_VERSION: int = 1
+const SAVE_VERSION: int = 2
 
 # True se user:// é persistente (no Web = IndexedDB disponível; false em aba anônima/quota).
 var is_persistent: bool = true
@@ -18,17 +18,21 @@ var is_persistent: bool = true
 #
 # FONTE NUMÉRICA ÚNICA (PRD-economia-v2): o campo "dmg" (Fúria) ou "hp" (Cura) é a verdade
 # da matemática; o texto do efeito é DERIVADO via effect_text() (mata a classe de bug do
-# KI-006, em que o label desincronizava do bônus real). Curva de custo crescente e teto
-# deliberado: Fúria leva o dano de 1 a 5 (6 com a CHAMA); Cura leva o HP de 2 a 14.
+# KI-006, em que o label desincronizava do bônus real). Curva de custo crescente:
+# Fúria leva o dano de 1 a 9 (10 com a CHAMA); Cura leva o HP de 2 a 23.
 const UPGRADE_DEFS := {
 	"forca":   { "name": "Folha-Brasa",      "max_level": 1, "fragment_cost": 5,  "line": "furia", "tier": 1, "phase": 1, "dmg": 1, "icon": "res://assets/sprites/erva_folha_brasa.png" },
 	"forca_2": { "name": "Cinza-Viva",       "max_level": 1, "fragment_cost": 10, "line": "furia", "tier": 2, "phase": 2, "dmg": 1, "icon": "res://assets/sprites/erva_cinza_viva.png", "requires": "forca" },
 	"forca_3": { "name": "Raiz-de-Ira",      "max_level": 1, "fragment_cost": 16, "line": "furia", "tier": 3, "phase": 3, "dmg": 1, "icon": "res://assets/sprites/erva_raiz_de_ira.png", "requires": "forca_2" },
 	"forca_4": { "name": "Breu-Ancestral",   "max_level": 1, "fragment_cost": 24, "line": "furia", "tier": 4, "phase": 4, "dmg": 1, "icon": "res://assets/sprites/erva_breu_ancestral.png", "requires": "forca_3" },
+	"forca_5": { "name": "Osso-Quebrado",    "max_level": 1, "fragment_cost": 36, "line": "furia", "tier": 5, "phase": 5, "dmg": 2, "icon": "res://assets/sprites/erva_osso_quebrado.png", "requires": "forca_4", "wins_required": 1 },
+	"forca_6": { "name": "Chaga-da-Mata",    "max_level": 1, "fragment_cost": 50, "line": "furia", "tier": 6, "phase": 6, "dmg": 2, "icon": "res://assets/sprites/erva_chaga_da_mata.png", "requires": "forca_5", "wins_required": 3 },
 	"saude":   { "name": "Seiva-Mãe",        "max_level": 1, "fragment_cost": 6,  "line": "cura",  "tier": 1, "phase": 1, "hp": 2,  "icon": "res://assets/sprites/erva_seiva_mae.png" },
 	"saude_2": { "name": "Casca-Boa",        "max_level": 1, "fragment_cost": 12, "line": "cura",  "tier": 2, "phase": 2, "hp": 3,  "icon": "res://assets/sprites/erva_casca_boa.png" },
 	"saude_3": { "name": "Folha-de-Sangue",  "max_level": 1, "fragment_cost": 20, "line": "cura",  "tier": 3, "phase": 3, "hp": 3,  "icon": "res://assets/sprites/erva_folha_de_sangue.png", "requires": "saude_2" },
 	"saude_4": { "name": "Coração-de-Cerne", "max_level": 1, "fragment_cost": 30, "line": "cura",  "tier": 4, "phase": 4, "hp": 4,  "icon": "res://assets/sprites/erva_coracao_de_cerne.png", "requires": "saude_3" },
+	"saude_5": { "name": "Rachadura-Viva",   "max_level": 1, "fragment_cost": 42, "line": "cura",  "tier": 5, "phase": 5, "hp": 4,  "icon": "res://assets/sprites/erva_rachadura_viva.png", "requires": "saude_4", "wins_required": 1 },
+	"saude_6": { "name": "Pele-de-Defunto",  "max_level": 1, "fragment_cost": 58, "line": "cura",  "tier": 6, "phase": 6, "hp": 5,  "icon": "res://assets/sprites/erva_pele_de_defunto.png", "requires": "saude_5", "wins_required": 3 },
 }
 
 # Dano base da Caipora (espelha Constants.DAMAGE_BASE) — usado para derivar os totais
@@ -36,8 +40,8 @@ const UPGRADE_DEFS := {
 const BASE_DAMAGE: int = 1
 
 # Ordem de exibição por trilha (o Hub itera sem hardcode de keys).
-const FURIA_KEYS: Array[String] = ["forca", "forca_2", "forca_3", "forca_4"]
-const CURA_KEYS: Array[String]  = ["saude", "saude_2", "saude_3", "saude_4"]
+const FURIA_KEYS: Array[String] = ["forca", "forca_2", "forca_3", "forca_4", "forca_5", "forca_6"]
+const CURA_KEYS: Array[String]  = ["saude", "saude_2", "saude_3", "saude_4", "saude_5", "saude_6"]
 
 # ─── CHAMA (elemento fogo) ─────────────────────────
 # Depois que a espada (forca_3, "Raiz-de-Ira" da Fase 3) já existe, a cada
@@ -47,7 +51,7 @@ const CURA_KEYS: Array[String]  = ["saude", "saude_2", "saude_3", "saude_4"]
 const KILLS_PER_CHAMA_ROLL: int = 10
 # `var` (não const) de propósito: ponto único de tuning e overridable nos testes (1.0/0.0).
 var CHAMA_DROP_CHANCE: float = 0.5
-# +1 de dano (respeita o teto da trilha Fúria: 5 → 6 com a CHAMA). Ver PRD-economia-v2.
+# +1 de dano (teto da trilha Fúria: 9 → 10 com a CHAMA).
 const CHAMA_DAMAGE_BONUS: int = 1
 
 # ─── State ─────────────────────────────────────────
@@ -85,14 +89,18 @@ func add_fragment() -> void:
 func get_upgrade_level(key: String) -> int:
 	return int(upgrades.get(key, 0))
 
-## True se a erva pode ser comprada AGORA: fase alcançada, requisito (se houver) já fumado e
-## ainda não no nível máximo. NÃO checa fragmentos — affordability é estado de UI, separado da
-## elegibilidade. Fonte única do gate do Hub (cards) e dos testes.
+## True se a erva pode ser comprada AGORA: fase alcançada, requisito (se houver) já fumado,
+## wins_required atendido (se houver) e ainda não no nível máximo. NÃO checa fragmentos —
+## affordability é estado de UI, separado da elegibilidade. Fonte única do gate do Hub (cards)
+## e dos testes.
 func is_available(key: String) -> bool:
 	if not UPGRADE_DEFS.has(key):
 		return false
 	var def: Dictionary = UPGRADE_DEFS[key]
 	if phase_reached < int(def.get("phase", 1)):
+		return false
+	var wins_req: int = int(def.get("wins_required", 0))
+	if wins_req > 0 and total_wins < wins_req:
 		return false
 	var req: String = String(def.get("requires", ""))
 	if req != "" and get_upgrade_level(req) < 1:
@@ -117,8 +125,8 @@ func next_pending_key(keys: Array) -> String:
 	return ""
 
 func get_damage_bonus() -> int:
-	# Soma o "dmg" de cada erva de Fúria comprada (fonte numérica única). Cada tier soma
-	# +1 (teto +4 → dano 5). A CHAMA (elemento fogo na espada) soma +CHAMA_DAMAGE_BONUS.
+	# Soma o "dmg" de cada erva de Fúria comprada (fonte numérica única). Tiers 1-4 somam
+	# +1 cada; tiers 5-6 somam +2 cada (teto +8 → dano 9). A CHAMA soma +CHAMA_DAMAGE_BONUS.
 	var bonus := 0
 	for key in FURIA_KEYS:
 		bonus += get_upgrade_level(key) * int(UPGRADE_DEFS[key].get("dmg", 0))
@@ -131,7 +139,8 @@ func get_damage_bonus() -> int:
 ## faz UM sorteio. Retorna true se a CHAMA foi conquistada NESTA morte (recompensa = CHAMA
 ## no lugar do fragmento).
 func register_kill_for_chama() -> bool:
-	if has_chama or get_upgrade_level("forca_3") < 1:
+	# CHAMA desbloqueada a partir do T3 (forca_3) ou superior.
+	if has_chama or (get_upgrade_level("forca_3") < 1 and get_upgrade_level("forca_4") < 1 and get_upgrade_level("forca_5") < 1 and get_upgrade_level("forca_6") < 1):
 		return false
 	kills_toward_chama += 1
 	if kills_toward_chama < KILLS_PER_CHAMA_ROLL:
@@ -148,7 +157,7 @@ func register_kill_for_chama() -> bool:
 
 func get_health_bonus() -> int:
 	# Soma o "hp" de cada erva de Cura comprada (fonte numérica única). Incrementos
-	# crescentes 2/3/3/4 (teto +12 → HP máx. 14). Ver PRD-economia-v2.
+	# crescentes 2/3/3/4/4/5 (teto +21 → HP máx. 23).
 	var bonus := 0
 	for key in CURA_KEYS:
 		bonus += get_upgrade_level(key) * int(UPGRADE_DEFS[key].get("hp", 0))
@@ -247,7 +256,8 @@ func load_progress() -> void:
 		return
 	var data: Dictionary = json.data
 	# Gancho de migração: saves sem "version" (v0) carregam com defaults nos campos ausentes,
-	# então v0→v1 é no-op. Migrações futuras entram aqui antes de ler os campos.
+	# então v0→v1 é no-op. v1→v2 também é no-op: novas keys de upgrade (forca_5/6, saude_5/6)
+	# não existem no save antigo (upgrades{} não as contém → nível 0), e total_wins já existia.
 	var _version := int(data.get("version", 0))
 	unlocked_characters = _to_string_array(data.get("unlocked_characters", ["caipora"]))
 	unlocked_modifiers = _to_string_array(data.get("unlocked_modifiers", []))
