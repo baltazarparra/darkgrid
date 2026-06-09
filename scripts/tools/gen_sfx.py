@@ -397,10 +397,11 @@ def amb_forest(dur=10.0):
     out = [0.0] * total
     hp = 0.0
     lp = 0.0
-    # assovio entra em 20% e 70% do loop para âncora melódica definida.
+    # assovio entra em 20% e 70% do loop como âncora melódica distante (não estridente):
+    # grave e baixo no mix p/ soar como assobio longínquo da mata, nunca como apito/sirene.
     whistle_a = int(n * 0.20)
     whistle_b = int(n * 0.70)
-    whistle = assovio(1.4, freq=820.0)
+    whistle = assovio(1.8, freq=480.0)
     for i in range(total):
         t = i / SAMPLE_RATE
         hum = 0.10 * math.sin(2 * math.pi * 70.0 * t) + 0.06 * math.sin(2 * math.pi * 112.0 * t)
@@ -414,9 +415,9 @@ def amb_forest(dur=10.0):
         s = hum + insects + river
         pos = i % n  # posição no loop (ignora overhang para colocar assobios)
         if whistle_a <= pos < whistle_a + len(whistle):
-            s += whistle[pos - whistle_a] * 0.12
+            s += whistle[pos - whistle_a] * 0.045
         if whistle_b <= pos < whistle_b + len(whistle):
-            s += whistle[pos - whistle_b] * 0.12
+            s += whistle[pos - whistle_b] * 0.045
         out[i] = s
     return _normalize(_loopify(out, n, fade), 0.5)
 
