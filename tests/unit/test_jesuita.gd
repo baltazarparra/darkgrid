@@ -45,6 +45,21 @@ func test_moveset_is_exactly_the_union_of_all_boss_patterns() -> void:
 	assert_eq(seen.size(), EXPECTED.size(),
 		"moveset é exatamente a união dos padrões dos chefes (sem extras)")
 
+func test_white_special_telegraph_emits_agua_benta_signal() -> void:
+	# O wind-up do especial branco anuncia o sibilo de água benta via SignalBus
+	# (o AudioDirector escuta — zero acoplamento direto com o áudio).
+	watch_signals(SignalBus)
+	_jesuita._current_is_white_special = true
+	_jesuita._play_windup_telegraph()
+	assert_signal_emitted_with_parameters(SignalBus, "boss_special_telegraph", ["jesuita"])
+
+func test_inherited_telegraphs_do_not_emit_special_signal() -> void:
+	watch_signals(SignalBus)
+	_jesuita._current_is_white_special = false
+	_jesuita._play_windup_telegraph()
+	assert_signal_not_emitted(SignalBus, "boss_special_telegraph",
+		"telegraphs herdados do Saci não têm cue de água benta")
+
 func test_telegraph_flags_match_chosen_pattern() -> void:
 	# Os flags de telegraph batem com o padrão retornado (exclusivos: no máximo um
 	# ligado, e o correto para cada padrão) — garante o telegraph certo em cena.

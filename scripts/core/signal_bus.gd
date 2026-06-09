@@ -23,3 +23,5 @@ signal chest_opened
 signal boss_intro_started
 signal boss_intro_finished
 signal dialogue_finished
+## Wind-up de especial de chefe com cue de áudio próprio (Fase 5: água benta).
+signal boss_special_telegraph(boss_type: String)

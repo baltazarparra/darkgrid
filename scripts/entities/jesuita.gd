@@ -49,6 +49,7 @@ func _play_windup_telegraph() -> void:
 		return
 	# O branco do Boitatá é o único telegraph fora da cadeia herdada do Saci.
 	if _current_is_white_special:
+		SignalBus.boss_special_telegraph.emit("jesuita")  # sibilo de água benta
 		_kill_telegraph()
 		_telegraph_tween = create_tween().set_loops()
 		_telegraph_tween.tween_property(animated_sprite, "modulate", Constants.COLOR_TELEGRAPH_JESUITA, 0.22)
