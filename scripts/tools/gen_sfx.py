@@ -562,7 +562,9 @@ def amb_forest(dur=10.0):
     # grave e baixo no mix p/ soar como assobio longínquo da mata, nunca como apito/sirene.
     whistle_a = int(n * 0.20)
     whistle_b = int(n * 0.70)
-    whistle = assovio(1.8, freq=480.0)
+    # v2: eco de mata no assovio (aplicado ao SAMPLE antes de embutir — efeitos no
+    # buffer inteiro quebrariam a emenda do loop). Repetições somem na distância.
+    whistle = echo(assovio(1.8, freq=480.0), time_s=0.26, feedback=0.3, mix=0.22, taps=3)
     for i in range(total):
         t = i / SAMPLE_RATE
         hum = 0.10 * math.sin(2 * math.pi * 70.0 * t) + 0.06 * math.sin(2 * math.pi * 112.0 * t)
