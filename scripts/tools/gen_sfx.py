@@ -1134,40 +1134,45 @@ def _seq(*events):
 
 def sting_arena_enter():
     # Chamada à batalha: gonguê grave + tríade rápida de agogô + alfaia.
-    return _normalize(_seq(
+    # v2: cauda curta de reverb — a clareira responde à chamada.
+    return _normalize(schroeder(_seq(
         (gongue(0.16, 520.0), 0.0, 0.8),
         (agogo(0.16, 990.0), 0.10, 0.6),
         (agogo(0.16, 1320.0), 0.18, 0.6),
         (alfaia(0.24, 58.0), 0.26, 1.0),
-    ), 0.85)
+    ), mix=0.18, decay=0.68, tail=0.5), 0.85)
 
 
 def sting_victory():
     # Resolução luminosa: agogô ascendente + assovio-leitmotif sobindo.
-    return _normalize(_seq(
+    # v2: eco de mata no assovio + reverb suave no conjunto.
+    return _normalize(schroeder(_seq(
         (agogo(0.18, 990.0), 0.0, 0.6),
         (agogo(0.18, 1320.0), 0.12, 0.6),
         (agogo(0.30, 1760.0), 0.24, 0.7),
-        (assovio(0.7, 1320.0), 0.30, 0.4),
-    ), 0.8)
+        (echo(assovio(0.7, 1320.0), time_s=0.22, feedback=0.3, mix=0.25, taps=3), 0.30, 0.4),
+    ), mix=0.2, decay=0.7, tail=0.6), 0.8)
 
 
 def sting_game_over():
-    # Queda: alfaia sub + gonguê descendente + cauda escura.
-    return _normalize(_seq(
-        (alfaia(0.35, 50.0), 0.0, 1.0),
-        (gongue(0.5, 300.0), 0.05, 0.7),
-        (gongue(0.6, 180.0), 0.30, 0.6),
-    ), 0.85)
+    # Queda: alfaia sub + gonguê descendente + cauda escura. v2: o reverb mais
+    # longo do catálogo de combate — a morte ressoa no vazio.
+    # Alfaia contida e gonguês cheios: o sustain carrega o peso (crest controlado
+    # na fonte — senão nem a saturação alcança o alvo de loudness).
+    return _normalize(schroeder(_seq(
+        (alfaia(0.35, 50.0), 0.0, 0.6),
+        (gongue(0.5, 300.0), 0.05, 0.9),
+        (gongue(0.6, 180.0), 0.30, 0.85),
+    ), mix=0.25, decay=0.72, tail=0.45), 0.85)
 
 
 def sting_chest():
-    # Brilho de recompensa: cintilação de agogô.
-    return _normalize(_seq(
+    # Brilho de recompensa: cintilação de agogô com ar curto de reverb (v2).
+    return _normalize(schroeder(_seq(
         (agogo(0.16, 1320.0), 0.0, 0.6),
         (agogo(0.16, 1760.0), 0.07, 0.6),
         (agogo(0.24, 2093.0), 0.14, 0.5),
-    ), 0.7)
+    ), mix=0.15, decay=0.65, tail=0.4), 0.7)
 
 
 def sting_boss_intro():
@@ -1178,23 +1183,24 @@ def sting_boss_intro():
         pulse(0.45, note(220.0, 3), duty=0.5, attack=0.08, release=0.4),
         pulse(0.45, note(220.0, 7), duty=0.5, attack=0.11, release=0.4),
     )
-    return _normalize(bitcrush(_seq(
+    # v2: reverb após o crush — corpo granulado, cauda limpa de ameaça.
+    return _normalize(schroeder(bitcrush(_seq(
         (gongue(0.4, 300.0), 0.0, 0.8),
         (chord, 0.06, 0.5),
         (alfaia(0.3, 48.0, punch=1.0), 0.34, 1.0),
         (agogo(0.2, 1320.0), 0.40, 0.4),
-    ), bits=7), 0.86)
+    ), bits=7), mix=0.2, decay=0.72, tail=0.6), 0.86)
 
 
 def sting_chama():
     # Elemento CHAMA (raro): sopro de fogo no canal de ruído + arpejo de pulso
     # ascendente brilhante (ganho de poder).
-    return _normalize(bitcrush(_seq(
+    return _normalize(schroeder(bitcrush(_seq(
         (nes_noise(0.3, decay=10.0, lp=0.4, gain=0.5), 0.0, 0.5),
         (pulse(0.08, 880.0, duty=0.25, release=0.5), 0.04, 0.5),
         (pulse(0.08, 1320.0, duty=0.25, release=0.5), 0.10, 0.5),
         (pulse(0.18, 1760.0, duty=0.25, release=0.6), 0.16, 0.55),
-    ), bits=7), 0.78)
+    ), bits=7), mix=0.12, decay=0.65, tail=0.4), 0.78)
 
 
 def _sino_igreja(dur, freq):
@@ -1210,12 +1216,13 @@ def _sino_igreja(dur, freq):
 def sting_sino_igreja():
     # Fase 5 — revelação do Jesuíta: duas badaladas graves de torre, com a alfaia
     # como o baque do badalo. Condenação, não recompensa.
-    return _normalize(bitcrush(_seq(
+    # v2: o reverb mais fundo do catálogo — a torre de pedra responde.
+    return _normalize(schroeder(bitcrush(_seq(
         (_sino_igreja(1.5, 130.0), 0.0, 1.0),
         (alfaia(0.35, 46.0), 0.0, 0.5),
         (_sino_igreja(1.7, 130.0), 0.85, 0.9),
         (alfaia(0.35, 46.0), 0.85, 0.5),
-    ), bits=7), 0.88)
+    ), bits=7), mix=0.3, decay=0.8, predelay=0.03, tail=1.2), 0.88)
 
 
 def sting_orgao_estertor():
@@ -1231,12 +1238,13 @@ def sting_orgao_estertor():
         pulse(1.6, note(C2, 18), duty=0.5, attack=0.30, release=0.65),
         pulse(1.6, note(C2, 23), duty=0.5, attack=0.30, release=0.65),
     )
-    return _normalize(bitcrush(_seq(
+    # v2: nave de pedra — reverb fundo no estertor; o órgão morre ecoando.
+    return _normalize(schroeder(bitcrush(_seq(
         (organ, 0.0, 0.5),
         (nes_noise(1.4, decay=2.0, lp=0.85, gain=0.18), 0.2, 0.6),
         (collapse, 0.8, 0.45),
         (alfaia(0.4, 44.0), 2.1, 0.9),
-    ), bits=6), 0.84)
+    ), bits=6), mix=0.28, decay=0.78, predelay=0.04, tail=1.0), 0.84)
 
 
 def sting_agua_benta():
