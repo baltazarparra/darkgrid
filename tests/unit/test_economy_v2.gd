@@ -5,10 +5,12 @@ extends GutTest
 ## Um retuning acidental quebra aqui antes de chegar ao jogo.
 
 func test_common_fragment_reward_scales_by_phase() -> void:
-	assert_eq(Constants.COMMON_FRAGMENT_REWARD, {1: 1, 2: 2, 3: 3, 4: 4})
+	# Fase 5 (chefes-monstro da igreja, roteados como comuns): 5 fragmentos.
+	assert_eq(Constants.COMMON_FRAGMENT_REWARD, {1: 1, 2: 2, 3: 3, 4: 4, 5: 5})
 
 func test_boss_bounty_scales_by_phase() -> void:
-	assert_eq(Constants.BOSS_FRAGMENT_BOUNTY, {1: 3, 2: 5, 3: 8, 4: 12})
+	# Fase 5 (Jesuíta): bounty final de 20.
+	assert_eq(Constants.BOSS_FRAGMENT_BOUNTY, {1: 3, 2: 5, 3: 8, 4: 12, 5: 20})
 
 func test_snowball_is_half_hp_per_common_kill() -> void:
 	assert_eq(Constants.COMMON_KILL_HP_GROWTH, 0.5, "meio HP máx. por kill comum")
