@@ -69,6 +69,9 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_update_camera_fit)
 
 	add_child(ArenaBackdrop.new())
+	var blood_decals := BloodDecals.new()
+	add_child(blood_decals)
+	_feedback.blood_spilled.connect(blood_decals.add_splat)
 	add_child(Atmosphere.new())
 
 	_spawn_caipora()
