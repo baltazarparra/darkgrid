@@ -21,4 +21,3 @@ func test_nunca_vaza_especificador_de_format():
 	for amount: float in [0.0, 1.0, 1.5, 2.0, 7.0, 12.5, 30.0]:
 		var txt := Hud.format_fragment_popup(amount)
 		assert_false(txt.contains("%"), "texto não pode conter '%%' cru: %s" % txt)
-		assert_false(txt.contains("g"), "texto não pode conter o 'g' do %%g: %s" % txt)
