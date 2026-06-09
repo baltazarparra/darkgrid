@@ -216,7 +216,11 @@ func _spawn_fragment_bag() -> void:
 	var light := ForestLight.make(Constants.COLOR_AMBER, 1.0, 1.1)
 	light.position = Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
 	_bag_node.add_child(light)
-	var tween := create_tween().set_loops()
+	# Tween VINCULADO à luz (não ao manager): ao recuperar a bolsa, `_bag_node.queue_free()`
+	# libera a luz e o Godot mata este tween junto. Vinculá-lo ao manager (`create_tween()`)
+	# deixava um loop infinito apontando para um nó liberado — o passo do tween girava sem
+	# consumir tempo e CONGELAVA o jogo logo após a mensagem de recuperação.
+	var tween := light.create_tween().set_loops()
 	tween.tween_property(light, "energy", 1.5, 0.9).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(light, "energy", 0.8, 0.9).set_trans(Tween.TRANS_SINE)
 

@@ -148,8 +148,16 @@ func _on_music_toggle() -> void:
 
 # ─── Popups ────────────────────────────────────────
 func _show_fragment_popup(amount: float) -> void:
-	var txt: String = "+%.4g fragmento%s" % [amount, "s" if amount != 1.0 else ""]
-	_show_popup(txt, Constants.COLOR_AMBER)
+	_show_popup(format_fragment_popup(amount), Constants.COLOR_AMBER)
+
+## Texto compacto do ganho: inteiro sem casas ("+3 fragmentos"), fracionário com uma casa
+## ("+1.5 fragmento" — drops de 1.5/kill na Fase 2 somam múltiplos de 0.5). NÃO usar "%g": o
+## format do Godot não suporta esse especificador e o devolvia LITERAL na tela ("+%.4g
+## fragmento%s"), além de empurrar erro. Só "%d", "%.1f" e "%s" (todos válidos) aqui.
+static func format_fragment_popup(amount: float) -> String:
+	var n: String = "%d" % int(amount) if is_equal_approx(amount, roundf(amount)) else "%.1f" % amount
+	var plural: String = "s" if amount != 1.0 else ""
+	return "+%s fragmento%s" % [n, plural]
 
 func _show_popup(text: String, color: Color) -> void:
 	var popup := Label.new()
