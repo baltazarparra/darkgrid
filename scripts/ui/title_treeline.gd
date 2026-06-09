@@ -19,6 +19,9 @@ extends Node2D
 ## escala por viewport — base_y vira coordenada local absoluta. Zero = modo
 ## abertura (viewport + scroll), comportamento original do menu.
 @export var static_bounds: Rect2 = Rect2()
+## Vento (wind_sway.gdshader): deslocamento máximo das copas em px. 0 desliga.
+@export var sway_amount: float = 2.5
+@export var sway_speed: float = 1.1
 
 # ─── State ─────────────────────────────────────────
 var _vp_w: float = 1280.0
@@ -40,8 +43,22 @@ func _ready() -> void:
 		_vp_h = vp.y
 		_eff_base_y = base_y / 720.0 * _vp_h
 	z_index = layer_z
+	_apply_wind()
 	_generate_trees()
 	queue_redraw()
+
+## Vento por vertex shader: raiz cravada em _eff_base_y, copa balançando.
+## A massa do chão (abaixo de base_y) tem peso 0 — só as árvores respiram.
+func _apply_wind() -> void:
+	if sway_amount <= 0.0:
+		return
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://shaders/wind_sway.gdshader")
+	mat.set_shader_parameter("base_y", _eff_base_y)
+	mat.set_shader_parameter("span", 60.0 * tree_scale)
+	mat.set_shader_parameter("amount", sway_amount)
+	mat.set_shader_parameter("speed", sway_speed)
+	material = mat
 
 func _process(delta: float) -> void:
 	_offset += scroll_speed * delta
