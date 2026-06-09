@@ -131,7 +131,11 @@ func _spawn_enemy() -> void:
 	_enemy.position = Vector2(480, 240)
 	add_child(_enemy)
 	# Comuns (não-boss) têm HP uniforme por banda de fase; bosses mantêm o HP da cena.
-	if not GameState.active_combat_is_boss:
+	# Exceção (Fase 5): os chefes-monstro convertidos são roteados como comuns mas
+	# mantêm o HP de chefe da própria cena (keeps_own_hp).
+	var keeps_own_hp := GameState.active_combat_keeps_own_hp
+	GameState.active_combat_keeps_own_hp = false  # consome o flag (volátil)
+	if not GameState.active_combat_is_boss and not keeps_own_hp:
 		var hp: int = Constants.common_health_for_phase(GameState.active_phase)
 		_enemy.health.max_health = hp
 		_enemy.health.current_health = float(hp)
@@ -438,6 +442,10 @@ func _on_actor_died(actor: CombatActor) -> void:
 			if MetaProgression.phase_reached < 4:
 				MetaProgression.phase_reached = 4
 				MetaProgression.save_progress()
+		if GameState.active_combat_is_boss and GameState.active_phase == 4:
+			if MetaProgression.phase_reached < 5:
+				MetaProgression.phase_reached = 5
+				MetaProgression.save_progress()
 	else:
 		# Souls-like: a Caipora tomba e derruba TODOS os fragmentos numa bolsa, no tile onde
 		# o combate começou (lugar da morte). Recupera-os voltando ali numa run futura; morrer
@@ -486,11 +494,13 @@ func _resolve_next_screen(caipora_won: bool) -> SignalBus.Screen:
 		return SignalBus.Screen.GAME_OVER
 	if GameState.active_combat_is_boss:
 		match GameState.active_phase:
-			4: return SignalBus.Screen.ENDING
+			5: return SignalBus.Screen.ENDING
+			4: return SignalBus.Screen.EXPLORATION_PHASE5
 			3: return SignalBus.Screen.EXPLORATION_PHASE4
 			1: return SignalBus.Screen.EXPLORATION
 			_: return SignalBus.Screen.EXPLORATION_PHASE3
 	match GameState.active_phase:
+		5: return SignalBus.Screen.EXPLORATION_PHASE5
 		4: return SignalBus.Screen.EXPLORATION_PHASE4
 		3: return SignalBus.Screen.EXPLORATION_PHASE3
 		2: return SignalBus.Screen.EXPLORATION_PHASE2
@@ -522,4 +532,5 @@ func _screen_phase(screen: SignalBus.Screen) -> int:
 		SignalBus.Screen.EXPLORATION_PHASE2: return 2
 		SignalBus.Screen.EXPLORATION_PHASE3: return 3
 		SignalBus.Screen.EXPLORATION_PHASE4: return 4
+		SignalBus.Screen.EXPLORATION_PHASE5: return 5
 	return 0

@@ -34,6 +34,9 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 	enemy_type = p_enemy_type
 	_update_visual_position()
 
+	# Fase 5: os "monstros" são os 4 chefes convertidos (enemy_type = nome do chefe),
+	# roteados como comuns mas exibidos com o sprite/aura de chefe no mapa.
+	var miniboss := p_enemy_type in ["mula", "boitata", "curupira", "saci"]
 	var sprite := Sprite2D.new()
 	if boss:
 		match boss_type:
@@ -43,12 +46,20 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 			"saci":     sprite.texture = SACI_TEXTURE
 			_:          sprite.texture = BOSS_TEXTURE
 	else:
-		sprite.texture = BRUXO_TEXTURE if p_enemy_type == "bruxo" else ENEMY_TEXTURE
+		match p_enemy_type:
+			"mula":     sprite.texture = MULA_TEXTURE
+			"boitata":  sprite.texture = BOITATA_TEXTURE
+			"curupira": sprite.texture = CURUPIRA_TEXTURE
+			"saci":     sprite.texture = SACI_TEXTURE
+			"bruxo":    sprite.texture = BRUXO_TEXTURE
+			_:          sprite.texture = ENEMY_TEXTURE
 	sprite.offset = Vector2(0, -8)  # 48px transborda pra cima, pés na base do tile
 	add_child(sprite)
 
 	if boss:
-		_spawn_boss_aura()
+		_spawn_aura(boss_type)
+	elif miniboss:
+		_spawn_aura(p_enemy_type)
 
 ## Returns true if this enemy reaches the player and should trigger combat.
 func take_turn(player_pos: Vector2i, walkable_fn: Callable, occupied_fn: Callable) -> bool:
@@ -77,7 +88,7 @@ func take_turn(player_pos: Vector2i, walkable_fn: Callable, occupied_fn: Callabl
 	return false
 
 # ─── Private ───────────────────────────────────────
-func _spawn_boss_aura() -> void:
+func _spawn_aura(aura_type: String) -> void:
 	var aura := CPUParticles2D.new()
 	aura.z_index = -1
 	aura.amount = 16
@@ -89,11 +100,12 @@ func _spawn_boss_aura() -> void:
 	aura.initial_velocity_max = 8.0
 	aura.scale_amount_min = 1.5
 	aura.scale_amount_max = 3.5
-	match _boss_type:
+	match aura_type:
 		"mula":     aura.color = Constants.COLOR_AURA_MULA
 		"boitata":  aura.color = Constants.COLOR_AURA_BOITATA
 		"curupira": aura.color = Constants.COLOR_AURA_CURUPIRA
 		"saci":     aura.color = Constants.COLOR_AURA_SACI
+		"jesuita":  aura.color = Constants.COLOR_AURA_JESUITA
 		_:          aura.color = Constants.COLOR_AURA_BOSS
 	add_child(aura)
 

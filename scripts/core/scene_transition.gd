@@ -66,7 +66,8 @@ func _is_exploration(s: int) -> bool:
 	return s == SignalBus.Screen.EXPLORATION \
 		or s == SignalBus.Screen.EXPLORATION_PHASE2 \
 		or s == SignalBus.Screen.EXPLORATION_PHASE3 \
-		or s == SignalBus.Screen.EXPLORATION_PHASE4
+		or s == SignalBus.Screen.EXPLORATION_PHASE4 \
+		or s == SignalBus.Screen.EXPLORATION_PHASE5
 
 ## Texto de flavor da transição (vazio = fade limpo, sem texto). Há flavor ao ENTRAR numa
 ## exploração de fase nova (run start / avanço de fase) e ao ENTRAR no acampamento (HUB,

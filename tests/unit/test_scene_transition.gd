@@ -19,6 +19,7 @@ func test_is_exploration_recognizes_phase_screens() -> void:
 	assert_true(_st._is_exploration(SignalBus.Screen.EXPLORATION_PHASE2), "fase 2")
 	assert_true(_st._is_exploration(SignalBus.Screen.EXPLORATION_PHASE3), "fase 3")
 	assert_true(_st._is_exploration(SignalBus.Screen.EXPLORATION_PHASE4), "fase 4")
+	assert_true(_st._is_exploration(SignalBus.Screen.EXPLORATION_PHASE5), "fase 5")
 	for s: int in [SignalBus.Screen.MAIN_MENU, SignalBus.Screen.HUB,
 			SignalBus.Screen.ARENA, SignalBus.Screen.ARENA_PHASE2,
 			SignalBus.Screen.WIN, SignalBus.Screen.GAME_OVER, SignalBus.Screen.ENDING]:

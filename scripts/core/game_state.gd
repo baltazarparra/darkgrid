@@ -29,6 +29,10 @@ var run_seed: int = 0
 var defeated_enemy_ids: Array[String] = []
 var active_map_enemy_id: String = ""
 var active_combat_is_boss: bool = false
+# Fase 5: os "monstros" são os 4 chefes convertidos, roteados como COMUNS (sem
+# cerimonial), mas devem manter o HP de chefe da própria cena. Quando true, o
+# ArenaManager NÃO sobrescreve o HP pelo uniforme da banda de fase. Volátil.
+var active_combat_keeps_own_hp: bool = false
 var has_key: bool = false
 var chest_opened: bool = false
 var player_map_pos: Vector2i = Vector2i(-1, -1)
