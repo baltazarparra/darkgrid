@@ -120,6 +120,12 @@ func _apply_weapon_visual() -> void:
 	WeaponVisual.attach_to(animated_sprite)
 
 func _spawn_enemy() -> void:
+	# Consome o flag volátil ANTES de qualquer early-return, para nunca vazar estado
+	# para o próximo combate. Comuns (não-boss) têm HP uniforme por banda de fase;
+	# bosses mantêm o HP da cena. Exceção (Fase 5): os chefes-monstro convertidos são
+	# roteados como comuns mas mantêm o HP de chefe da própria cena (keeps_own_hp).
+	var keeps_own_hp := GameState.active_combat_keeps_own_hp
+	GameState.active_combat_keeps_own_hp = false
 	var scene := enemy_scene
 	if GameState.next_enemy_scene != null:
 		scene = GameState.next_enemy_scene
@@ -130,11 +136,6 @@ func _spawn_enemy() -> void:
 	_enemy = scene.instantiate()
 	_enemy.position = Vector2(480, 240)
 	add_child(_enemy)
-	# Comuns (não-boss) têm HP uniforme por banda de fase; bosses mantêm o HP da cena.
-	# Exceção (Fase 5): os chefes-monstro convertidos são roteados como comuns mas
-	# mantêm o HP de chefe da própria cena (keeps_own_hp).
-	var keeps_own_hp := GameState.active_combat_keeps_own_hp
-	GameState.active_combat_keeps_own_hp = false  # consome o flag (volátil)
 	if not GameState.active_combat_is_boss and not keeps_own_hp:
 		var hp: int = Constants.common_health_for_phase(GameState.active_phase)
 		_enemy.health.max_health = hp

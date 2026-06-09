@@ -49,6 +49,7 @@ func start_run() -> void:
 	defeated_enemy_ids.clear()
 	active_map_enemy_id = ""
 	active_combat_is_boss = false
+	active_combat_keeps_own_hp = false
 	has_key = false
 	chest_opened = false
 	player_map_pos = Vector2i(-1, -1)
