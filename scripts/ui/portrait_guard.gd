@@ -10,7 +10,7 @@ func _ready() -> void:
 
 func _check() -> void:
 	var vp := get_viewport().get_visible_rect().size
-	visible = OS.has_feature("web") and vp.y > vp.x and vp.x < 640.0
+	visible = OS.has_feature("web") and Constants.is_portrait(vp) and vp.x < Constants.PHONE_SHORT_SIDE_MAX
 
 func _build_overlay() -> void:
 	var bg := ColorRect.new()

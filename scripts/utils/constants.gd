@@ -6,6 +6,15 @@ const TILE_SIZE := 32
 const GRID_WIDTH := 26
 const GRID_HEIGHT := 18
 
+# ─── Viewport / Orientação ─────────────────────────
+# Fonte ÚNICA da lógica de orientação: guard, D-pad e câmera consultam isto em vez de
+# comparar vp.x/vp.y soltos. Telefone = lado curto abaixo deste limite (tablet/desktop isento).
+const PHONE_SHORT_SIDE_MAX := 640.0
+
+## True quando o viewport está em retrato (mais alto que largo).
+static func is_portrait(vp: Vector2) -> bool:
+	return vp.y > vp.x
+
 # ─── Combat ────────────────────────────────────────
 const TIMING_WINDOW_FRAMES := 12
 const TIMING_PERFECT_FRAMES := 3

@@ -206,7 +206,7 @@ func _rebuild() -> void:
 
 	# Mobile: retrato → 1.5x (−25% vs 2.0 original); paisagem → 1.3x.
 	if _touch_detected:
-		key *= 1.5 if vp.y > vp.x else 1.3
+		key *= 1.5 if Constants.is_portrait(vp) else 1.3
 
 	var gap: float = key * 0.12
 	var margin: float = key * 0.4
