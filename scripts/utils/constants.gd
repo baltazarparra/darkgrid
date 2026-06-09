@@ -15,6 +15,14 @@ const PHONE_SHORT_SIDE_MAX := 640.0
 static func is_portrait(vp: Vector2) -> bool:
 	return vp.y > vp.x
 
+# ─── Color grading (gradient map) ──────────────────
+# Lê SCREEN_TEXTURE (custo real em gl_compatibility) — por isso a chave dupla:
+# GRADING_ENABLED liga o sistema; GRADING_ON_WEB libera no export web SÓ depois
+# de validar FPS em dispositivo real (Safari iPhone é o piso).
+const GRADING_ENABLED := true
+const GRADING_ON_WEB := false
+const GRADING_MIX := 0.55
+
 # ─── Combat ────────────────────────────────────────
 const TIMING_WINDOW_FRAMES := 12
 const TIMING_PERFECT_FRAMES := 3

@@ -109,8 +109,9 @@ func _ready() -> void:
 	if _style["church"]:
 		_wall_tex = load("res://assets/sprites/tile_wall_church.png")
 	else:
-		_far_line = _add_treeline(_style["far"], FAR_TREES, 1.5, 0.66, HORIZON_Y - 4.0, 41)
-		_mid_line = _add_treeline(_style["mid"], MID_TREES, 2.3, 1.0, HORIZON_Y + 8.0, 97)
+		# Vento mais forte no plano próximo (MID) — profundidade também no balanço.
+		_far_line = _add_treeline(_style["far"], FAR_TREES, 1.5, 0.66, HORIZON_Y - 4.0, 41, 1.4)
+		_mid_line = _add_treeline(_style["mid"], MID_TREES, 2.3, 1.0, HORIZON_Y + 8.0, 97, 2.6)
 		_far_base = _far_line.position
 		_mid_base = _mid_line.position
 	_spawn_horizon_mist()
@@ -129,11 +130,12 @@ func _process(_delta: float) -> void:
 	queue_redraw()
 
 func _add_treeline(color: Color, count: int, scale_f: float, height_f: float,
-		base_world_y: float, seed_v: int) -> TitleTreeline:
+		base_world_y: float, seed_v: int, sway: float) -> TitleTreeline:
 	var line := TitleTreeline.new()
 	line.static_bounds = Rect2(0.0, 0.0, STRIP_W, height_f * 110.0 + TREE_BAND_H)
 	line.base_y = height_f * 110.0
 	line.scroll_speed = 0.0
+	line.sway_amount = sway
 	line.silhouette_color = color
 	line.tree_count = count
 	line.tree_scale = scale_f
