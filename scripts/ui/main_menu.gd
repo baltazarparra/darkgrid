@@ -12,11 +12,15 @@ extends CanvasLayer
 const FADE_LAYER: int = 100
 const FADE_IN_DURATION: float = 1.2
 const FADE_OUT_DURATION: float = 0.6
+const LOGO_PATH: String = "res://assets/sprites/logo_title.png"
+const LOGO_BLINK_PATH: String = "res://assets/sprites/logo_title_blink.png"
+const LOGO_BASE_SIZE := Vector2(256.0, 96.0)
 
 # ─── State ─────────────────────────────────────────
 @onready var _start_button: Button = $Center/VBox/StartButton
 
 var _fade: ColorRect
+var _logo: TextureRect
 
 func _ready() -> void:
 	# O save é carregado no _ready() do autoload MetaProgression (independente da cena de boot).
@@ -24,7 +28,7 @@ func _ready() -> void:
 	$Center/VBox/QuitButton.pressed.connect(_on_quit_pressed)
 	$Center/VBox/GithubLink.pressed.connect(_on_github_pressed)
 	_setup_fade()
-	_apply_title_shader()
+	_setup_logo()
 	_setup_version_label()
 	_start_button.grab_focus()
 
@@ -64,11 +68,48 @@ func _setup_fade() -> void:
 	add_child(fade_layer)
 	create_tween().tween_property(_fade, "color:a", 0.0, FADE_IN_DURATION)
 
-func _apply_title_shader() -> void:
+## Troca o título em fonte pelo logotipo de madeira/sangue (gen_logo.py), com
+## os olhos do "O" piscando. Montado por código no lugar do Title (sem editar
+## a cena); se o asset faltar, o título em fonte continua como fallback.
+func _setup_logo() -> void:
 	var title := $Center/VBox/Title as RichTextLabel
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://assets/shaders/title_fire.gdshader") as Shader
-	title.material = mat
+	if not ResourceLoader.exists(LOGO_PATH):
+		var mat := ShaderMaterial.new()
+		mat.shader = load("res://assets/shaders/title_fire.gdshader") as Shader
+		title.material = mat
+		return
+	title.visible = false
+	_logo = TextureRect.new()
+	_logo.texture = load(LOGO_PATH)
+	_logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var vbox := $Center/VBox
+	vbox.add_child(_logo)
+	vbox.move_child(_logo, title.get_index())
+	_fit_logo()
+	get_viewport().size_changed.connect(_fit_logo)
+	_schedule_blink()
+
+## Escala INTEIRA do logo (texel uniforme, mesma regra do PixelScale): a maior
+## que couber em ~85% da largura do viewport.
+func _fit_logo() -> void:
+	if _logo == null:
+		return
+	var vp := get_viewport().get_visible_rect().size
+	var scale_i: float = maxf(1.0, floorf(vp.x * 0.85 / LOGO_BASE_SIZE.x))
+	_logo.custom_minimum_size = LOGO_BASE_SIZE * scale_i
+
+## Os olhos no "O" piscam em intervalos irregulares — a mata olha de volta.
+func _schedule_blink() -> void:
+	get_tree().create_timer(randf_range(2.2, 5.5)).timeout.connect(func() -> void:
+		if not is_instance_valid(_logo):
+			return
+		_logo.texture = load(LOGO_BLINK_PATH)
+		get_tree().create_timer(0.13).timeout.connect(func() -> void:
+			if is_instance_valid(_logo):
+				_logo.texture = load(LOGO_PATH)
+			_schedule_blink()))
 
 func _on_start_pressed() -> void:
 	AudioDirector.unlock_audio()
