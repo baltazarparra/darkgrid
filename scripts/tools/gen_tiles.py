@@ -5,6 +5,8 @@ Algorítmico (não-IA, determinístico via seed), espelhando o precedente de
 gen_sfx.py. Saídas:
   assets/sprites/tile_floor.png  — atlas 128x32 = 4 variantes de chão
   assets/sprites/tile_wall.png   — atlas 64x32  = 2 variantes de mata densa
+  assets/sprites/tile_floor_church.png — atlas 128x32 = 4 variantes (Fase 5)
+  assets/sprites/tile_wall_church.png  — atlas 64x32  = 2 variantes (Fase 5)
   assets/sprites/light_radial.png — 256x256 gradiente radial (luz 2D)
 
 As variantes de chão quebram o padrão de grade repetido (o ExplorationManager
@@ -34,6 +36,15 @@ LEAF = (34, 58, 30)
 LEAF_DARK = (20, 38, 20)
 WATER = (18, 28, 34)
 WATER_LIGHT = (32, 48, 56)
+
+# Fase 5 — A Igreja na Mata (pedra colonial, taipa caiada, sangue no altar)
+STONE = (87, 87, 97)
+STONE_DARK = (51, 51, 61)
+MORTAR = (34, 33, 40)
+LIME = (168, 160, 146)
+LIME_DARK = (122, 114, 100)
+BLOOD = (139, 0, 0)
+BLOOD_DRY = (94, 12, 10)
 
 
 def lerp(a, b, t):
@@ -143,6 +154,133 @@ def gen_wall():
     atlas.save(os.path.join(OUT, "tile_wall.png"))
 
 
+def _slab_base(px, rng):
+    """Lajes de pedra 16x16 com juntas de argamassa e pontilhado úmido."""
+    for y in range(SIZE):
+        for x in range(SIZE):
+            if x % 16 == 0 or y % 16 == 0:
+                px[x, y] = MORTAR + (255,)
+                continue
+            r = rng.random()
+            if r < 0.12:
+                px[x, y] = STONE_DARK + (255,)
+            elif r < 0.18:
+                px[x, y] = lerp(STONE, LIME_DARK, 0.3) + (255,)
+            else:
+                px[x, y] = STONE + (255,)
+
+
+def _crack(px, rng, x0, y0, length, col):
+    """Rachadura em random-walk descendo pela pedra/taipa."""
+    x, y = x0, y0
+    for _ in range(length):
+        if 0 <= x < SIZE and 0 <= y < SIZE:
+            px[x, y] = col + (255,)
+        x = min(SIZE - 1, max(0, x + rng.randint(-1, 1)))
+        y = min(SIZE - 1, max(0, y + 1))
+
+
+def gen_floor_church():
+    """Atlas de chão da igreja: lajes/mosaico colonial gasto, lodo e sangue seco."""
+    atlas = Image.new("RGBA", (SIZE * FLOOR_VARIANTS, SIZE), (0, 0, 0, 0))
+
+    for v in range(FLOOR_VARIANTS):
+        img = Image.new("RGBA", (SIZE, SIZE), STONE + (255,))
+        px = img.load()
+        rng = random.Random(666 + v * 101)
+
+        if v == 1:
+            # mosaico colonial gasto: tesselas 4px, ~15% faltando (expõe terra)
+            for y in range(SIZE):
+                for x in range(SIZE):
+                    tess = (x // 4 + y // 4) % 2
+                    px[x, y] = (STONE if tess == 0 else STONE_DARK) + (255,)
+            for ty in range(SIZE // 4):
+                for tx in range(SIZE // 4):
+                    if rng.random() < 0.15:
+                        for y in range(ty * 4, ty * 4 + 4):
+                            for x in range(tx * 4, tx * 4 + 4):
+                                px[x, y] = EARTH + (255,)
+            for y in range(0, SIZE, 4):
+                for x in range(SIZE):
+                    if rng.random() < 0.6:
+                        px[x, y] = MORTAR + (255,)
+        else:
+            _slab_base(px, rng)
+
+        if v == 0:
+            # laje com rachadura diagonal
+            _crack(px, rng, rng.randint(4, 12), 0, SIZE, MORTAR)
+        elif v == 2:
+            # lodo nas juntas + escorrido d'água estagnada
+            for y in range(SIZE):
+                for x in range(SIZE):
+                    if (x % 16 == 0 or y % 16 == 0) and rng.random() < 0.55:
+                        px[x, y] = rng.choice([MOSS, MOSS_DARK]) + (255,)
+            cx, cy = rng.randint(8, 24), rng.randint(8, 24)
+            _blob(px, rng, cx, cy, rng.randint(3, 5), WATER, 150, 0.85)
+            _blob(px, rng, cx, cy, 2, WATER_LIGHT, 110, 0.7)
+        elif v == 3:
+            # mancha de sangue seco + respingos frescos
+            cx, cy = rng.randint(10, 22), rng.randint(10, 22)
+            _blob(px, rng, cx, cy, rng.randint(5, 7), BLOOD_DRY, 150, 0.85)
+            for _ in range(8):
+                px[rng.randint(0, SIZE - 1), rng.randint(0, SIZE - 1)] = BLOOD + (255,)
+
+        atlas.paste(img, (v * SIZE, 0))
+
+    atlas.save(os.path.join(OUT, "tile_floor_church.png"))
+
+
+def gen_wall_church():
+    """Atlas de parede da igreja: taipa caiada rachada, sangue escorrido e mofo."""
+    atlas = Image.new("RGBA", (SIZE * WALL_VARIANTS, SIZE), (0, 0, 0, 0))
+
+    for v in range(WALL_VARIANTS):
+        img = Image.new("RGBA", (SIZE, SIZE), LIME + (255,))
+        px = img.load()
+        rng = random.Random(1549 + v * 73)
+        # gradiente vertical: topo na sombra (como gen_wall), base caiada suja
+        for y in range(SIZE):
+            t = y / SIZE
+            base = lerp(NIGHT, LIME, 0.35 + t * 0.55)
+            for x in range(SIZE):
+                if rng.random() < 0.12:
+                    base_px = lerp(base, LIME_DARK, 0.6)
+                else:
+                    base_px = base
+                px[x, y] = base_px + (255,)
+        # rachaduras verticais expondo remendos de taipa (terra)
+        for _ in range(3):
+            x0 = rng.randint(2, SIZE - 3)
+            _crack(px, rng, x0, rng.randint(0, 6), rng.randint(14, 26), EARTH_DARK)
+            _blob(px, rng, x0, rng.randint(12, 26), 2, EARTH, 200, 0.8)
+        if v == 0:
+            # escorridos de sangue a partir de pontos altos, sumindo na descida
+            for _ in range(rng.randint(2, 3)):
+                x0 = rng.randint(3, SIZE - 4)
+                y0 = rng.randint(0, 5)
+                run = rng.randint(12, 24)
+                for k in range(run):
+                    a = max(60, 255 - int(k * (195 / run)))
+                    col = BLOOD if k < run // 2 else BLOOD_DRY
+                    px[x0, min(SIZE - 1, y0 + k)] = col + (a,)
+                    if rng.random() < 0.25:
+                        px[min(SIZE - 1, x0 + 1), min(SIZE - 1, y0 + k)] = BLOOD_DRY + (a,)
+        else:
+            # mofo subindo da base + um único escorrido seco
+            for y in range(SIZE - 8, SIZE):
+                for x in range(SIZE):
+                    if rng.random() < (y - (SIZE - 9)) / 10.0:
+                        px[x, y] = rng.choice([MOSS_DARK, MOSS]) + (255,)
+            x0 = rng.randint(4, SIZE - 5)
+            for k in range(rng.randint(10, 18)):
+                px[x0, min(SIZE - 1, k)] = BLOOD_DRY + (max(70, 220 - k * 10),)
+        atlas.paste(img, (v * SIZE, 0))
+
+    atlas.save(os.path.join(OUT, "tile_wall_church.png"))
+
+
 def gen_light():
     """Gradiente radial branco→transparente para PointLight2D (luz 2D suave)."""
     n = 256
@@ -162,5 +300,8 @@ def gen_light():
 if __name__ == "__main__":
     gen_floor()
     gen_wall()
+    gen_floor_church()
+    gen_wall_church()
     gen_light()
-    print("[gen_tiles] tile_floor.png (4) + tile_wall.png (2) + light_radial.png gerados")
+    print("[gen_tiles] tile_floor.png (4) + tile_wall.png (2) + "
+          "tile_floor_church.png (4) + tile_wall_church.png (2) + light_radial.png gerados")

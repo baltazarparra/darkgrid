@@ -47,6 +47,13 @@ const MINIBOSS_TYPES := ["mula", "boitata", "curupira", "saci"]
 const FLOOR_VARIANTS := 4
 const WALL_VARIANTS := 2
 
+# Atlas de piso/parede por tema. O profile da fase escolhe via "floor_texture"/
+# "wall_texture"; o default é a floresta (fases 1–4). Fase 5 = igreja colonial.
+const FLOOR_TEXTURE := preload("res://assets/sprites/tile_floor.png")
+const WALL_TEXTURE := preload("res://assets/sprites/tile_wall.png")
+const FLOOR_TEXTURE_CHURCH := preload("res://assets/sprites/tile_floor_church.png")
+const WALL_TEXTURE_CHURCH := preload("res://assets/sprites/tile_wall_church.png")
+
 # Aura da Caipora pela névoa/casa (= sprite.offset.y(-12) × scale(0.8); x=0).
 const CAIPORA_AURA_OFFSET := Vector2(0, -10)
 const CAIPORA_AURA_LIGHT_SCALE: float = 1.5
@@ -502,14 +509,14 @@ func _setup_tilemap() -> void:
 	tileset.set_physics_layer_collision_mask(0, 1 << (Constants.LAYER_PLAYER - 1))
 
 	var floor_source := TileSetAtlasSource.new()
-	floor_source.texture = preload("res://assets/sprites/tile_floor.png")
+	floor_source.texture = _profile.get("floor_texture", FLOOR_TEXTURE)
 	floor_source.texture_region_size = Vector2i(Constants.TILE_SIZE, Constants.TILE_SIZE)
 	for i: int in FLOOR_VARIANTS:
 		floor_source.create_tile(Vector2i(i, 0))
 	tileset.add_source(floor_source, 0)
 
 	var wall_source := TileSetAtlasSource.new()
-	wall_source.texture = preload("res://assets/sprites/tile_wall.png")
+	wall_source.texture = _profile.get("wall_texture", WALL_TEXTURE)
 	wall_source.texture_region_size = Vector2i(Constants.TILE_SIZE, Constants.TILE_SIZE)
 	for i: int in WALL_VARIANTS:
 		wall_source.create_tile(Vector2i(i, 0))
@@ -618,6 +625,8 @@ func _build_profile() -> Dictionary:
 				"deco_palette": DECO_CHURCH,
 				"intro_dialogue": JESUITA_INTRO_DIALOGUE,
 				"intro_speaker": "JESUÍTA BANDEIRANTE CATEQUIZADOR",
+				"floor_texture": FLOOR_TEXTURE_CHURCH,
+				"wall_texture": WALL_TEXTURE_CHURCH,
 			}
 		_:
 			# Fase 1 (padrão): arena aberta, tocha, baú/chave, vida ambiente.

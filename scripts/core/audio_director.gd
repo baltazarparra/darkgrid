@@ -35,6 +35,7 @@ const AMB_FOREST: String = "res://assets/audio/ambience/amb_forest.wav"
 const AMB_DREAD: String = "res://assets/audio/ambience/amb_dread.wav"
 const AMB_FIRE: String = "res://assets/audio/ambience/amb_fire.wav"
 const AMB_FOG: String = "res://assets/audio/ambience/amb_fog.wav"
+const AMB_CHURCH: String = "res://assets/audio/ambience/amb_church.wav"
 
 # Música por contexto: um loop híbrido (maracatu + chiptune) por tela/fase/boss.
 const MUSIC_DIR: String = "res://assets/audio/music/"
@@ -47,6 +48,12 @@ const STING_GAME_OVER: String = "sting_game_over"
 const STING_CHEST: String = "sting_chest"
 const STING_BOSS_INTRO: String = "sting_boss_intro"
 const STING_CHAMA: String = "sting_chama"
+# Fase 5 (A Igreja): sino de torre na revelação do Jesuíta, sibilo de água benta
+# no telegraph do especial dele, estertor de órgão na vitória (tela ENDING).
+const STING_SINO_IGREJA: String = "sting_sino_igreja"
+const STING_AGUA_BENTA: String = "sting_agua_benta"
+const STING_ORGAO_ESTERTOR: String = "sting_orgao_estertor"
+const FINAL_PHASE: int = 5
 
 # ─── State ─────────────────────────────────────────
 ## Volume linear (0..1) alvo por bus — fonte da verdade que o ducking respeita.
@@ -93,6 +100,7 @@ func _ready() -> void:
 	SignalBus.chest_opened.connect(_on_chest_opened)
 	SignalBus.boss_intro_started.connect(_on_boss_intro)
 	SignalBus.chama_gained.connect(_on_chama)
+	SignalBus.boss_special_telegraph.connect(_on_boss_special_telegraph)
 
 # ─── Public API: volume ────────────────────────────
 ## Define o volume linear (0..1) de um bus, aplica e persiste.
@@ -162,6 +170,9 @@ func _apply_screen_audio(screen: int) -> void:
 			_play_stinger(STING_ARENA)
 		SignalBus.Screen.WIN:
 			_play_stinger(STING_VICTORY)
+		SignalBus.Screen.ENDING:
+			# Só se chega ao ENDING matando o Jesuíta: o órgão dele estertora.
+			_play_stinger(STING_ORGAO_ESTERTOR)
 		SignalBus.Screen.GAME_OVER:
 			_play_stinger(STING_GAME_OVER)
 
@@ -174,12 +185,19 @@ func _on_chest_opened() -> void:
 func _on_boss_intro() -> void:
 	if not _audio_unlocked:
 		return
-	_play_stinger(STING_BOSS_INTRO)
+	# Fase FINAL: a revelação do Jesuíta toca o sino da torre, não o stinger genérico.
+	var sting := STING_SINO_IGREJA if GameState.active_phase == FINAL_PHASE else STING_BOSS_INTRO
+	_play_stinger(sting)
 	_play_music(_mus(_boss_track(GameState.active_phase)))
 
 func _on_chama() -> void:
 	if _audio_unlocked:
 		_play_stinger(STING_CHAMA)
+
+## Cue de leitura do especial do Jesuíta: sibilo de água benta no wind-up.
+func _on_boss_special_telegraph(boss_type: String) -> void:
+	if _audio_unlocked and boss_type == "jesuita":
+		_play_stinger(STING_AGUA_BENTA)
 
 # ─── Ambiência ─────────────────────────────────────
 func _refresh_ambience(screen: int) -> void:
@@ -193,11 +211,12 @@ func _refresh_ambience(screen: int) -> void:
 			path = AMB_FOG     # névoa
 		SignalBus.Screen.EXPLORATION_PHASE4:
 			path = AMB_DREAD   # ruína fria
-		SignalBus.Screen.EXPLORATION_PHASE5:
-			path = AMB_DREAD   # igreja fria e úmida
+		# A arena da Fase 5 é o altar DENTRO da mesma igreja: a cama sonora não
+		# troca na porta (mesma continuidade espacial do boss-intro→arena).
+		SignalBus.Screen.EXPLORATION_PHASE5, SignalBus.Screen.ARENA_PHASE5:
+			path = AMB_CHURCH  # igreja fria e úmida
 		SignalBus.Screen.ARENA, SignalBus.Screen.ARENA_PHASE2, \
-		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4, \
-		SignalBus.Screen.ARENA_PHASE5:
+		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4:
 			path = AMB_DREAD
 		_:
 			path = ""

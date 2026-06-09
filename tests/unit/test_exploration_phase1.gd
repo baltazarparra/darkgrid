@@ -25,6 +25,18 @@ func test_phase1_loads_and_spawns_generated_map() -> void:
 	assert_eq(caipora.position, Vector2(expected.player_start) * Constants.TILE_SIZE,
 		"Caipora nasce no player_start do mapa gerado")
 
+func test_phase1_tilemap_keeps_forest_atlases() -> void:
+	# Protege o default do _profile.get(): só a Fase 5 troca para os tiles de igreja.
+	GameState.start_run()
+	GameState.player_map_pos = Vector2i(-1, -1)
+	var scene := preload("res://scenes/exploration/exploration.tscn").instantiate()
+	add_child_autofree(scene)
+	await get_tree().process_frame
+	var tile_set: TileSet = scene.get_node("TileMap").tile_set
+	var floor_source := tile_set.get_source(0) as TileSetAtlasSource
+	assert_eq(floor_source.texture.resource_path, "res://assets/sprites/tile_floor.png",
+		"Fase 1 mantém o chão de floresta")
+
 func test_phase1_skips_defeated_enemies() -> void:
 	GameState.start_run()
 	GameState.player_map_pos = Vector2i(-1, -1)

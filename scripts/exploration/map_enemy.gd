@@ -13,6 +13,17 @@ const CHASE_RANGE := 5          # comuns: alcance de aggro
 const BOSS_CHASE_RANGE := 7     # boss: defende a porta com alcance maior
 const DRIFT_IDLE_CHANCE := 0.4  # chance de ficar parado ao voltar pra origem
 
+# Fase 5: tipos de comum que são chefes convertidos (espelha ExplorationManager).
+const MINIBOSS_TYPES: Array[String] = ["mula", "boitata", "curupira", "saci"]
+
+# Overlay de batismo dos convertidos: pingos de água benta caindo da cabeça
+# (as auras sobem; a água benta CAI — contraste de leitura no mapa).
+const BAPTISM_DRIP_AMOUNT := 6
+const BAPTISM_DRIP_LIFETIME := 1.3
+const BAPTISM_DRIP_RADIUS := 6.0
+const BAPTISM_DRIP_HEAD_OFFSET := Vector2(0, -18)
+const BAPTISM_DRIP_GRAVITY := Vector2(0, 26)
+
 # ─── State ─────────────────────────────────────────
 var enemy_id: String = ""
 var grid_pos: Vector2i = Vector2i.ZERO
@@ -36,7 +47,7 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 
 	# Fase 5: os "monstros" são os 4 chefes convertidos (enemy_type = nome do chefe),
 	# roteados como comuns mas exibidos com o sprite/aura de chefe no mapa.
-	var miniboss := p_enemy_type in ["mula", "boitata", "curupira", "saci"]
+	var miniboss := p_enemy_type in MINIBOSS_TYPES
 	var sprite := Sprite2D.new()
 	if boss:
 		match boss_type:
@@ -59,7 +70,11 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 	if boss:
 		_spawn_aura(boss_type)
 	elif miniboss:
+		# Marca de batismo forçado: pele fria + água benta escorrendo. A aura de
+		# chefe permanece — a conversão soma por cima, não apaga o que ele era.
+		sprite.modulate = Constants.COLOR_BAPTISM_TINT
 		_spawn_aura(p_enemy_type)
+		_spawn_baptism_drip()
 
 ## Returns true if this enemy reaches the player and should trigger combat.
 func take_turn(player_pos: Vector2i, walkable_fn: Callable, occupied_fn: Callable) -> bool:
@@ -108,6 +123,22 @@ func _spawn_aura(aura_type: String) -> void:
 		"jesuita":  aura.color = Constants.COLOR_AURA_JESUITA
 		_:          aura.color = Constants.COLOR_AURA_BOSS
 	add_child(aura)
+
+func _spawn_baptism_drip() -> void:
+	var drip := CPUParticles2D.new()
+	drip.z_index = 1  # água escorre POR CIMA do sprite
+	drip.amount = BAPTISM_DRIP_AMOUNT
+	drip.lifetime = BAPTISM_DRIP_LIFETIME
+	drip.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	drip.emission_sphere_radius = BAPTISM_DRIP_RADIUS
+	drip.position = BAPTISM_DRIP_HEAD_OFFSET
+	drip.gravity = BAPTISM_DRIP_GRAVITY
+	drip.initial_velocity_min = 1.0
+	drip.initial_velocity_max = 4.0
+	drip.scale_amount_min = 1.0
+	drip.scale_amount_max = 1.8
+	drip.color = Constants.COLOR_BAPTISM_DROP
+	add_child(drip)
 
 func _update_visual_position() -> void:
 	position = Vector2(grid_pos) * Constants.TILE_SIZE

@@ -138,6 +138,8 @@ const COLOR_TELEGRAPH_MULA := Color(2.0, 0.55, 0.1)         # telegraph da Mula 
 const COLOR_AURA_MULA := Color(0.55, 0.12, 0.02, 0.72)      # aura de brasas da Mula (fogo escuro subindo do toco)
 const COLOR_TELEGRAPH_JESUITA := Color(1.7, 1.4, 0.6)       # telegraph do Jesuíta (ouro de incenso corrompido, overbright)
 const COLOR_AURA_JESUITA := Color(0.42, 0.34, 0.10, 0.75)   # aura do Jesuíta (fumaça de incenso podre, dourado-acinzentado)
+const COLOR_BAPTISM_TINT := Color(0.80, 0.90, 1.06)         # mini-boss convertido: pele fria de batismo forçado (azulado overbright)
+const COLOR_BAPTISM_DROP := Color(0.75, 0.88, 1.0, 0.85)    # pingos de água benta escorrendo do convertido
 
 # Cores de diálogo (speaker labels nos pre-boss dialogues).
 const COLOR_DIALOGUE_CAIPORA  := Color(0.55, 0.90, 0.60, 1.0)  # voz da Caipora (verde floresta)

@@ -16,6 +16,7 @@ func after_each():
 	AudioDirector._current_music = ""
 	AudioDirector._stinger_player.stop()
 	AudioDirector._ambience_player.stop()
+	AudioDirector._current_ambience = ""
 	AudioDirector.set_bus_volume("Music", 0.8)
 
 func test_layout_buses_exist():
@@ -58,6 +59,51 @@ func test_boss_screen_picks_boss_theme():
 	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.ARENA_PHASE5),
 		"res://assets/audio/music/mus_boss_jesuita.wav")
 	GameState.active_combat_is_boss = false
+
+func test_ambience_resolves_church_for_phase5():
+	# A igreja tem cama sonora própria — na exploração E na arena (mesmo espaço).
+	AudioDirector._refresh_ambience(SignalBus.Screen.EXPLORATION_PHASE5)
+	assert_eq(AudioDirector._current_ambience, AudioDirector.AMB_CHURCH,
+		"exploração da Fase 5 usa a ambiência de igreja")
+	AudioDirector._refresh_ambience(SignalBus.Screen.ARENA_PHASE5)
+	assert_eq(AudioDirector._current_ambience, AudioDirector.AMB_CHURCH,
+		"a arena da Fase 5 é o altar da mesma igreja")
+	AudioDirector._refresh_ambience(SignalBus.Screen.ARENA_PHASE4)
+	assert_eq(AudioDirector._current_ambience, AudioDirector.AMB_DREAD,
+		"arenas 1–4 continuam no dread")
+
+func _stinger_path() -> String:
+	return AudioDirector._stinger_player.stream.resource_path
+
+func test_boss_intro_stinger_is_church_bell_on_final_phase():
+	AudioDirector.unlock_audio()
+	var phase_before := GameState.active_phase
+	GameState.active_phase = 5
+	GameState.active_combat_is_boss = true
+	AudioDirector._on_boss_intro()
+	assert_true(_stinger_path().ends_with("sting_sino_igreja.wav"),
+		"revelação do Jesuíta toca o sino da torre")
+	GameState.active_phase = 1
+	AudioDirector._on_boss_intro()
+	assert_true(_stinger_path().ends_with("sting_boss_intro.wav"),
+		"fases 1–4 mantêm o stinger genérico de revelação")
+	GameState.active_phase = phase_before
+	GameState.active_combat_is_boss = false
+
+func test_ending_plays_organ_death_rattle():
+	AudioDirector.unlock_audio()
+	AudioDirector._apply_screen_audio(SignalBus.Screen.ENDING)
+	assert_true(_stinger_path().ends_with("sting_orgao_estertor.wav"),
+		"vitória sobre o Jesuíta = estertor de órgão")
+
+func test_jesuita_special_telegraph_plays_agua_benta():
+	AudioDirector.unlock_audio()
+	SignalBus.boss_special_telegraph.emit("jesuita")
+	assert_true(_stinger_path().ends_with("sting_agua_benta.wav"),
+		"wind-up do especial do Jesuíta sibila água benta")
+	SignalBus.boss_special_telegraph.emit("saci")
+	assert_true(_stinger_path().ends_with("sting_agua_benta.wav"),
+		"outros chefes não trocam o stinger")
 
 func test_arena_starts_music():
 	AudioDirector.unlock_audio()
