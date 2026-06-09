@@ -107,6 +107,7 @@ When modifying input, arena, exploration, or timing — run `/validate-controls`
 8. **Tone consistency.** Do not sanitize horror. Blood, darkness, and hostility are intentional design choices.
 9. **Dual input paths.** Two consumers, two sources: keyboard uses native Godot polling (`Input.is_action_pressed`); the touch D-pad (`ControlsHud`) injects via `Input.action_press` + `Input.parse_input_event`. Always run `/validate-controls` before committing changes to input, arena, exploration, or timing.
 10. **Three target platforms.** iPhone 17 portrait Safari (~393px wide): `PortraitGuard` autoload (layer 128) shows "gire o dispositivo" overlay. Android Chrome PWA landscape: manifest locks orientation, safe areas handled by `ControlsHud`. Tablet+ landscape: arena zoom capped at 2.0x in `arena_manager.gd`. Run `/validate-platforms` before committing any UI, camera, or safe-area change.
+11. **Version is build-stamped from git.** `make export` derives the version from the git commit count (`beta 2.<commits>`) and generates `scripts/core/build_info.gd` (gitignored) + `export/version.json`. The menu reads `build_info.gd` first and falls back to `project.godot`'s `config/version` (`"beta 2 (dev)"`) only when run from the editor. Do NOT hand-edit a version number expecting it to show up in the build — edit the scheme in the `Makefile` `export` target instead.
 
 ---
 

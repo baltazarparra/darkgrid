@@ -49,6 +49,7 @@ func _ready() -> void:
 	_setup_tilemap()
 	_setup_caipora()
 	_spawn_exit_marker()
+	_spawn_exit_beacon()
 	_spawn_camp_identity()
 	# O HubShop (filho) já está montado no seu _ready; aqui só ligamos o SFX da compra.
 	_shop.purchased.connect(_on_purchased)
@@ -118,6 +119,18 @@ func _spawn_exit_marker() -> void:
 	var tween := create_tween().set_loops()
 	tween.tween_property(light, "energy", 1.4, 1.1).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(light, "energy", 0.7, 1.1).set_trans(Tween.TRANS_SINE)
+
+# Seta de borda que aponta pro rastro enquanto ele está fora do quadro (em retrato a saída
+# nasce fora da tela, à direita). Numa CanvasLayer acima do mundo e abaixo do HubShop (layer 10),
+# pra ficar visível na metade de baixo livre sem cobrir os cards nem o cabeçalho.
+func _spawn_exit_beacon() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 9
+	add_child(layer)
+	var half := Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
+	var beacon := HubExitBeacon.new()
+	beacon.setup(Vector2(_exit_pos) * Constants.TILE_SIZE + half)
+	layer.add_child(beacon)
 
 # ─── Identidade do acampamento ─────────────────────
 # Fogueira no centro, cachimbo ao pé do fogo, vida ambiente sobre a clareira e o color-grade
