@@ -47,6 +47,7 @@ var _boss_special_hit_index: int = 0
 # garante que a troca de cena ocorra exatamente uma vez (caminho normal OU watchdog).
 var _combat_over: bool = false
 var _screen_changed: bool = false
+var _animator: ActorAnimator
 
 func _ready() -> void:
 	_timing_system = $TimingSystem
@@ -72,6 +73,8 @@ func _ready() -> void:
 	var blood_decals := BloodDecals.new()
 	add_child(blood_decals)
 	_feedback.blood_spilled.connect(blood_decals.add_splat)
+	_animator = ActorAnimator.new()
+	add_child(_animator)
 	add_child(Atmosphere.new())
 
 	_spawn_caipora()
@@ -117,6 +120,8 @@ func _spawn_caipora() -> void:
 	_caipora.health.died.connect(func(): SignalBus.caipora_died.emit())
 	SignalBus.caipora_health_changed.emit(_caipora.health.current_health, _caipora.health.max_health)
 	_apply_weapon_visual()
+	# Depois da arma: o animator clona o material de flash para o WeaponSprite.
+	_animator.track(_caipora)
 
 func _on_caipora_health_changed(new_health: float, max_health: float) -> void:
 	SignalBus.caipora_health_changed.emit(new_health, max_health)
@@ -153,6 +158,7 @@ func _spawn_enemy() -> void:
 	_enemy.health.health_changed.connect(_on_enemy_health_changed)
 	_enemy.state_machine.attack_started.connect(_on_enemy_attack_started)
 	_enemy.state_machine.pattern_finished.connect(_on_enemy_pattern_finished)
+	_animator.track(_enemy)
 	SignalBus.enemy_health_changed.emit(_enemy.health.current_health, _enemy.health.max_health)
 
 func _both_alive() -> bool:
@@ -164,6 +170,8 @@ func _start_caipora_turn() -> void:
 		return
 	_is_double_attack = randf() < Constants.TIMING_DOUBLE_CHANCE
 	_sfx.play(_sfx.attack_sound)
+	# Cipó armado enquanto a janela está aberta — antecipação do bote.
+	_animator.play_pose(_caipora, &"windup")
 	_first_bubble_pos = _enemy.position + Vector2(0, -78)
 	var atk_window: float = _phase_window(Constants.TIMING_WINDOW_ATTACK)
 	_timing_bubble.show_bubble(
@@ -221,6 +229,7 @@ func _on_double_first_hit() -> void:
 	_feedback.trigger_screenshake(13.0, 0.3)
 	_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
 	_feedback.trigger_hit_stop(3)
+	_animator.strike(_caipora)
 	_caipora_step_forward()
 
 func _caipora_step_forward() -> void:
@@ -245,12 +254,14 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.spawn_bubble_burst(_timing_bubble_b.position, Constants.COLOR_TELEGRAPH_ENEMY)
 		_feedback.spawn_critical_particles(_enemy.position)
 		_feedback.trigger_hit_stop(4)
+		_animator.strike(_caipora)
 	else:
 		_timing_bubble.burst_fail()
 		_timing_bubble_b.burst_fail()
 		_feedback.spawn_fail_particles(_timing_bubble_b.position)
 		_feedback.trigger_screenshake(6.0, 0.18)
 		_sfx.play(_sfx.ui_click_sound, -6.0)
+		_animator.settle(_caipora)
 	if _enemy.health.is_alive():
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
 		_start_enemy_turn()
@@ -269,11 +280,13 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
 		_feedback.spawn_critical_particles(_enemy.position)
 		_feedback.trigger_hit_stop(6)
+		_animator.strike(_caipora)
 	else:
 		_timing_bubble.burst_fail()
 		_feedback.spawn_fail_particles(_timing_bubble.position)
 		_feedback.trigger_screenshake(6.0, 0.18)
 		_sfx.play(_sfx.ui_click_sound, -6.0)
+		_animator.settle(_caipora)
 	if _enemy.health.is_alive():
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
 		_start_enemy_turn()
@@ -290,6 +303,8 @@ func _start_enemy_turn() -> void:
 func _on_enemy_attack_started() -> void:
 	if not _both_alive():
 		return
+	# Pose de telegrafia (espingarda na pontaria / machados içados) junto do tint.
+	_animator.play_pose(_enemy, &"windup")
 	var window: float = _phase_window(_active_enemy_pattern.attack_duration)
 	if _timing_system.timing_result.is_connected(_on_defense_timing_result):
 		_timing_system.timing_result.disconnect(_on_defense_timing_result)
@@ -320,6 +335,7 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		return
 	_timing_system.timing_result.disconnect(_on_defense_timing_result)
 
+	_animator.play_pose(_enemy, &"idle")
 	if result == TimingSystem.TimingResult.PERFECT:
 		_timing_bubble.burst_success()
 		_caipora.dodge_performed.emit()
@@ -329,6 +345,7 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_PARTICLE_DODGE)
 		_feedback.spawn_dodge_particles(_caipora.position)
 		_feedback.trigger_hit_stop(5)
+		_animator.perfect_dodge(_caipora)
 	else:
 		_timing_bubble.burst_fail()
 		var damage := _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
