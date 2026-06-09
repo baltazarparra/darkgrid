@@ -271,6 +271,51 @@ func test_clean_path_to_boss_exists() -> void:
 			assert_true(_reachable_avoiding_hazards(m, m.player_start, goal),
 				"rota até o boss sem fogo (fase %d seed %d)" % [phase, s])
 
+# ══ Fase 5 (A Igreja na Mata) — fora do loop PHASES por ter conteúdo próprio ══
+# 5 inimigos (4 chefes-monstro + Jesuíta), sem caçador/bruxo, sem saída.
+
+func test_phase5_enemy_count_is_five() -> void:
+	assert_eq(MapConfig.for_phase(5).enemy_count, 5,
+		"fase 5 = 5 inimigos (4 chefes-monstro + Jesuíta)")
+
+func test_phase5_commons_are_the_four_bosses() -> void:
+	# Cada um dos 4 chefes anteriores aparece exatamente uma vez como "comum".
+	for s: int in SEEDS:
+		var m := _gen(5, s)
+		var counts := {"mula": 0, "boitata": 0, "curupira": 0, "saci": 0}
+		var bosses := 0
+		for e: Dictionary in m.enemies:
+			if e["boss"]:
+				bosses += 1
+				assert_eq(e.get("boss_type", ""), "jesuita",
+					"boss da fase 5 é o Jesuíta (seed %d)" % s)
+				continue
+			var t: String = e.get("enemy_type", "")
+			assert_true(counts.has(t),
+				"comum da fase 5 é um chefe válido (seed %d): %s" % [s, t])
+			counts[t] += 1
+		assert_eq(bosses, 1, "exatamente 1 boss na fase 5 (seed %d)" % s)
+		for boss_name: String in counts:
+			assert_eq(counts[boss_name], 1,
+				"fase 5: exatamente um %s (seed %d)" % [boss_name, s])
+
+func test_phase5_invariants() -> void:
+	# Universais que devem valer também na fase final: sem saída, boss alcançável,
+	# rota até o boss sem fogo, determinismo.
+	var cfg := MapConfig.for_phase(5)
+	assert_false(cfg.has_exit, "fase 5 não tem saída (progride ao matar o Jesuíta)")
+	for s: int in SEEDS:
+		var m := _gen(5, s)
+		assert_eq(m.exit_pos, Vector2i(-1, -1), "fase 5 não expõe exit_pos (seed %d)" % s)
+		var dist := m.reachable_from(m.player_start)
+		var b := m.boss()
+		var goal := Vector2i(b["x"], b["y"])
+		assert_true(dist.has(goal), "Jesuíta alcançável do spawn (seed %d)" % s)
+		assert_true(_reachable_avoiding_hazards(m, m.player_start, goal),
+			"rota até o Jesuíta sem fogo (seed %d)" % s)
+	assert_eq(_enemy_sig(_gen(5, 42)), _enemy_sig(_gen(5, 42)),
+		"fase 5 determinística p/ mesmo seed")
+
 func _reachable_avoiding_hazards(m: GeneratedMap, start: Vector2i, goal: Vector2i) -> bool:
 	# BFS sobre células caminháveis que NÃO são hazard (R/S).
 	var seen := {start: true}

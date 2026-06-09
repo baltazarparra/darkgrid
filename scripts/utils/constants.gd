@@ -48,6 +48,7 @@ const BOSS_MAX_HEALTH := 12       # boss P1 (Mula sem Cabeça)
 const BOITATA_MAX_HEALTH := 22    # boss P2
 const CURUPIRA_MAX_HEALTH := 30   # boss P3
 const SACI_MAX_HEALTH := 36       # boss P4
+const JESUITA_MAX_HEALTH := 44    # boss final P5 (Jesuíta Bandeirante Catequizador)
 
 ## HP uniforme do comum (não-boss) para a fase dada (5 nas fases 1-2, 8 nas 3-4).
 static func common_health_for_phase(phase: int) -> int:
@@ -65,8 +66,8 @@ const BOSS_KILL_HP_GROWTH := 1.0
 const COMMON_KILL_HEAL := 1.0
 const BOSS_KILL_HEAL := 2.0
 # Fragmentos inteiros, escalando com a profundidade (chave 1..4 = fase).
-const COMMON_FRAGMENT_REWARD := { 1: 1, 2: 2, 3: 3, 4: 4 }
-const BOSS_FRAGMENT_BOUNTY := { 1: 3, 2: 5, 3: 8, 4: 12 }
+const COMMON_FRAGMENT_REWARD := { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 }
+const BOSS_FRAGMENT_BOUNTY := { 1: 3, 2: 5, 3: 8, 4: 12, 5: 20 }
 
 # ─── Colors (Horror Folk Palette) ──────────────────
 # Fonte ÚNICA de cor do jogo. Qualquer Color() novo deve referenciar/derivar daqui —
@@ -135,6 +136,8 @@ const COLOR_TELEGRAPH_SACI := Color(2.0, 0.7, 0.15)         # telegraph do Saci 
 const COLOR_AURA_SACI := Color(0.35, 0.10, 0.02, 0.75)      # aura do Saci (brasa escura, casa consumida pelo fogo)
 const COLOR_TELEGRAPH_MULA := Color(2.0, 0.55, 0.1)         # telegraph da Mula sem Cabeça (jato de fogo overbright)
 const COLOR_AURA_MULA := Color(0.55, 0.12, 0.02, 0.72)      # aura de brasas da Mula (fogo escuro subindo do toco)
+const COLOR_TELEGRAPH_JESUITA := Color(1.7, 1.4, 0.6)       # telegraph do Jesuíta (ouro de incenso corrompido, overbright)
+const COLOR_AURA_JESUITA := Color(0.42, 0.34, 0.10, 0.75)   # aura do Jesuíta (fumaça de incenso podre, dourado-acinzentado)
 
 # Cores de diálogo (speaker labels nos pre-boss dialogues).
 const COLOR_DIALOGUE_CAIPORA  := Color(0.55, 0.90, 0.60, 1.0)  # voz da Caipora (verde floresta)
@@ -142,6 +145,7 @@ const COLOR_DIALOGUE_BOITATA  := Color(1.0,  0.42, 0.0,  1.0)  # voz do Boitatá
 const COLOR_DIALOGUE_CURUPIRA := Color(0.1,  0.85, 0.30, 1.0)  # voz do Curupira (verde mata)
 const COLOR_DIALOGUE_SACI     := Color(1.0,  0.55, 0.12, 1.0)  # voz do Saci (fogo)
 const COLOR_DIALOGUE_MULA     := Color(1.0,  0.50, 0.10, 1.0)  # voz da Mula sem Cabeça (fogo)
+const COLOR_DIALOGUE_JESUITA  := Color(0.92, 0.82, 0.45, 1.0)  # voz do Jesuíta (ouro litúrgico corrompido)
 
 # Partículas de feedback de combate (>1 = overbright p/ glow aditivo intencional).
 const COLOR_PARTICLE_SPARK := Color(1.0, 0.92, 0.6, 1.0)  # faísca de crítico (dourado)
@@ -181,6 +185,14 @@ const PHASE3_TIMING_REDUCTION := 0.15
 # 0.30 "mais rápido") e cada golpe de inimigo bate +1 (PHASE4_ENEMY_DAMAGE_BONUS).
 const PHASE4_TIMING_REDUCTION := 0.30
 const PHASE4_ENEMY_DAMAGE_BONUS := 1.0
+
+# ─── Fase 5 (A Igreja na Mata) ─────────────────────
+# A fase FINAL: a mais impiedosa. A janela de ação encurta 0.2s ALÉM da Fase 4
+# (0.30 + 0.20 = 0.50 "mais rápido", travado no piso de 0.2s em _phase_window) e
+# cada golpe de inimigo bate +1 (PHASE5_ENEMY_DAMAGE_BONUS). Vale igualmente para
+# os 4 chefes-monstro convertidos e para o Jesuíta — "o mesmo comportamento".
+const PHASE5_TIMING_REDUCTION := 0.50
+const PHASE5_ENEMY_DAMAGE_BONUS := 1.0
 
 # ─── Physics Layers ────────────────────────────────
 const LAYER_PLAYER := 1

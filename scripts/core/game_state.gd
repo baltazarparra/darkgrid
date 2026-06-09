@@ -132,6 +132,10 @@ func _scene_path_for(new_screen: SignalBus.Screen) -> String:
 			return "res://scenes/exploration/exploration_phase4.tscn"
 		SignalBus.Screen.ARENA_PHASE4:
 			return "res://scenes/arena/arena_phase4.tscn"
+		SignalBus.Screen.EXPLORATION_PHASE5:
+			return "res://scenes/exploration/exploration_phase5.tscn"
+		SignalBus.Screen.ARENA_PHASE5:
+			return "res://scenes/arena/arena_phase5.tscn"
 		SignalBus.Screen.ENDING:
 			return "res://scenes/ui/ending_screen.tscn"
 	return ""
