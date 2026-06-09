@@ -297,11 +297,35 @@ def gen_light():
     img.save(os.path.join(OUT, "light_radial.png"))
 
 
+def gen_light_beam():
+    """Feixe de vitral 128x256 para PointLight2D: trapézio suave (estreito no
+    topo, largo na base), falloff quadrático nas bordas e desbotando ao descer —
+    luz entrando por uma janela alta da igreja (Fase 5). Rotacione o nó da luz
+    para inclinar o feixe sobre o altar."""
+    w, h = 128, 256
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    px = img.load()
+    cx = (w - 1) / 2.0
+    for y in range(h):
+        t = y / (h - 1)
+        half = (0.10 + 0.38 * t) * w
+        fall = 1.0 - t * 0.45
+        for x in range(w):
+            d = abs(x - cx) / half
+            if d >= 1.0:
+                continue
+            edge = (1.0 - d * d) ** 2
+            px[x, y] = (255, 255, 255, int(edge * fall * 210))
+    img.save(os.path.join(OUT, "light_vitral.png"))
+
+
 if __name__ == "__main__":
     gen_floor()
     gen_wall()
     gen_floor_church()
     gen_wall_church()
     gen_light()
+    gen_light_beam()
     print("[gen_tiles] tile_floor.png (4) + tile_wall.png (2) + "
-          "tile_floor_church.png (4) + tile_wall_church.png (2) + light_radial.png gerados")
+          "tile_floor_church.png (4) + tile_wall_church.png (2) + "
+          "light_radial.png + light_vitral.png gerados")

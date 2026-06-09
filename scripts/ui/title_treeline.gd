@@ -15,6 +15,10 @@ extends Node2D
 @export var tree_scale: float = 2.0
 @export var layer_z: int = -80
 @export var rng_seed: int = 1
+## Modo estático (arena): tamanho fixo em coordenadas locais, sem scroll e sem
+## escala por viewport — base_y vira coordenada local absoluta. Zero = modo
+## abertura (viewport + scroll), comportamento original do menu.
+@export var static_bounds: Rect2 = Rect2()
 
 # ─── State ─────────────────────────────────────────
 var _vp_w: float = 1280.0
@@ -25,12 +29,19 @@ var _trees: Array[Dictionary] = []
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
-	var vp := get_viewport().get_visible_rect().size
-	_vp_w = vp.x
-	_vp_h = vp.y
-	_eff_base_y = base_y / 720.0 * _vp_h
+	if static_bounds.size.x > 0.0:
+		_vp_w = static_bounds.size.x
+		_vp_h = static_bounds.size.y
+		_eff_base_y = base_y
+		set_process(false)
+	else:
+		var vp := get_viewport().get_visible_rect().size
+		_vp_w = vp.x
+		_vp_h = vp.y
+		_eff_base_y = base_y / 720.0 * _vp_h
 	z_index = layer_z
 	_generate_trees()
+	queue_redraw()
 
 func _process(delta: float) -> void:
 	_offset += scroll_speed * delta
@@ -42,7 +53,9 @@ func _process(delta: float) -> void:
 # ─── Drawing ───────────────────────────────────────
 func _draw() -> void:
 	_draw_strip(0.0)
-	_draw_strip(_vp_w)
+	# A segunda cópia só existe para o wrap do scroll — modo estático não rola.
+	if static_bounds.size.x <= 0.0:
+		_draw_strip(_vp_w)
 
 func _draw_strip(ox: float) -> void:
 	# Massa sólida do chão/cordilheira (recorta contra o fogo).

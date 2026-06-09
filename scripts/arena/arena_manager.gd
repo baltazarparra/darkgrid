@@ -68,6 +68,10 @@ func _ready() -> void:
 	_update_camera_fit()
 	get_viewport().size_changed.connect(_update_camera_fit)
 
+	add_child(ArenaBackdrop.new())
+	var blood_decals := BloodDecals.new()
+	add_child(blood_decals)
+	_feedback.blood_spilled.connect(blood_decals.add_splat)
 	add_child(Atmosphere.new())
 
 	_spawn_caipora()
@@ -78,8 +82,12 @@ func _update_camera_fit() -> void:
 	# Zoom "contain": encaixa STAGE_SIZE na viewport sem cortar a ação. Em paisagem o
 	# limite é a altura (ação grande, leve folga lateral); em retrato cabe inteiro.
 	var vp := get_viewport().get_visible_rect().size
-	var z: float = minf(vp.x / STAGE_SIZE.x, vp.y / STAGE_SIZE.y) * STAGE_FILL
-	z = clampf(z, 0.5, 2.0)
+	var raw: float = minf(vp.x / STAGE_SIZE.x, vp.y / STAGE_SIZE.y)
+	var z: float = clampf(raw * STAGE_FILL, 0.5, 2.0)
+	# Texel inteiro: a arte escala em múltiplos exatos de device-pixel (pixel art
+	# uniforme). A folga do STAGE_FILL absorve arredondar pra cima; o contain sem
+	# FILL (e o teto 2.0 do tablet) é o limite duro que não corta o stage.
+	z = PixelScale.snap_contain(z, PixelScale.device_scale(get_viewport()), minf(raw, 2.0))
 	_camera.zoom = Vector2(z, z)
 
 	# Levanta a ação para o centro do espaço acima do D-pad (só quando há D-pad). Move a

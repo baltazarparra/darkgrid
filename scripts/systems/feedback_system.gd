@@ -8,6 +8,9 @@ const DEATH_PARTICLES := preload("res://scenes/shared/death_particles.tscn")
 # ─── Signals ───────────────────────────────────────
 signal hit_stop_started(duration: float)
 signal hit_stop_ended
+## Sangue derramado em `at_position` (intensity: 1.0 golpe, 1.6 crítico,
+## 2.6 morte). Consumido por BloodDecals para manchas persistentes no chão.
+signal blood_spilled(at_position: Vector2, intensity: float)
 
 @export var shake_intensity: float = 8.0
 @export var shake_duration: float = 0.3
@@ -65,10 +68,12 @@ func force_clear_hit_stop() -> void:
 
 # ─── Partículas ────────────────────────────────────
 func spawn_blood_particles(at_position: Vector2) -> void:
+	blood_spilled.emit(at_position, 1.0)
 	# Dobro da densidade base: o golpe espirra muito mais sangue (tom gore).
 	_spawn_particles(BLOOD_PARTICLES, at_position, 2.0)
 
 func spawn_critical_particles(at_position: Vector2) -> void:
+	blood_spilled.emit(at_position, 1.6)
 	_spawn_particles(CRITICAL_PARTICLES, at_position, 2.0)
 	# Segundo burst: faíscas claras overbright (blend aditivo) por cima do sangue,
 	# para a leitura do acerto crítico "estourar" e ficar nítida. Mais densa e
@@ -98,6 +103,7 @@ func spawn_critical_particles(at_position: Vector2) -> void:
 		spark.queue_free()
 
 func spawn_death_particles(at_position: Vector2) -> void:
+	blood_spilled.emit(at_position, 2.6)
 	_spawn_particles(DEATH_PARTICLES, at_position)
 
 func spawn_dodge_particles(at_position: Vector2) -> void:

@@ -6,7 +6,10 @@ extends SceneTree
 ##
 ## Uso:
 ##   DISPLAY=:0 godot --path . -s scripts/tools/screenshot.gd -- \
-##       --scene=res://scenes/ui/main_menu.tscn --out=/tmp/shot.png [--frames=30]
+##       --scene=res://scenes/ui/main_menu.tscn --out=/tmp/shot.png [--frames=30] [--phase=N]
+##
+## --phase=N seta GameState.active_phase antes de instanciar — cenas de arena e
+## exploração derivam estilo/dificuldade da fase ativa, não do arquivo .tscn.
 
 var _out: String = "/tmp/caipora_shot.png"
 var _target_frames: int = 30
@@ -14,6 +17,7 @@ var _frames: int = 0
 
 func _initialize() -> void:
 	var scene_path: String = "res://scenes/ui/main_menu.tscn"
+	var phase: int = 0
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--scene="):
 			scene_path = arg.substr("--scene=".length())
@@ -21,6 +25,10 @@ func _initialize() -> void:
 			_out = arg.substr("--out=".length())
 		elif arg.begins_with("--frames="):
 			_target_frames = int(arg.substr("--frames=".length()))
+		elif arg.begins_with("--phase="):
+			phase = int(arg.substr("--phase=".length()))
+	if phase > 0:
+		root.get_node("GameState").active_phase = phase
 	var packed: PackedScene = load(scene_path)
 	root.add_child(packed.instantiate())
 
