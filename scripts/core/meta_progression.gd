@@ -19,7 +19,8 @@ var is_persistent: bool = true
 # FONTE NUMÉRICA ÚNICA (PRD-economia-v2): o campo "dmg" (Fúria) ou "hp" (Cura) é a verdade
 # da matemática; o texto do efeito é DERIVADO via effect_text() (mata a classe de bug do
 # KI-006, em que o label desincronizava do bônus real). Curva de custo crescente:
-# Fúria leva o dano de 1 a 9 (10 com a CHAMA); Cura leva o HP de 2 a 23.
+# Fúria leva o dano de 1 a 5 no jogo principal, 9 no pós-clear (10 com a CHAMA);
+# Cura leva o HP de 2 a 14 no jogo principal, 23 no pós-clear.
 const UPGRADE_DEFS := {
 	"forca":   { "name": "Folha-Brasa",      "max_level": 1, "fragment_cost": 5,  "line": "furia", "tier": 1, "phase": 1, "dmg": 1, "icon": "res://assets/sprites/erva_folha_brasa.png" },
 	"forca_2": { "name": "Cinza-Viva",       "max_level": 1, "fragment_cost": 10, "line": "furia", "tier": 2, "phase": 2, "dmg": 1, "icon": "res://assets/sprites/erva_cinza_viva.png", "requires": "forca" },

@@ -400,7 +400,7 @@ make export
 - [x] Chance de drop num único ponto de tuning: `MetaProgression.CHAMA_DROP_CHANCE` (default 0.5).
 - [x] Ao ganhar, recebe a **CHAMA no lugar do fragmento** daquela morte (`arena_manager._on_actor_died`);
       `has_chama` é **permanente** (salvo). HUD mostra popup "CHAMA!" (`SignalBus.chama_gained`).
-- [x] Efeito fogo: **+2 dano** (`get_damage_bonus()` soma `CHAMA_DAMAGE_BONUS`), **partículas de chama
+- [x] Efeito fogo: **+1 dano** (`get_damage_bonus()` soma `CHAMA_DAMAGE_BONUS`), **partículas de chama
       somadas às douradas** e **sprite flamejante** `weapon_forca3_fogo.png`
       (gerador `scripts/gen_weapon_forca3_fogo.py`) — em `weapon_visual.gd`, visível na **arena e na
       exploração** (ambas via `WeaponVisual.attach_to`).
@@ -569,7 +569,8 @@ chefe** (12/22/30/36); assets **AAA via pipeline procedural** (gen_chars/tiles/s
   5 do `_build_profile`, mini-bosses como comuns (`REGULAR_SCENES` + flag
   `keep_own_hp` p/ preservar HP de chefe), render de mini-boss no `MapEnemy`,
   **diálogo de abertura da fase** ("converti todos eles com espelhos e água benta.
-  a floresta pertence ao vaticano."), roteamento P4→P5→ENDING + `phase_reached=5`.
+  a floresta pertence ao vaticano."), roteamento P4→P5→ENDING + `phase_reached=5`
+  ao liberar a Igreja e `phase_reached=6` ao derrotar o Jesuíta.
   `test_exploration_phase5.gd` + update de `test_scene_transition`/roteamento.
 - [x] **Etapa 3 — Assets & polish AAA:** sprite do Jesuíta + SpriteFrames
   (`gen_chars.py`: morrião + gibão sobre batina, espelho + aspersório), decoração de
@@ -595,12 +596,12 @@ consistentemente **difícil**. Spec completa: [docs/PRD-economia-v2.md](docs/PRD
   boss é marco (+1 HP máx. + cura 2). Antes: +1 HP máx. por kill (snowball forte).
 - [x] **Currency inteira + boss bounty.** Kill comum 1/2/3/4 por fase; boss paga
   3/5/8/12 (antes boss = 0 e comuns davam 1.5/2.0/2.5 fracionários).
-- [x] **HP de comum UNIFORME por banda de fase + dano da Caipora escalado por fase.**
-  Todo comum (não-boss) tem o MESMO HP: `5` nas fases 1-2, `8` nas fases 3-4
+- [x] **HP de comum UNIFORME por banda de fase + dano da Caipora vindo da Fúria.**
+  Todo comum (não-boss) tem o MESMO HP: `5` nas fases 1-2, `8` nas fases 3-5
   (`Constants.common_health_for_phase`, aplicado no `_spawn_enemy`). Cada golpe da
-  Caipora bate `1/2/3/4…` conforme a fase (`Constants.caipora_base_damage_for_phase`,
-  somado às ervas de Fúria/CHAMA no `_spawn_caipora`). Bosses mantêm HP próprio
-  (12/22/30/36). TTK comum: ~5 trocas na P1 → ~2 na P4.
+  Caipora parte de `1` em toda fase (`Constants.caipora_base_damage_for_phase`) e soma
+  apenas ervas de Fúria/CHAMA no `_spawn_caipora`. Bosses mantêm HP próprio
+  (12/22/30/36/44); na Fase 5, os 4 chefes convertidos mantêm HP próprio como mini-bosses.
 - [x] **Crítico 2×–3× fica fora de escopo** (decisão deliberada, registrada no PRD): o
   burst por skill vem do ataque-duplo; subir o multiplicador estouraria o teto de dano.
 - [x] Testes: literais de custo/HP/dano atualizados + `test_effect_text_matches_math`.
@@ -675,6 +676,9 @@ aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no fo
 | KI-005 | Baixa | ✅ Resolvida (pós-MVP) | SFX reescritos com síntese de instrumentos do maracatu (alfaia/caixa/ganzá/agogô/gonguê) em `scripts/tools/gen_sfx.py`, com variação anti-repetição. Identidade sonora própria — não são mais placeholders genéricos |
 | KI-006 | Baixa | ✅ Resolvida | Label do aprimoramento desincronizava do bônus real. Corrigido de vez na Economia v2: o campo `effect` foi removido e o texto é **derivado** da fonte numérica única (`dmg`/`hp`) via `MetaProgression.effect_text()` — não há mais string solta a divergir. Guardado por `test_effect_text_matches_math` |
 | KI-007 | Média | ✅ Resolvida | Mapa não voltava idêntico após o combate: o jogador renascia no spawn (exceto Fase 1) e TODOS os inimigos teleportavam de volta ao spawn (o movimento na exploração é não-determinístico, então a regeração do mapa não os reproduz). Corrigido com snapshot de posições no `_trigger_combat` (`GameState.map_enemy_positions` + `player_map_pos` em todas as fases), restaurado em `_spawn_enemies`/`_setup_player`. `safe_spawn` agora só vale na entrada fresca da fase, não na volta do combate. Flag `keep_position` (sempre-true) removida |
+| KI-008 | Média | ✅ Resolvida | `GameState.heal_to_full()` preserva o `caipora_max_hp` ganho dentro da run e só sobe para o novo teto meta se uma erva de Cura comprada no hub tornar esse teto maior. |
+| KI-009 | Média | ✅ Resolvida | `Constants.caipora_base_damage_for_phase()` voltou a ser base fixa (`1`) em toda fase; a arena soma apenas Fúria/CHAMA por cima, então o texto das ervas volta a ser o teto real comunicado ao jogador. |
+| KI-010 | Média | ✅ Resolvida | A vitória terminal libera `phase_reached = 6`: matar o Jesuíta marca o marco no `ArenaManager`, e `GameState.end_run(true)` também garante o unlock pós-clear antes de salvar a vitória. |
 
 ---
 

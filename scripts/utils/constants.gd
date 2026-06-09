@@ -37,13 +37,13 @@ const DAMAGE_COUNTER_MULTIPLIER := 1.0
 # ─── Health ────────────────────────────────────────
 const FIRE_TILE_DAMAGE := 2
 
-# Comuns (não-boss) têm HP UNIFORME por banda de fase: 5 nas fases 1-2, 8 nas 3-4.
-# O dano de CADA golpe da Caipora escala com a fase (1/2/3/4…), segurando o TTK
-# (~5 trocas na P1, ~2 na P4). Bosses mantêm HP próprio (marco de fase).
+# Comuns (não-boss) têm HP UNIFORME por banda de fase: 5 nas fases 1-2, 8 nas 3-5.
+# O dano da Caipora não escala por fase: ele vem da trilha Fúria/CHAMA. A fase
+# endurece inimigos, janelas e padrões; upgrades são a fonte legível de poder.
 # Ver docs/PRD-economia-v2.md §7.
 const CAIPORA_MAX_HEALTH := 2
 const COMMON_HEALTH_EARLY := 5    # comuns das fases 1-2
-const COMMON_HEALTH_LATE := 8     # comuns das fases 3-4
+const COMMON_HEALTH_LATE := 8     # comuns das fases 3-5
 const BOSS_MAX_HEALTH := 12       # boss P1 (Mula sem Cabeça)
 const BOITATA_MAX_HEALTH := 22    # boss P2
 const CURUPIRA_MAX_HEALTH := 30   # boss P3
@@ -54,9 +54,9 @@ const JESUITA_MAX_HEALTH := 44    # boss final P5 (Jesuíta Bandeirante Catequiz
 static func common_health_for_phase(phase: int) -> int:
 	return COMMON_HEALTH_LATE if phase >= 3 else COMMON_HEALTH_EARLY
 
-## Dano-base de CADA golpe da Caipora na fase dada (1 na P1, 2 na P2, 3 na P3…).
-static func caipora_base_damage_for_phase(phase: int) -> int:
-	return maxi(phase, 1)
+## Dano-base de CADA golpe da Caipora. Fase não soma dano; Fúria/CHAMA somam por cima.
+static func caipora_base_damage_for_phase(_phase: int) -> int:
+	return DAMAGE_BASE
 
 # ─── Economia: recompensas de combate (PRD-economia-v2) ──
 # Snowball in-run pela metade: kill comum dá meio HP máx. (materializa +1 coração a cada
