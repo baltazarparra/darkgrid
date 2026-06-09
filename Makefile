@@ -3,7 +3,7 @@
 GODOT   ?= $(HOME)/.local/bin/godot
 PROJECT := .
 
-.PHONY: help smoke test export gate
+.PHONY: help smoke test export gate audio audio-check
 
 help: ## list available targets
 	@grep -hE '^[a-z]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t-/' | sort
@@ -31,5 +31,13 @@ export: ## build the reproducible HTML5 release
 	DATE=$$(date -u +%F); \
 	printf '{"version":"%s","build":"%s","date":"%s"}\n' "$$VERSION" "$$SHA" "$$DATE" > export/version.json; \
 	echo "version.json -> $$VERSION ($$SHA, $$DATE)"
+
+audio: ## regenerate all procedural audio, reimport and verify loudness
+	python3 scripts/tools/gen_sfx.py
+	$(GODOT) --headless --path $(PROJECT) --import
+	python3 scripts/tools/check_audio.py
+
+audio-check: ## verify assets/audio against the loudness standard (PRD-audio-v2 §3)
+	python3 scripts/tools/check_audio.py
 
 gate: smoke test ## full verification before commit
