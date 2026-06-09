@@ -12,7 +12,6 @@ extends Node2D
 @export var layer_z: int = -40
 
 # ─── Constants ─────────────────────────────────────
-const FRAMES_PATH: String = "res://assets/sprites/caipora_sprite_frames.tres"
 const SPRITE_HALF: float = 32.0  # Caipora é 64×64 (assets/AGENTS.md)
 const WALK_SCALE: float = 2.6
 const START_X: float = -120.0
@@ -42,7 +41,8 @@ func _ready() -> void:
 
 	_rest_y = -SPRITE_HALF * WALK_SCALE
 	_sprite = AnimatedSprite2D.new()
-	_sprite.sprite_frames = load(FRAMES_PATH)
+	# Frames conforme a meta-progressão: com a CHAMA, ela atravessa a tela em brasa.
+	_sprite.sprite_frames = load(MetaProgression.caipora_frames_path())
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_sprite.scale = Vector2(WALK_SCALE, WALK_SCALE)
 	_sprite.flip_h = false  # andando para a direita

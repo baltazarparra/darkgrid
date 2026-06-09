@@ -108,6 +108,10 @@ func _spawn_caipora() -> void:
 	_caipora = caipora_combat_scene.instantiate()
 	_caipora.position = Vector2(160, 240)
 	add_child(_caipora)
+	# Com a CHAMA, a própria Caipora se incendeia (variante de frames, mesmo contrato).
+	if MetaProgression.has_chama and _caipora.animated_sprite != null:
+		_caipora.animated_sprite.sprite_frames = load(MetaProgression.caipora_frames_path())
+		_caipora.animated_sprite.play("idle")
 	# max_health é int; GameState.caipora_max_hp é float (carrega o meio-HP acumulado).
 	_caipora.health.max_health = int(floor(GameState.caipora_max_hp))
 	_caipora.health.current_health = clampf(GameState.caipora_current_hp, 0.0, GameState.caipora_max_hp)

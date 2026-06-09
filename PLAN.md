@@ -683,6 +683,14 @@ todo asset futuro da protagonista.
   personagens intactos, byte a byte).
 - [x] Linguagem corporal por pose preservando o contrato do `ActorAnimator` e
   do `caipora_sprite_frames.tres` (mesmos nomes/arquivos — zero mudança de cena).
+- [x] **A CHAMA incendeia a Caipora:** com `has_chama` (permanente), os frames
+  trocam para a variante incendiada (`player_*_chama.png` +
+  `caipora_sprite_frames_chama.tres`): juba mais longa/quente, brasas orbitando,
+  estalo do chicote maior. Seleção em ponto único
+  (`MetaProgression.caipora_frames_path()`), aplicada por código (sem editar
+  `.tscn`) na exploração, na arena e no `TitleWalker` (menu/ending). Mesmo
+  contrato de animações — `ActorAnimator` não percebe. Testes:
+  `test_caipora_chama_frames.gd`.
 
 ---
 
