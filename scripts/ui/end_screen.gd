@@ -11,6 +11,8 @@ extends CanvasLayer
 
 @export var won: bool = false
 
+@onready var _vbox: VBoxContainer = $Center/VBox
+@onready var _title: Label = $Center/VBox/Title
 @onready var _hint: Label = $Center/VBox/Hint
 
 # Guard contra dupla ativação: com emulate_mouse_from_touch, um toque gera touch +
@@ -20,6 +22,20 @@ var _handled: bool = false
 func _ready() -> void:
 	GameState.end_run(won)
 	_hint.text = _hint_text()
+	_fit_portrait()
+	get_viewport().size_changed.connect(_fit_portrait)
+
+## Em retrato a tela é estreita: sem quebra de linha o título (frase longa, fonte grande) fica
+## mais largo que o viewport e vaza pelos dois lados. Liga o autowrap e fixa a largura útil
+## (capada) — os labels quebram e centralizam dentro dela, e o CenterContainer centraliza o bloco.
+func _fit_portrait() -> void:
+	var vp := get_viewport().get_visible_rect().size
+	var maxw := clampf(vp.x - 64.0, 240.0, 640.0)
+	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_vbox.custom_minimum_size.x = maxw
+	_title.custom_minimum_size.x = maxw
+	_hint.custom_minimum_size.x = maxw
 
 ## Tela-alvo ao dispensar (puro, sem efeitos colaterais — testável destacado da árvore).
 ## Derrota → MENU PRINCIPAL (a caçada acabou); vitória terminal → acampamento.

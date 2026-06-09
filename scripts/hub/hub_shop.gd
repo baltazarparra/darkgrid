@@ -26,6 +26,7 @@ const CARD_WIDTH := 330        # largura da coluna/status em paisagem (casa com 
 var _root: Control
 var _frag_label: Label
 var _bonus_label: Label
+var _hint: Label
 var _options: OptionsPanel
 var _options_button: Button
 var _margin: MarginContainer
@@ -137,8 +138,13 @@ func _build_cards() -> void:
 	hint.add_theme_color_override("font_color", HINT_COLOR)
 	hint.add_theme_font_size_override("font_size", Constants.FONT_SM)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Sem autowrap a frase (longa) força a bandeja a ficar mais larga que a tela em retrato e
+	# vaza o viewport — quebra dentro da largura da bandeja (definida pelos cards) em vez disso.
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.size_flags_horizontal = Control.SIZE_FILL
 	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(hint)
+	_hint = hint
 
 # Uma trilha: título + os cards disponíveis (ou um status do que vem a seguir).
 func _build_column(parent: BoxContainer, title: String, keys: Array) -> Dictionary:
@@ -306,6 +312,9 @@ func _relayout() -> void:
 			col["status"].custom_minimum_size = Vector2(_card_w, 0)
 		for card: HubCard in col["cards"]:
 			card.relayout(_card_w, portrait)
+	# Mantém a dica na largura da coluna de cards (quebra dentro dela, nunca alarga a bandeja).
+	if _hint != null:
+		_hint.custom_minimum_size = Vector2(_card_w, 0)
 	_position_band(vp, portrait)
 
 ## Posiciona a bandeja dos cards. Retrato: ancora ABAIXO do cabeçalho (margem superior segura +
