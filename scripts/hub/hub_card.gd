@@ -9,7 +9,10 @@ extends Button
 # para os cliques caírem no botão.
 
 const ICON_PX: int = 60               # lado do ícone no topo do card
-const CARD_MIN := Vector2(330, 200)   # tamanho confortável de leitura/toque (base 1280×720)
+const CARD_MIN := Vector2(330, 200)   # tamanho confortável de leitura/toque (paisagem, base 1280×720)
+# Em retrato o card é largo (quase toda a tela) e mais baixo — a pilha vertical de duas
+# trilhas precisa caber na altura sem rolar. A largura real vem do HubShop em relayout().
+const CARD_HEIGHT_PORTRAIT := 156
 const BORDER := 3                     # bordas duras (sem cantos arredondados — guia de UI)
 # Fonte do nome entre MD(18) e LG(28): a fonte pixelada é larga, então 28 estoura a largura do
 # card; 22 mantém os nomes curtos numa linha (os longos quebram no hífen, leitura natural).
@@ -122,6 +125,14 @@ func set_affordable(affordable: bool) -> void:
 		_pulse.tween_property(self, "modulate", Color.WHITE, 0.8).set_trans(Tween.TRANS_SINE)
 	else:
 		_cost_label.add_theme_color_override("font_color", Constants.COLOR_BLOOD)
+
+## Reajusta o card à orientação/largura corrente (chamado pelo HubShop em size_changed). Em
+## retrato o card fica largo e baixo (cabe a pilha de duas trilhas); em paisagem volta ao
+## tamanho confortável de coluna. A largura é imposta como mínimo e o Button preenche a coluna.
+func relayout(width: float, portrait: bool) -> void:
+	var h: float = float(CARD_HEIGHT_PORTRAIT) if portrait else CARD_MIN.y
+	custom_minimum_size = Vector2(width, h)
+	size_flags_horizontal = Control.SIZE_FILL
 
 ## Comprada: encolhe e some (fumada no cachimbo) e se libera.
 func consume() -> void:

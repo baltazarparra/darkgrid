@@ -18,8 +18,9 @@ signal denied(key: String)
 const HINT_COLOR := Color(0.55, 0.55, 0.58, 1.0)
 const TITLE_FURIA := "FÚRIA · dano"
 const TITLE_CURA := "CURA · vida"
-const COLUMN_SEP := 48
-const CARD_WIDTH := 330   # casa com HubCard.CARD_MIN.x (largura da coluna/status)
+const COLUMN_SEP := 48         # separação entre as trilhas lado a lado (paisagem)
+const PORTRAIT_TRACK_SEP := 24 # separação entre as trilhas empilhadas (retrato)
+const CARD_WIDTH := 330        # largura da coluna/status em paisagem (casa com HubCard.CARD_MIN.x)
 
 # ─── State ─────────────────────────────────────────
 var _root: Control
@@ -28,6 +29,10 @@ var _bonus_label: Label
 var _options: OptionsPanel
 var _options_button: Button
 var _margin: MarginContainer
+# Container das trilhas: alterna entre lado a lado (paisagem) e empilhado (retrato) em _relayout.
+var _tracks: BoxContainer
+# Largura corrente dos cards/colunas (recalculada por orientação em _relayout).
+var _card_w: float = float(CARD_WIDTH)
 
 # Colunas por trilha: { "furia"/"cura": { "vbox": VBox, "cards": Array[HubCard] } }.
 var _columns: Dictionary = {}
@@ -51,7 +56,9 @@ func _build() -> void:
 	_options_button.pressed.connect(_options.open)
 
 	_apply_safe_margins()
+	_relayout()
 	get_viewport().size_changed.connect(_apply_safe_margins)
+	get_viewport().size_changed.connect(_relayout)
 	refresh()
 
 # Cabeçalho: [ fragmentos + bônus à esquerda ] ··· [ Opções à direita ].
@@ -90,26 +97,34 @@ func _build_header() -> void:
 	_options_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	row.add_child(_options_button)
 
-# Corpo: as duas trilhas lado a lado, centradas (deixa o rodapé livre pro D-pad e o rastro).
+# Corpo: as duas trilhas, centradas, sobre uma bandeja escura (legibilidade contra a mata viva).
+# Lado a lado em paisagem, empilhadas em retrato — a orientação é definida em _relayout. Deixa o
+# rodapé livre pro D-pad e o rastro.
 func _build_cards() -> void:
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(center)
 
+	# Bandeja: painel escuro de borda dura que segura os cards acima do acampamento animado.
+	var tray := PanelContainer.new()
+	tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tray.add_theme_stylebox_override("panel", _tray_style())
+	center.add_child(tray)
+
 	var stack := VBoxContainer.new()
 	stack.add_theme_constant_override("separation", 16)
 	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	center.add_child(stack)
+	tray.add_child(stack)
 
-	var columns := HBoxContainer.new()
-	columns.add_theme_constant_override("separation", COLUMN_SEP)
-	columns.alignment = BoxContainer.ALIGNMENT_CENTER
-	columns.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stack.add_child(columns)
+	_tracks = BoxContainer.new()
+	_tracks.add_theme_constant_override("separation", COLUMN_SEP)
+	_tracks.alignment = BoxContainer.ALIGNMENT_CENTER
+	_tracks.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(_tracks)
 
-	_columns["furia"] = _build_column(columns, TITLE_FURIA, MetaProgression.FURIA_KEYS)
-	_columns["cura"] = _build_column(columns, TITLE_CURA, MetaProgression.CURA_KEYS)
+	_columns["furia"] = _build_column(_tracks, TITLE_FURIA, MetaProgression.FURIA_KEYS)
+	_columns["cura"] = _build_column(_tracks, TITLE_CURA, MetaProgression.CURA_KEYS)
 
 	var hint := Label.new()
 	hint.text = "clique na erva pra fumar • caminhe até o rastro pra entrar na mata"
@@ -120,10 +135,10 @@ func _build_cards() -> void:
 	stack.add_child(hint)
 
 # Uma trilha: título + os cards disponíveis (ou um status do que vem a seguir).
-func _build_column(parent: HBoxContainer, title: String, keys: Array) -> Dictionary:
+func _build_column(parent: BoxContainer, title: String, keys: Array) -> Dictionary:
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 12)
-	vbox.custom_minimum_size = Vector2(CARD_WIDTH, 0)
+	vbox.custom_minimum_size = Vector2(_card_w, 0)
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(vbox)
 
@@ -156,7 +171,7 @@ func _add_status(column: Dictionary, keys: Array) -> void:
 	status.add_theme_font_size_override("font_size", Constants.FONT_SM)
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	status.custom_minimum_size = Vector2(CARD_WIDTH, 0)
+	status.custom_minimum_size = Vector2(_card_w, 0)
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column["vbox"].add_child(status)
 	column["status"] = status
@@ -260,3 +275,38 @@ func _apply_safe_margins() -> void:
 	_margin.add_theme_constant_override("margin_right", side)
 	_bonus_label.add_theme_font_size_override("font_size", fs)
 	_options_button.add_theme_font_size_override("font_size", fs)
+
+# ─── Layout responsivo (orientação + largura dos cards) ───
+## Alterna as trilhas entre lado a lado (paisagem) e empilhadas (retrato), e dimensiona cards/
+## colunas à largura útil corrente. Em retrato dois cards de 330px nunca caberiam lado a lado na
+## tela estreita — empilhar + alargar cada card é o que torna a tela legível e tocável.
+func _relayout() -> void:
+	if _tracks == null:
+		return
+	var vp := get_viewport().get_visible_rect().size
+	var portrait := Constants.is_portrait(vp)
+	_tracks.vertical = portrait
+	_tracks.add_theme_constant_override(
+		"separation", PORTRAIT_TRACK_SEP if portrait else COLUMN_SEP
+	)
+	var side: float = clampf(minf(vp.x, vp.y) * 0.055, 40.0, 80.0)
+	# Retrato: card ocupa quase a largura útil (capado pra não estourar em tablet retrato).
+	# Paisagem: largura fixa de coluna, duas trilhas lado a lado.
+	_card_w = clampf(vp.x - side * 2.0, 240.0, 520.0) if portrait else float(CARD_WIDTH)
+	for line: String in _columns:
+		var col: Dictionary = _columns[line]
+		col["vbox"].custom_minimum_size = Vector2(_card_w, 0)
+		if col.has("status") and is_instance_valid(col["status"]):
+			col["status"].custom_minimum_size = Vector2(_card_w, 0)
+		for card: HubCard in col["cards"]:
+			card.relayout(_card_w, portrait)
+
+## Bandeja escura de borda dura atrás dos cards (sem cantos arredondados — guia de UI). Translúcida
+## para deixar a fogueira e a vida ambiente respirarem por trás, mas firme o bastante pra leitura.
+func _tray_style() -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0.03, 0.02, 0.02, 0.82)
+	s.border_color = Color(Constants.COLOR_AMBER.r, Constants.COLOR_AMBER.g, Constants.COLOR_AMBER.b, 0.22)
+	s.set_border_width_all(Constants.UI_BORDER_WIDTH)
+	s.set_content_margin_all(Constants.SPACE_MD)
+	return s
