@@ -83,6 +83,9 @@ func _update_camera_zoom() -> void:
 	# nos dois eixos dentro dos limit_*. Em retrato isto enquadra de perto em vez de espremer
 	# as 26 colunas inteiras numa tira minúscula.
 	var z: float = maxf(vp.x / map.x, vp.y / map.y)
+	# Texel inteiro arredondando pra CIMA: cover exige z >= raw, senão a área
+	# visível excede o mapa e vaza além dos limit_*.
+	z = PixelScale.snap_cover(z, PixelScale.device_scale(get_viewport()))
 	_camera.zoom = Vector2(z, z)
 
 func _would_collide(target: Vector2) -> bool:
