@@ -4,15 +4,16 @@ extends GutTest
 #   - os buses do layout existem
 #   - volume por bus seta/lê e respeita o clamp
 #   - duck() roda sem erro
-#   - entrar na ARENA inicia os stems de maracatu (alfaia+ganzá)
+#   - cada tela resolve a faixa de música correta e a arena começa a tocar
+#   - o tema do boss começa na revelação e atravessa para a arena sem corte
 # Não valida áudio audível (isso é manual). Restaura o estado global ao fim.
 
 func after_each():
 	# Para toda reprodução iniciada pelos testes (evita 'resources in use at exit').
-	AudioDirector._maracatu_on = true  # força o stop a percorrer os players
-	AudioDirector._stop_maracatu()
-	for stem in AudioDirector._stem_players:
-		AudioDirector._stem_players[stem].stop()
+	AudioDirector._music_a.stop()
+	AudioDirector._music_b.stop()
+	AudioDirector._music_active = null
+	AudioDirector._current_music = ""
 	AudioDirector._stinger_player.stop()
 	AudioDirector._ambience_player.stop()
 	AudioDirector.set_bus_volume("Music", 0.8)
@@ -32,9 +33,39 @@ func test_duck_runs_without_error():
 	AudioDirector.duck()
 	assert_true(true, "duck() não deve quebrar")
 
-func test_arena_starts_maracatu():
+func test_music_resolves_per_screen():
+	# Cada fase de exploração e arena mapeia para a sua própria faixa.
+	GameState.active_combat_is_boss = false
+	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.MAIN_MENU),
+		"res://assets/audio/music/mus_menu.wav")
+	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.EXPLORATION_PHASE3),
+		"res://assets/audio/music/mus_explore_p3.wav")
+	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.ARENA_PHASE2),
+		"res://assets/audio/music/mus_arena_p2.wav")
+	# WIN/GAME_OVER não têm loop de música.
+	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.WIN), "")
+
+func test_boss_screen_picks_boss_theme():
+	GameState.active_combat_is_boss = true
+	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.ARENA_PHASE4),
+		"res://assets/audio/music/mus_boss_saci.wav")
+	GameState.active_combat_is_boss = false
+
+func test_arena_starts_music():
 	AudioDirector.unlock_audio()
+	GameState.active_combat_is_boss = false
 	AudioDirector._apply_screen_audio(SignalBus.Screen.ARENA)
-	var alfaia: AudioStreamPlayer = AudioDirector._stem_players[AudioDirector.STEM_ALFAIA]
-	assert_not_null(alfaia.stream, "stem alfaia deve ter stream carregado na arena")
-	assert_true(alfaia.playing, "stem alfaia deve estar tocando na arena")
+	assert_not_null(AudioDirector._music_active, "deve haver player de música ativo na arena")
+	assert_true(AudioDirector._music_active.playing, "a música da arena deve estar tocando")
+
+func test_same_track_does_not_restart():
+	# Boss-intro inicia o tema; a arena pede a MESMA faixa → não reinicia (sem corte).
+	AudioDirector.unlock_audio()
+	GameState.active_phase = 1
+	GameState.active_combat_is_boss = true
+	AudioDirector._on_boss_intro()
+	var active_before := AudioDirector._music_active
+	AudioDirector._apply_screen_audio(SignalBus.Screen.ARENA)
+	assert_eq(AudioDirector._music_active, active_before,
+		"a faixa de boss não deve trocar de player ao entrar na arena")
+	GameState.active_combat_is_boss = false

@@ -30,19 +30,14 @@ const DUCK_TIME: float = 0.35
 
 const MUSIC_FADE: float = 0.9
 
-# Caminhos dos loops (carregados só se existirem — graceful).
+# Caminhos das ambiências (carregadas só se existirem — graceful). Uma por clima de fase.
 const AMB_FOREST: String = "res://assets/audio/ambience/amb_forest.wav"
-const AMB_RIVER: String = "res://assets/audio/ambience/amb_river.wav"
 const AMB_DREAD: String = "res://assets/audio/ambience/amb_dread.wav"
+const AMB_FIRE: String = "res://assets/audio/ambience/amb_fire.wav"
+const AMB_FOG: String = "res://assets/audio/ambience/amb_fog.wav"
 
-# Stems de maracatu (loops sincronizados) e seu volume-alvo no mix.
+# Música por contexto: um loop híbrido (maracatu + chiptune) por tela/fase/boss.
 const MUSIC_DIR: String = "res://assets/audio/music/"
-const STEM_ALFAIA: String = "mar_alfaia"
-const STEM_GANZA: String = "mar_ganza"
-const STEM_AGOGO: String = "mar_agogo"
-const STEM_TARGET_DB: Dictionary = {
-	STEM_ALFAIA: 0.0, STEM_GANZA: -3.0, STEM_AGOGO: -2.0
-}
 
 # Stingers de estado (one-shot).
 const STING_DIR: String = "res://assets/audio/stingers/"
@@ -50,6 +45,8 @@ const STING_ARENA: String = "sting_arena_enter"
 const STING_VICTORY: String = "sting_victory"
 const STING_GAME_OVER: String = "sting_game_over"
 const STING_CHEST: String = "sting_chest"
+const STING_BOSS_INTRO: String = "sting_boss_intro"
+const STING_CHAMA: String = "sting_chama"
 
 # ─── State ─────────────────────────────────────────
 ## Volume linear (0..1) alvo por bus — fonte da verdade que o ducking respeita.
@@ -61,9 +58,11 @@ var _music_enabled: bool = true
 var _ambience_player: AudioStreamPlayer
 var _current_ambience: String = ""
 var _duck_tween: Tween
-## name do stem -> AudioStreamPlayer (bus Music). Tocam em fase.
-var _stem_players: Dictionary = {}
-var _maracatu_on: bool = false
+## Par de players para crossfade de música (bus Music). _music_active é o que toca agora.
+var _music_a: AudioStreamPlayer
+var _music_b: AudioStreamPlayer
+var _music_active: AudioStreamPlayer = null
+var _current_music: String = ""
 var _stinger_player: AudioStreamPlayer
 
 # ─── Lifecycle ─────────────────────────────────────
@@ -74,12 +73,14 @@ func _ready() -> void:
 	_ambience_player.bus = BUS_AMBIENCE
 	add_child(_ambience_player)
 
-	for stem in STEM_TARGET_DB:
-		var p := AudioStreamPlayer.new()
-		p.bus = BUS_MUSIC
-		p.volume_db = -40.0
-		add_child(p)
-		_stem_players[stem] = p
+	_music_a = AudioStreamPlayer.new()
+	_music_a.bus = BUS_MUSIC
+	_music_a.volume_db = -40.0
+	add_child(_music_a)
+	_music_b = AudioStreamPlayer.new()
+	_music_b.bus = BUS_MUSIC
+	_music_b.volume_db = -40.0
+	add_child(_music_b)
 
 	_stinger_player = AudioStreamPlayer.new()
 	_stinger_player.bus = BUS_MUSIC
@@ -90,6 +91,8 @@ func _ready() -> void:
 
 	SignalBus.screen_changed.connect(_on_screen_changed)
 	SignalBus.chest_opened.connect(_on_chest_opened)
+	SignalBus.boss_intro_started.connect(_on_boss_intro)
+	SignalBus.chama_gained.connect(_on_chama)
 
 # ─── Public API: volume ────────────────────────────
 ## Define o volume linear (0..1) de um bus, aplica e persiste.
@@ -148,15 +151,14 @@ func _on_screen_changed(new_screen: int) -> void:
 	if _audio_unlocked:
 		_apply_screen_audio(new_screen)
 
-## Casa ambiência, maracatu e stinger ao estado da tela.
+## Casa ambiência, música e stinger ao estado da tela.
 func _apply_screen_audio(screen: int) -> void:
 	_refresh_ambience(screen)
-	if screen == SignalBus.Screen.ARENA:
-		_start_maracatu(GameState.active_combat_is_boss)
-		_play_stinger(STING_ARENA)
-	else:
-		_stop_maracatu()
+	_play_music(_music_for_screen(screen))
 	match screen:
+		SignalBus.Screen.ARENA, SignalBus.Screen.ARENA_PHASE2, \
+		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4:
+			_play_stinger(STING_ARENA)
 		SignalBus.Screen.WIN:
 			_play_stinger(STING_VICTORY)
 		SignalBus.Screen.GAME_OVER:
@@ -166,13 +168,32 @@ func _on_chest_opened() -> void:
 	if _audio_unlocked:
 		_play_stinger(STING_CHEST)
 
+## A revelação do boss (overlay durante a exploração) já dispara o tema do boss, que
+## atravessa para a arena sem corte (o _play_music no-opa quando a faixa é a mesma).
+func _on_boss_intro() -> void:
+	if not _audio_unlocked:
+		return
+	_play_stinger(STING_BOSS_INTRO)
+	_play_music(_mus(_boss_track(GameState.active_phase)))
+
+func _on_chama() -> void:
+	if _audio_unlocked:
+		_play_stinger(STING_CHAMA)
+
 # ─── Ambiência ─────────────────────────────────────
 func _refresh_ambience(screen: int) -> void:
 	var path := ""
 	match screen:
 		SignalBus.Screen.EXPLORATION, SignalBus.Screen.HUB:
-			path = AMB_FOREST
-		SignalBus.Screen.ARENA:
+			path = AMB_FOREST  # mata noturna
+		SignalBus.Screen.EXPLORATION_PHASE2:
+			path = AMB_FIRE    # floresta em chamas
+		SignalBus.Screen.EXPLORATION_PHASE3:
+			path = AMB_FOG     # névoa
+		SignalBus.Screen.EXPLORATION_PHASE4:
+			path = AMB_DREAD   # ruína fria
+		SignalBus.Screen.ARENA, SignalBus.Screen.ARENA_PHASE2, \
+		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4:
 			path = AMB_DREAD
 		_:
 			path = ""
@@ -195,37 +216,75 @@ func _play_ambience(path: String) -> void:
 	# Player em 0 dB (cheio); o volume do usuário vive no bus Ambience.
 	_fade_player(_ambience_player, 0.0, false)
 
-# ─── Maracatu adaptativo ───────────────────────────
-## Inicia os stems em fase (alfaia+ganzá; +agogô no boss). Reinicia do compasso 1.
-func _start_maracatu(boss: bool) -> void:
-	_maracatu_on = true
-	_play_stem(STEM_ALFAIA, true)
-	_play_stem(STEM_GANZA, true)
-	_play_stem(STEM_AGOGO, boss)  # silencioso fora do boss
+# ─── Música por contexto ───────────────────────────
+## Resolve a faixa (caminho .wav) da tela/fase atual. "" = sem música (WIN/GAME_OVER).
+func _music_for_screen(screen: int) -> String:
+	match screen:
+		SignalBus.Screen.MAIN_MENU:
+			return _mus("mus_menu")
+		SignalBus.Screen.HUB:
+			return _mus("mus_hub")
+		SignalBus.Screen.ENDING:
+			return _mus("mus_ending")
+		SignalBus.Screen.EXPLORATION, SignalBus.Screen.EXPLORATION_PHASE2, \
+		SignalBus.Screen.EXPLORATION_PHASE3, SignalBus.Screen.EXPLORATION_PHASE4:
+			return _mus("mus_explore_p%d" % _phase_from_screen(screen))
+		SignalBus.Screen.ARENA, SignalBus.Screen.ARENA_PHASE2, \
+		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4:
+			var phase := _phase_from_screen(screen)
+			if GameState.active_combat_is_boss:
+				return _mus(_boss_track(phase))
+			return _mus("mus_arena_p%d" % phase)
+		_:
+			return ""
 
-func _stop_maracatu() -> void:
-	if not _maracatu_on:
+## Caminho completo da faixa de música por nome.
+func _mus(track: String) -> String:
+	return MUSIC_DIR + track + ".wav"
+
+## Nome do tema do boss por fase (1=Mula, 2=Boitatá, 3=Curupira, 4=Saci).
+func _boss_track(phase: int) -> String:
+	match phase:
+		2: return "mus_boss_boitata"
+		3: return "mus_boss_curupira"
+		4: return "mus_boss_saci"
+		_: return "mus_boss_mula"
+
+## Fase 1..4 a partir do enum da tela (explore/arena codificam a fase no nome).
+func _phase_from_screen(screen: int) -> int:
+	match screen:
+		SignalBus.Screen.EXPLORATION_PHASE2, SignalBus.Screen.ARENA_PHASE2:
+			return 2
+		SignalBus.Screen.EXPLORATION_PHASE3, SignalBus.Screen.ARENA_PHASE3:
+			return 3
+		SignalBus.Screen.EXPLORATION_PHASE4, SignalBus.Screen.ARENA_PHASE4:
+			return 4
+		_:
+			return 1
+
+## Crossfade para uma nova faixa. No-op se já tocando a mesma (transição sem corte
+## boss-intro→arena). path "" ou ausente: faz fade-out e para.
+func _play_music(path: String) -> void:
+	if path == _current_music:
 		return
-	_maracatu_on = false
-	for stem in _stem_players:
-		var p: AudioStreamPlayer = _stem_players[stem]
-		if p.playing:
-			_fade_player(p, -40.0, true)
-
-func _play_stem(stem: String, audible: bool) -> void:
-	var p: AudioStreamPlayer = _stem_players[stem]
-	if p.stream == null:
-		var path := MUSIC_DIR + stem + ".wav"
-		if not ResourceLoader.exists(path):
-			return
-		var s: AudioStream = load(path)
-		_force_loop(s)
-		p.stream = s
-	p.stop()
-	p.volume_db = -40.0
-	p.play()
-	if audible:
-		_fade_player(p, STEM_TARGET_DB[stem], false)
+	_current_music = path
+	var outgoing := _music_active
+	if path == "" or not ResourceLoader.exists(path):
+		if outgoing != null and outgoing.playing:
+			_fade_player(outgoing, -40.0, true, MUSIC_FADE)
+		_music_active = null
+		return
+	var incoming: AudioStreamPlayer = _music_b if _music_active == _music_a else _music_a
+	var s: AudioStream = load(path)
+	_force_loop(s)
+	incoming.stop()
+	incoming.stream = s
+	incoming.volume_db = -40.0
+	incoming.play()
+	_fade_player(incoming, 0.0, false, MUSIC_FADE)
+	if outgoing != null and outgoing.playing:
+		_fade_player(outgoing, -40.0, true, MUSIC_FADE)
+	_music_active = incoming
 
 # ─── Stingers ──────────────────────────────────────
 func _play_stinger(name: String) -> void:
@@ -245,9 +304,9 @@ func _force_loop(stream: AudioStream) -> void:
 		wav.loop_begin = 0
 		wav.loop_end = wav.data.size() / 2
 
-func _fade_player(player: AudioStreamPlayer, to_db: float, stop_after: bool) -> void:
+func _fade_player(player: AudioStreamPlayer, to_db: float, stop_after: bool, dur: float = AMBIENCE_FADE) -> void:
 	var tween := create_tween()
-	tween.tween_property(player, "volume_db", to_db, AMBIENCE_FADE)
+	tween.tween_property(player, "volume_db", to_db, dur)
 	if stop_after:
 		tween.tween_callback(player.stop)
 
