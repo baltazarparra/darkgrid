@@ -157,7 +157,8 @@ func _apply_screen_audio(screen: int) -> void:
 	_play_music(_music_for_screen(screen))
 	match screen:
 		SignalBus.Screen.ARENA, SignalBus.Screen.ARENA_PHASE2, \
-		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4:
+		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4, \
+		SignalBus.Screen.ARENA_PHASE5:
 			_play_stinger(STING_ARENA)
 		SignalBus.Screen.WIN:
 			_play_stinger(STING_VICTORY)
@@ -192,8 +193,11 @@ func _refresh_ambience(screen: int) -> void:
 			path = AMB_FOG     # névoa
 		SignalBus.Screen.EXPLORATION_PHASE4:
 			path = AMB_DREAD   # ruína fria
+		SignalBus.Screen.EXPLORATION_PHASE5:
+			path = AMB_DREAD   # igreja fria e úmida
 		SignalBus.Screen.ARENA, SignalBus.Screen.ARENA_PHASE2, \
-		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4:
+		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4, \
+		SignalBus.Screen.ARENA_PHASE5:
 			path = AMB_DREAD
 		_:
 			path = ""
@@ -227,10 +231,12 @@ func _music_for_screen(screen: int) -> String:
 		SignalBus.Screen.ENDING:
 			return _mus("mus_ending")
 		SignalBus.Screen.EXPLORATION, SignalBus.Screen.EXPLORATION_PHASE2, \
-		SignalBus.Screen.EXPLORATION_PHASE3, SignalBus.Screen.EXPLORATION_PHASE4:
+		SignalBus.Screen.EXPLORATION_PHASE3, SignalBus.Screen.EXPLORATION_PHASE4, \
+		SignalBus.Screen.EXPLORATION_PHASE5:
 			return _mus("mus_explore_p%d" % _phase_from_screen(screen))
 		SignalBus.Screen.ARENA, SignalBus.Screen.ARENA_PHASE2, \
-		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4:
+		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4, \
+		SignalBus.Screen.ARENA_PHASE5:
 			var phase := _phase_from_screen(screen)
 			if GameState.active_combat_is_boss:
 				return _mus(_boss_track(phase))
@@ -248,6 +254,7 @@ func _boss_track(phase: int) -> String:
 		2: return "mus_boss_boitata"
 		3: return "mus_boss_curupira"
 		4: return "mus_boss_saci"
+		5: return "mus_boss_jesuita"
 		_: return "mus_boss_mula"
 
 ## Fase 1..4 a partir do enum da tela (explore/arena codificam a fase no nome).
@@ -259,6 +266,8 @@ func _phase_from_screen(screen: int) -> int:
 			return 3
 		SignalBus.Screen.EXPLORATION_PHASE4, SignalBus.Screen.ARENA_PHASE4:
 			return 4
+		SignalBus.Screen.EXPLORATION_PHASE5, SignalBus.Screen.ARENA_PHASE5:
+			return 5
 		_:
 			return 1
 

@@ -831,6 +831,52 @@ def mus_ending():
     return _normalize(bitcrush(buf, bits=7), 0.76)
 
 
+def mus_explore_p5():
+    """Fase 5 — A Igreja na Mata: solene e profana. Drone de órgão (triângulo
+    sustentado) sob o frígio (♭2 = liturgia corrompida), sino de igreja (gonguê
+    grave + agogô) dobrando lento, alfaia fria como passos na nave e um canto
+    distante (pulso com vibrato). A ruína da Fase 4 consumada pelo sagrado."""
+    buf, step = _new_buf(58, 2)
+    root = C2
+    _drums(buf, step, lambda: alfaia(0.3, base=root * 0.5, punch=0.6), [(0, 0.6), (16, 0.5)])
+    _drums(buf, step, lambda: gongue(0.22, 300.0), [(0, 0.5), (16, 0.45)])  # sino grave
+    _drums(buf, step, lambda: agogo(0.18, freq=760.0, bend=0.0), [(8, 0.3), (24, 0.28)])
+    _melody(buf, step, root, PHRYGIAN, _bass(),  # drone de órgão (tônica + quinta)
+            [(0, 0, 16, 0.78), (16, 4, 16, 0.62)])
+    _melody(buf, step, root, PHRYGIAN, _lead(duty=0.5, vib=0.02),  # canto distante
+            [(4, 7, 3, 0.32), (10, 8, 2, 0.3), (14, 11, 4, 0.34),
+             (20, 8, 3, 0.3), (28, 7, 4, 0.32)])
+    return _normalize(bitcrush(buf, bits=6), 0.78)
+
+
+def mus_arena_p5():
+    """Arena da Fase 5: a mais intensa do jogo. Baque virado denso em frígio grave."""
+    return _arena_track(120, C2, PHRYGIAN, density=3)
+
+
+def mus_boss_jesuita():
+    """Jesuíta Bandeirante Catequizador (boss FINAL): o moveset reúne todos os
+    chefes — a música também. Baque virado denso + sino de igreja (gonguê/agogô)
+    dobrando como condenação, varredura de ruído (aspersão de água benta),
+    baixo-motor e um lead frenético em frígio. O sagrado colonial em fúria total."""
+    buf, step = _new_buf(128, 4)
+    root = C2
+    _drums(buf, step, lambda: alfaia(0.13, base=root * 0.5, punch=1.0), _baque_alfaia(4))
+    _drums(buf, step, lambda: caixa(0.06, bright=1.2),
+           [(st, 0.48) for st in range(64) if st % 4 == 2])
+    _drums(buf, step, lambda: ganza(0.05, rising=False), _shaker_run(4))
+    _drums(buf, step, lambda: gongue(0.18, 320.0), [(b * 16, 0.5) for b in range(4)])  # condenação
+    _drums(buf, step, lambda: agogo(0.14, freq=990.0, bend=0.0), [(b * 16 + 8, 0.34) for b in range(4)])
+    _drums(buf, step, lambda: nes_noise(0.08, decay=16.0, lp=0.5, gain=0.34),  # aspersão
+           [(b * 16, 0.42) for b in range(4)])
+    _melody(buf, step, root, PHRYGIAN, _bass(),  # baixo-motor
+            [(st, 0 if (st // 8) % 2 == 0 else 1, 1, 0.78) for st in range(0, 64, 2)])
+    zeal = [7, 8, 10, 11, 12, 11, 10, 8]
+    _melody(buf, step, root, PHRYGIAN, _lead(duty=0.125, vib=0.03),  # lead frenético
+            [(b * 16 + i * 2, zeal[(i + b) % 8], 1, 0.44) for b in range(4) for i in range(8)])
+    return _normalize(bitcrush(buf, bits=7), 0.88)
+
+
 MUSIC = {
     "mus_menu": mus_menu,
     "mus_hub": mus_hub,
@@ -842,6 +888,9 @@ MUSIC = {
     "mus_arena_p2": mus_arena_p2,
     "mus_arena_p3": mus_arena_p3,
     "mus_arena_p4": mus_arena_p4,
+    "mus_explore_p5": mus_explore_p5,
+    "mus_arena_p5": mus_arena_p5,
+    "mus_boss_jesuita": mus_boss_jesuita,
     "mus_boss_mula": mus_boss_mula,
     "mus_boss_boitata": mus_boss_boitata,
     "mus_boss_curupira": mus_boss_curupira,

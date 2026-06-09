@@ -5,13 +5,17 @@ const ForestLight := preload("res://scripts/exploration/forest_light.gd")
 const FireEffect := preload("res://scripts/exploration/fire_effect.gd")
 
 enum Type { CHEST, KEY, FIRE, SPIKE, DEAD_TREE, BONES, MOSS, BLOOD_POOL, ROCK, FERN, VINE,
-	MUSHROOM, STUMP, TOTEM, ROOTS, PUDDLE, BAG }
+	MUSHROOM, STUMP, TOTEM, ROOTS, PUDDLE, BAG, CROSS, MIRROR, FONT, CANDLE, PEW }
 
 const T: int = Constants.TILE_SIZE  # 32
 
 # Decorações puramente visuais (não-bloqueantes), renderizadas atrás das entidades.
 const DECO_TYPES := [Type.DEAD_TREE, Type.BONES, Type.MOSS, Type.BLOOD_POOL, Type.ROCK, Type.FERN, Type.VINE,
 	Type.MUSHROOM, Type.STUMP, Type.TOTEM, Type.ROOTS, Type.PUDDLE]
+
+# Props de igreja (Fase 5): também ambientação (z atrás das entidades), mas FORA de
+# DECO_TYPES (que dobra como paleta da Fase 1 — não devem vazar pra floresta).
+const CHURCH_PROPS := [Type.CROSS, Type.MIRROR, Type.FONT, Type.CANDLE, Type.PEW]
 
 var _type: Type
 
@@ -20,7 +24,7 @@ var _type: Type
 func setup(type: Type, grid_pos: Vector2i, enhanced: bool = false) -> void:
 	_type = type
 	position = Vector2(grid_pos) * T
-	if type in DECO_TYPES:
+	if type in DECO_TYPES or type in CHURCH_PROPS:
 		z_index = -1  # ambientação fica embaixo de jogador/inimigos/baú
 	if type == Type.FIRE and enhanced:
 		FireEffect.attach(self, Vector2(T / 2.0, T / 2.0), 0.8)
@@ -48,6 +52,11 @@ func _draw() -> void:
 		Type.ROOTS:      _draw_roots(cx, cy)
 		Type.PUDDLE:     _draw_puddle(cx, cy)
 		Type.BAG:        _draw_bag(cx, cy)
+		Type.CROSS:      _draw_cross(cx, cy)
+		Type.MIRROR:     _draw_mirror(cx, cy)
+		Type.FONT:       _draw_font(cx, cy)
+		Type.CANDLE:     _draw_candle(cx, cy)
+		Type.PEW:        _draw_pew(cx, cy)
 
 func _draw_fire(cx: float, cy: float) -> void:
 	draw_circle(Vector2(cx, cy), 11.0, Constants.COLOR_FIRE_GLOW)
@@ -310,3 +319,72 @@ func _draw_bag(cx: float, cy: float) -> void:
 			c + Vector2(0, -r), c + Vector2(r * 0.7, 0),
 			c + Vector2(0, r), c + Vector2(-r * 0.7, 0),
 		]), shard)
+
+# ─── Props de igreja (Fase 5, ambientação não-bloqueante) ──
+func _draw_cross(cx: float, cy: float) -> void:
+	# Cruz de madeira torta com fio de ouro litúrgico.
+	var wood := Constants.COLOR_WOOD_DARK
+	var gold := Constants.COLOR_GOLD_DARK
+	draw_rect(Rect2(cx - 2, cy - 12, 4, 24), wood)   # haste vertical
+	draw_rect(Rect2(cx - 7, cy - 6, 14, 4), wood)    # trave horizontal
+	draw_rect(Rect2(cx - 1, cy - 12, 2, 24), gold)   # brilho dourado
+	draw_rect(Rect2(cx - 7, cy - 5, 14, 1), gold)
+
+func _draw_mirror(cx: float, cy: float) -> void:
+	# Espelho rachado de moldura dourada (a isca de conversão do Jesuíta).
+	var frame := Constants.COLOR_GOLD_DARK
+	var glass := Constants.COLOR_WATER_LIGHT
+	var glint := Constants.COLOR_PARTICLE_DODGE
+	draw_rect(Rect2(cx - 6, cy - 11, 12, 22), frame)  # moldura
+	draw_rect(Rect2(cx - 4, cy - 9, 8, 18), glass)    # vidro
+	draw_line(Vector2(cx - 3, cy + 6), Vector2(cx + 3, cy - 7), glint, 1.5)  # glint
+	draw_line(Vector2(cx + 2, cy - 8), Vector2(cx - 2, cy + 4), frame, 1.0)  # rachadura
+	draw_rect(Rect2(cx - 1, cy + 11, 2, 4), frame)    # cabo
+
+func _draw_font(cx: float, cy: float) -> void:
+	# Pia de água benta em pedra, a água estagnada virando lodo.
+	var stone := Constants.COLOR_STONE
+	var stone_dark := Constants.COLOR_STONE_DARK
+	var water := Constants.COLOR_WATER
+	var water_light := Constants.COLOR_WATER_LIGHT
+	draw_rect(Rect2(cx - 3, cy - 2, 6, 12), stone_dark)  # pedestal
+	draw_rect(Rect2(cx - 2, cy - 2, 3, 12), stone)
+	draw_rect(Rect2(cx - 6, cy + 9, 12, 3), stone_dark)  # base
+	var bowl := PackedVector2Array([
+		Vector2(cx - 9, cy - 6), Vector2(cx + 9, cy - 6),
+		Vector2(cx + 6, cy - 1), Vector2(cx - 6, cy - 1),
+	])
+	draw_colored_polygon(bowl, stone)                    # bacia
+	draw_rect(Rect2(cx - 7, cy - 6, 14, 2), water)       # água benta
+	draw_line(Vector2(cx - 4, cy - 5), Vector2(cx + 3, cy - 5), water_light, 1.0)
+
+func _draw_candle(cx: float, cy: float) -> void:
+	# Círio votivo aceso (brilho quente na nave fria).
+	var wax := Constants.COLOR_BONE
+	var wax_dark := Constants.COLOR_BONE_HOLLOW
+	var glow := Constants.COLOR_FIRE_GLOW
+	var flame := Constants.COLOR_FIRE_HOT
+	var flame_mid := Constants.COLOR_FIRE_MID
+	draw_circle(Vector2(cx, cy - 8), 6.0, glow)          # halo
+	draw_rect(Rect2(cx - 3, cy - 4, 6, 16), wax_dark)    # cera
+	draw_rect(Rect2(cx - 2, cy - 4, 3, 16), wax)
+	draw_rect(Rect2(cx - 1, cy - 7, 2, 3), wax_dark)     # pavio
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(cx - 2, cy - 6), Vector2(cx, cy - 12), Vector2(cx + 2, cy - 6),
+	]), flame_mid)
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(cx - 1, cy - 6), Vector2(cx, cy - 10), Vector2(cx + 1, cy - 6),
+	]), flame)
+
+func _draw_pew(cx: float, cy: float) -> void:
+	# Banco de igreja quebrado.
+	var wood := Constants.COLOR_WOOD
+	var wood_dark := Constants.COLOR_WOOD_DARK
+	draw_rect(Rect2(cx - 12, cy + 2, 24, 4), wood_dark)  # assento
+	draw_rect(Rect2(cx - 12, cy + 2, 24, 2), wood)
+	draw_rect(Rect2(cx - 12, cy - 6, 24, 3), wood_dark)  # encosto
+	draw_rect(Rect2(cx - 12, cy - 6, 24, 1), wood)
+	draw_rect(Rect2(cx - 11, cy + 5, 3, 7), wood_dark)   # pernas
+	draw_rect(Rect2(cx + 8, cy + 5, 3, 7), wood_dark)
+	draw_rect(Rect2(cx - 11, cy - 6, 2, 8), wood_dark)   # suportes do encosto
+	draw_rect(Rect2(cx + 9, cy - 6, 2, 8), wood_dark)

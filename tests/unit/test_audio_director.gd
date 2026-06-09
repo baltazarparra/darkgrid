@@ -42,6 +42,11 @@ func test_music_resolves_per_screen():
 		"res://assets/audio/music/mus_explore_p3.wav")
 	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.ARENA_PHASE2),
 		"res://assets/audio/music/mus_arena_p2.wav")
+	# Fase FINAL (A Igreja): faixa própria de exploração e de arena.
+	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.EXPLORATION_PHASE5),
+		"res://assets/audio/music/mus_explore_p5.wav")
+	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.ARENA_PHASE5),
+		"res://assets/audio/music/mus_arena_p5.wav")
 	# WIN/GAME_OVER não têm loop de música.
 	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.WIN), "")
 
@@ -49,6 +54,9 @@ func test_boss_screen_picks_boss_theme():
 	GameState.active_combat_is_boss = true
 	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.ARENA_PHASE4),
 		"res://assets/audio/music/mus_boss_saci.wav")
+	# Boss FINAL: o Jesuíta tem seu próprio tema.
+	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.ARENA_PHASE5),
+		"res://assets/audio/music/mus_boss_jesuita.wav")
 	GameState.active_combat_is_boss = false
 
 func test_arena_starts_music():

@@ -64,6 +64,12 @@ const DECO_FIRE: Array[MapObject.Type] = [
 	MapObject.Type.DEAD_TREE, MapObject.Type.BONES, MapObject.Type.STUMP,
 	MapObject.Type.BLOOD_POOL, MapObject.Type.ROCK,
 ]
+# Fase 5 (A Igreja): props litúrgicos + ossos/sangue do altar.
+const DECO_CHURCH: Array[MapObject.Type] = [
+	MapObject.Type.PEW, MapObject.Type.CROSS, MapObject.Type.MIRROR,
+	MapObject.Type.FONT, MapObject.Type.CANDLE,
+	MapObject.Type.BONES, MapObject.Type.BLOOD_POOL,
+]
 
 const MULA_DIALOGUE: Array[Dictionary] = [
 	{"speaker": "CAIPORA", "text": "Vim terminar o que comecei."},
@@ -605,7 +611,7 @@ func _build_profile() -> Dictionary:
 				"has_fog": false,
 				"enhance_fire": true,
 				"exit_marker": ExitMarker.NONE,
-				"deco_palette": DECO_FIRE,
+				"deco_palette": DECO_CHURCH,
 				"intro_dialogue": JESUITA_INTRO_DIALOGUE,
 				"intro_speaker": "JESUÍTA BANDEIRANTE CATEQUIZADOR",
 			}
