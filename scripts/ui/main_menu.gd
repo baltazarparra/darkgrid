@@ -28,10 +28,10 @@ func _ready() -> void:
 	_setup_version_label()
 	_start_button.grab_focus()
 
-## Versão atual (canto inferior direito), lida de application/config/version.
+## Versão atual (canto inferior direito).
 func _setup_version_label() -> void:
 	var label := Label.new()
-	label.text = str(ProjectSettings.get_setting("application/config/version", "dev"))
+	label.text = _resolve_version()
 	label.add_theme_font_size_override("font_size", 12)
 	label.add_theme_color_override("font_color", Color(0.494, 0.514, 0.541, 0.7))
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -40,6 +40,17 @@ func _setup_version_label() -> void:
 	label.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	label.position -= Vector2(12, 10)
 	add_child(label)
+
+## Versão a exibir: o carimbo automático do build (scripts/core/build_info.gd, derivado da
+## contagem de commits do git em `make export` — gitignored) quando presente; senão o
+## config/version do projeto (rodando do editor, onde o carimbo ainda não foi gerado).
+func _resolve_version() -> String:
+	var path := "res://scripts/core/build_info.gd"
+	if ResourceLoader.exists(path):
+		var gd := load(path) as GDScript
+		if gd != null and gd.get_script_constant_map().has("VERSION"):
+			return String(gd.get_script_constant_map()["VERSION"])
+	return str(ProjectSettings.get_setting("application/config/version", "dev"))
 
 ## Overlay preto para fade-in (abrir) e fade-out (Iniciar).
 func _setup_fade() -> void:
