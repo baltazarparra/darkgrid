@@ -40,6 +40,16 @@ func test_phase5_monsters_are_the_four_bosses() -> void:
 		assert_true(types.has(t), "monstro %s presente na igreja" % t)
 	assert_eq(types.size(), 4, "os 4 monstros são exatamente os 4 chefes")
 
+func test_phase5_tilemap_uses_church_atlases() -> void:
+	var scene := await _load_phase5()
+	var tile_set: TileSet = scene.get_node("TileMap").tile_set
+	var floor_source := tile_set.get_source(0) as TileSetAtlasSource
+	var wall_source := tile_set.get_source(1) as TileSetAtlasSource
+	assert_eq(floor_source.texture.resource_path, "res://assets/sprites/tile_floor_church.png",
+		"piso da Fase 5 são as lajes da igreja")
+	assert_eq(wall_source.texture.resource_path, "res://assets/sprites/tile_wall_church.png",
+		"parede da Fase 5 é a taipa caiada")
+
 func test_phase5_intro_dialogue_locks_then_unlocks() -> void:
 	var scene := await _load_phase5()
 	assert_true(scene._locked, "movimento travado durante a fala de abertura")
