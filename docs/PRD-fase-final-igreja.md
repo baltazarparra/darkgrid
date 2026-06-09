@@ -224,6 +224,10 @@ destrava no `dialogue_finished`. Reusa 100% o `DialogueScreen` e o
 
 ## 6. Rollout em etapas (cada etapa fecha com `make gate` verde)
 
+> **Status:** Etapas 0–3 **concluídas**. O fecho da Etapa 3 (tiles de igreja,
+> `amb_church`, stingers sino/água-benta/órgão e overlay de batismo nos
+> mini-bosses) entrou na branch `claude/fase5-etapa3-polish`.
+
 - **Etapa 0 — Fundação de dados (sem mudança jogável):** enum de telas, roteamento
   `_scene_path_for`, `MapConfig.for_phase(5)` + `_common_mix(5)`, constantes de
   dificuldade/recompensa (`PHASE5_*`, `COMMON_FRAGMENT_REWARD[5]`,
