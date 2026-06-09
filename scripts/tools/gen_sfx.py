@@ -493,11 +493,54 @@ def amb_fog(dur=9.0):
     return _normalize(_loopify(out, n, fade), 0.55)
 
 
+def amb_church(dur=10.0):
+    """Fase 5 (A Igreja na Mata): pingar d'água no batistério, círios crepitando,
+    sussurro de reza distante e fantasma de órgão em C2 (tônica do frígio da fase).
+    Frio, úmido, profano."""
+    fade = int(SAMPLE_RATE * 0.6)
+    n = int(SAMPLE_RATE * dur)
+    total = n + fade
+    out = [0.0] * total
+    lp = 0.0
+    lp2 = 0.0
+    # pingo: seno curto com queda de pitch (900→550 Hz) e decay rápido
+    drip_n = int(SAMPLE_RATE * 0.08)
+    drip = []
+    for i in range(drip_n):
+        t = i / SAMPLE_RATE
+        f = 900.0 - 350.0 * (i / drip_n)
+        drip.append(math.sin(2 * math.pi * f * t) * math.exp(-40.0 * t))
+    # ~6 pingos em pontos fixos do loop (âncoras determinísticas, à la amb_forest)
+    drip_at = [int(n * p) for p in (0.08, 0.23, 0.41, 0.55, 0.72, 0.90)]
+    for i in range(total):
+        t = i / SAMPLE_RATE
+        # fantasma de órgão: C2 + quinta, com batimento lento (parente do amb_dread)
+        organ = 0.05 * math.sin(2 * math.pi * 65.41 * t) + 0.04 * math.sin(2 * math.pi * 65.85 * t)
+        organ += 0.03 * math.sin(2 * math.pi * 98.0 * t)
+        organ *= 0.7 + 0.3 * math.sin(2 * math.pi * 0.06 * t)
+        raw = _noise()
+        lp = lp * 0.97 + raw * 0.03
+        lp2 = lp2 * 0.8 + raw * 0.2
+        # sussurro de reza: banda média (amb_fog) com vai-e-vem + cadência silábica
+        prayer = (lp2 - lp) * 0.06 * max(0.0, math.sin(2 * math.pi * 0.11 * t)) \
+            * (0.6 + 0.4 * abs(math.sin(2 * math.pi * 2.3 * t)))
+        # círios: estalos secos e esparsos (crepitar do amb_fire, bem mais raro)
+        crackle = _noise() * 0.2 if random.random() < 0.02 else 0.0
+        s = organ + prayer + crackle + lp * 0.08
+        pos = i % n
+        for d0 in drip_at:
+            if d0 <= pos < d0 + drip_n:
+                s += drip[pos - d0] * 0.12
+        out[i] = s
+    return _normalize(_loopify(out, n, fade), 0.55)
+
+
 AMBIENCES = {
     "amb_forest": amb_forest,
     "amb_dread": amb_dread,
     "amb_fire": amb_fire,
     "amb_fog": amb_fog,
+    "amb_church": amb_church,
 }
 
 
@@ -976,6 +1019,58 @@ def sting_chama():
     ), bits=7), 0.78)
 
 
+def _sino_igreja(dur, freq):
+    """Sino de bronze de torre: parciais do gonguê com cauda longa (decay lento).
+    O gonguê seco (decay=22) morre em ~0,15s — sino de igreja precisa ressoar."""
+    return _inharmonic(
+        dur, freq,
+        [(1.0, 0.5), (2.4, 0.28), (3.9, 0.14), (5.4, 0.06)],
+        decay=2.6, fm=0.003,
+    )
+
+
+def sting_sino_igreja():
+    # Fase 5 — revelação do Jesuíta: duas badaladas graves de torre, com a alfaia
+    # como o baque do badalo. Condenação, não recompensa.
+    return _normalize(bitcrush(_seq(
+        (_sino_igreja(1.5, 130.0), 0.0, 1.0),
+        (alfaia(0.35, 46.0), 0.0, 0.5),
+        (_sino_igreja(1.7, 130.0), 0.85, 0.9),
+        (alfaia(0.35, 46.0), 0.85, 0.5),
+    ), bits=7), 0.88)
+
+
+def sting_orgao_estertor():
+    # Fase 5 — vitória sobre o Jesuíta: acorde de órgão (C3/G3/C4) que colapsa um
+    # semitom abaixo (estertor cromático) com fole de ruído e o corpo caindo no altar.
+    organ = _mix(
+        pulse(1.6, note(C2, 12), duty=0.5, attack=0.25, release=0.55),
+        pulse(1.6, note(C2, 19), duty=0.5, attack=0.25, release=0.55),
+        pulse(1.6, note(C2, 24), duty=0.5, attack=0.25, release=0.55),
+    )
+    collapse = _mix(
+        pulse(1.6, note(C2, 11), duty=0.5, attack=0.30, release=0.65),
+        pulse(1.6, note(C2, 18), duty=0.5, attack=0.30, release=0.65),
+        pulse(1.6, note(C2, 23), duty=0.5, attack=0.30, release=0.65),
+    )
+    return _normalize(bitcrush(_seq(
+        (organ, 0.0, 0.5),
+        (nes_noise(1.4, decay=2.0, lp=0.85, gain=0.18), 0.2, 0.6),
+        (collapse, 0.8, 0.45),
+        (alfaia(0.4, 44.0), 2.1, 0.9),
+    ), bits=6), 0.84)
+
+
+def sting_agua_benta():
+    # Fase 5 — telegraph do especial do Jesuíta: sibilo de aspersão de água benta
+    # + pingo final. Pico contido: é cue de leitura, não pode mascarar o timing_alert.
+    return _normalize(_seq(
+        (nes_noise(0.45, decay=7.0, lp=0.25, gain=0.5), 0.0, 0.6),
+        (ganza(0.25, rising=False), 0.02, 0.4),
+        (agogo(0.12, 1980.0), 0.30, 0.35),
+    ), 0.6)
+
+
 STINGERS = {
     "sting_arena_enter": sting_arena_enter,
     "sting_victory": sting_victory,
@@ -983,6 +1078,9 @@ STINGERS = {
     "sting_chest": sting_chest,
     "sting_boss_intro": sting_boss_intro,
     "sting_chama": sting_chama,
+    "sting_sino_igreja": sting_sino_igreja,
+    "sting_orgao_estertor": sting_orgao_estertor,
+    "sting_agua_benta": sting_agua_benta,
 }
 
 
