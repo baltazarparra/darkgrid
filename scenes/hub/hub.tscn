@@ -4,8 +4,8 @@
 [ext_resource type="PackedScene" uid="uid://caipora_explore" path="res://scenes/exploration/caipora.tscn" id="2_caipora"]
 [ext_resource type="Script" path="res://scripts/hub/hub_shop.gd" id="3_shop"]
 [ext_resource type="Script" path="res://scripts/systems/sfx_system.gd" id="4_sfx"]
-[ext_resource type="AudioStream" uid="uid://dw42c6yi6qe82" path="res://assets/audio/sfx/timing_perfect.wav" id="5_perfect"]
-[ext_resource type="AudioStream" uid="uid://cn2i1whe3bqxo" path="res://assets/audio/sfx/ui_click.wav" id="6_click"]
+[ext_resource type="AudioStream" uid="uid://cn2i1whe3bqxo" path="res://assets/audio/sfx/timing_perfect.wav" id="5_perfect"]
+[ext_resource type="AudioStream" uid="uid://dw42c6yi6qe82" path="res://assets/audio/sfx/ui_click.wav" id="6_click"]
 
 [node name="HubManager" type="Node2D"]
 script = ExtResource("1_mgr")
