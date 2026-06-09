@@ -434,6 +434,11 @@ func _on_actor_died(actor: CombatActor) -> void:
 			if MetaProgression.phase_reached < 4:
 				MetaProgression.phase_reached = 4
 				MetaProgression.save_progress()
+	else:
+		# Souls-like: a Caipora tomba e derruba TODOS os fragmentos numa bolsa, no tile onde
+		# o combate começou (lugar da morte). Recupera-os voltando ali numa run futura; morrer
+		# de novo antes custa tudo (drop_fragment_bag sobrescreve a bolsa anterior).
+		MetaProgression.drop_fragment_bag(GameState.active_phase, GameState.player_map_pos)
 	GameState.caipora_current_hp = maxf(0.0, _caipora.health.current_health)
 	_sfx.play(_sfx.death_sound)
 	_feedback.spawn_death_particles(actor.position)

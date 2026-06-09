@@ -90,6 +90,9 @@ var _locked: bool = false
 var _key_node: Node2D = null
 var _chest_node: Node2D = null
 var _fog: FogOfWar
+# Bolsa de fragmentos (souls-like): nó caído + tile onde a Caipora a recupera ao pisar.
+var _bag_node: Node2D = null
+var _bag_pos: Vector2i = Vector2i(-1, -1)
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -105,6 +108,7 @@ func _ready() -> void:
 	_setup_player()
 	_spawn_enemies()
 	_spawn_objects()
+	_spawn_fragment_bag()
 	if _config.has_exit:
 		_spawn_exit_marker()
 	if _profile["has_fog"]:
@@ -174,6 +178,49 @@ func _spawn_objects() -> void:
 			elif ch == "S":
 				_make_object(MapObject.Type.SPIKE, Vector2i(x, y))
 
+## Souls-like: se há uma bolsa derrubada nesta fase, recria-a no tile da morte. O mapa é
+## sorteado por run, então o tile pode ter virado parede — reancora no caminhável mais
+## próximo. Marca a posição (_bag_pos) e ergue um brilho âmbar pulsante pra guiar a volta.
+func _spawn_fragment_bag() -> void:
+	if not MetaProgression.has_bag_in_phase(phase):
+		return
+	var pos := _nearest_walkable(MetaProgression.frag_bag_pos)
+	_bag_pos = pos
+	_bag_node = _make_object(MapObject.Type.BAG, pos)
+	# Brilho âmbar pulsante centrado no tile da bolsa (relativo ao nó, que já está em pos*TILE).
+	var light := ForestLight.make(Constants.COLOR_AMBER, 1.0, 1.1)
+	light.position = Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
+	_bag_node.add_child(light)
+	var tween := create_tween().set_loops()
+	tween.tween_property(light, "energy", 1.5, 0.9).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(light, "energy", 0.8, 0.9).set_trans(Tween.TRANS_SINE)
+
+## Reaver a bolsa: devolve todos os fragmentos (a HUD pulsa via fragment_gained) e remove o nó.
+func _recover_fragment_bag() -> void:
+	MetaProgression.recover_fragment_bag()
+	if _bag_node != null:
+		_bag_node.queue_free()
+		_bag_node = null
+	_bag_pos = Vector2i(-1, -1)
+
+## Tile caminhável mais próximo de `pos` (BFS em 4-direções, limitado ao grid). Devolve `pos`
+## se nada for encontrado. Usado para reancorar a bolsa quando o mapa novo a deixou na parede.
+func _nearest_walkable(pos: Vector2i) -> Vector2i:
+	var queue: Array[Vector2i] = [pos]
+	var visited: Dictionary = {pos: true}
+	var dirs: Array[Vector2i] = [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]
+	while not queue.is_empty():
+		var p: Vector2i = queue.pop_front()
+		if _is_walkable(p):
+			return p
+		for d in dirs:
+			var n := p + d
+			if not visited.has(n) and n.x >= 0 and n.x < Constants.GRID_WIDTH \
+					and n.y >= 0 and n.y < Constants.GRID_HEIGHT:
+				visited[n] = true
+				queue.append(n)
+	return pos
+
 func _spawn_exit_marker() -> void:
 	var pos := _map.exit_pos
 	if _profile["exit_marker"] == ExitMarker.SIMPLE:
@@ -239,6 +286,10 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 		GameState.advance_phase_via_hub(_profile["next_screen_on_exit"])
 		return
 
+	# Bolsa de fragmentos (souls-like): pisar nela reaver TODOS os fragmentos derrubados na morte.
+	if _bag_node != null and new_grid_pos == _bag_pos:
+		_recover_fragment_bag()
+
 	# Chave
 	if _config.has_key and new_grid_pos == _map.key_pos and not GameState.has_key:
 		GameState.has_key = true
@@ -280,6 +331,8 @@ func _apply_hazard_damage() -> void:
 	SignalBus.caipora_health_changed.emit(GameState.caipora_current_hp, GameState.caipora_max_hp)
 	if GameState.caipora_current_hp <= 0:
 		_locked = true
+		# Souls-like: derruba a bolsa de fragmentos no tile onde a Caipora caiu (lugar da morte).
+		MetaProgression.drop_fragment_bag(phase, _player_grid_pos)
 		GameState.change_screen(SignalBus.Screen.GAME_OVER)
 
 func _run_enemy_turns() -> void:

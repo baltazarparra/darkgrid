@@ -598,6 +598,28 @@ Boitatá, Curupira, Saci).
   ~12.7k asserts. Verificação visual headless (Xvfb + harness de captura) confirmou
   os 4 bosses, incluindo a Mula em duas linhas.
 
+### Bolsa de Fragmentos (Souls-like / Corpse Run) ✅
+
+Ao **morrer**, a Caipora derruba **TODOS os fragmentos** numa **bolsa**, no lugar exato
+da morte (fase + tile). A bolsa fica caída na mata; ao **pisar nela** numa run futura, a
+Caipora reaver **todos** os fragmentos. **Morrer de novo** antes de chegar lá **perde
+tudo** — a bolsa antiga é sobrescrita e segue com zero. Tensão souls-like sobre a moeda
+de meta-progressão, coerente com o tom hostil da floresta.
+
+- [x] Estado persistente em `MetaProgression` (`frag_bag_active/phase/pos/amount`, no save
+  `v3`; migração v2→v3 no-op). API: `drop_fragment_bag(phase, pos)` (zera o saldo e
+  sobrescreve qualquer bolsa anterior — só marca bolsa nova se havia fragmento),
+  `has_bag_in_phase(phase)`, `recover_fragment_bag()` (devolve tudo + `fragment_gained`).
+- [x] **Drop na morte** em ambos os caminhos: arena (`arena_manager._on_actor_died`, derrota,
+  no tile do combate via `GameState.player_map_pos`) e hazard na exploração
+  (`exploration_manager._apply_hazard_damage`, no tile atual).
+- [x] **Bolsa no chão + recuperação ao pisar:** `MapObject.Type.BAG` (saco de couro em poça
+  de sangue, estilhaços âmbar) + brilho âmbar pulsante. `exploration_manager._spawn_fragment_bag()`
+  recria a bolsa na fase da morte; como o mapa é sorteado por run, o tile pode ter virado
+  parede → `_nearest_walkable()` (BFS) reancora no caminhável mais próximo. Pisar reaver
+  via `_recover_fragment_bag()` (HUD pulsa o ganho).
+- [x] Testes: `tests/unit/test_fragment_bag.gd` (drop/recover/overwrite/save round-trip/reset).
+
 ---
 
 ## 11.1 Known Issues

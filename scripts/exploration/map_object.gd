@@ -5,7 +5,7 @@ const ForestLight := preload("res://scripts/exploration/forest_light.gd")
 const FireEffect := preload("res://scripts/exploration/fire_effect.gd")
 
 enum Type { CHEST, KEY, FIRE, SPIKE, DEAD_TREE, BONES, MOSS, BLOOD_POOL, ROCK, FERN, VINE,
-	MUSHROOM, STUMP, TOTEM, ROOTS, PUDDLE }
+	MUSHROOM, STUMP, TOTEM, ROOTS, PUDDLE, BAG }
 
 const T: int = Constants.TILE_SIZE  # 32
 
@@ -47,6 +47,7 @@ func _draw() -> void:
 		Type.TOTEM:      _draw_totem(cx, cy)
 		Type.ROOTS:      _draw_roots(cx, cy)
 		Type.PUDDLE:     _draw_puddle(cx, cy)
+		Type.BAG:        _draw_bag(cx, cy)
 
 func _draw_fire(cx: float, cy: float) -> void:
 	draw_circle(Vector2(cx, cy), 11.0, Constants.COLOR_FIRE_GLOW)
@@ -277,3 +278,35 @@ func _draw_puddle(cx: float, cy: float) -> void:
 	# reflexos na superfície
 	draw_line(Vector2(cx - 4, cy + 1), Vector2(cx + 2, cy), water_light, 1.0)
 	draw_line(Vector2(cx + 1, cy + 3), Vector2(cx + 6, cy + 2), water_light, 1.0)
+
+func _draw_bag(cx: float, cy: float) -> void:
+	# Bolsa de fragmentos derrubada na morte (souls-like): saco de couro caído numa poça de
+	# sangue, com estilhaços âmbar escapando pela boca — atrai o olhar pra "voltar lá".
+	var blood := Constants.COLOR_BLOOD_POOL
+	var leather := Constants.COLOR_WOOD
+	var leather_dark := Constants.COLOR_WOOD_DARK
+	var cord := Constants.COLOR_BARK
+	var shard := Constants.COLOR_AMBER
+	# mancha de sangue sob o saco
+	draw_circle(Vector2(cx, cy + 6), 11.0, blood)
+	# corpo do saco (bojudo na base, estreito no topo)
+	var sack: PackedVector2Array = [
+		Vector2(cx - 5, cy - 3), Vector2(cx - 8, cy + 3), Vector2(cx - 6, cy + 9),
+		Vector2(cx + 6, cy + 9), Vector2(cx + 8, cy + 3), Vector2(cx + 5, cy - 3),
+	]
+	draw_colored_polygon(sack, leather)
+	# sombra lateral pra dar volume
+	var shade: PackedVector2Array = [
+		Vector2(cx + 5, cy - 3), Vector2(cx + 8, cy + 3), Vector2(cx + 6, cy + 9), Vector2(cx + 2, cy + 9),
+	]
+	draw_colored_polygon(shade, leather_dark)
+	# cordão amarrando a boca
+	draw_rect(Rect2(cx - 5, cy - 4, 10, 2), cord)
+	# estilhaços de fragmento escapando pela boca aberta
+	for p: Array in [[Vector2(cx - 2, cy - 7), 2.2], [Vector2(cx + 2, cy - 9), 1.6], [Vector2(cx, cy - 5), 1.4]]:
+		var c: Vector2 = p[0]
+		var r: float = p[1]
+		draw_colored_polygon(PackedVector2Array([
+			c + Vector2(0, -r), c + Vector2(r * 0.7, 0),
+			c + Vector2(0, r), c + Vector2(-r * 0.7, 0),
+		]), shard)

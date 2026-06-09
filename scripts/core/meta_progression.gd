@@ -6,7 +6,7 @@ extends Node
 var SAVE_PATH := "user://savegame.json"
 
 # Versão do formato de save. Incrementar ao mudar o schema; migrar em load_progress().
-const SAVE_VERSION: int = 2
+const SAVE_VERSION: int = 3
 
 # True se user:// é persistente (no Web = IndexedDB disponível; false em aba anônima/quota).
 var is_persistent: bool = true
@@ -67,6 +67,17 @@ var touch_controls_mode: String = "auto"
 var has_chama: bool = false
 var kills_toward_chama: int = 0
 
+# ─── Bolsa de fragmentos (souls-like / corpse run) ─────────────────────────────
+# Ao morrer, a Caipora derruba TODOS os fragmentos numa BOLSA, no lugar exato da morte
+# (fase + tile). A bolsa fica caída na mata até ser recuperada: ao pisar nela numa run
+# futura, a Caipora reaver TODOS os fragmentos. Morrer de novo ANTES de chegar nela
+# sobrescreve a bolsa antiga — ela e tudo que carregava se perdem na floresta (segue com
+# zero). Persiste no save (é meta, atravessa o limite morte→nova run).
+var frag_bag_active: bool = false
+var frag_bag_phase: int = 0
+var frag_bag_pos: Vector2i = Vector2i.ZERO
+var frag_bag_amount: float = 0.0
+
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	# No Web, a engine sincroniza IndexedDB→memfs antes do main loop, então user://
@@ -84,6 +95,37 @@ func add_fragments(amount: float) -> void:
 
 func add_fragment() -> void:
 	add_fragments(1.0)
+
+# ─── Bolsa de fragmentos (corpse run) ──────────────
+## Derruba TODOS os fragmentos atuais numa bolsa em `phase`/`pos` (lugar da morte) e zera o
+## saldo. SOBRESCREVE qualquer bolsa anterior ainda não recuperada — ela se perde (regra
+## souls-like: morrer de novo antes de chegar lá custa tudo). Só marca bolsa nova se havia
+## fragmento a derrubar; morrer com saldo zero apenas apaga a bolsa antiga (segue com zero).
+func drop_fragment_bag(phase: int, pos: Vector2i) -> void:
+	var dropped := fragments
+	frag_bag_amount = dropped
+	frag_bag_phase = phase
+	frag_bag_pos = pos
+	frag_bag_active = dropped > 0.0
+	fragments = 0.0
+	save_progress()
+
+## Há uma bolsa caída para recuperar nesta fase?
+func has_bag_in_phase(phase: int) -> bool:
+	return frag_bag_active and frag_bag_phase == phase
+
+## Recupera a bolsa: devolve todos os fragmentos ao saldo e limpa o estado. Retorna o valor
+## recuperado (0.0 se não havia bolsa). Emite fragment_gained para a HUD pulsar o ganho.
+func recover_fragment_bag() -> float:
+	if not frag_bag_active:
+		return 0.0
+	var amount := frag_bag_amount
+	fragments += amount
+	frag_bag_active = false
+	frag_bag_amount = 0.0
+	save_progress()
+	SignalBus.fragment_gained.emit(fragments, amount)
+	return amount
 
 # ─── Upgrades ──────────────────────────────────────
 func get_upgrade_level(key: String) -> int:
@@ -226,7 +268,12 @@ func save_progress() -> void:
 		"phase_reached": phase_reached,
 		"touch_controls_mode": touch_controls_mode,
 		"has_chama": has_chama,
-		"kills_toward_chama": kills_toward_chama
+		"kills_toward_chama": kills_toward_chama,
+		"frag_bag_active": frag_bag_active,
+		"frag_bag_phase": frag_bag_phase,
+		"frag_bag_x": frag_bag_pos.x,
+		"frag_bag_y": frag_bag_pos.y,
+		"frag_bag_amount": frag_bag_amount
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -258,6 +305,7 @@ func load_progress() -> void:
 	# Gancho de migração: saves sem "version" (v0) carregam com defaults nos campos ausentes,
 	# então v0→v1 é no-op. v1→v2 também é no-op: novas keys de upgrade (forca_5/6, saude_5/6)
 	# não existem no save antigo (upgrades{} não as contém → nível 0), e total_wins já existia.
+	# v2→v3 também é no-op: a bolsa de fragmentos (frag_bag_*) ausente assume defaults (sem bolsa).
 	var _version := int(data.get("version", 0))
 	unlocked_characters = _to_string_array(data.get("unlocked_characters", ["caipora"]))
 	unlocked_modifiers = _to_string_array(data.get("unlocked_modifiers", []))
@@ -269,6 +317,10 @@ func load_progress() -> void:
 	touch_controls_mode = data.get("touch_controls_mode", "auto")
 	has_chama = bool(data.get("has_chama", false))
 	kills_toward_chama = int(data.get("kills_toward_chama", 0))
+	frag_bag_active = bool(data.get("frag_bag_active", false))
+	frag_bag_phase = int(data.get("frag_bag_phase", 0))
+	frag_bag_pos = Vector2i(int(data.get("frag_bag_x", 0)), int(data.get("frag_bag_y", 0)))
+	frag_bag_amount = float(data.get("frag_bag_amount", 0.0))
 
 ## Zera todo o progresso e apaga o arquivo de save. Não toca em user://settings.cfg (áudio).
 func reset_save() -> void:
@@ -282,6 +334,10 @@ func reset_save() -> void:
 	touch_controls_mode = "auto"
 	has_chama = false
 	kills_toward_chama = 0
+	frag_bag_active = false
+	frag_bag_phase = 0
+	frag_bag_pos = Vector2i.ZERO
+	frag_bag_amount = 0.0
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 
