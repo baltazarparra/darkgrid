@@ -15,6 +15,11 @@ const KEY_FRACTION: float = 0.15
 const KEY_MIN: float = 64.0
 const KEY_MAX: float = 140.0
 
+# Retrato é estreito: o cluster da cruz (3 teclas de largura) nunca pode dominar nem estourar
+# a largura. Teto da largura do cluster como fração do viewport — se passar, a tecla encolhe
+# proporcionalmente (mantém a proporção da cruz e o canto-direito alcançável pelo polegar).
+const DPAD_MAX_WIDTH_FRACTION: float = 0.72
+
 const OPACITY_IDLE: float = 0.45
 const OPACITY_ACTIVE: float = 0.88
 const FADE_IN_DURATION: float = 0.3
@@ -206,7 +211,7 @@ func _rebuild() -> void:
 
 	# Mobile: retrato → 1.5x (−25% vs 2.0 original); paisagem → 1.3x.
 	if _touch_detected:
-		key *= 1.5 if vp.y > vp.x else 1.3
+		key *= 1.5 if Constants.is_portrait(vp) else 1.3
 
 	var gap: float = key * 0.12
 	var margin: float = key * 0.4
@@ -218,6 +223,16 @@ func _rebuild() -> void:
 	# Cluster em cruz: 3 colunas x 2 linhas, com dead zone no centro.
 	var cluster_w: float = key * 3.0 + gap * 2.0
 	var cluster_h: float = key * 2.0 + gap
+
+	# Trava de largura (retrato): impede que o cluster + margem estoure ou domine a tela
+	# estreita. Encolhe a tecla na mesma proporção, preservando o desenho da cruz.
+	var max_cluster_w: float = vp.x * DPAD_MAX_WIDTH_FRACTION - margin
+	if cluster_w > max_cluster_w and max_cluster_w > 0.0:
+		var shrink: float = max_cluster_w / cluster_w
+		key *= shrink
+		gap *= shrink
+		cluster_w = key * 3.0 + gap * 2.0
+		cluster_h = key * 2.0 + gap
 
 	# Ancorado ao canto inferior DIREITO (polegar direito = direcional).
 	var origin := Vector2(vp.x - margin - cluster_w, vp.y - margin - cluster_h - safe.y)

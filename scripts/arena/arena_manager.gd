@@ -18,6 +18,11 @@ const STAGE_CENTER: Vector2 = Vector2(320.0, 225.0)
 const STAGE_SIZE: Vector2 = Vector2(560.0, 340.0)
 const STAGE_FILL: float = 0.92
 
+# Em retrato a tela é alta: sem isto a ação fica no centro vertical e o D-pad sobra num vão
+# morto embaixo. Levanta a ação para o meio do espaço ACIMA do D-pad. 1.0 = centra cheio
+# nesse espaço; 0.5 = meio-termo (nudge suave). Sem D-pad (desktop) o efeito é nulo.
+const ACTION_LIFT_FRACTION: float = 0.5
+
 # Folga extra (px de tela) somada ao raio da bolha ao testar contra o D-pad.
 const DPAD_BUBBLE_PADDING: float = 12.0
 
@@ -76,7 +81,14 @@ func _update_camera_fit() -> void:
 	var z: float = minf(vp.x / STAGE_SIZE.x, vp.y / STAGE_SIZE.y) * STAGE_FILL
 	z = clampf(z, 0.5, 2.0)
 	_camera.zoom = Vector2(z, z)
-	_camera.position = STAGE_CENTER
+
+	# Levanta a ação para o centro do espaço acima do D-pad (só quando há D-pad). Move a
+	# câmera para baixo no mundo (vp.y - topo_do_dpad é a faixa do D-pad) → ação sobe na tela.
+	var dpad_rect := _controls_hud.get_dpad_screen_rect()
+	var y_offset: float = 0.0
+	if dpad_rect.size.y > 0.0:
+		y_offset = (vp.y - dpad_rect.position.y) * 0.5 * ACTION_LIFT_FRACTION / z
+	_camera.position = STAGE_CENTER + Vector2(0.0, y_offset)
 
 func _spawn_caipora() -> void:
 	if caipora_combat_scene == null:
