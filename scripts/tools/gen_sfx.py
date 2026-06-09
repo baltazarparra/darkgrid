@@ -22,7 +22,10 @@ import math
 import os
 import random
 import struct
+import sys
 import wave
+
+import check_audio  # fiscal de loudness (E1) — gerador e fiscal medem com o MESMO medidor
 
 SAMPLE_RATE = 22050
 # As faixas de música (loops longos) saem em SR reduzido — o grão lo-fi é parte da
@@ -35,13 +38,77 @@ AUDIO_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "audio
 VARIANT_SEEDS = [42, 1337, 2024]
 
 
-# ─── IO ────────────────────────────────────────────
-def _write(name, samples, subdir="sfx", rate=SAMPLE_RATE):
+# ─── IO + conformidade de loudness (motor v2) ──────
+# Alvo de loudness por categoria (centro das faixas do check_audio.TARGETS).
+# O _write entrega o asset JÁ no padrão: `make audio` é verde por construção.
+_LUFS_TARGET = {"music": -16.0, "ambience": -16.0, "stingers": -14.0}
+_SFX_PEAK_DB = -3.0          # alvo de pico dos SFX curtos
+_PEAK_CEIL_DB = -1.4         # teto de pico (margem sob o -1.2 do fiscal)
+_SFX_RMS_FLOOR_DB = -11.5    # RMS mínimo dos SFX (faixa -12..-9, com margem)
+_DRIVES = (1.0, 1.4, 2.0, 2.8, 4.0, 5.6, 8.0)
+
+
+def _db_to_gain(db):
+    return 10.0 ** (db / 20.0)
+
+
+def saturate(samples, drive=2.0):
+    """Saturação tanh (pico preservado: 1→1). Reduz o crest factor — o corpo sobe
+    sem o pico estourar. É o 'cola analógica' que deixa o lo-fi carnudo."""
+    if drive <= 1.0:
+        return list(samples)
+    norm = math.tanh(drive)
+    return [math.tanh(s * drive) / norm for s in samples]
+
+
+def _conform_lufs(samples, rate, target_lufs):
+    """Ganho para o alvo LUFS respeitando o teto de pico. Se o crest factor não
+    deixa (pico estouraria), satura progressivamente até caber; no limite, encosta
+    no teto de pico e o fiscal acusa (ajusta-se a fonte)."""
+    cand = samples
+    for drive in _DRIVES:
+        cand = saturate(samples, drive)
+        gain_db = target_lufs - check_audio.lufs(cand, rate)
+        if check_audio.sample_peak_db(cand) + gain_db <= _PEAK_CEIL_DB:
+            g = _db_to_gain(gain_db)
+            return [s * g for s in cand]
+    g = _db_to_gain(_PEAK_CEIL_DB - check_audio.sample_peak_db(cand))
+    return [s * g for s in cand]
+
+
+def _conform_sfx(samples):
+    """Pico em -3 dBFS; se o RMS ficar abaixo da faixa (-12..-9), satura até o
+    corpo subir. Percussivo continua percussivo — só mais denso."""
+    cand = samples
+    for drive in _DRIVES:
+        cand = saturate(samples, drive)
+        g = _db_to_gain(_SFX_PEAK_DB - check_audio.sample_peak_db(cand))
+        cand = [s * g for s in cand]
+        if check_audio.rms_db(cand) >= _SFX_RMS_FLOOR_DB:
+            return cand
+    return cand
+
+
+def _write(name, samples, subdir="sfx", rate=SAMPLE_RATE, gain=None):
+    """Grava o WAV já conforme ao padrão (PRD-audio-v2 §3). `gain=None` calcula o
+    ganho pelo alvo da categoria (= subdir), MEDINDO NO RATE FINAL (o mesmo que o
+    fiscal mede); `gain: float` aplica ganho linear direto (caminho dos stems)."""
     out_dir = os.path.join(AUDIO_DIR, subdir)
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, name)
     if rate != SAMPLE_RATE:
         samples = _resample(samples, SAMPLE_RATE, rate)
+    if gain is None:
+        if subdir in _LUFS_TARGET:
+            samples = _conform_lufs(samples, rate, _LUFS_TARGET[subdir])
+        else:
+            samples = _conform_sfx(samples)
+    else:
+        samples = [s * gain for s in samples]
+        peak = check_audio.sample_peak_db(samples)
+        if peak > _PEAK_CEIL_DB:  # clamp de segurança (não deve disparar nos stems)
+            g = _db_to_gain(_PEAK_CEIL_DB - peak)
+            samples = [s * g for s in samples]
     with wave.open(path, "w") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
@@ -122,6 +189,95 @@ def _resample(samples, src_rate, dst_rate):
         b = samples[j + 1] if j + 1 < len(samples) else samples[j]
         out[i] = a + (b - a) * frac
     return out
+
+
+# ─── DSP v2: filtros, reverb e eco de síntese ──────
+def biquad(samples, kind, freq, q=0.707, gain_db=0.0, rate=SAMPLE_RATE):
+    """Filtro biquad RBJ ("lp"/"hp"/"bp"/"lowshelf"/"highshelf"/"peak"). Dá corpo
+    e foco aos timbres — o que osciladores nus + média móvel não alcançam."""
+    a = 10.0 ** (gain_db / 40.0)
+    w0 = 2.0 * math.pi * freq / rate
+    cw, sw = math.cos(w0), math.sin(w0)
+    alpha = sw / (2.0 * q)
+    if kind == "lp":
+        b0 = b2 = (1.0 - cw) / 2.0
+        b1 = 1.0 - cw
+        a0, a1, a2 = 1.0 + alpha, -2.0 * cw, 1.0 - alpha
+    elif kind == "hp":
+        b0 = b2 = (1.0 + cw) / 2.0
+        b1 = -(1.0 + cw)
+        a0, a1, a2 = 1.0 + alpha, -2.0 * cw, 1.0 - alpha
+    elif kind == "bp":
+        b0, b1, b2 = alpha, 0.0, -alpha
+        a0, a1, a2 = 1.0 + alpha, -2.0 * cw, 1.0 - alpha
+    elif kind == "peak":
+        b0, b1, b2 = 1.0 + alpha * a, -2.0 * cw, 1.0 - alpha * a
+        a0, a1, a2 = 1.0 + alpha / a, -2.0 * cw, 1.0 - alpha / a
+    elif kind in ("lowshelf", "highshelf"):
+        sq = 2.0 * math.sqrt(a) * alpha
+        sign = 1.0 if kind == "lowshelf" else -1.0
+        b0 = a * ((a + 1.0) - sign * (a - 1.0) * cw + sq)
+        b1 = sign * 2.0 * a * ((a - 1.0) - sign * (a + 1.0) * cw)
+        b2 = a * ((a + 1.0) - sign * (a - 1.0) * cw - sq)
+        a0 = (a + 1.0) + sign * (a - 1.0) * cw + sq
+        a1 = sign * -2.0 * ((a - 1.0) + sign * (a + 1.0) * cw)
+        a2 = (a + 1.0) + sign * (a - 1.0) * cw - sq
+    else:
+        raise ValueError(f"biquad: tipo desconhecido {kind!r}")
+    b0, b1, b2, a1, a2 = b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0
+    z1 = z2 = 0.0
+    out = []
+    for x in samples:
+        y = b0 * x + z1
+        z1 = b1 * x - a1 * y + z2
+        z2 = b2 * x - a2 * y
+        out.append(y)
+    return out
+
+
+def schroeder(samples, mix=0.25, decay=0.72, predelay=0.0, tail=0.6, rate=SAMPLE_RATE):
+    """Reverb de Schroeder: 4 combs paralelos + 2 all-pass em série. Cauda CURTA
+    impressa no asset (corpo do som); o espaço da sala é o bus Reverb (E3).
+    'tail' = segundos extras de cauda anexados ao fim."""
+    if mix <= 0.0:
+        return list(samples)
+    n = len(samples) + int(tail * rate)
+    dry = list(samples) + [0.0] * (n - len(samples))
+    pre = int(predelay * rate)
+    wet = [0.0] * n
+    for delay_ms in (29.7, 37.1, 41.1, 43.7):
+        d = max(1, int(delay_ms * rate / 1000.0))
+        buf = [0.0] * d
+        for i in range(n):
+            j = i - pre
+            x = dry[j] if 0 <= j < len(samples) else 0.0
+            y = buf[i % d]
+            buf[i % d] = x + y * decay
+            wet[i] += y * 0.25
+    for delay_ms, g in ((5.0, 0.7), (1.7, 0.7)):
+        d = max(1, int(delay_ms * rate / 1000.0))
+        buf = [0.0] * d
+        for i in range(n):
+            x = wet[i]
+            y = buf[i % d]
+            buf[i % d] = x + y * g
+            wet[i] = y - g * buf[i % d]
+    return [dry[i] + wet[i] * mix for i in range(n)]
+
+
+def echo(samples, time_s=0.28, feedback=0.35, mix=0.3, taps=4, rate=SAMPLE_RATE):
+    """Delay com feedback: eco de mata para o assovio da Caipora. 'taps' limita a
+    cauda anexada (taps * time_s segundos a mais)."""
+    if mix <= 0.0:
+        return list(samples)
+    d = max(1, int(time_s * rate))
+    n = len(samples) + d * taps
+    line = [0.0] * n  # entrada da linha de delay: dry + feedback do atraso
+    for i in range(n):
+        x = samples[i] if i < len(samples) else 0.0
+        line[i] = x + (line[i - d] * feedback if i >= d else 0.0)
+    return [(samples[i] if i < len(samples) else 0.0)
+            + (line[i - d] * mix if i >= d else 0.0) for i in range(n)]
 
 
 # ─── Instrumentos do maracatu ──────────────────────
@@ -314,8 +470,10 @@ def attack_wav():
 
 
 def hit_wav():
-    # Impacto carnudo: alfaia grave + estalo de caixa por cima.
-    return _normalize(_mix(alfaia(0.18, base=64.0, punch=1.0), caixa(0.09, bright=1.0)), 0.95)
+    # Impacto carnudo: alfaia grave + estalo de caixa por cima. O lowshelf (v2)
+    # engorda o corpo do tambor sem turvar o estalo.
+    body = _mix(alfaia(0.18, base=64.0, punch=1.0), caixa(0.09, bright=1.0))
+    return _normalize(biquad(body, "lowshelf", 110.0, gain_db=2.5), 0.95)
 
 
 def dodge_wav():
@@ -358,7 +516,10 @@ def death_wav():
         tremolo = 0.7 + 0.3 * math.sin(2 * math.pi * 28.0 * t)
         e = _env(i, n, 0.02, 0.5)
         growl.append((0.6 * saw + 0.3 * _noise() * tremolo) * e * 0.6)
-    return _normalize(_mix(alfaia(0.45, base=52.0, punch=0.7), growl), 0.9)
+    # v2: LP ressonante escurece o growl (gore, não fanfarra) + cauda curta de reverb.
+    growl = biquad(growl, "lp", 2400.0, q=1.1)
+    return _normalize(schroeder(_mix(alfaia(0.45, base=52.0, punch=0.7), growl),
+                                mix=0.10, decay=0.6, tail=0.25), 0.9)
 
 
 def ui_click_wav():
@@ -599,6 +760,23 @@ def _samba_shaker(bars, swing=0.28):
         pos = st + (swing if st % 2 == 1 else 0.0)  # _put aceita passo fracionário
         g = 0.42 if st % 4 == 0 else (0.26 if st % 2 == 0 else 0.18)
         ev.append((pos, g))
+    return ev
+
+
+def _humanize_events(events, vel=0.08, time=0.25):
+    """Humaniza eventos (step, gain): jitter de velocity (±vel) e de timing
+    (±time de semicolcheia — _put aceita passo fracionário). Mata o grid robótico
+    dos loops longos sem perder o baque."""
+    return [(st + random.uniform(-time, time), g * _jit(vel)) for st, g in events]
+
+
+def _ghost_fill(bars, every=2):
+    """Fill de virada: ghost notes de caixa no fim de cada 'every'-ésimo compasso.
+    Quebra a repetição interna do loop — o terreiro respira, a máquina não."""
+    ev = []
+    for b in range(every - 1, bars, every):
+        base = b * 16
+        ev += [(base + 13.0, 0.22), (base + 13.5, 0.18), (base + 14.5, 0.26), (base + 15.5, 0.2)]
     return ev
 
 
@@ -1084,30 +1262,41 @@ STINGERS = {
 }
 
 
-def main():
-    print("Gerando SFX de combate (maracatu / Amazônia)...")
-    for variant, seed in enumerate(VARIANT_SEEDS):
-        random.seed(seed)
-        suffix = "" if variant == 0 else f"_{variant + 1}"
-        for name, gen in GENERATORS.items():
-            _write(f"{name}{suffix}.wav", gen())
+def main(only=None):
+    """Gera o catálogo. `only` limita a uma categoria (protocolo A/B da E2:
+    regenerar e commitar categoria por categoria)."""
+    if only in (None, "sfx"):
+        print("Gerando SFX de combate (maracatu / Amazônia)...")
+        for variant, seed in enumerate(VARIANT_SEEDS):
+            random.seed(seed)
+            suffix = "" if variant == 0 else f"_{variant + 1}"
+            for name, gen in GENERATORS.items():
+                _write(f"{name}{suffix}.wav", gen())
 
-    print("Gerando ambiências (loops)...")
-    for name, gen in AMBIENCES.items():
-        random.seed(7)
-        _write(f"{name}.wav", gen(), subdir="ambience")
+    if only in (None, "ambience"):
+        print("Gerando ambiências (loops)...")
+        for name, gen in AMBIENCES.items():
+            random.seed(7)
+            _write(f"{name}.wav", gen(), subdir="ambience")
 
-    print("Gerando música por contexto (maracatu 8-bits dark)...")
-    for name, gen in MUSIC.items():
-        random.seed(11)
-        _write(f"{name}.wav", gen(), subdir="music", rate=MUSIC_RATE)
+    if only in (None, "music"):
+        print("Gerando música por contexto (maracatu 8-bits dark)...")
+        for name, gen in MUSIC.items():
+            random.seed(11)
+            _write(f"{name}.wav", gen(), subdir="music", rate=MUSIC_RATE)
 
-    print("Gerando stingers de estado...")
-    for name, gen in STINGERS.items():
-        random.seed(13)
-        _write(f"{name}.wav", gen(), subdir="stingers")
+    if only in (None, "stingers"):
+        print("Gerando stingers de estado...")
+        for name, gen in STINGERS.items():
+            random.seed(13)
+            _write(f"{name}.wav", gen(), subdir="stingers")
     print("Pronto.")
 
 
 if __name__ == "__main__":
-    main()
+    arg = None
+    if len(sys.argv) > 2 and sys.argv[1] == "--only":
+        arg = sys.argv[2]
+        if arg not in ("sfx", "ambience", "music", "stingers"):
+            sys.exit(f"--only deve ser sfx|ambience|music|stingers (recebido: {arg})")
+    main(arg)
