@@ -210,10 +210,14 @@ def _fire_dither(img):
 
 # ── A figura ─────────────────────────────────────────────────────────
 
-def _mane(p: Painter, head, sweep, lift, length=1.0, blown=0.0):
+def _mane(p: Painter, head, sweep, lift, length=1.0, blown=0.0, chama=False):
     """Juba-cometa: sobe da cabeça e flui pra trás em arco ASCENDENTE (energia,
-    não peso). sweep/lift moldam o arco; blown estica horizontal (strike)."""
+    não peso). sweep/lift moldam o arco; blown estica horizontal (strike);
+    chama incendeia (juba mais longa e quente — a CHAMA é DELA)."""
     hx, hy = head
+    if chama:
+        length += 0.8
+        lift += 1.0
     # espinha da juba: nasce atrás do couro, arqueia pra cima-trás, cauda solta
     tail_x = hx - (13 + 4 * length) - 5 * blown
     tail_y = hy - 11 - lift + 5 * blown
@@ -223,20 +227,25 @@ def _mane(p: Painter, head, sweep, lift, length=1.0, blown=0.0):
     p.blob_path(spine, 5.2, 1.2, F_DEEP)
     p.blob_path(spine[:4], 4.0, 1.4, F_LOW)
     p.blob_path(spine[:3], 3.0, 1.4, F_MID)
+    if chama:
+        p.blob_path(spine[:3], 2.0, 1.0, F_HOT)   # coração mais quente
     # línguas soltas desprendendo da cauda (ritmo orgânico)
-    for i in range(4):
+    for i in range(5 if chama else 4):
         t = 0.5 + i * 0.15
         sx = hx - 1 + (tail_x - hx + 1) * t
         sy = hy - 7 + (tail_y - hy + 7) * t + (_hash01(i * 3.7) - 0.5) * 2.5
         p.limb((sx, sy), (sx - 3.0 - 2 * blown, sy - 2.0 + _hash01(i) * 2.0),
-               1.9 - i * 0.3, 0.5, F_LOW if i % 2 else F_MID)
+               1.9 - i * 0.3, 0.5,
+               F_HOT if (chama and i % 2 == 0) else (F_LOW if i % 2 else F_MID))
     p.ellipse(hx - 4.5, hy - 8.5, 1.6, 1.2, F_HOT)   # brasa subindo na nuca
 
 
-def _crown(p: Painter, head, lift=0.0, blown=0.0):
+def _crown(p: Painter, head, lift=0.0, blown=0.0, chama=False):
     """Frente da juba — desenhada DEPOIS da cabeça: o cabelo-fogo nasce do
     couro e sobe em línguas vivas (nada de testa careca, nada de touca)."""
     hx, hy = head
+    if chama:
+        lift += 2.0
     # couro cabeludo de fogo abraçando o ALTO do crânio (rosto fica livre)
     p.ellipse(hx - 0.2, hy - 5.2, 5.7, 2.9, F_DEEP)
     p.poly([(hx + 0.4, hy - 2.2), (hx + 2.4, hy - 3.6), (hx - 1.4, hy - 3.8)],
@@ -252,6 +261,25 @@ def _crown(p: Painter, head, lift=0.0, blown=0.0):
     # núcleo branco-quente no coração da coroa (pequeno — acento, não holofote)
     p.ellipse(hx - 0.8, hy - 7.6, 2.0, 1.3, F_CORE)
     p.ellipse(hx + 1.4, hy - 6.4, 1.1, 0.9, F_HOT)
+    if chama:
+        p.ellipse(hx - 0.4, hy - 8.4, 1.4, 1.0, F_CORE)   # coroa transborda
+
+
+def _embers(p: Painter, head, pose: str, leg_phase: int = 0):
+    """Brasas soltas orbitando a Caipora incendiada (variante CHAMA).
+    leg_phase entra na semente: as brasas DERIVAM entre os frames de walk
+    (senão ficam pixel-congeladas enquanto o corpo anima). Zona de exclusão
+    no rosto — brasa não cai no olho dela."""
+    hx, hy = head
+    seed = sum(map(ord, pose)) + (leg_phase + 1) * 31
+    for i in range(6):
+        a = _hash01(i * 5.3 + seed) * math.tau                # determinístico
+        r = 9.0 + _hash01(i * 2.1 + seed) * 7.0
+        ex = hx + math.cos(a) * r * 1.2
+        ey = hy - 6 + math.sin(a) * r * 0.8 - _hash01(i + seed) * 4.0
+        if hx - 6.5 < ex < hx + 7.5 and hy - 4.0 < ey < hy + 6.5:
+            continue                                          # rosto é sagrado
+        p.ellipse(ex, ey, 0.7, 0.7, F_HOT if i % 2 else F_LOW)
 
 
 def _head(p: Painter, cx, cy, jaw_fwd=0.0):
@@ -275,9 +303,11 @@ def _head(p: Painter, cx, cy, jaw_fwd=0.0):
     p.limb((cx + 1.2, cy + 4.0), (cx + 2.6 + jaw_fwd, cy + 3.9), 0.55, 0.5, SK_DK2)
 
 
-def _whip(p: Painter, hand, pose):
+def _whip(p: Painter, hand, pose, chama=False):
     """Cipó-chicote vivo: madeira escura, realce de folha, ponta em brasa."""
     hx, hy = hand
+    tip_r = 1.7 if chama else 1.3
+    tip_core_r = 0.95 if chama else 0.7   # base EXATA de antes da CHAMA (arte travada)
     if pose == "windup":
         # arco tensionado atrás do ombro — a chicotada vem aí
         pts = [(hx, hy), (hx + 3.5, hy - 4.5), (hx + 3.5, hy - 10),
@@ -289,8 +319,10 @@ def _whip(p: Painter, hand, pose):
             arc = [(hx + 0.5, hy + off * 0.4), (hx + 6, hy - 1.5 + off),
                    (hx + 11.5, hy + 0.5 + off * 1.4), (hx + 15.5, hy + 4 + off * 1.7)]
             p.stroke(arc, wd, col)
-        p.ellipse(hx + 16.5, hy + 6.5, 1.8, 1.8, F_HOT)        # estalo da ponta
-        p.ellipse(hx + 16.5, hy + 6.5, 1.0, 1.0, F_CORE)
+        snap_r = 2.3 if chama else 1.8        # estalo da ponta (um nome por raio,
+        snap_core_r = 1.3 if chama else 1.0   # nunca pares de ternários por eixo)
+        p.ellipse(hx + 16.5, hy + 6.5, snap_r, snap_r, F_HOT)
+        p.ellipse(hx + 16.5, hy + 6.5, snap_core_r, snap_core_r, F_CORE)
         p.limb((hx + 11, hy - 0.5), (hx + 13.5, hy - 4.0), 1.2, 0.4, LF)  # folha arrancada
         return
     elif pose == "recover":
@@ -306,12 +338,18 @@ def _whip(p: Painter, hand, pose):
     p.ellipse(mid[0] + 1.2, mid[1] + 0.5, 1.6, 1.1, LF)
     p.ellipse(pts[3][0] - 1.0, pts[3][1], 1.3, 1.0, LF)
     # ponta em brasa (assinatura: o estalo crítico nasce aqui)
-    p.ellipse(pts[-1][0], pts[-1][1], 1.3, 1.3, F_LOW)
-    p.ellipse(pts[-1][0], pts[-1][1], 0.7, 0.7, F_HOT)
+    p.ellipse(pts[-1][0], pts[-1][1], tip_r, tip_r, F_LOW)
+    p.ellipse(pts[-1][0], pts[-1][1], tip_core_r, tip_core_r, F_HOT)
+    if chama:
+        p.ellipse(pts[-1][0], pts[-1][1], 0.5, 0.5, F_CORE)
 
 
-def caipora(pose="idle", leg_phase=0):
-    """Renderiza um frame da Caipora. Retorna Image 64x64 RGBA."""
+def caipora(pose="idle", leg_phase=0, chama=False):
+    """Renderiza um frame da Caipora. Retorna Image 64x64 RGBA.
+
+    chama=True: variante incendiada (CHAMA conquistada) — juba mais longa e
+    quente, brasas orbitando, ponta do chicote em brasa viva.
+    """
     p = Painter()
 
     # ── esqueleto base (facing right, pés na base y~61) ──
@@ -360,7 +398,7 @@ def caipora(pose="idle", leg_phase=0):
     # ── pintura, de trás pra frente ──
     blown = 1.0 if pose == "strike" else 0.0
     _mane(p, head, sweep={"windup": 2.0}.get(pose, 0.0) + leg_phase * 0.8,
-          lift={"windup": 2.5}.get(pose, 0.0), blown=blown)
+          lift={"windup": 2.5}.get(pose, 0.0), blown=blown, chama=chama)
 
     # braço/perna distantes (em sombra)
     p.limb(far_sh, far_el, 4.0, 3.2, SK_DK)
@@ -429,10 +467,12 @@ def caipora(pose="idle", leg_phase=0):
     p.limb((chest[0] + 0.5, chest[1] - 3.0), (head[0] - 0.5, head[1] + 4.0),
            3.4, 3.0, SK)
     _head(p, head[0], head[1], jaw_fwd=1.0 if pose == "strike" else 0.0)
-    _crown(p, head, lift={"windup": 2.5}.get(pose, 0.0), blown=blown)
+    _crown(p, head, lift={"windup": 2.5}.get(pose, 0.0), blown=blown, chama=chama)
 
-    # chicote por cima de tudo
-    _whip(p, near_hand, pose)
+    # chicote por cima de tudo; brasas orbitando fecham a variante CHAMA
+    _whip(p, near_hand, pose, chama=chama)
+    if chama:
+        _embers(p, head, pose, leg_phase)
 
     # ── render + pós ──
     img = p.render()
@@ -453,7 +493,9 @@ POSES = [("player_idle.png", "idle", 0),
 def generate_all() -> None:
     for name, pose, phase in POSES:
         caipora(pose, phase).save(os.path.join(OUT, name))
-    print("[gen_caipora] protagonista 64x64 premium gerada (6 frames)")
+        chama_name = name.replace(".png", "_chama.png")
+        caipora(pose, phase, chama=True).save(os.path.join(OUT, chama_name))
+    print("[gen_caipora] protagonista 64x64 premium gerada (6 frames + 6 CHAMA)")
 
 
 if __name__ == "__main__":

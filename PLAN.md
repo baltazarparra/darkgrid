@@ -683,6 +683,16 @@ todo asset futuro da protagonista.
   personagens intactos, byte a byte).
 - [x] Linguagem corporal por pose preservando o contrato do `ActorAnimator` e
   do `caipora_sprite_frames.tres` (mesmos nomes/arquivos — zero mudança de cena).
+- [x] **A CHAMA incendeia a Caipora:** com `has_chama` (permanente), os frames
+  trocam para a variante incendiada (`player_*_chama.png` +
+  `caipora_sprite_frames_chama.tres`): juba mais longa/quente, brasas orbitando
+  (derivam entre os frames de walk; nunca caem no rosto), estalo do chicote
+  maior. Seleção E aplicação em ponto único (`CaiporaSkin.frames_path/apply`,
+  par do `WeaponVisual.attach_to`), por código (sem editar `.tscn`) na
+  exploração, na arena e no `TitleWalker` (menu/ending). Conquista NO MEIO do
+  combate incendeia na hora (`SignalBus.chama_gained` → re-apply preservando a
+  pose). Mesmo contrato de animações — `ActorAnimator` não percebe. Testes:
+  `test_caipora_chama_frames.gd`.
 
 ---
 

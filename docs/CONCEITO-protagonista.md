@@ -137,3 +137,9 @@ brasa; postura de predadora.
 **Evolui livremente:** densidade de folhas (upgrades podem vesti-la mais),
 intensidade da juba (fúria/CHAMA podem incendiá-la), partículas, key art em
 resolução maior — desde que derive das 5 assinaturas.
+
+**Já realizado:** a CHAMA incendeia a própria Caipora — variante
+`player_*_chama.png` (`caipora(..., chama=True)`): juba +longa/+quente, brasas
+orbitando, estalo do chicote maior. Selecionada e aplicada em runtime por
+`CaiporaSkin` (exploração, arena — inclusive na conquista em pleno combate —
+e TitleWalker).
