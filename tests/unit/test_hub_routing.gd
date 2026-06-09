@@ -40,6 +40,7 @@ func test_screen_phase_mapping() -> void:
 	assert_eq(am._screen_phase(SignalBus.Screen.EXPLORATION_PHASE2), 2, "fase 2")
 	assert_eq(am._screen_phase(SignalBus.Screen.EXPLORATION_PHASE3), 3, "fase 3")
 	assert_eq(am._screen_phase(SignalBus.Screen.EXPLORATION_PHASE4), 4, "fase 4")
+	assert_eq(am._screen_phase(SignalBus.Screen.EXPLORATION_PHASE5), 5, "fase 5")
 	for s: int in [SignalBus.Screen.HUB, SignalBus.Screen.ARENA, SignalBus.Screen.ENDING,
 			SignalBus.Screen.GAME_OVER, SignalBus.Screen.MAIN_MENU]:
 		assert_eq(am._screen_phase(s), 0, "tela %d não é exploração" % s)
@@ -52,14 +53,17 @@ func test_is_phase_advance() -> void:
 	assert_true(am._is_phase_advance(SignalBus.Screen.EXPLORATION_PHASE3), "P2→P3 avança")
 	GameState.active_phase = 3
 	assert_true(am._is_phase_advance(SignalBus.Screen.EXPLORATION_PHASE4), "P3→P4 avança")
+	# Boss da P4 → P5 (a igreja) avança pelo acampamento.
+	GameState.active_phase = 4
+	assert_true(am._is_phase_advance(SignalBus.Screen.EXPLORATION_PHASE5), "P4→P5 avança")
 	# Volta para a MESMA fase (boss da P1 / vitória comum) NÃO avança.
 	GameState.active_phase = 1
 	assert_false(am._is_phase_advance(SignalBus.Screen.EXPLORATION), "P1→P1 não avança")
 	GameState.active_phase = 2
 	assert_false(am._is_phase_advance(SignalBus.Screen.EXPLORATION_PHASE2), "P2→P2 não avança")
-	# ENDING (boss da P4) e GAME_OVER nunca avançam (screen_phase = 0).
-	GameState.active_phase = 4
-	assert_false(am._is_phase_advance(SignalBus.Screen.ENDING), "P4→ENDING direto")
+	# ENDING (boss da P5) e GAME_OVER nunca avançam (screen_phase = 0).
+	GameState.active_phase = 5
+	assert_false(am._is_phase_advance(SignalBus.Screen.ENDING), "P5→ENDING direto")
 	assert_false(am._is_phase_advance(SignalBus.Screen.GAME_OVER), "GAME_OVER direto")
 
 # ── advance_phase_via_hub: guarda o destino, zera a continuidade e cai no HUB ──

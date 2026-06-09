@@ -17,6 +17,7 @@ const CACADOR_SCENE     := preload("res://scenes/arena/cacador.tscn")
 const BRUXO_SCENE       := preload("res://scenes/arena/bruxo.tscn")
 const CURUPIRA_SCENE    := preload("res://scenes/arena/curupira.tscn")
 const SACI_SCENE        := preload("res://scenes/arena/saci.tscn")
+const JESUITA_SCENE     := preload("res://scenes/arena/jesuita.tscn")
 const DIALOGUE_SCENE    := preload("res://scenes/ui/dialogue_screen.tscn")
 const BOSS_INTRO_SCENE  := preload("res://scenes/ui/boss_intro_screen.tscn")
 
@@ -25,12 +26,22 @@ const MULA_FRAMES     := preload("res://assets/sprites/mula_sprite_frames.tres")
 const BOITATA_FRAMES  := preload("res://assets/sprites/boitata_sprite_frames.tres")
 const CURUPIRA_FRAMES := preload("res://assets/sprites/curupira_sprite_frames.tres")
 const SACI_FRAMES     := preload("res://assets/sprites/saci_sprite_frames.tres")
+const JESUITA_FRAMES  := preload("res://assets/sprites/jesuita_sprite_frames.tres")
 
 # Inimigos comuns: a cena de arena é escolhida pelo tipo do comum (caçador/bruxo).
+# Na Fase 5 os "monstros" são os 4 chefes convertidos → suas cenas de chefe.
 const REGULAR_SCENES := {
 	"cacador": CACADOR_SCENE,
 	"bruxo": BRUXO_SCENE,
+	"mula": MULA_SCENE,
+	"boitata": BOITATA_SCENE,
+	"curupira": CURUPIRA_SCENE,
+	"saci": SACI_SCENE,
 }
+
+# Tipos de comum que são, na verdade, chefes (Fase 5): mantêm o HP de chefe da
+# própria cena e exibem sprite/aura de chefe no mapa.
+const MINIBOSS_TYPES := ["mula", "boitata", "curupira", "saci"]
 
 # Variantes de tile no atlas (ver scripts/tools/gen_tiles.py).
 const FLOOR_VARIANTS := 4
@@ -53,6 +64,12 @@ const DECO_FIRE: Array[MapObject.Type] = [
 	MapObject.Type.DEAD_TREE, MapObject.Type.BONES, MapObject.Type.STUMP,
 	MapObject.Type.BLOOD_POOL, MapObject.Type.ROCK,
 ]
+# Fase 5 (A Igreja): props litúrgicos + ossos/sangue do altar.
+const DECO_CHURCH: Array[MapObject.Type] = [
+	MapObject.Type.PEW, MapObject.Type.CROSS, MapObject.Type.MIRROR,
+	MapObject.Type.FONT, MapObject.Type.CANDLE,
+	MapObject.Type.BONES, MapObject.Type.BLOOD_POOL,
+]
 
 const MULA_DIALOGUE: Array[Dictionary] = [
 	{"speaker": "CAIPORA", "text": "Vim terminar o que comecei."},
@@ -70,6 +87,13 @@ const SACI_DIALOGUE: Array[Dictionary] = [
 	{"speaker": "CAIPORA", "text": "Vou salvar nossa casa"},
 	{"speaker": "SACI",    "text": "Não pertenço mais..."},
 ]
+# Fase FINAL: a fala marcante do Jesuíta abre a FASE (antes de explorar a igreja),
+# não a porta do chefe. Por isso o diálogo de boss é vazio (já falou na abertura).
+const JESUITA_INTRO_DIALOGUE: Array[Dictionary] = [
+	{"speaker": "JESUÍTA BANDEIRANTE CATEQUIZADOR", "text": "converti todos eles com espelhos e água benta. a floresta pertence ao vaticano."},
+	{"speaker": "CAIPORA", "text": "teus santos viram húmus na minha mata."},
+]
+const JESUITA_DIALOGUE: Array[Dictionary] = []
 
 # ─── Exports ───────────────────────────────────────
 @export var phase: int = 1
@@ -116,6 +140,7 @@ func _ready() -> void:
 	if _profile["ambient_life"]:
 		_spawn_ambient_life()
 	add_child(Atmosphere.new())
+	_maybe_show_intro_dialogue()
 
 func _setup_player() -> void:
 	var restoring := GameState.player_map_pos != Vector2i(-1, -1)
@@ -357,6 +382,8 @@ func _trigger_combat(enemy: MapEnemy) -> void:
 		_show_boss_intro()
 	else:
 		GameState.next_enemy_scene = _regular_scene_for(enemy.enemy_type)
+		# Fase 5: chefes-monstro convertidos mantêm o HP de chefe da própria cena.
+		GameState.active_combat_keeps_own_hp = enemy.enemy_type in MINIBOSS_TYPES
 		GameState.change_screen(_profile["arena_screen"])
 
 ## Cena de arena do comum pelo tipo (caçador/bruxo); fallback = caçador.
@@ -394,6 +421,28 @@ func _show_boss_dialogue() -> void:
 
 func _on_dialogue_finished() -> void:
 	GameState.change_screen(_profile["arena_screen"])
+
+# ─── Diálogo de abertura da FASE (Fase 5) ──────────
+## Exibe a fala do chefe ANTES da fase começar, travando o movimento. Só na
+## entrada fresca (não na volta de cada combate de mini-boss — aí player_map_pos
+## já não é -1). Reusa o DialogueScreen; o SceneTransition cobre a entrada.
+func _maybe_show_intro_dialogue() -> void:
+	if not _profile.has("intro_dialogue"):
+		return
+	var intro: Array[Dictionary] = _profile["intro_dialogue"]
+	if intro.is_empty():
+		return
+	if GameState.player_map_pos != Vector2i(-1, -1):
+		return  # voltando do combate: a fala de abertura não se repete
+	_locked = true
+	var dlg: DialogueScreen = DIALOGUE_SCENE.instantiate()
+	add_child(dlg)
+	SignalBus.dialogue_finished.connect(_on_intro_dialogue_finished, CONNECT_ONE_SHOT)
+	dlg.start(_profile["intro_speaker"], intro, "CAIPORA",
+		Constants.COLOR_DIALOGUE_CAIPORA, _profile["boss_color"])
+
+func _on_intro_dialogue_finished() -> void:
+	_locked = false
 
 # ─── Spawn Helpers (spawn seguro: longe de fogo) ───
 func _spawn_is_safe(pos: Vector2i) -> bool:
@@ -539,6 +588,32 @@ func _build_profile() -> Dictionary:
 				"enhance_fire": false,
 				"exit_marker": ExitMarker.NONE,
 				"deco_palette": DECO_FIRE,
+			}
+		5:
+			# Fase FINAL — A Igreja na Mata. Diálogo de abertura com o Jesuíta; os
+			# "monstros" são os 4 chefes convertidos; o Jesuíta no altar. Progride ao
+			# derrotá-lo → ENDING (has_exit=false). O diálogo de boss é vazio: a fala
+			# marcante já ocorre na abertura da fase (intro_dialogue).
+			return {
+				"arena_screen": SignalBus.Screen.ARENA_PHASE5,
+				"boss_scene": JESUITA_SCENE,
+				"boss_dialogue": JESUITA_DIALOGUE,
+				"boss_speaker": "JESUÍTA BANDEIRANTE CATEQUIZADOR",
+				"boss_color": Constants.COLOR_DIALOGUE_JESUITA,
+				"boss_frames": JESUITA_FRAMES,
+				"boss_aura": Constants.COLOR_AURA_JESUITA,
+				"next_screen_on_exit": SignalBus.Screen.ENDING,
+				"hazard_damage": Constants.FIRE_TILE_DAMAGE,
+				"aura": Aura.TORCH,
+				"safe_spawn": true,
+				"ambient_life": false,
+				"phase_reached_on_enter": 5,
+				"has_fog": false,
+				"enhance_fire": true,
+				"exit_marker": ExitMarker.NONE,
+				"deco_palette": DECO_CHURCH,
+				"intro_dialogue": JESUITA_INTRO_DIALOGUE,
+				"intro_speaker": "JESUÍTA BANDEIRANTE CATEQUIZADOR",
 			}
 		_:
 			# Fase 1 (padrão): arena aberta, tocha, baú/chave, vida ambiente.

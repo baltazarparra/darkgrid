@@ -29,6 +29,10 @@ var run_seed: int = 0
 var defeated_enemy_ids: Array[String] = []
 var active_map_enemy_id: String = ""
 var active_combat_is_boss: bool = false
+# Fase 5: os "monstros" são os 4 chefes convertidos, roteados como COMUNS (sem
+# cerimonial), mas devem manter o HP de chefe da própria cena. Quando true, o
+# ArenaManager NÃO sobrescreve o HP pelo uniforme da banda de fase. Volátil.
+var active_combat_keeps_own_hp: bool = false
 var has_key: bool = false
 var chest_opened: bool = false
 var player_map_pos: Vector2i = Vector2i(-1, -1)
@@ -45,6 +49,7 @@ func start_run() -> void:
 	defeated_enemy_ids.clear()
 	active_map_enemy_id = ""
 	active_combat_is_boss = false
+	active_combat_keeps_own_hp = false
 	has_key = false
 	chest_opened = false
 	player_map_pos = Vector2i(-1, -1)
@@ -132,6 +137,10 @@ func _scene_path_for(new_screen: SignalBus.Screen) -> String:
 			return "res://scenes/exploration/exploration_phase4.tscn"
 		SignalBus.Screen.ARENA_PHASE4:
 			return "res://scenes/arena/arena_phase4.tscn"
+		SignalBus.Screen.EXPLORATION_PHASE5:
+			return "res://scenes/exploration/exploration_phase5.tscn"
+		SignalBus.Screen.ARENA_PHASE5:
+			return "res://scenes/arena/arena_phase5.tscn"
 		SignalBus.Screen.ENDING:
 			return "res://scenes/ui/ending_screen.tscn"
 	return ""

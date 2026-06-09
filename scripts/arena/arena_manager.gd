@@ -120,6 +120,12 @@ func _apply_weapon_visual() -> void:
 	WeaponVisual.attach_to(animated_sprite)
 
 func _spawn_enemy() -> void:
+	# Consome o flag volátil ANTES de qualquer early-return, para nunca vazar estado
+	# para o próximo combate. Comuns (não-boss) têm HP uniforme por banda de fase;
+	# bosses mantêm o HP da cena. Exceção (Fase 5): os chefes-monstro convertidos são
+	# roteados como comuns mas mantêm o HP de chefe da própria cena (keeps_own_hp).
+	var keeps_own_hp := GameState.active_combat_keeps_own_hp
+	GameState.active_combat_keeps_own_hp = false
 	var scene := enemy_scene
 	if GameState.next_enemy_scene != null:
 		scene = GameState.next_enemy_scene
@@ -130,8 +136,7 @@ func _spawn_enemy() -> void:
 	_enemy = scene.instantiate()
 	_enemy.position = Vector2(480, 240)
 	add_child(_enemy)
-	# Comuns (não-boss) têm HP uniforme por banda de fase; bosses mantêm o HP da cena.
-	if not GameState.active_combat_is_boss:
+	if not GameState.active_combat_is_boss and not keeps_own_hp:
 		var hp: int = Constants.common_health_for_phase(GameState.active_phase)
 		_enemy.health.max_health = hp
 		_enemy.health.current_health = float(hp)
@@ -321,11 +326,14 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		var damage := _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
 		# Inimigos mais fortes (ex.: Bruxo) batem um tanto a mais por golpe.
 		damage += _enemy.extra_hit_damage
-		# Fase 2/4: cada golpe de inimigo bate 1 a mais — a floresta é mais hostil.
+		# Fase 2/4/5: cada golpe de inimigo bate 1 a mais — a floresta é mais hostil
+		# (na Fase 5 vale para os 4 chefes-monstro E para o Jesuíta).
 		if GameState.active_phase == 2:
 			damage += Constants.PHASE2_ENEMY_DAMAGE_BONUS
 		elif GameState.active_phase == 4:
 			damage += Constants.PHASE4_ENEMY_DAMAGE_BONUS
+		elif GameState.active_phase == 5:
+			damage += Constants.PHASE5_ENEMY_DAMAGE_BONUS
 		_caipora.take_damage(damage)
 		_sfx.play(_sfx.hit_sound)
 		_feedback.trigger_screenshake(14.0, 0.35)
@@ -351,6 +359,7 @@ func _boss_spread_pos() -> Vector2:
 
 func _phase_window(base: float) -> float:
 	match GameState.active_phase:
+		5: return maxf(base - Constants.PHASE5_TIMING_REDUCTION, 0.2)
 		4: return maxf(base - Constants.PHASE4_TIMING_REDUCTION, 0.2)
 		3: return maxf(base - Constants.PHASE3_TIMING_REDUCTION, 0.2)
 		2: return maxf(base - Constants.PHASE2_TIMING_REDUCTION, 0.2)
@@ -434,6 +443,10 @@ func _on_actor_died(actor: CombatActor) -> void:
 			if MetaProgression.phase_reached < 4:
 				MetaProgression.phase_reached = 4
 				MetaProgression.save_progress()
+		if GameState.active_combat_is_boss and GameState.active_phase == 4:
+			if MetaProgression.phase_reached < 5:
+				MetaProgression.phase_reached = 5
+				MetaProgression.save_progress()
 	else:
 		# Souls-like: a Caipora tomba e derruba TODOS os fragmentos numa bolsa, no tile onde
 		# o combate começou (lugar da morte). Recupera-os voltando ali numa run futura; morrer
@@ -482,11 +495,13 @@ func _resolve_next_screen(caipora_won: bool) -> SignalBus.Screen:
 		return SignalBus.Screen.GAME_OVER
 	if GameState.active_combat_is_boss:
 		match GameState.active_phase:
-			4: return SignalBus.Screen.ENDING
+			5: return SignalBus.Screen.ENDING
+			4: return SignalBus.Screen.EXPLORATION_PHASE5
 			3: return SignalBus.Screen.EXPLORATION_PHASE4
 			1: return SignalBus.Screen.EXPLORATION
 			_: return SignalBus.Screen.EXPLORATION_PHASE3
 	match GameState.active_phase:
+		5: return SignalBus.Screen.EXPLORATION_PHASE5
 		4: return SignalBus.Screen.EXPLORATION_PHASE4
 		3: return SignalBus.Screen.EXPLORATION_PHASE3
 		2: return SignalBus.Screen.EXPLORATION_PHASE2
@@ -518,4 +533,5 @@ func _screen_phase(screen: SignalBus.Screen) -> int:
 		SignalBus.Screen.EXPLORATION_PHASE2: return 2
 		SignalBus.Screen.EXPLORATION_PHASE3: return 3
 		SignalBus.Screen.EXPLORATION_PHASE4: return 4
+		SignalBus.Screen.EXPLORATION_PHASE5: return 5
 	return 0

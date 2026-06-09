@@ -101,6 +101,18 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.pillar_density = 0.05
 			c.has_exit = false  # progride ao derrotar o Saci → ENDING (sem tile de saída)
 			c.decoration_count = 44
+		5:
+			# A Igreja na Mata — fase FINAL. A nave é um salão (OPEN) com colunata
+			# (pilares). Os "monstros" são os 4 chefes anteriores convertidos + o
+			# Jesuíta no altar (o mais profundo). 5 inimigos no total.
+			c.topology_mode = TopologyMode.OPEN
+			c.boss_type = "jesuita"
+			c.enemy_count = 5  # 4 mini-bosses (chefes) + Jesuíta
+			c.hazard_chars = PackedStringArray(["R"])  # fogo votivo / círios
+			c.hazard_density = 0.05
+			c.pillar_density = 0.06
+			c.has_exit = false  # progride ao derrotar o Jesuíta → ENDING
+			c.decoration_count = 44
 	c.common_types = _common_mix(target_phase)
 	return c
 
@@ -114,6 +126,14 @@ static func _common_mix(target_phase: int) -> PackedStringArray:
 	if target_phase == 1:
 		for _i in 6:
 			mix.append("cacador")
+		return mix
+	if target_phase == 5:
+		# Fase FINAL: os "monstros" são os 4 chefes anteriores convertidos pelo
+		# Jesuíta — um de cada, sem repetição (o boss da config é o Jesuíta).
+		mix.append("mula")
+		mix.append("boitata")
+		mix.append("curupira")
+		mix.append("saci")
 		return mix
 	var major := "bruxo" if target_phase % 2 == 1 else "cacador"
 	var minor := "cacador" if target_phase % 2 == 1 else "bruxo"
