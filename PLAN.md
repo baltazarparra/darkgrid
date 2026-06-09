@@ -662,6 +662,28 @@ de meta-progressão, coerente com o tom hostil da floresta.
   via `_recover_fragment_bag()` (HUD pulsa o ganho).
 - [x] Testes: `tests/unit/test_fragment_bag.gd` (drop/recover/overwrite/save round-trip/reset).
 
+### Redesign da Protagonista — A Predadora-Rainha da Mata ✅
+
+A Caipora é o núcleo visual do jogo: só de olhar pra ela tem que dar vontade de
+jogar. O boneco de retângulos da Fase 7 foi substituído por um design de
+personagem alinhado à indústria (silhueta primeiro, acento único de cor, luz
+própria, assimetria, atitude no idle) e fiel ao folclore (urucum, jenipapo,
+vestes vivas de folha/cipó, pés normais pra frente). Bíblia visual:
+[docs/CONCEITO-protagonista.md](docs/CONCEITO-protagonista.md) — **lei** para
+todo asset futuro da protagonista.
+
+- [x] Conceito: silhueta felina de predadora, **juba-cometa de fogo** (flui pra
+  trás, eriça no windup, estica no strike), olhos de brasa em máscara de
+  jenipapo, cipó-chicote com ponta em brasa, vestes vivas assimétricas.
+- [x] Pipeline premium próprio (`scripts/tools/gen_caipora.py`, determinístico):
+  desenho vetorial supersampled 8× → downsample → snap de paleta → **selout** →
+  **rim light térmico procedural** (o fogo da juba ilumina o corpo) → dither de
+  bandas no fogo. 6 frames (idle/walk×2/windup/strike/recover), 64×64.
+- [x] `gen_chars.py` delega a protagonista ao `gen_caipora.py` (demais
+  personagens intactos, byte a byte).
+- [x] Linguagem corporal por pose preservando o contrato do `ActorAnimator` e
+  do `caipora_sprite_frames.tres` (mesmos nomes/arquivos — zero mudança de cena).
+
 ---
 
 ## 11.1 Known Issues
