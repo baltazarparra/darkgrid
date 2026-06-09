@@ -1,0 +1,3 @@
+[mcp_servers.godot]
+command = "bash"
+args = ["scripts/mcp-wrapper.sh"]

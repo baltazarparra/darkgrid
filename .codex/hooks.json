@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '\\\\wsl.localhost\\Ubuntu\\home\\baltz\\caipora\\.codex\\hooks\\pre-commit-gate.sh'",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
