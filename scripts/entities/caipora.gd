@@ -29,9 +29,9 @@ func _ready() -> void:
 	_camera.position_smoothing_enabled = true
 	_camera.position_smoothing_speed = 10.0
 
-	# Zoom "contain na largura": as 26 colunas do mapa cabem sempre na tela (z = vp.x/mapa.x).
-	# Em retrato (tela alta) sobra folga vertical — ocupada pela HUD (topo) e pelo D-pad
-	# (base) — e a câmera rola verticalmente conforme a Caipora anda, presa pelos limit_*.
+	# Zoom que "cobre" o viewport: a câmera fica fechada na Caipora (não miniaturiza o mapa
+	# inteiro em retrato) e rola nos dois eixos conforme ela anda, presa pelos limit_*. A área
+	# visível (vp/zoom) fica <= mapa nos dois eixos, então os limit_* mantêm a câmera dentro.
 	_update_camera_zoom()
 	get_viewport().size_changed.connect(_update_camera_zoom)
 	_apply_weapon_visual()
@@ -79,8 +79,10 @@ func _update_camera_zoom() -> void:
 		Constants.GRID_HEIGHT * Constants.TILE_SIZE,
 	)
 	var vp := get_viewport().get_visible_rect().size
-	# Contain na largura: largura inteira do mapa visível; a altura rola dentro dos limit_*.
-	var z: float = vp.x / map.x
+	# Cover: o eixo mais "apertado" preenche a tela; a Caipora fica em close e a câmera rola
+	# nos dois eixos dentro dos limit_*. Em retrato isto enquadra de perto em vez de espremer
+	# as 26 colunas inteiras numa tira minúscula.
+	var z: float = maxf(vp.x / map.x, vp.y / map.y)
 	_camera.zoom = Vector2(z, z)
 
 func _would_collide(target: Vector2) -> bool:
