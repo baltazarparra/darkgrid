@@ -29,9 +29,9 @@ func _ready() -> void:
 	_camera.position_smoothing_enabled = true
 	_camera.position_smoothing_speed = 10.0
 
-	# Zoom que "cobre" o viewport: a área útil do mapa ocupa 100% da tela, sem barras
-	# pretas. Com zoom = max(vp/mapa), a área visível (vp/zoom) fica <= mapa nos dois
-	# eixos, então os limit_* acima mantêm a câmera dentro das bordas.
+	# Zoom "contain na largura": as 26 colunas do mapa cabem sempre na tela (z = vp.x/mapa.x).
+	# Em retrato (tela alta) sobra folga vertical — ocupada pela HUD (topo) e pelo D-pad
+	# (base) — e a câmera rola verticalmente conforme a Caipora anda, presa pelos limit_*.
 	_update_camera_zoom()
 	get_viewport().size_changed.connect(_update_camera_zoom)
 	_apply_weapon_visual()
@@ -79,7 +79,8 @@ func _update_camera_zoom() -> void:
 		Constants.GRID_HEIGHT * Constants.TILE_SIZE,
 	)
 	var vp := get_viewport().get_visible_rect().size
-	var z: float = maxf(vp.x / map.x, vp.y / map.y)
+	# Contain na largura: largura inteira do mapa visível; a altura rola dentro dos limit_*.
+	var z: float = vp.x / map.x
 	_camera.zoom = Vector2(z, z)
 
 func _would_collide(target: Vector2) -> bool:

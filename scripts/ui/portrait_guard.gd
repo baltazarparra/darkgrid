@@ -9,8 +9,10 @@ func _ready() -> void:
 	_check()
 
 func _check() -> void:
+	# Retrato é a orientação primária: o overlay pede para GIRAR quando um telefone está em
+	# paisagem. Só telefones (lado curto < limite) — tablet/desktop em paisagem jogam normal.
 	var vp := get_viewport().get_visible_rect().size
-	visible = OS.has_feature("web") and Constants.is_portrait(vp) and vp.x < Constants.PHONE_SHORT_SIDE_MAX
+	visible = OS.has_feature("web") and not Constants.is_portrait(vp) and minf(vp.x, vp.y) < Constants.PHONE_SHORT_SIDE_MAX
 
 func _build_overlay() -> void:
 	var bg := ColorRect.new()
