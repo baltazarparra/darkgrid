@@ -18,7 +18,17 @@ const BUS_MASTER: String = "Master"
 const BUS_SFX: String = "SFX"
 const BUS_MUSIC: String = "Music"
 const BUS_AMBIENCE: String = "Ambience"
+const BUS_REVERB: String = "Reverb"
 const VOLUME_BUSES: PackedStringArray = [BUS_MASTER, BUS_SFX, BUS_MUSIC, BUS_AMBIENCE]
+
+## Perfis do espaço acústico (bus Reverb, dry fixo em 1.0 — só o wet/sala variam).
+## A folhagem da mata absorve (quase seco); a igreja de pedra responde; a clareira
+## da arena fica no meio. Aplicado por tela em _apply_screen_audio.
+const SPACE_PROFILES: Dictionary = {
+	&"mata": {"room_size": 0.25, "wet": 0.05, "damping": 0.75, "predelay_msec": 10.0},
+	&"igreja": {"room_size": 0.90, "wet": 0.35, "damping": 0.20, "predelay_msec": 40.0},
+	&"arena": {"room_size": 0.55, "wet": 0.15, "damping": 0.50, "predelay_msec": 15.0},
+}
 
 ## Trim global aplicado sobre o Master, por cima do volume do usuário. -6 dB ≈ metade
 ## da amplitude linear (jogo 50% mais baixo) sem mexer no slider nem na persistência.
@@ -27,6 +37,9 @@ const MASTER_TRIM_DB: float = -6.0
 const AMBIENCE_FADE: float = 1.2
 const DUCK_AMOUNT_DB: float = -8.0
 const DUCK_TIME: float = 0.35
+## Duck mais fundo no timing perfeito: o mundo cala para o crítico soar enorme.
+const PERFECT_DUCK_DB: float = -14.0
+const PERFECT_DUCK_SECS: float = 0.35
 
 const MUSIC_FADE: float = 0.9
 
@@ -161,6 +174,7 @@ func _on_screen_changed(new_screen: int) -> void:
 
 ## Casa ambiência, música e stinger ao estado da tela.
 func _apply_screen_audio(screen: int) -> void:
+	_apply_space_profile(screen)
 	_refresh_ambience(screen)
 	_play_music(_music_for_screen(screen))
 	match screen:
@@ -198,6 +212,32 @@ func _on_chama() -> void:
 func _on_boss_special_telegraph(boss_type: String) -> void:
 	if _audio_unlocked and boss_type == "jesuita":
 		_play_stinger(STING_AGUA_BENTA)
+
+# ─── Espaço acústico (bus Reverb) ──────────────────
+## Resolve o perfil de espaço da tela. Fase 5 inteira (explore+arena) é a igreja
+## de pedra; as demais arenas são a clareira; todo o resto é mata fechada.
+func _space_for_screen(screen: int) -> StringName:
+	match screen:
+		SignalBus.Screen.EXPLORATION_PHASE5, SignalBus.Screen.ARENA_PHASE5:
+			return &"igreja"
+		SignalBus.Screen.ARENA, SignalBus.Screen.ARENA_PHASE2, \
+		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4:
+			return &"arena"
+		_:
+			return &"mata"
+
+func _apply_space_profile(screen: int) -> void:
+	var idx := AudioServer.get_bus_index(BUS_REVERB)
+	if idx < 0:
+		return
+	var fx := AudioServer.get_bus_effect(idx, 0) as AudioEffectReverb
+	if fx == null:
+		return
+	var profile: Dictionary = SPACE_PROFILES[_space_for_screen(screen)]
+	fx.room_size = profile["room_size"]
+	fx.wet = profile["wet"]
+	fx.damping = profile["damping"]
+	fx.predelay_msec = profile["predelay_msec"]
 
 # ─── Ambiência ─────────────────────────────────────
 func _refresh_ambience(screen: int) -> void:

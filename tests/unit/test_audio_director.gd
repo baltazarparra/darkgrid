@@ -123,3 +123,38 @@ func test_same_track_does_not_restart():
 	assert_eq(AudioDirector._music_active, active_before,
 		"a faixa de boss não deve trocar de player ao entrar na arena")
 	GameState.active_combat_is_boss = false
+
+func test_reverb_bus_exists_and_routes():
+	var idx_reverb := AudioServer.get_bus_index("Reverb")
+	assert_true(idx_reverb >= 0, "bus Reverb deve existir")
+	assert_true(AudioServer.get_bus_effect(idx_reverb, 0) is AudioEffectReverb,
+		"bus Reverb carrega um AudioEffectReverb")
+	var idx_sfx := AudioServer.get_bus_index("SFX")
+	var idx_amb := AudioServer.get_bus_index("Ambience")
+	assert_eq(AudioServer.get_bus_send(idx_sfx), &"Reverb", "SFX atravessa o espaço")
+	assert_eq(AudioServer.get_bus_send(idx_amb), &"Reverb", "Ambience atravessa o espaço")
+	var idx_music := AudioServer.get_bus_index("Music")
+	assert_eq(AudioServer.get_bus_send(idx_music), &"Master",
+		"Music fica fora do reverb (espaço da música é a cauda impressa)")
+
+func _reverb_fx() -> AudioEffectReverb:
+	return AudioServer.get_bus_effect(AudioServer.get_bus_index("Reverb"), 0) as AudioEffectReverb
+
+func test_space_profile_per_screen():
+	# Igreja (Fase 5 inteira) = sala grande; arenas 1–4 = clareira; resto = mata seca.
+	AudioDirector._apply_space_profile(SignalBus.Screen.EXPLORATION_PHASE5)
+	assert_almost_eq(_reverb_fx().room_size, 0.9, 0.01, "igreja de pedra responde")
+	AudioDirector._apply_space_profile(SignalBus.Screen.ARENA_PHASE5)
+	assert_almost_eq(_reverb_fx().room_size, 0.9, 0.01, "o altar é a mesma igreja")
+	AudioDirector._apply_space_profile(SignalBus.Screen.ARENA_PHASE2)
+	assert_almost_eq(_reverb_fx().room_size, 0.55, 0.01, "arena = clareira média")
+	AudioDirector._apply_space_profile(SignalBus.Screen.EXPLORATION)
+	assert_almost_eq(_reverb_fx().room_size, 0.25, 0.01, "a folhagem absorve")
+	assert_almost_eq(_reverb_fx().wet, 0.05, 0.001, "mata quase seca")
+
+func test_music_bus_has_eq():
+	var fx := AudioServer.get_bus_effect(AudioServer.get_bus_index("Music"), 0)
+	assert_true(fx is AudioEffectEQ6, "bus Music carrega EQ de 6 bandas")
+	var eq := fx as AudioEffectEQ6
+	assert_almost_eq(eq.get_band_gain_db(4), -3.0, 0.01,
+		"a música cede a banda de presença aos SFX de timing")

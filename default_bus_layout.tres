@@ -1,10 +1,26 @@
-[gd_resource type="AudioBusLayout" load_steps=2 format=3]
+[gd_resource type="AudioBusLayout" load_steps=4 format=3]
 
-; Layout de buses do caipora. Master agrega SFX/Music/Ambience e leva um Hard Limiter
-; para garantir headroom (sem clipping) quando camadas se empilham — base de mix da
-; indústria. Volumes em runtime vêm de user://settings.cfg via AudioDirector.
+; Layout de buses do caipora. Master agrega tudo e leva um Hard Limiter para
+; garantir headroom (sem clipping) quando camadas se empilham. Volumes em runtime
+; vêm de user://settings.cfg via AudioDirector.
+;
+; Reverb (índice 1) é o ESPAÇO acústico: SFX e Ambience o atravessam (Godot só
+; permite send para bus de índice MENOR, por isso ele vem logo após o Master).
+; dry=1.0 fixo — o caminho seco passa intacto; só o wet varia por perfil de tela
+; (AudioDirector.SPACE_PROFILES: mata seca / igreja de pedra / arena média).
+; Music fica FORA do reverb (embarralharia o baque; o espaço da música é a cauda
+; impressa nos assets pelo gen_sfx) e leva EQ cortando ~3 kHz: a faixa cede a
+; banda de presença para o estalo da caixa dos SFX de timing (legibilidade).
 
 [sub_resource type="AudioEffectHardLimiter" id="HardLimiter_master"]
+
+[sub_resource type="AudioEffectReverb" id="Reverb_space"]
+dry = 1.0
+wet = 0.05
+
+[sub_resource type="AudioEffectEQ6" id="EQ_music"]
+band_db/3200_hz = -3.0
+band_db/10000_hz = -2.0
 
 [resource]
 bus/0/name = &"Master"
@@ -15,21 +31,31 @@ bus/0/volume_db = 0.0
 bus/0/send = &""
 bus/0/effect/0/effect = SubResource("HardLimiter_master")
 bus/0/effect/0/enabled = true
-bus/1/name = &"SFX"
+bus/1/name = &"Reverb"
 bus/1/solo = false
 bus/1/mute = false
 bus/1/bypass_fx = false
 bus/1/volume_db = 0.0
 bus/1/send = &"Master"
-bus/2/name = &"Music"
+bus/1/effect/0/effect = SubResource("Reverb_space")
+bus/1/effect/0/enabled = true
+bus/2/name = &"SFX"
 bus/2/solo = false
 bus/2/mute = false
 bus/2/bypass_fx = false
 bus/2/volume_db = 0.0
-bus/2/send = &"Master"
-bus/3/name = &"Ambience"
+bus/2/send = &"Reverb"
+bus/3/name = &"Music"
 bus/3/solo = false
 bus/3/mute = false
 bus/3/bypass_fx = false
 bus/3/volume_db = 0.0
 bus/3/send = &"Master"
+bus/3/effect/0/effect = SubResource("EQ_music")
+bus/3/effect/0/enabled = true
+bus/4/name = &"Ambience"
+bus/4/solo = false
+bus/4/mute = false
+bus/4/bypass_fx = false
+bus/4/volume_db = 0.0
+bus/4/send = &"Reverb"
