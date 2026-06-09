@@ -537,6 +537,41 @@ Roadmap completo: [docs/PRD-fase-9-hub-jogavel.md](docs/PRD-fase-9-hub-jogavel.m
   **aposentar** `scenes/ui/hub.tscn` + `scripts/ui/hub.gd` (mover `OptionsPanel` pro hub
   jogável), atualizar `test_hub_*`/`test_scene_transition`. Gate verde.
 
+### Fase Final: A Igreja na Mata — O Catequizador 🚧
+
+A quinta e **última** fase: o interior de uma igreja colonial dentro da floresta.
+O chefe é o **Jesuíta Bandeirante Catequizador**, que abre a fase declarando que
+*converteu* os antigos encantados — por isso os "monstros" da tela **são os outros
+quatro chefes** (Mula, Boitatá, Curupira, Saci), agora a serviço do altar; no fundo
+da nave, o próprio Jesuíta. Encadeia depois do Saci (P4) e substitui o caminho
+direto P4→ENDING (agora P4→**P5**→ENDING). É a fase mais difícil do jogo.
+Spec completa: [docs/PRD-fase-final-igreja.md](docs/PRD-fase-final-igreja.md).
+
+**Decisões travadas:** janela de reação **a mais dura de todas** (−0.2s ALÉM da
+P4 → `PHASE5_TIMING_REDUCTION=0.50`, piso 0.2s); mini-bosses com **HP cheio de
+chefe** (12/22/30/36); assets **AAA via pipeline procedural** (gen_chars/tiles/sfx).
+
+- [ ] **Etapa 0 — Fundação de dados:** telas `EXPLORATION_PHASE5`/`ARENA_PHASE5`,
+  roteamento `_scene_path_for`, `MapConfig.for_phase(5)` (`enemy_count=5`,
+  `common_types=[mula,boitata,curupira,saci]`, `boss_type=jesuita`, `has_exit=false`),
+  constantes `PHASE5_*` + `COMMON_FRAGMENT_REWARD[5]`/`BOSS_FRAGMENT_BOUNTY[5]`/
+  `JESUITA_MAX_HEALTH`. Testes do gerador para a Fase 5.
+- [ ] **Etapa 1 — Chefe final jogável:** `jesuita.gd` (`extends Saci`, sorteio
+  UNIFORME dos 7 padrões de todos os chefes + telegraphs corretos), `jesuita.tscn`,
+  `arena_phase5.tscn`, `_phase_window` caso 5 e bônus de dano P5 em
+  `_on_defense_timing_result`. `test_jesuita.gd`.
+- [ ] **Etapa 2 — Exploração da igreja + gauntlet:** `exploration_phase5.tscn`, caso
+  5 do `_build_profile`, mini-bosses como comuns (`REGULAR_SCENES` + flag
+  `keep_own_hp` p/ preservar HP de chefe), render de mini-boss no `MapEnemy`,
+  **diálogo de abertura da fase** ("converti todos eles com espelhos e água benta.
+  a floresta pertence ao vaticano."), roteamento P4→P5→ENDING + `phase_reached=5`.
+  `test_exploration_phase5.gd` + update de `test_scene_transition`/roteamento.
+- [ ] **Etapa 3 — Assets & polish AAA:** sprite do Jesuíta + SpriteFrames, tiles e
+  decoração de igreja (`DECO_CHURCH`: banco/cruz/espelho/pia de água benta/círio),
+  stem de áudio (órgão+maracatu corrompido) + stingers (sino, sibilo de água benta),
+  `CanvasModulate` frio. Verificação visual headless. `/validate-controls` +
+  `/validate-platforms`.
+
 ### Economia & Aprimoramentos v2 ✅
 
 Redefinição coerente da economia e da escala dos aprimoramentos para um roguelike
