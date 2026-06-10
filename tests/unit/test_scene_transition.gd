@@ -45,6 +45,8 @@ func test_not_themed_on_non_exploration() -> void:
 	_st._last_exploration = -1
 	for s: int in [SignalBus.Screen.ARENA, SignalBus.Screen.ENDING, SignalBus.Screen.MAIN_MENU]:
 		assert_false(_st._is_themed(s), "tela %d sem flavor" % s)
+	assert_eq(_st._flavor_for(SignalBus.Screen.ARENA), "",
+		"arena não mostra texto de luta na transição global; isso pertence ao loader interno")
 
 # ── Entrar no acampamento (HUB) tem flavor próprio, calmo (Fase 9) ──
 func test_hub_has_camp_flavor() -> void:

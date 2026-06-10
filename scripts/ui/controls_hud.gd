@@ -26,10 +26,16 @@ const FADE_IN_DURATION: float = 0.3
 const PRESS_SCALE: float = 0.92
 const SWIPE_DEAD_ZONE: float = 20.0
 const SWIPE_THRESHOLD: float = 40.0
+const MODE_EXPLORATION: int = 0
+const MODE_COMBAT: int = 1
+const COMBAT_KEY_FRACTION: float = 0.13
+const COMBAT_KEY_MIN: float = 56.0
+const COMBAT_KEY_MAX: float = 96.0
+const COMBAT_MAX_WIDTH_FRACTION: float = 0.58
 
 # Carimbo de build: logado uma vez no _ready(). Confirma, no console do navegador, que o
 # dispositivo está rodando o build novo (e não um cache de CDN/PWA) ao iterar no mobile.
-const _BUILD_TAG: String = "dpad-sticky-1"
+const _BUILD_TAG: String = "dpad-combat-arrows-1"
 
 # Caminhos (não preload): como este script é autoload, ele é parseado já no boot — um
 # preload de asset ainda não importado quebraria o parse. As texturas são carregadas com
@@ -53,9 +59,11 @@ const _GAMEPLAY_SCREEN_PREFIXES: Array = ["EXPLORATION", "ARENA", "HUB"]
 
 var _root: Control = null
 var _dpad_rect: Rect2 = Rect2()
-var _keys: Array[TextureButton] = []
+var _keys: Array[BaseButton] = []
 var _pressed_count: int = 0
 var _active_screen_wants_dpad: bool = false
+var _active_screen_is_arena: bool = false
+var _button_mode: int = -1
 # Sticky: uma vez reconhecido como touch (por detecção OU por um toque real), permanece true
 # pela sessão. Evita que uma leitura instável de _is_touch_device() (JavaScriptBridge.eval pode
 # devolver null/0 durante uma troca de cena pesada no web) esconda o D-pad no meio do combate.
@@ -73,6 +81,7 @@ func _ready() -> void:
 
 func _on_screen_changed(screen: SignalBus.Screen) -> void:
 	_active_screen_wants_dpad = _is_gameplay_screen(screen)
+	_active_screen_is_arena = _is_arena_screen(screen)
 	_refresh()
 
 
@@ -84,6 +93,10 @@ func _is_gameplay_screen(screen: SignalBus.Screen) -> bool:
 		if name.begins_with(prefix):
 			return true
 	return false
+
+
+func _is_arena_screen(screen: SignalBus.Screen) -> bool:
+	return SignalBus.Screen.keys()[screen].begins_with("ARENA")
 
 
 func _input(event: InputEvent) -> void:
@@ -103,7 +116,7 @@ func _input(event: InputEvent) -> void:
 # ─── Public API ────────────────────────────────────
 func get_dpad_screen_rect() -> Rect2:
 	# Vazio quando não há D-pad (desktop / sem touch) -> sem exclusão.
-	return _dpad_rect if _root != null else Rect2()
+	return _dpad_rect if _root != null and _root.visible else Rect2()
 
 
 # ─── Private helpers ───────────────────────────────
@@ -134,12 +147,15 @@ func _refresh() -> void:
 func _show() -> void:
 	# Fade-in já ocorre uma única vez em _init_controls(); aqui só reexpomos sem reanimar.
 	if _root != null:
+		_sync_button_mode()
 		_root.visible = true
 
 
 func _hide() -> void:
 	if _root != null:
 		_root.visible = false
+		_release_all_actions()
+	_dpad_rect = Rect2()
 
 
 func _is_touch_device() -> bool:
@@ -190,20 +206,82 @@ func _init_controls() -> void:
 
 
 func _build_buttons() -> void:
+	_sync_button_mode()
+
+
+func _sync_button_mode() -> void:
+	if _root == null:
+		return
+	var desired_mode := MODE_COMBAT if _active_screen_is_arena else MODE_EXPLORATION
+	if desired_mode == _button_mode:
+		return
+	_release_all_actions()
+	for child in _root.get_children():
+		_root.remove_child(child)
+		child.queue_free()
+	_keys.clear()
+	_button_mode = desired_mode
 	for entry in _ENTRIES:
-		var btn := TextureButton.new()
+		var action: String = entry[0]
+		var btn: BaseButton = _make_combat_button(_label_for_action(action)) if _button_mode == MODE_COMBAT else _make_exploration_button(entry[1])
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
-		btn.texture_normal = load(entry[1]) as Texture2D
-		btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		btn.button_down.connect(_on_pressed.bind(entry[0]))
-		btn.button_up.connect(_on_released.bind(entry[0]))
+		btn.button_down.connect(_on_pressed.bind(action))
+		btn.button_up.connect(_on_released.bind(action))
 		_root.add_child(btn)
 		_keys.append(btn)
+	_rebuild()
+
+
+func _make_exploration_button(texture_path: String) -> TextureButton:
+	var btn := TextureButton.new()
+	btn.texture_normal = load(texture_path) as Texture2D
+	btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+	return btn
+
+
+func _make_combat_button(label: String) -> Button:
+	var btn := Button.new()
+	btn.text = label
+	btn.add_theme_font_size_override("font_size", Constants.FONT_MD)
+	btn.add_theme_color_override("font_color", Constants.COLOR_TEXT)
+	btn.add_theme_color_override("font_pressed_color", Constants.COLOR_AMBER)
+	btn.add_theme_stylebox_override("normal", _combat_style(false))
+	btn.add_theme_stylebox_override("hover", _combat_style(false))
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	btn.add_theme_stylebox_override("pressed", _combat_style(true))
+	return btn
+
+
+func _combat_style(pressed: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.04, 0.10, 0.98 if pressed else 0.90)
+	style.border_color = Constants.COLOR_AMBER if pressed else Color(0.50, 0.44, 0.62, 1.0)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(4)
+	return style
+
+
+func _label_for_action(action: String) -> String:
+	match action:
+		"ui_up": return "↑"
+		"ui_left": return "←"
+		"ui_down": return "↓"
+		"ui_right": return "→"
+	return "?"
+
+
+func _release_all_actions() -> void:
+	for entry in _ENTRIES:
+		Input.action_release(entry[0])
+	_pressed_count = 0
 
 
 func _rebuild() -> void:
 	if _root == null or _keys.is_empty():
+		return
+	if _button_mode == MODE_COMBAT:
+		_rebuild_combat()
 		return
 
 	var vp := get_viewport().get_visible_rect().size
@@ -245,6 +323,47 @@ func _rebuild() -> void:
 	var y_top: float = origin.y                    # linha de cima (↑)
 	var y_bot: float = origin.y + key + gap        # linha de baixo (← ↓ →)
 
+	var positions: Array[Vector2] = [
+		Vector2(cx, y_top),
+		Vector2(origin.x, y_bot),
+		Vector2(cx, y_bot),
+		Vector2(origin.x + key * 2.0 + gap * 2.0, y_bot),
+	]
+
+	for i in _keys.size():
+		var btn := _keys[i]
+		btn.position = positions[i]
+		btn.size = Vector2(key, key)
+
+
+func _rebuild_combat() -> void:
+	var vp := get_viewport().get_visible_rect().size
+	var key: float = clampf(minf(vp.x, vp.y) * COMBAT_KEY_FRACTION, COMBAT_KEY_MIN, COMBAT_KEY_MAX)
+	if _touch_detected:
+		key *= 1.2 if Constants.is_portrait(vp) else 1.0
+
+	var gap: float = key * 0.10
+	var margin: float = key * 0.45
+	var safe: Vector2 = _get_safe_margins()
+	margin = maxf(margin, safe.x)
+
+	var cluster_w: float = key * 3.0 + gap * 2.0
+	var cluster_h: float = key * 2.0 + gap
+	var max_cluster_w: float = vp.x * COMBAT_MAX_WIDTH_FRACTION - margin
+	if cluster_w > max_cluster_w and max_cluster_w > 0.0:
+		var shrink: float = max_cluster_w / cluster_w
+		key *= shrink
+		gap *= shrink
+		cluster_w = key * 3.0 + gap * 2.0
+		cluster_h = key * 2.0 + gap
+
+	# Combate usa a cruz antiga no canto inferior esquerdo, como comando explícito de timing.
+	var origin := Vector2(margin, vp.y - margin - cluster_h - safe.y)
+	_dpad_rect = Rect2(origin, Vector2(cluster_w, cluster_h))
+
+	var cx: float = origin.x + key + gap
+	var y_top: float = origin.y
+	var y_bot: float = origin.y + key + gap
 	var positions: Array[Vector2] = [
 		Vector2(cx, y_top),
 		Vector2(origin.x, y_bot),
@@ -327,7 +446,7 @@ func _on_released(action: String) -> void:
 	_feed_event(action, false)
 
 
-func _get_button_for_action(action: String) -> TextureButton:
+func _get_button_for_action(action: String) -> BaseButton:
 	if _keys.is_empty():
 		return null
 	for i in _ENTRIES.size():
