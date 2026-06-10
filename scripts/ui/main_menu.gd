@@ -32,7 +32,9 @@ func _ready() -> void:
 	_setup_version_label()
 	# Foco inicial ANTES de ligar o hover: abrir o menu não dá tick, navegar dá.
 	_start_button.grab_focus()
-	for button: Button in [$Center/VBox/StartButton, $Center/VBox/QuitButton, $Center/VBox/GithubLink]:
+	# BaseButton, não Button: GithubLink é LinkButton (irmão de Button) — o tipo
+	# errado virava Nil no loop tipado e o hover do link nunca conectava (KI-011).
+	for button: BaseButton in [$Center/VBox/StartButton, $Center/VBox/QuitButton, $Center/VBox/GithubLink]:
 		button.focus_entered.connect(AudioDirector.play_ui_hover)
 		button.mouse_entered.connect(AudioDirector.play_ui_hover)
 
