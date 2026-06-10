@@ -1038,35 +1038,50 @@ def mus_menu():
 
 def mus_hub():
     """Acampamento: samba lofi morno e tranquilo — descanso entre fases. Surdo macio
-    no '2 e 4', ganzá com swing, tamborim abafado nas síncopes, comping de acordes
-    redondos (triângulo) em Dórico e um lead-pluck esparso e doce. Sem kick agressivo
-    e sem o tom sustentado que virava sirene: a faixa respira e nunca incomoda."""
-    buf, step = _new_buf(84, 2)
+    no '2 e 4', ganzá com swing, tamborim abafado nas síncopes, violão de dedilhado
+    (arpejo de triângulo, oitava acima do baixo) em Dórico e um lead-pluck grave e
+    esparso. REGRA ANTI-SIRENE: nenhuma dupla de vozes sustentadas perto do mesmo
+    pitch — o detune por nota (_jit) faz tons longos simultâneos baterem em poucos
+    Hz (uí-uí de sirene; o pad antigo sustentava 4 vozes E o grau 0 em uníssono com
+    o baixo). Aqui o acorde existe só como arpejo, nota a nota, e o baixo é a única
+    voz longa — sozinho, sem par para bater."""
+    buf, step = _new_buf(84, 4)
     root = A2
     # Surdo de marcação: boom redondo no 2 e no 4 de cada compasso + ghost leve no 1/3.
     _drums(buf, step, lambda: alfaia(0.22, base=root * 0.5, punch=0.4),
-           [(4, 0.5), (12, 0.55), (20, 0.5), (28, 0.55)])
+           [(b * 16 + st, g) for b in range(4) for st, g in ((4, 0.5), (12, 0.55))])
     _drums(buf, step, lambda: alfaia(0.12, base=root, punch=0.25),
-           [(0, 0.2), (8, 0.18), (16, 0.2), (24, 0.18)])
+           [(b * 16 + st, g) for b in range(4) for st, g in ((0, 0.2), (8, 0.18))])
     # Ganzá com swing (chiado contínuo e leve) + tamborim/teleco-teco macio nas síncopes.
-    _drums(buf, step, lambda: ganza(0.05, rising=False), _samba_shaker(2))
+    _drums(buf, step, lambda: ganza(0.05, rising=False), _samba_shaker(4))
     _drums(buf, step, lambda: caixa(0.045, bright=0.5),
            [(3, 0.3), (6, 0.26), (11, 0.3), (14, 0.26),
-            (19, 0.3), (22, 0.26), (27, 0.3), (30, 0.26)])
-    # Comping morno (triângulo): i7 no 1º compasso, IV no 2º — vamp simples de bossa.
-    pad = lambda d, f: triangle(d, f, attack=0.02, release=0.4)
-    _chord(buf, step, root, DORIAN, pad,
-           [(0, [0, 2, 4, 6], 5, 0.4), (6, [0, 2, 4, 6], 2, 0.3), (11, [0, 2, 4, 6], 3, 0.32),
-            (16, [3, 5, 7, 9], 5, 0.4), (22, [3, 5, 7, 9], 2, 0.3), (27, [3, 5, 7, 9], 3, 0.32)])
+            (19, 0.3), (22, 0.24), (27, 0.3), (30, 0.26),
+            (35, 0.3), (38, 0.26), (43, 0.3), (46, 0.24),
+            (51, 0.3), (54, 0.26), (59, 0.3), (62, 0.22)])
+    # Violão de terreiro: i7 (compassos 1-2) e IV (3-4) DEDILHADOS — pluck curto,
+    # nota a nota, sobe e responde descendo. Oitava acima do baixo (sem uníssono).
+    violao = lambda d, f: triangle(d, f, attack=0.01, release=0.5)
+    _melody(buf, step, root * 2.0, DORIAN, violao,
+            [(0, 0, 1, 0.3), (2, 2, 1, 0.26), (4, 4, 1, 0.28), (6, 6, 1, 0.26),
+             (11, 4, 1, 0.24), (14, 2, 1, 0.22),
+             (17, 6, 1, 0.26), (20, 4, 1, 0.24), (23, 2, 1, 0.26), (26, 0, 2, 0.28),
+             (32, 3, 1, 0.3), (34, 5, 1, 0.26), (36, 7, 1, 0.28), (38, 9, 1, 0.26),
+             (43, 7, 1, 0.24), (46, 5, 1, 0.22),
+             (49, 9, 1, 0.26), (52, 7, 1, 0.24), (55, 5, 1, 0.26), (58, 3, 2, 0.28)])
     # Baixo redondo seguindo os acordes (tônica/quinta) com a antecipação da bossa.
+    # Única voz sustentada da faixa — uma voz só não tem com quem bater.
     _melody(buf, step, root, DORIAN, _bass(),
             [(0, 0, 6, 0.6), (7, 4, 2, 0.45), (10, 4, 3, 0.45),
-             (16, 3, 6, 0.55), (23, 0, 2, 0.42), (26, 0, 3, 0.45)])
-    # Lead-pluck esparso e doce: pulso curtíssimo (release baixo = pluck, não sirene).
+             (16, 0, 6, 0.55), (23, 4, 2, 0.42), (26, 4, 3, 0.45),
+             (32, 3, 6, 0.6), (39, 7, 2, 0.45), (42, 7, 3, 0.45),
+             (48, 3, 6, 0.55), (55, 0, 2, 0.42), (60, 0, 4, 0.5)])
+    # Lead-pluck esparso, grave e doce (era 2 oitavas acima — virava bip de alarme):
+    # responde o violão nos vãos, release curtíssimo = pluck, nunca sustain.
     pluck = lambda d, f: pulse(d, f, duty=0.25, attack=0.004, release=0.12)
-    _melody(buf, step, root, DORIAN, pluck,
-            [(2, 7, 2, 0.3), (8, 9, 2, 0.28), (12, 11, 2, 0.3),
-             (18, 12, 2, 0.3), (24, 11, 2, 0.28), (28, 9, 4, 0.3)])
+    _melody(buf, step, root * 2.0, DORIAN, pluck,
+            [(8, 4, 2, 0.26), (12, 7, 2, 0.26), (28, 6, 3, 0.26),
+             (40, 5, 2, 0.26), (44, 7, 2, 0.24), (60, 4, 3, 0.26)])
     return _normalize(bitcrush(buf, bits=7), 0.7)
 
 

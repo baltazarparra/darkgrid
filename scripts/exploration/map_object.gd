@@ -5,7 +5,7 @@ const ForestLight := preload("res://scripts/exploration/forest_light.gd")
 const FireEffect := preload("res://scripts/exploration/fire_effect.gd")
 
 enum Type { CHEST, KEY, FIRE, SPIKE, DEAD_TREE, BONES, MOSS, BLOOD_POOL, ROCK, FERN, VINE,
-	MUSHROOM, STUMP, TOTEM, ROOTS, PUDDLE, BAG, CROSS, MIRROR, FONT, CANDLE, PEW }
+	MUSHROOM, STUMP, TOTEM, ROOTS, PUDDLE, BAG, CROSS, MIRROR, FONT, CANDLE, PEW, BURROW }
 
 const T: int = Constants.TILE_SIZE  # 32
 
@@ -57,6 +57,7 @@ func _draw() -> void:
 		Type.FONT:       _draw_font(cx, cy)
 		Type.CANDLE:     _draw_candle(cx, cy)
 		Type.PEW:        _draw_pew(cx, cy)
+		Type.BURROW:     _draw_burrow(cx, cy)
 
 func _draw_fire(cx: float, cy: float) -> void:
 	draw_circle(Vector2(cx, cy), 11.0, Constants.COLOR_FIRE_GLOW)
@@ -319,6 +320,45 @@ func _draw_bag(cx: float, cy: float) -> void:
 			c + Vector2(0, -r), c + Vector2(r * 0.7, 0),
 			c + Vector2(0, r), c + Vector2(-r * 0.7, 0),
 		]), shard)
+
+func _draw_burrow(cx: float, cy: float) -> void:
+	# Boca de toca descendo pra escuridão da mata, com terra revolvida e folhas secas
+	# amontoadas na beirada — o rastro por onde a Caipora mergulha de volta na caçada.
+	var night := Constants.COLOR_NIGHT
+	var earth := Constants.COLOR_EARTH
+	var bark_dark := Constants.COLOR_BARK_DARK
+	var leaf := Constants.COLOR_MOSS_DECO
+	var leaf_dark := Constants.COLOR_MOSS_DECO_DARK
+	var twig := Constants.COLOR_BARK
+	# aro de terra revolvida em volta da boca
+	draw_colored_polygon(_ellipse(Vector2(cx, cy + 2), 13.0, 9.5), earth)
+	# parede interna em sombra (dá profundidade ao mergulho)
+	draw_colored_polygon(_ellipse(Vector2(cx, cy + 2.5), 10.5, 7.5), bark_dark)
+	# o buraco em si: escuridão total
+	draw_colored_polygon(_ellipse(Vector2(cx, cy + 3), 8.5, 6.0), night)
+	# galhos secos atravessados na borda
+	draw_line(Vector2(cx - 12, cy - 4), Vector2(cx - 3, cy - 8), twig, 1.5)
+	draw_line(Vector2(cx + 4, cy - 9), Vector2(cx + 12, cy - 3), twig, 1.5)
+	# folhas amontoadas na beirada de cima (monte mais denso atrás da boca)
+	var pile: Array = [
+		[Vector2(cx - 8, cy - 6), 3.5, leaf], [Vector2(cx - 2, cy - 8), 4.0, leaf_dark],
+		[Vector2(cx + 5, cy - 7), 3.5, leaf], [Vector2(cx + 10, cy - 4), 2.8, leaf_dark],
+		[Vector2(cx - 12, cy - 2), 2.6, leaf_dark], [Vector2(cx + 1, cy - 5), 3.0, leaf],
+	]
+	for p: Array in pile:
+		draw_circle(p[0], p[1], p[2])
+	# folhas soltas escorregando pra dentro e caídas na frente
+	draw_circle(Vector2(cx - 5, cy + 9), 2.0, leaf_dark)
+	draw_circle(Vector2(cx + 7, cy + 8), 1.8, leaf)
+	draw_circle(Vector2(cx + 2, cy + 1), 1.6, leaf_dark)
+
+# Elipse achatada (leitura top-down) como polígono — base de buracos e bocas de toca.
+func _ellipse(center: Vector2, rx: float, ry: float) -> PackedVector2Array:
+	var pts: PackedVector2Array = []
+	for i: int in 20:
+		var a: float = TAU * i / 20.0
+		pts.append(center + Vector2(cos(a) * rx, sin(a) * ry))
+	return pts
 
 # ─── Props de igreja (Fase 5, ambientação não-bloqueante) ──
 func _draw_cross(cx: float, cy: float) -> void:

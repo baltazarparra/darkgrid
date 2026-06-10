@@ -2,7 +2,7 @@ extends Node2D
 
 # Acampamento jogável (HUB entre fases). Mini-clareira cercada de mata onde a floresta não
 # alcança: fogueira baixa, cachimbo, e a interface de aprimoramentos (HubShop) por cima — cards
-# grandes e clicáveis das ervas que a Caipora pode fumar. A Caipora anda, recupera HP cheio ao
+# clicáveis das ervas que a Caipora pode fumar, numa faixa no topo. A Caipora anda, recupera HP cheio ao
 # entrar e pisa no RASTRO (saída pulsante) para voltar à mata — à próxima exploração pendente
 # (advance_phase_via_hub) ou, vindo de uma derrota, ao começo de uma caçada nova (santuário).
 #
@@ -114,15 +114,15 @@ func _trigger_exit() -> void:
 func _exit_destination() -> SignalBus.Screen:
 	return GameState.pending_exploration if GameState.run_active else SignalBus.Screen.EXPLORATION
 
-# ─── Marcador de saída (reuso do pulsante da exploração) ───
+# ─── Marcador de saída (boca de toca coberta de folhas) ───
 func _spawn_exit_marker() -> void:
 	var half := Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
 	var center := Vector2(_exit_pos) * Constants.TILE_SIZE + half
-	var marker := Sprite2D.new()
-	marker.texture = preload("res://assets/sprites/tile_floor.png")
-	marker.modulate = Constants.COLOR_EXIT
-	marker.position = Vector2(_exit_pos) * Constants.TILE_SIZE
-	_objects.add_child(marker)
+	# Boca de toca com folhas (MapObject.BURROW): simboliza a saída pra mata melhor que o
+	# tile âmbar — e centra no tile (o Sprite2D antigo ficava meio tile fora do lugar).
+	var burrow := MapObject.new()
+	_objects.add_child(burrow)
+	burrow.setup(MapObject.Type.BURROW, _exit_pos)
 	# Luz âmbar pulsante: marca a saída na penumbra sem texto (mesma leitura da exploração).
 	var light := ForestLight.make(Constants.COLOR_AMBER, 1.0, 1.0)
 	light.position = center

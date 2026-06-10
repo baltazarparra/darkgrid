@@ -246,10 +246,6 @@ func _try_begin(index: int, point: Vector2) -> void:
 		return
 	if GameState.is_paused:
 		return
-	# Overlay "gire o dispositivo" cobre a tela sem pausar: nada de mover a Caipora
-	# por trás dele.
-	if PortraitGuard.visible:
-		return
 	if not _is_in_activation_zone(point):
 		return
 	_pointer_index = index
