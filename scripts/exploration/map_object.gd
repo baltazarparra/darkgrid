@@ -78,6 +78,9 @@ func _draw_fire(cx: float, cy: float) -> void:
 	]
 	for i: int in 3:
 		draw_colored_polygon(PackedVector2Array(flames[i]), fire_colors[i])
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(cx - 2, cy + 7), Vector2(cx + 1, cy - 5), Vector2(cx + 4, cy + 7),
+	]), Constants.COLOR_FIRE_HOT)
 
 func _draw_spike(cx: float, cy: float) -> void:
 	# Dentes de raiz/osso saindo do chao, nao cones limpos.
@@ -88,6 +91,11 @@ func _draw_spike(cx: float, cy: float) -> void:
 	var spike_color := Constants.COLOR_BONE
 	for i: int in 4:
 		var bx: float = cx - 9.0 + i * 6.0
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(bx - 4, cy + 9),
+			Vector2(bx + float(i % 2) - 1.0, cy - 10),
+			Vector2(bx + 4, cy + 9),
+		]), Constants.COLOR_NIGHT)
 		draw_colored_polygon(PackedVector2Array([
 			Vector2(bx - 3, cy + 8),
 			Vector2(bx + float(i % 2) - 1.0, cy - 9),

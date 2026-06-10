@@ -8,6 +8,7 @@
 Fonte canonica dos PNGs:
 - `scripts/tools/gen_tiles.py`
 - `assets/sprites/tile_identity_contact_sheet.png`
+- `assets/sprites/tile_identity_value_sheet.png`
 - `assets/sprites/tile_floor.png`
 - `assets/sprites/tile_wall.png`
 - `assets/sprites/tile_floor_church.png`
@@ -24,7 +25,26 @@ O jogador precisa sentir que a Caipora pertence ao mundo porque ela e feita da
 mesma linguagem: laranja serrilhado, vazio preto, olhos/luzes pontuais e forma
 chapada.
 
-## 2. Contrato tecnico
+## 2. Hierarquia de leitura
+
+A identidade nao pode esmagar a jogabilidade. Em gameplay, o mapa precisa ter
+uma escada clara de valor:
+
+1. **Chao caminhavel** — medio-escuro, texturizado, mas sem grandes massas de
+   preto puro. Deve ser o plano onde a Caipora pisa.
+2. **Parede/bloqueio** — muito escuro, vertical, denso e continuo. Deve ler
+   como limite antes de qualquer detalhe.
+3. **Hazards** — alto contraste imediato: fogo quente ou osso claro sobre base
+   escura.
+4. **Props/interativos** — silhueta simples + contorno escuro + acento legivel.
+5. **Atmosfera** — fog/vinheta/luz da cena podem escurecer, mas os tiles base
+   ja precisam nascer separados em valor.
+
+Regra pratica: o piso de floresta deve ficar visivelmente mais claro que a
+parede de floresta; o piso de igreja deve ficar muito mais claro que a parede
+de igreja. Se tudo vira a mesma mancha escura, o estilo falhou.
+
+## 3. Contrato tecnico
 
 O `ExplorationManager` consome quatro atlas:
 
@@ -38,26 +58,26 @@ O `ExplorationManager` consome quatro atlas:
 Nao mudar nomes, dimensoes, quantidade de variantes ou tamanho de tile sem
 ajustar `scripts/exploration/exploration_manager.gd` e testes.
 
-## 3. Paleta
+## 4. Paleta
 
 Use paleta fechada, com no maximo poucos tons por material:
 
 | Papel | Cores principais |
 |-------|------------------|
 | Breu/silhueta | `#000000`, `#0d1117` |
-| Terra viva | `#220f0c`, `#3d1f1f`, `#301716` |
-| Casca/raiz | `#140c06`, `#2e1b0d` |
-| Mata escura | `#0c1c0b`, `#1a2f12` |
+| Terra viva | `#361d18`, `#58342d`, `#462723` |
+| Casca/raiz | `#22140a`, `#462a14` |
+| Mata escura | `#152d12`, `#26441c` |
 | Laranja Caipora | `#8b2a00`, `#ff4500` |
 | Fogo/CHAMA | `#ff6808`, `#ffb032` |
 | Sangue | `#420000`, `#8b0000` |
 | Osso | `#423a2f`, `#afa486` |
-| Igreja | `#1e1e26`, `#4a4a54`, `#968c78` |
+| Igreja | `#2e2e38`, `#626068`, `#8e8876` |
 
 Verde vivo pertence ao cristal/Furia da Caipora. Nos mapas, verde deve ser
 escuro, doente e organico.
 
-## 4. Variantes
+## 5. Variantes
 
 ### Floresta
 
@@ -77,7 +97,7 @@ escuro, doente e organico.
 - `wall v0`: cruz torta, sombra preta e sangue escorrido.
 - `wall v1`: arco/altar quebrado invadido por raizes e folhas.
 
-## 5. Hazards e props
+## 6. Hazards e props
 
 `scripts/exploration/map_object.gd` completa os tiles:
 
@@ -88,11 +108,12 @@ escuro, doente e organico.
 - `CROSS/CANDLE/PEW/FONT`: igreja corrompida, liturgia suja, nunca decoracao
   limpa ou generica.
 
-## 6. Checklist
+## 7. Checklist
 
 - O mapa parece extensao da Caipora?
+- Chao, parede, hazard e prop leem em quatro camadas diferentes?
 - A parede le como bloqueio escuro antes de detalhe?
-- O chao e organicamente hostil sem esconder entidades?
+- O chao e organicamente hostil sem esconder entidades nem parecer parede?
 - O laranja aparece como assinatura/acento, nao como tapete inteiro?
 - A igreja parece contaminada pela mata e pelo sangue?
 - O acabamento segue pixel art chapada, sem gradiente suave ou brilho plastico?

@@ -8,6 +8,7 @@ const ATLAS_CONTRACTS := {
 	"res://assets/sprites/tile_floor_church.png": Vector2i(128, 32),
 	"res://assets/sprites/tile_wall_church.png": Vector2i(64, 32),
 	"res://assets/sprites/tile_identity_contact_sheet.png": Vector2i(528, 608),
+	"res://assets/sprites/tile_identity_value_sheet.png": Vector2i(528, 608),
 }
 
 const COLOR_BLACK := Color8(0, 0, 0)
@@ -35,6 +36,22 @@ func test_forest_wall_reads_as_dark_blocking_mass() -> void:
 	var night_pixels := _count_color(image, COLOR_NIGHT)
 	assert_gt(black_pixels + night_pixels, 350, "parede de mata tem massa escura dominante")
 
+func test_floor_and_wall_have_functional_value_separation() -> void:
+	var forest_floor := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/tile_floor.png"))
+	var forest_wall := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/tile_wall.png"))
+	var church_floor := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/tile_floor_church.png"))
+	var church_wall := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/tile_wall_church.png"))
+	assert_false(forest_floor.is_empty(), "chao de floresta carrega")
+	assert_false(forest_wall.is_empty(), "parede de floresta carrega")
+	assert_false(church_floor.is_empty(), "chao de igreja carrega")
+	assert_false(church_wall.is_empty(), "parede de igreja carrega")
+	if forest_floor.is_empty() or forest_wall.is_empty() or church_floor.is_empty() or church_wall.is_empty():
+		return
+	assert_gt(_mean_luminance(forest_floor) - _mean_luminance(forest_wall), 15.0,
+		"floresta separa chao caminhavel da parede por valor")
+	assert_gt(_mean_luminance(church_floor) - _mean_luminance(church_wall), 35.0,
+		"igreja separa piso claro da parede/sombra por valor")
+
 func test_forest_floor_keeps_caipora_accent_without_becoming_orange() -> void:
 	var image := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/tile_floor.png"))
 	assert_false(image.is_empty(), "chao de mata carrega como Image")
@@ -44,6 +61,7 @@ func test_forest_floor_keeps_caipora_accent_without_becoming_orange() -> void:
 	var blood_pixels := _count_color(image, COLOR_BLOOD)
 	assert_gt(orange_pixels + blood_pixels, 12, "chao tem assinatura laranja/sangue da identidade")
 	assert_lt(orange_pixels, 180, "laranja fica como acento, nao tapete")
+	assert_lt(_count_color(image, COLOR_BLACK), 12, "chao nao usa preto puro como massa dominante")
 
 func test_church_tiles_are_corrupted_not_clean_stone() -> void:
 	var floor := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/tile_floor_church.png"))
@@ -76,3 +94,17 @@ func _count_color(image: Image, expected: Color) -> int:
 			if image.get_pixel(x, y).is_equal_approx(expected):
 				count += 1
 	return count
+
+func _mean_luminance(image: Image) -> float:
+	var total := 0.0
+	var count := 0
+	for y: int in range(image.get_height()):
+		for x: int in range(image.get_width()):
+			var c := image.get_pixel(x, y)
+			if c.a <= 0.0:
+				continue
+			total += c.r * 0.2126 + c.g * 0.7152 + c.b * 0.0722
+			count += 1
+	if count == 0:
+		return 0.0
+	return total / float(count) * 255.0
