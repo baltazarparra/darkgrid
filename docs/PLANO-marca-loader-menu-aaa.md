@@ -179,8 +179,13 @@ Critério de aceite: nenhuma troca de cena com curva/cor diferente das demais;
 |---|---|---|
 | S1 ✅ | Etapa 0 — `gen_brand.py` + todos os assets regenerados | `make gate` + teste novo de assets |
 | S2 ✅ | Etapa 1 — shell HTML custom + export_presets | `make export` + teste de load nos 3 alvos |
-| S3 | Etapa 2 — menu com novo logo + theme | `make gate` + `/validate-platforms` |
-| S4 | Etapa 3 — transição padronizada | `make gate` + `/validate-platforms` |
+| S3 ✅ | Etapa 2 — menu com novo logo + theme | `make gate` + `/validate-platforms` |
+| S4 ✅ | Etapa 3 — transição padronizada | `make gate` + `/validate-platforms` |
+
+> S3 fechou sem delta de código: o wordmark novo entra pelo contrato existente
+> (mesmo caminho, 256×96, frame de blink) e o `theme.tres` já cumpria o design
+> system brutal. Validado por captura em retrato e paisagem. S4 validado idem
+> (olhos no breu nas duas orientações; arena segue com fade limpo).
 
 Dependências: S2–S4 dependem dos assets de S1. S3 e S4 são independentes entre
 si.

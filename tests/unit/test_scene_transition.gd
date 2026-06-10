@@ -74,6 +74,24 @@ func test_transition_tracks_last_exploration() -> void:
 	assert_eq(_st._last_exploration, int(SignalBus.Screen.EXPLORATION_PHASE3),
 		"arena não mexe no tracking de exploração")
 
+# ── Assinatura da marca: olhos abrem no breu APENAS em transição temática ──
+func test_eyes_signature_only_on_themed_transitions() -> void:
+	_st._last_exploration = -1
+	_st.transition_to(GameState._scene_path_for(SignalBus.Screen.HUB), SignalBus.Screen.HUB)
+	_kill_tween()
+	assert_true(_st._eyes.visible, "flavor temático abre os olhos no breu")
+	_st.transition_to(GameState._scene_path_for(SignalBus.Screen.ARENA), SignalBus.Screen.ARENA)
+	_kill_tween()
+	assert_false(_st._eyes.visible, "entrada em arena fica com fade limpo, sem assinatura")
+
+# ── Os dois olhos são IGUAIS e brancos puros (trava do conceito) ──
+func test_eyes_are_equal_and_pure_white() -> void:
+	var rects: Array = _st._eyes.get_children()
+	assert_eq(rects.size(), 2, "exatamente dois olhos")
+	for eye: ColorRect in rects:
+		assert_eq(eye.color, Color.WHITE, "olho branco puro, sem halo")
+		assert_eq(eye.size, _st.EYE_SIZE, "olhos do mesmo tamanho")
+
 func _kill_tween() -> void:
 	if _st._tween != null and _st._tween.is_valid():
 		_st._tween.kill()

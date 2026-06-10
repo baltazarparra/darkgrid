@@ -11,7 +11,6 @@ extends CanvasLayer
 # ─── Constants ─────────────────────────────────────
 const FADE_LAYER: int = 100
 const FADE_IN_DURATION: float = 1.2
-const FADE_OUT_DURATION: float = 0.6
 const LOGO_PATH: String = "res://assets/sprites/logo_title.png"
 const LOGO_BLINK_PATH: String = "res://assets/sprites/logo_title_blink.png"
 const LOGO_BASE_SIZE := Vector2(256.0, 96.0)
@@ -69,7 +68,9 @@ func _resolve_version() -> String:
 			return String(gd.get_script_constant_map()["VERSION"])
 	return str(ProjectSettings.get_setting("application/config/version", "dev"))
 
-## Overlay preto para fade-in (abrir) e fade-out (Iniciar).
+## Overlay preto para o fade-in de abertura (handoff do boot splash). O fade-out
+## de Iniciar NÃO vive aqui: toda saída de cena é mascarada pelo SceneTransition
+## (uma linguagem de transição só).
 func _setup_fade() -> void:
 	var fade_layer := CanvasLayer.new()
 	fade_layer.layer = FADE_LAYER
@@ -146,14 +147,13 @@ func _schedule_blink() -> void:
 func _on_start_pressed() -> void:
 	AudioDirector.unlock_audio()
 	_start_button.disabled = true
-	var tween := create_tween()
-	tween.tween_property(_fade, "color:a", 1.0, FADE_OUT_DURATION)
-	# A run começa pelo acampamento: o jogador aprimora a Caipora antes de pisar na mata.
-	tween.tween_callback(_begin_run)
+	# A run começa pelo acampamento; o SceneTransition mascara a troca com o
+	# flavor do camp — sem fade duplicado aqui.
+	_begin_run()
 
-## Inicia a run e abre o Acampamento (HUB) antes da Fase 1 (chamado após o fade-out de
-## Iniciar). start_run() já define pending_exploration = EXPLORATION, então o rastro de
-## saída do hub leva direto à Exploração da Fase 1.
+## Inicia a run e abre o Acampamento (HUB) antes da Fase 1. start_run() já define
+## pending_exploration = EXPLORATION, então o rastro de saída do hub leva direto à
+## Exploração da Fase 1.
 func _begin_run() -> void:
 	GameState.start_run()
 	GameState.change_screen(SignalBus.Screen.HUB)
