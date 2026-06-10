@@ -28,6 +28,8 @@ const COMBAT_MAX_WIDTH_FRACTION: float = 0.58
 const COMBAT_GAP_FRACTION: float = 0.10
 const COMBAT_SIDE_MARGIN_FRACTION: float = 0.45
 const COMBAT_BOTTOM_MARGIN_FRACTION: float = 0.55
+const COMBAT_LANDSCAPE_CENTER_Y_FRACTION: float = 0.62
+const COMBAT_LANDSCAPE_BOTTOM_MARGIN_FRACTION: float = 0.18
 const COMBAT_PRESS_SCALE: float = 0.92
 const COMBAT_PRESS_TWEEN_SECONDS: float = 0.045
 const COMBAT_HAPTIC_MS: int = 10
@@ -317,7 +319,6 @@ func _layout_combat_buttons() -> void:
 	var gap: float = key * COMBAT_GAP_FRACTION
 	var safe: Vector2 = _get_safe_margins()
 	var side_margin: float = maxf(key * COMBAT_SIDE_MARGIN_FRACTION, safe.x)
-	var bottom_margin: float = maxf(key * COMBAT_BOTTOM_MARGIN_FRACTION, safe.y)
 	var cluster_w: float = key * 3.0 + gap * 2.0
 	var cluster_h: float = key * 2.0 + gap
 	var max_cluster_w: float = vp.x * COMBAT_MAX_WIDTH_FRACTION - side_margin
@@ -328,11 +329,9 @@ func _layout_combat_buttons() -> void:
 		cluster_w = key * 3.0 + gap * 2.0
 		cluster_h = key * 2.0 + gap
 
-	var origin := Vector2(
-		vp.x - side_margin - cluster_w,
-		vp.y - bottom_margin - cluster_h
-	)
-	_dpad_rect = Rect2(origin, Vector2(cluster_w, cluster_h))
+	var cluster: Vector2 = Vector2(cluster_w, cluster_h)
+	var origin: Vector2 = _combat_origin_for_metrics(vp, safe, cluster, key)
+	_dpad_rect = Rect2(origin, cluster)
 
 	var cx: float = origin.x + key + gap
 	var y_top: float = origin.y
@@ -349,6 +348,25 @@ func _layout_combat_buttons() -> void:
 		btn.position = positions[i]
 		btn.size = Vector2(key, key)
 		btn.pivot_offset = btn.size * 0.5
+
+
+func _combat_origin_for_metrics(vp: Vector2, safe: Vector2, cluster: Vector2, key: float) -> Vector2:
+	var side_margin: float = maxf(key * COMBAT_SIDE_MARGIN_FRACTION, safe.x)
+	if Constants.is_portrait(vp):
+		var bottom_margin: float = maxf(key * COMBAT_BOTTOM_MARGIN_FRACTION, safe.y)
+		return Vector2(
+			vp.x - side_margin - cluster.x,
+			vp.y - bottom_margin - cluster.y
+		)
+
+	var target_y: float = vp.y * COMBAT_LANDSCAPE_CENTER_Y_FRACTION - cluster.y * 0.5
+	var min_y: float = vp.y * TOP_EXCLUSION_FRACTION
+	var max_y: float = vp.y - safe.y - key * COMBAT_LANDSCAPE_BOTTOM_MARGIN_FRACTION - cluster.y
+	max_y = maxf(min_y, max_y)
+	return Vector2(
+		vp.x - side_margin - cluster.x,
+		clampf(target_y, min_y, max_y)
+	)
 
 
 func _try_begin(index: int, point: Vector2) -> void:
