@@ -76,9 +76,11 @@ func test_exit_starts_fresh_when_no_run() -> void:
 
 # ── O D-pad de toque trata o HUB como gameplay (a Caipora anda no acampamento) ──
 func test_hub_is_gameplay_for_dpad() -> void:
-	assert_true(TouchControls._is_gameplay_screen(SignalBus.Screen.HUB),
+	var touch_controls = preload("res://scripts/ui/controls_hud.gd").new()
+	add_child_autofree(touch_controls)
+	assert_true(touch_controls._is_gameplay_screen(SignalBus.Screen.HUB),
 		"D-pad visível no acampamento jogável")
-	assert_true(TouchControls._is_gameplay_screen(SignalBus.Screen.EXPLORATION),
+	assert_true(touch_controls._is_gameplay_screen(SignalBus.Screen.EXPLORATION),
 		"D-pad visível na exploração (sem regressão)")
-	assert_false(TouchControls._is_gameplay_screen(SignalBus.Screen.MAIN_MENU),
+	assert_false(touch_controls._is_gameplay_screen(SignalBus.Screen.MAIN_MENU),
 		"D-pad oculto no menu (sem regressão)")

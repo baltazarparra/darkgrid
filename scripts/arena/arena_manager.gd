@@ -25,6 +25,10 @@ const ACTION_LIFT_FRACTION: float = 0.5
 
 # Folga extra (px de tela) somada ao raio da bolha ao testar contra o D-pad.
 const DPAD_BUBBLE_PADDING: float = 12.0
+const COMBAT_LOADER_LAYER: int = 30
+const COMBAT_LOADER_FADE: float = 0.12
+const COMBAT_LOADER_PREPARE_HOLD: float = 0.42
+const COMBAT_LOADER_FIGHT_HOLD: float = 0.34
 
 @onready var _camera: Camera2D = $Camera2D
 # D-pad é um autoload persistente (TouchControls), não mais um nó por cena.
@@ -82,13 +86,51 @@ func _ready() -> void:
 
 	_spawn_caipora()
 	_spawn_enemy()
-	# Loader "peleja" (Fase 10): a arena nasce pronta sob o preto, mas o primeiro
-	# turno só dispara quando o overlay libera — o jogador nunca perde um cue de
-	# timing escondido atrás do texto. Sem intro ativa (testes headless, run
-	# direto do editor), começa imediato.
-	if SceneTransition.is_combat_intro_active():
-		SignalBus.combat_intro_finished.connect(_start_caipora_turn, CONNECT_ONE_SHOT)
-	else:
+	_run_combat_loader()
+
+
+func _run_combat_loader() -> void:
+	var loader := CanvasLayer.new()
+	loader.layer = COMBAT_LOADER_LAYER
+	add_child(loader)
+
+	var fade := ColorRect.new()
+	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fade.mouse_filter = Control.MOUSE_FILTER_STOP
+	var bg := Constants.COLOR_ARENA_BG
+	bg.a = 0.0
+	fade.color = bg
+	loader.add_child(fade)
+
+	var label := Label.new()
+	label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", Constants.FONT_LG)
+	label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
+	label.text = "PREPARE-SE"
+	label.modulate.a = 0.0
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fade.add_child(label)
+
+	var tween := create_tween()
+	tween.tween_property(fade, "color:a", 0.94, COMBAT_LOADER_FADE)
+	tween.tween_property(label, "modulate:a", 1.0, COMBAT_LOADER_FADE)
+	tween.tween_interval(COMBAT_LOADER_PREPARE_HOLD)
+	tween.tween_property(label, "modulate:a", 0.0, COMBAT_LOADER_FADE)
+	tween.tween_callback(func() -> void:
+		label.text = "PELEJAR"
+		label.add_theme_font_size_override("font_size", Constants.FONT_TITLE)
+	)
+	tween.tween_property(label, "modulate:a", 1.0, COMBAT_LOADER_FADE)
+	tween.tween_interval(COMBAT_LOADER_FIGHT_HOLD)
+	tween.tween_property(label, "modulate:a", 0.0, COMBAT_LOADER_FADE)
+	tween.tween_property(fade, "color:a", 0.0, COMBAT_LOADER_FADE)
+	await tween.finished
+
+	if is_instance_valid(loader):
+		loader.queue_free()
+	if not _combat_over and _both_alive():
 		_start_caipora_turn()
 
 func _update_camera_fit() -> void:

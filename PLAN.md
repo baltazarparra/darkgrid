@@ -759,32 +759,29 @@ O início de combate hoje é seco: `_trigger_combat` → `change_screen(arena)` 
 fade de 0.22s → `ArenaManager._ready()` chama `_start_caipora_turn()` no mesmo
 frame. Não há feedback de "a luta vai começar" nem máscara de carregamento.
 
-Design: TODA transição para tela `ARENA_*` ganha um modo combat-intro no
-`SceneTransition` (autoload layer 100, único ponto por onde toda troca já
-passa e que sobrevive ao swap — não criar overlay paralelo):
+Design: TODA entrada em tela `ARENA_*` ganha um loader interno no próprio
+`ArenaManager`, depois do fade global limpo. A arena nasce pronta por baixo,
+mas o primeiro turno só abre quando o overlay libera — o jogador nunca perde
+um cue de timing escondido atrás do texto:
 
-- [x] Fade-out preto (igual hoje) → texto **"peleja"** grande (`FONT_TITLE`,
-  fonte pixel do theme, âmbar de cue) com reveal letra-a-letra (carregando)
-  enquanto a cena troca por baixo → hold → fade-out do texto → fade-in da arena.
-- [x] `PELEJA_MIN_HOLD := 2.0` — o texto fica **no mínimo 2s** em tela,
-  contando do fim do reveal; constante no topo, sem número mágico. Guardado
-  por `test_peleja_min_hold_honors_requirement`.
-- [x] Gate de início: novo sinal `SignalBus.combat_intro_finished`. O
-  `ArenaManager._ready()` spawna atores mas só dispara `_start_caipora_turn()`
-  quando o sinal chega; se nenhuma intro estiver ativa (run direto do editor,
-  testes headless), começa imediato (query `SceneTransition.is_combat_intro_active()`).
+- [x] Fade global preto (igual hoje, sem texto de luta) → loader interno da
+  arena com **"PREPARE-SE"** → **"PELEJAR"** (`FONT_TITLE`, âmbar de cue) →
+  fade-out do loader → primeiro turno.
+- [x] Constantes no topo do `ArenaManager`: `COMBAT_LOADER_FADE`,
+  `COMBAT_LOADER_PREPARE_HOLD` e `COMBAT_LOADER_FIGHT_HOLD`, sem número mágico.
+- [x] Gate de início: `ArenaManager._ready()` spawna atores e chama
+  `_run_combat_loader()`; `_start_caipora_turn()` só roda no final do tween.
 - [x] Engolir input durante o loader (o fade usa `MOUSE_FILTER_STOP`; Space não
-  buffera timing porque o TimingSystem só arma no primeiro turno, pós-sinal).
-- [x] Boss: a sequência vira BossIntro → diálogo → peleja → arena. O peleja é
-  o feedback de carga (acontece NA troca de cena, que o BossIntro não cobre);
+  buffera timing porque o TimingSystem só arma no primeiro turno, pós-loader).
+- [x] Boss: a sequência vira BossIntro → diálogo → arena → loader interno. O loader é
+  o feedback de carga já dentro do combate, que o BossIntro não cobre;
   ambos mantidos — linguagens diferentes (apresentação vs. carregamento).
 - [x] Stinger: `sting_arena_enter` já toca na entrada da arena via
   `AudioDirector` (reage ao `screen_changed`) — soa junto do texto, sem
   pipeline novo.
-- [x] Testes GUT: `_is_arena` nas 5 telas, hold ≥ 2s, flag ligada só na arena e
-  zerada em transição não-arena, sinal existe no SignalBus. O gate do
-  `ArenaManager` não tem harness headless — validar no device junto com o
-  checklist visual.
+- [x] Testes GUT: a transição global confirma que arena não mostra texto de luta;
+  `test_controls_hud.gd` cobre o modo de arena com setas. O gate do loader visual
+  não tem harness headless — validar no device junto com o checklist visual.
 - [x] `/validate-controls` passo 1 (`make test` ✅ 317/317); passos 2–5 exigem
   display — checklist manual pendente no device.
 

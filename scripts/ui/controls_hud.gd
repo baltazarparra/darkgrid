@@ -1,54 +1,57 @@
 class_name ControlsHud
 extends CanvasLayer
 
-# D-pad de toque flutuante (padrão MOBA/AAA mobile) que espelha as setas do teclado.
-# Em repouso um pad "fantasma" fica no canto inferior direito; tocar em qualquer ponto
-# da área de jogo recentra o pad sob o dedo, e o arrasto além da zona morta pressiona
-# a direção (FloatingDpad cuida do gesto e do visual). Cada press/release dirige os
+# D-pad de toque que espelha as setas do teclado. Na exploração/HUB usa o pad
+# flutuante padrão MOBA/AAA mobile; na arena volta para a cruz antiga de setas
+# explícitas, mais legível para comandos de timing. Cada press/release dirige os
 # DOIS consumidores de input do jogo:
 #   - Input.action_press/release  -> estado polado por caipora.gd (movimento)
 #   - Input.parse_input_event     -> evento recebido por timing_system._input (combate)
-# Aparece apenas em dispositivos com tela de toque; no desktop o teclado é o controle.
 
 # ─── Constants ─────────────────────────────────────
-# Raio do pad como fração do lado menor do viewport, com piso acima dos 44pt da
-# Apple HIG e teto para não dominar tablets.
+# Raio do pad flutuante como fração do lado menor do viewport.
 const PAD_RADIUS_FRACTION: float = 0.17
 const PAD_RADIUS_MIN: float = 56.0
 const PAD_RADIUS_MAX: float = 120.0
 const PAD_PORTRAIT_SCALE: float = 1.15
-# Margem do pad em repouso (fantasma), em frações do raio.
 const REST_MARGIN_FRACTION: float = 0.55
 
-# Faixa do topo excluída da ativação: ali vivem HUD (barras, fragmentos) e o botão de
-# áudio — um toque nessa faixa nunca deve invocar o pad.
+# Faixa do topo excluída da ativação do pad flutuante: ali vivem HUD e áudio.
 const TOP_EXCLUSION_FRACTION: float = 0.18
+
+# Visual antigo do combate: cruz fixa de setas, responsiva e fora das bolhas.
+const COMBAT_KEY_FRACTION: float = 0.13
+const COMBAT_KEY_MIN: float = 56.0
+const COMBAT_KEY_MAX: float = 96.0
+const COMBAT_PORTRAIT_SCALE: float = 1.2
+const COMBAT_MAX_WIDTH_FRACTION: float = 0.58
+
+const MODE_EXPLORATION: int = 0
+const MODE_COMBAT: int = 1
 
 # Sentinelas de ponteiro: índices de toque reais são >= 0.
 const NO_POINTER: int = -1
 const MOUSE_POINTER_INDEX: int = -1000
 
-# Carimbo de build: logado uma vez no _ready(). Confirma, no console do navegador, que o
-# dispositivo está rodando o build novo (e não um cache de CDN/PWA) ao iterar no mobile.
-const _BUILD_TAG: String = "dpad-float-1"
+const _BUILD_TAG: String = "dpad-float-combat-arrows-1"
+const _GAMEPLAY_SCREEN_PREFIXES: Array = ["EXPLORATION", "ARENA", "HUB"]
+const FloatingDpadScript := preload("res://scripts/ui/floating_dpad.gd")
+const _ENTRIES: Array = [
+	["ui_up", "↑"],
+	["ui_left", "←"],
+	["ui_down", "↓"],
+	["ui_right", "→"],
+]
 
 # ─── State ─────────────────────────────────────────
-# Telas em que o D-pad fica visível: toda exploração, toda arena e o acampamento jogável
-# (HUB) — a Caipora caminha pelo acampamento entre fases, então ele é gameplay. Fora delas
-# (menu, fim de jogo) ele é ocultado. Detectado por convenção de nome do enum Screen —
-# qualquer EXPLORATION*/ARENA*/HUB conta como gameplay — para que uma fase nova (PHASE5…)
-# não precise ser registrada aqui à mão e cause o D-pad sumir no mobile (regressão da Fase 4).
-# Como este nó é um autoload persistente, o pad criado na exploração permanece vivo ao
-# entrar no combate — sem recriação nem novo fade-in, eliminando o delay no início do turno.
-const _GAMEPLAY_SCREEN_PREFIXES: Array = ["EXPLORATION", "ARENA", "HUB"]
-
 var _root: Control = null
-var _pad: FloatingDpad = null
+var _pad = null
+var _keys: Array[BaseButton] = []
 var _pointer_index: int = NO_POINTER
+var _dpad_rect: Rect2 = Rect2()
 var _active_screen_wants_dpad: bool = false
-# Sticky: uma vez reconhecido como touch (por detecção OU por um toque real), permanece true
-# pela sessão. Evita que uma leitura instável de _is_touch_device() (JavaScriptBridge.eval pode
-# devolver null/0 durante uma troca de cena pesada no web) esconda o D-pad no meio do combate.
+var _active_screen_is_arena: bool = false
+var _button_mode: int = -1
 var _touch_detected: bool = false
 
 
@@ -56,18 +59,15 @@ var _touch_detected: bool = false
 func _ready() -> void:
 	layer = 20
 	print("[caipora] build ", _BUILD_TAG)
-	# Autoload persistente: a visibilidade é dirigida pela tela atual, não pelo boot.
-	# Nada aparece no menu principal (que carrega direto, sem emitir screen_changed).
 	SignalBus.screen_changed.connect(_on_screen_changed)
 
 
 func _on_screen_changed(screen: SignalBus.Screen) -> void:
 	_active_screen_wants_dpad = _is_gameplay_screen(screen)
+	_active_screen_is_arena = _is_arena_screen(screen)
 	_refresh()
 
 
-# Gameplay = qualquer tela cujo nome no enum começa por EXPLORATION ou ARENA. Cobre as fases
-# existentes e quaisquer novas sem manutenção manual, evitando a regressão do D-pad oculto.
 func _is_gameplay_screen(screen: SignalBus.Screen) -> bool:
 	var name: String = SignalBus.Screen.keys()[screen]
 	for prefix: String in _GAMEPLAY_SCREEN_PREFIXES:
@@ -76,9 +76,11 @@ func _is_gameplay_screen(screen: SignalBus.Screen) -> bool:
 	return false
 
 
+func _is_arena_screen(screen: SignalBus.Screen) -> bool:
+	return SignalBus.Screen.keys()[screen].begins_with("ARENA")
+
+
 func _input(event: InputEvent) -> void:
-	# Um toque real é a prova definitiva de dispositivo touch: fixa o sticky e (re)exibe o D-pad,
-	# mesmo que _root já exista e esteja oculto por uma detecção falha anterior.
 	if _touch_detected:
 		return
 	if not _active_screen_wants_dpad:
@@ -90,13 +92,9 @@ func _input(event: InputEvent) -> void:
 		_refresh()
 
 
-# Gestos do pad flutuante. _unhandled_input (e não _input) para que toques consumidos
-# pela GUI (diálogo, painéis) não invoquem o pad. Dois caminhos de ponteiro:
-#   - ScreenTouch/ScreenDrag: o caminho real no mobile (multi-touch por índice).
-#   - Mouse físico: só para testar no desktop com modo "always"; eventos de mouse
-#     EMULADOS a partir de toque (DEVICE_ID_EMULATION) são ignorados para não
-#     processar o mesmo dedo duas vezes.
 func _unhandled_input(event: InputEvent) -> void:
+	if _button_mode != MODE_EXPLORATION:
+		return
 	if _root == null or not _root.visible or _pad == null:
 		return
 	if event is InputEventScreenTouch:
@@ -120,18 +118,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 # ─── Public API ────────────────────────────────────
 func get_dpad_screen_rect() -> Rect2:
-	# Vazio quando não há D-pad (desktop / sem touch) -> sem exclusão. Com o pad
-	# flutuante o retângulo é DINÂMICO: a pose de repouso reserva o canto inferior
-	# direito (bolhas de timing não nascem atrás do fantasma) e durante um gesto ele
-	# acompanha o pad onde quer que o dedo esteja.
-	if _root == null or _pad == null or not _root.visible:
+	if _root == null or not _root.visible:
+		return Rect2()
+	if _button_mode == MODE_COMBAT:
+		return _dpad_rect
+	if _pad == null:
 		return Rect2()
 	return _pad.get_screen_rect()
 
 
 # ─── Private helpers ───────────────────────────────
-# Decide a visibilidade SEM flapping: a detecção de toque é sticky-true, então uma leitura
-# instável nunca esconde um D-pad já reconhecido. Só oculta fora de gameplay ou no modo "never".
 func _resolve_should_show() -> bool:
 	if not _active_screen_wants_dpad:
 		return false
@@ -156,15 +152,17 @@ func _refresh() -> void:
 
 func _show() -> void:
 	if _root != null:
+		_sync_control_mode()
+		_layout_controls()
 		_root.visible = true
 
 
 func _hide() -> void:
-	# Solta qualquer gesto em andamento ANTES de ocultar: uma troca de tela no meio de
-	# um arrasto não pode deixar a action presa (Caipora andando sozinha na tela nova).
 	_end_gesture()
+	_release_all_actions()
 	if _root != null:
 		_root.visible = false
+	_dpad_rect = Rect2()
 
 
 func _is_touch_device() -> bool:
@@ -172,19 +170,15 @@ func _is_touch_device() -> bool:
 		var result: Variant = JavaScriptBridge.eval(
 			"navigator.maxTouchPoints > 0 || 'ontouchstart' in window", true
 		)
-		# JavaScriptBridge.eval pode retornar int(1), bool(true), ou null.
-		# Tratamos qualquer truthy value como touch.
 		if result != null and result != false and result != 0:
 			return true
 
-		# Fallback por user-agent se o eval falhar ou retornar 0/false.
 		var ua: Variant = JavaScriptBridge.eval("navigator.userAgent", true)
 		if ua is String:
 			var ua_str: String = ua.to_lower()
 			if ua_str.contains("iphone") or ua_str.contains("ipad") or ua_str.contains("ipod") or ua_str.contains("android"):
 				return true
 
-		# Fallback por viewport pequeno (< 1024px de largura = provavelmente mobile).
 		var vp_w: Variant = JavaScriptBridge.eval("window.innerWidth", true)
 		if vp_w is int or vp_w is float:
 			if int(vp_w) < 1024:
@@ -204,13 +198,82 @@ func _init_controls() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
 
-	_pad = FloatingDpad.new()
+	_sync_control_mode()
+	_layout_controls()
+	get_viewport().size_changed.connect(_layout_controls)
+
+
+func _sync_control_mode() -> void:
+	if _root == null:
+		return
+	var desired_mode := MODE_COMBAT if _active_screen_is_arena else MODE_EXPLORATION
+	if desired_mode == _button_mode:
+		return
+
+	_end_gesture()
+	_release_all_actions()
+	for child in _root.get_children():
+		_root.remove_child(child)
+		child.queue_free()
+	_pad = null
+	_keys.clear()
+	_dpad_rect = Rect2()
+	_button_mode = desired_mode
+
+	if _button_mode == MODE_COMBAT:
+		_build_combat_buttons()
+	else:
+		_build_floating_pad()
+
+
+func _build_floating_pad() -> void:
+	_pad = FloatingDpadScript.new()
 	_pad.direction_pressed.connect(_on_pressed)
 	_pad.direction_released.connect(_on_released)
 	_root.add_child(_pad)
 
-	_layout_pad()
-	get_viewport().size_changed.connect(_layout_pad)
+
+func _build_combat_buttons() -> void:
+	for entry in _ENTRIES:
+		var action: String = entry[0]
+		var btn := _make_combat_button(entry[1])
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.button_down.connect(_on_pressed.bind(action))
+		btn.button_up.connect(_on_released.bind(action))
+		_root.add_child(btn)
+		_keys.append(btn)
+
+
+func _make_combat_button(label: String) -> Button:
+	var btn := Button.new()
+	btn.text = label
+	btn.add_theme_font_size_override("font_size", Constants.FONT_MD)
+	btn.add_theme_color_override("font_color", Constants.COLOR_TEXT)
+	btn.add_theme_color_override("font_pressed_color", Constants.COLOR_AMBER)
+	btn.add_theme_stylebox_override("normal", _combat_style(false))
+	btn.add_theme_stylebox_override("hover", _combat_style(false))
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	btn.add_theme_stylebox_override("pressed", _combat_style(true))
+	return btn
+
+
+func _combat_style(pressed: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.04, 0.10, 0.98 if pressed else 0.90)
+	style.border_color = Constants.COLOR_AMBER if pressed else Color(0.50, 0.44, 0.62, 1.0)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(4)
+	return style
+
+
+func _layout_controls() -> void:
+	if _root == null:
+		return
+	if _button_mode == MODE_COMBAT:
+		_layout_combat_buttons()
+	else:
+		_layout_pad()
 
 
 func _layout_pad() -> void:
@@ -224,21 +287,56 @@ func _layout_pad() -> void:
 
 	var safe: Vector2 = _get_safe_margins()
 	var margin: float = radius * REST_MARGIN_FRACTION
-
-	# Fantasma de repouso no canto inferior DIREITO (polegar direito = direcional),
-	# respeitando safe area (home bar / notch lateral).
 	var rest := Vector2(
 		vp.x - safe.x - margin - radius,
 		vp.y - safe.y - margin - radius
 	)
-
-	# Onde o CENTRO do pad pode ficar quando recentrado sob o dedo: nunca vaza da
-	# tela nas laterais e nunca entra na faixa do HUD nem na safe area de baixo.
 	var clamp_min := Vector2(radius, vp.y * TOP_EXCLUSION_FRACTION)
 	var clamp_max := Vector2(vp.x - radius, vp.y - safe.y - radius)
 	var clamp_rect := Rect2(clamp_min, (clamp_max - clamp_min).max(Vector2.ZERO))
 
 	_pad.configure(radius, rest, clamp_rect)
+
+
+func _layout_combat_buttons() -> void:
+	if _keys.is_empty():
+		return
+
+	var vp := get_viewport().get_visible_rect().size
+	var key: float = clampf(minf(vp.x, vp.y) * COMBAT_KEY_FRACTION, COMBAT_KEY_MIN, COMBAT_KEY_MAX)
+	if _touch_detected and Constants.is_portrait(vp):
+		key *= COMBAT_PORTRAIT_SCALE
+
+	var gap: float = key * 0.10
+	var safe: Vector2 = _get_safe_margins()
+	var margin: float = maxf(key * 0.45, safe.x)
+	var cluster_w: float = key * 3.0 + gap * 2.0
+	var cluster_h: float = key * 2.0 + gap
+	var max_cluster_w: float = vp.x * COMBAT_MAX_WIDTH_FRACTION - margin
+	if cluster_w > max_cluster_w and max_cluster_w > 0.0:
+		var shrink: float = max_cluster_w / cluster_w
+		key *= shrink
+		gap *= shrink
+		cluster_w = key * 3.0 + gap * 2.0
+		cluster_h = key * 2.0 + gap
+
+	var origin := Vector2(margin, vp.y - margin - cluster_h - safe.y)
+	_dpad_rect = Rect2(origin, Vector2(cluster_w, cluster_h))
+
+	var cx: float = origin.x + key + gap
+	var y_top: float = origin.y
+	var y_bot: float = origin.y + key + gap
+	var positions: Array[Vector2] = [
+		Vector2(cx, y_top),
+		Vector2(origin.x, y_bot),
+		Vector2(cx, y_bot),
+		Vector2(origin.x + key * 2.0 + gap * 2.0, y_bot),
+	]
+
+	for i in _keys.size():
+		var btn := _keys[i]
+		btn.position = positions[i]
+		btn.size = Vector2(key, key)
 
 
 func _try_begin(index: int, point: Vector2) -> void:
@@ -267,11 +365,9 @@ func _is_in_activation_zone(point: Vector2) -> bool:
 
 
 func _get_safe_margins() -> Vector2:
-	# Retorna Vector2(margin_right, margin_bottom) da safe area.
 	var right: float = 0.0
 	var bottom: float = 0.0
 
-	# Em HTML5, tenta ler CSS safe-area-inset.
 	if OS.has_feature("web"):
 		var eval_right: Variant = JavaScriptBridge.eval(
 			"parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sari') || 0)", true
@@ -279,7 +375,6 @@ func _get_safe_margins() -> Vector2:
 		var eval_bottom: Variant = JavaScriptBridge.eval(
 			"parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || 0)", true
 		)
-		# Fallback direto: tenta env() via CSS em um elemento temporário.
 		if (eval_right == null or eval_right == 0) and (eval_bottom == null or eval_bottom == 0):
 			var sar: Variant = JavaScriptBridge.eval(
 				"(function(){var d=document.createElement('div');d.style.paddingRight='env(safe-area-inset-right)';d.style.paddingBottom='env(safe-area-inset-bottom)';d.style.position='absolute';document.body.appendChild(d);var s=getComputedStyle(d);var r=parseFloat(s.paddingRight)||0;var b=parseFloat(s.paddingBottom)||0;document.body.removeChild(d);return r+','+b;})()", true
@@ -295,13 +390,11 @@ func _get_safe_margins() -> Vector2:
 			if eval_bottom is int or eval_bottom is float:
 				bottom = float(eval_bottom)
 	else:
-		# Nativo: usar DisplayServer.get_display_safe_area().
 		var safe_rect: Rect2 = DisplayServer.get_display_safe_area()
 		var screen_size: Vector2i = DisplayServer.screen_get_size()
 		right = float(screen_size.x - safe_rect.end.x)
 		bottom = float(screen_size.y - safe_rect.end.y)
 
-	# Garantir mínimo de 28px (Apple HIG) quando em dispositivos touch.
 	if _is_touch_device():
 		right = maxf(right, 28.0)
 		bottom = maxf(bottom, 28.0)
@@ -317,6 +410,11 @@ func _on_pressed(action: String) -> void:
 func _on_released(action: String) -> void:
 	Input.action_release(action)
 	_feed_event(action, false)
+
+
+func _release_all_actions() -> void:
+	for entry in _ENTRIES:
+		Input.action_release(entry[0])
 
 
 func _feed_event(action: String, pressed: bool) -> void:

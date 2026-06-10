@@ -18,6 +18,7 @@ const FLOOR_BOTTOM: float = 598.0
 const STRIP_X: float = -120.0
 const STRIP_W: float = 840.0
 const TILE: int = 32
+const BackdropLayerScript := preload("res://scripts/arena/backdrop_layer.gd")
 
 # Planos de treeline: FAR baixa e densa atrás, MID alta e esparsa na frente.
 const FAR_TREES: int = 13
@@ -97,7 +98,7 @@ var _mid_base: Vector2
 var _cam_offset: Vector2 = Vector2.ZERO
 var _has_moon: bool = false
 var _bonfire_pos: Vector2 = Vector2.INF
-var _layers: Array[BackdropLayer] = []
+var _layers: Array = []
 
 func _ready() -> void:
 	z_index = -20
@@ -139,8 +140,8 @@ func _process(_delta: float) -> void:
 	if _mid_line != null:
 		_mid_line.position = _mid_base + _cam_offset * SHAKE_FOLLOW_MID
 
-func _add_layer(follow: float, draw_func: Callable) -> BackdropLayer:
-	var layer := BackdropLayer.new()
+func _add_layer(follow: float, draw_func: Callable) -> Node2D:
+	var layer = BackdropLayerScript.new()
 	layer.shake_follow = follow
 	layer.draw_callback = draw_func
 	add_child(layer)
@@ -165,38 +166,38 @@ func _add_treeline(color: Color, count: int, scale_f: float, height_f: float,
 	add_child(line)
 	return line
 
-func _draw_sky_layer(canvas: BackdropLayer) -> void:
+func _draw_sky_layer(canvas: Node2D) -> void:
 	canvas.draw_rect(
 		Rect2(STRIP_X, SKY_TOP, STRIP_W, HORIZON_Y - SKY_TOP),
 		_style["sky"])
 	if _has_moon:
 		_draw_moon(canvas)
 
-func _draw_floor_layer(canvas: BackdropLayer) -> void:
+func _draw_floor_layer(canvas: Node2D) -> void:
 	_draw_floor(canvas)
 	if _bonfire_pos.is_finite():
 		_draw_bonfire_logs(canvas)
 	if _style["church"]:
 		_draw_pews(canvas)
 
-func _draw_church_layer(canvas: BackdropLayer) -> void:
+func _draw_church_layer(canvas: Node2D) -> void:
 	_draw_church(canvas)
 
-func _draw_moon(canvas: BackdropLayer) -> void:
+func _draw_moon(canvas: Node2D) -> void:
 	# Lua doentia espiando entre as copas — pálida, com mordida de sombra.
 	var center := Vector2(452.0, -26.0)
 	canvas.draw_circle(center, 17.0, Color(0.72, 0.74, 0.68, 0.85))
 	canvas.draw_circle(center + Vector2(6.0, -4.0), 14.0, Color(_style["sky"].r,
 		_style["sky"].g, _style["sky"].b, 0.55))
 
-func _draw_bonfire_logs(canvas: BackdropLayer) -> void:
+func _draw_bonfire_logs(canvas: Node2D) -> void:
 	# Toras carbonizadas sob a chama do FireEffect (P2 — a mata queimando).
 	var p := _bonfire_pos
 	canvas.draw_rect(Rect2(p.x - 14.0, p.y - 2.0, 28.0, 5.0), Constants.COLOR_BARK_DARK)
 	canvas.draw_rect(Rect2(p.x - 9.0, p.y - 6.0, 18.0, 5.0), Constants.COLOR_BARK)
 	canvas.draw_rect(Rect2(p.x - 4.0, p.y - 8.0, 8.0, 4.0), Constants.COLOR_BARK_DARK)
 
-func _draw_floor(canvas: BackdropLayer) -> void:
+func _draw_floor(canvas: Node2D) -> void:
 	var rows: int = int((FLOOR_BOTTOM - HORIZON_Y) / float(TILE))
 	var cols: int = int(STRIP_W / float(TILE))
 	for row: int in rows:
@@ -220,7 +221,7 @@ func _draw_floor(canvas: BackdropLayer) -> void:
 				Rect2(variant * TILE, 0, TILE, TILE),
 				tint)
 
-func _draw_church(canvas: BackdropLayer) -> void:
+func _draw_church(canvas: Node2D) -> void:
 	# Parede de fundo da nave: duas fiadas de taipa acima do horizonte, escurecendo
 	# para cima (a abóbada some na treva).
 	for row: int in 2:
@@ -247,14 +248,14 @@ func _draw_church(canvas: BackdropLayer) -> void:
 	canvas.draw_rect(Rect2(cx - 30.0, HORIZON_Y - 12.0, 60.0, 12.0), Constants.COLOR_STONE_DARK)
 	canvas.draw_rect(Rect2(cx - 30.0, HORIZON_Y - 12.0, 60.0, 3.0), Constants.COLOR_STONE)
 
-func _draw_pews(canvas: BackdropLayer) -> void:
+func _draw_pews(canvas: Node2D) -> void:
 	# Bancos quebrados flanqueando a nave (fora do terço central da ação),
 	# vocabulário do MapObject._draw_pew ampliado.
 	for pew_y: float in [210.0, 268.0, 326.0]:
 		_draw_pew_silhouette(canvas, 28.0, pew_y)
 		_draw_pew_silhouette(canvas, 612.0, pew_y)
 
-func _draw_pew_silhouette(canvas: BackdropLayer, cx: float, cy: float) -> void:
+func _draw_pew_silhouette(canvas: Node2D, cx: float, cy: float) -> void:
 	var wood := Constants.COLOR_WOOD
 	var wood_dark := Constants.COLOR_WOOD_DARK
 	canvas.draw_rect(Rect2(cx - 36.0, cy + 4.0, 72.0, 8.0), wood_dark)   # assento

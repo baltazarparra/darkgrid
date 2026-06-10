@@ -45,6 +45,8 @@ func test_not_themed_on_non_exploration() -> void:
 	_st._last_exploration = -1
 	for s: int in [SignalBus.Screen.ARENA, SignalBus.Screen.ENDING, SignalBus.Screen.MAIN_MENU]:
 		assert_false(_st._is_themed(s), "tela %d sem flavor" % s)
+	assert_eq(_st._flavor_for(SignalBus.Screen.ARENA), "",
+		"arena não mostra texto de luta na transição global; isso pertence ao loader interno")
 
 # ── Entrar no acampamento (HUB) tem flavor próprio, calmo (Fase 9) ──
 func test_hub_has_camp_flavor() -> void:
@@ -75,39 +77,6 @@ func test_transition_tracks_last_exploration() -> void:
 func _kill_tween() -> void:
 	if _st._tween != null and _st._tween.is_valid():
 		_st._tween.kill()
-
-# ── _is_arena reconhece exatamente as 5 telas de combate ──
-func test_is_arena_recognizes_combat_screens() -> void:
-	assert_true(_st._is_arena(SignalBus.Screen.ARENA), "fase 1")
-	assert_true(_st._is_arena(SignalBus.Screen.ARENA_PHASE2), "fase 2")
-	assert_true(_st._is_arena(SignalBus.Screen.ARENA_PHASE3), "fase 3")
-	assert_true(_st._is_arena(SignalBus.Screen.ARENA_PHASE4), "fase 4")
-	assert_true(_st._is_arena(SignalBus.Screen.ARENA_PHASE5), "fase 5")
-	for s: int in [SignalBus.Screen.MAIN_MENU, SignalBus.Screen.HUB,
-			SignalBus.Screen.EXPLORATION, SignalBus.Screen.EXPLORATION_PHASE3,
-			SignalBus.Screen.WIN, SignalBus.Screen.GAME_OVER, SignalBus.Screen.ENDING]:
-		assert_false(_st._is_arena(s), "tela %d não é arena" % s)
-
-# ── Requisito do loader: o texto "peleja" fica >= 2s em tela ──
-func test_peleja_min_hold_honors_requirement() -> void:
-	assert_gte(_st.PELEJA_MIN_HOLD, 2.0, "hold mínimo de 2s do texto em tela")
-	assert_eq(_st.PELEJA_TEXT, "peleja", "a palavra é peleja")
-
-# ── Entrar na arena liga o combat-intro; outras telas não ──
-func test_combat_intro_active_only_for_arena() -> void:
-	assert_false(_st.is_combat_intro_active(), "nasce desligado")
-	_st.transition_to("res://scenes/arena/arena.tscn", SignalBus.Screen.ARENA)
-	_kill_tween()  # o change_scene_to_file fica num callback pós-fade; mata antes de disparar
-	assert_true(_st.is_combat_intro_active(), "arena liga o loader peleja")
-	# Transição nova para tela não-arena zera qualquer intro pendurada.
-	_st.transition_to("res://scenes/hub/hub.tscn", SignalBus.Screen.HUB)
-	_kill_tween()
-	assert_false(_st.is_combat_intro_active(), "hub não é peleja e zera o estado")
-
-# ── O fim do peleja emite combat_intro_finished (contrato com o ArenaManager) ──
-func test_signal_bus_has_combat_intro_finished() -> void:
-	assert_true(SignalBus.has_signal("combat_intro_finished"),
-		"SignalBus expõe o sinal que libera o primeiro turno da arena")
 
 # ── Roteamento: TODA tela do enum resolve uma cena (nada cai no vazio) ──
 func test_every_screen_resolves_a_scene() -> void:
