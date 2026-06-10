@@ -717,7 +717,7 @@ aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no fo
 ## 12. Diretrizes de Assets
 
 - **Sprites:** pixel art autoral procedural (preferido), pack CC0 recolorido, ou **IA com pipeline de limpeza obrigatório** (paleta/grid/alpha). Personagens 48×48, tiles/itens 32×32, .png, fundo transparente. Detalhes em `assets/AGENTS.md`.
-- **Áudio:** Identidade sonora própria (maracatu / Amazônia / folk-horror), sintetizada proceduralmente em `scripts/tools/gen_sfx.py` (stdlib, reproduzível). Camadas:
+- **Áudio:** Identidade sonora própria (maracatu / Amazônia / folk-horror), sintetizada proceduralmente em `scripts/tools/gen_sfx.py` (stdlib, reproduzível). Direção canônica: [docs/PRD-audio-v3.md](docs/PRD-audio-v3.md). Camadas:
   - **SFX de combate** (`assets/audio/sfx/`): .wav curtos, punchy, under 100KB cada, 3 variantes por som (round-robin no `SfxSystem`).
   - **Ambiência** (`assets/audio/ambience/`): loops por tela — floresta amazônica (exploração/hub), dread (arena).
   - **Maracatu adaptativo** (`assets/audio/music/`): stems sincronizados (alfaia/ganzá/agogô); agogô só entra no boss.
