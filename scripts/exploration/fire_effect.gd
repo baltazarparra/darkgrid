@@ -69,9 +69,7 @@ static func _make_particles(amount: int, lifetime: float, pos: Vector2, gravity:
 	p.scale_amount_max = smax
 	p.color_ramp = ramp
 	if additive:
-		var mat := CanvasItemMaterial.new()
-		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-		p.material = mat
+		p.material = Constants.ADDITIVE_MATERIAL
 	return p
 
 static func _flame_ramp() -> Gradient:

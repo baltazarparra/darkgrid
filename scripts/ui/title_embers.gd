@@ -39,9 +39,7 @@ func _spawn_embers() -> void:
 	embers.scale_amount_max = 3.5
 	embers.color_ramp = _ember_ramp()
 	# Blend aditivo: a brasa realmente brilha sobre o fogo.
-	var glow := CanvasItemMaterial.new()
-	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	embers.material = glow
+	embers.material = Constants.ADDITIVE_MATERIAL
 	add_child(embers)
 
 ## Acende (âmbar quente) e apaga ao longo da vida.

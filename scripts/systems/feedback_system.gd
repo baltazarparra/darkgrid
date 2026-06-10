@@ -207,9 +207,9 @@ func _make_fail() -> CPUParticles2D:
 	return p
 
 func _glow_material() -> CanvasItemMaterial:
-	var glow := CanvasItemMaterial.new()
-	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	return glow
+	# Recurso compartilhado, nunca CanvasItemMaterial.new(): instâncias idênticas
+	# quebram o batching do Compatibility (PLANO-performance-60fps G9).
+	return Constants.ADDITIVE_MATERIAL
 
 ## Anexa um nó de partículas à cena ativa. Retorna false (e descarta o nó) se a árvore
 ## ou a cena atual não existir — ex.: durante/depois de uma troca de cena. Evita erro de

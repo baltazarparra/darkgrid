@@ -62,3 +62,27 @@ func test_amount_respects_device_scale() -> void:
 	var vp: Vector2 = _fb.get_viewport().get_visible_rect().size
 	var expected: int = maxi(1, int(22.0 * Constants.particle_amount_scale(vp)))
 	assert_eq(p.amount, expected, "amount do fail escalado pela classe do device")
+
+# ── Glow compartilhado: um único CanvasItemMaterial para todo o projeto ──
+func test_glow_material_is_shared_single_resource() -> void:
+	_fb.spawn_dodge_particles(Vector2.ZERO)
+	_fb.spawn_critical_particles(Vector2.ZERO)
+	var dodge: CPUParticles2D = _fb._pool[&"dodge"][0]
+	var spark: CPUParticles2D = _fb._pool[&"spark"][0]
+	assert_eq(dodge.material, Constants.ADDITIVE_MATERIAL,
+		"dodge usa o recurso compartilhado, não uma instância própria")
+	assert_eq(spark.material, dodge.material, "mesmo material em todos os glows")
+
+func test_fail_particles_have_no_glow() -> void:
+	# Leitura "morta" da falha: blend normal, sem brilho — tom não negocia.
+	_fb.spawn_fail_particles(Vector2.ZERO)
+	assert_null((_fb._pool[&"fail"][0] as CPUParticles2D).material)
+
+# ── Densidade do gore: golpe espirra o DOBRO do sangue base (alias impact) ──
+func test_blood_keeps_double_gore_density() -> void:
+	_fb.spawn_blood_particles(Vector2.ZERO)
+	_fb.spawn_impact_particles(Vector2.ZERO)
+	var blood: CPUParticles2D = _fb._pool[&"blood"][0]
+	var impact: CPUParticles2D = _fb._pool[&"impact"][0]
+	# A escala por device multiplica os dois igualmente: a razão 2x sobrevive.
+	assert_eq(blood.amount, impact.amount * 2, "golpe espirra o dobro do sangue base")

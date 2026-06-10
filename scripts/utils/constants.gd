@@ -91,6 +91,12 @@ const BOSS_KILL_HEAL := 2.0
 const COMMON_FRAGMENT_REWARD := { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 }
 const BOSS_FRAGMENT_BOUNTY := { 1: 3, 2: 5, 3: 8, 4: 12, 5: 20 }
 
+# ─── Materiais compartilhados ──────────────────────
+# Fonte ÚNICA do blend aditivo (glow). CanvasItemMaterial.new() idênticos por
+# emissor quebram o batching do Compatibility e alocam à toa — todo glow do
+# jogo referencia ESTE recurso (PLANO-performance-60fps G9).
+const ADDITIVE_MATERIAL: CanvasItemMaterial = preload("res://resources/materials/additive_glow.tres")
+
 # ─── Colors (Horror Folk Palette) ──────────────────
 # Fonte ÚNICA de cor do jogo. Qualquer Color() novo deve referenciar/derivar daqui —
 # não inventar tons soltos nos scripts. (doom_fire.gd é a única exceção: gradiente próprio.)

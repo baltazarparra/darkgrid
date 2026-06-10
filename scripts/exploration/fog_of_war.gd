@@ -9,6 +9,8 @@ extends CanvasLayer
 var _rect: ColorRect
 var _shader_mat: ShaderMaterial
 var _tracked_node: Node2D
+var _last_uv: Vector2 = Vector2.INF
+var _last_radius_uv: float = -1.0
 
 func _ready() -> void:
 	layer = 10
@@ -41,6 +43,12 @@ func update_position(world_pos: Vector2, cam: Camera2D) -> void:
 		return
 	var screen_pos := vp.get_canvas_transform() * world_pos
 	var uv := screen_pos / vp_size
+	var radius_uv := reveal_radius * cam.zoom.x / vp_size.y
+	# Caipora parada (movimento em grid passa a maior parte do tempo parado):
+	# uniforms não mudam — não reenviar params do shader todo frame.
+	if uv.is_equal_approx(_last_uv) and is_equal_approx(radius_uv, _last_radius_uv):
+		return
+	_last_uv = uv
+	_last_radius_uv = radius_uv
 	_shader_mat.set_shader_parameter("player_screen_uv", uv)
-	var radius_world := reveal_radius * cam.zoom.x
-	_shader_mat.set_shader_parameter("reveal_radius_uv", radius_world / vp_size.y)
+	_shader_mat.set_shader_parameter("reveal_radius_uv", radius_uv)
