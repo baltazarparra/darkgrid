@@ -16,6 +16,30 @@ The full product spec is in `PLAN.md`. Read it before every session.
 
 **Tone:** GORE / TERROR / SANGRENTO. The forest is hostile. The Caipora is dangerous. Do not sanitize the horror.
 
+### Visual Identity — The Caipora Is the Brand
+
+The protagonist rebuild approved in 2026-06 defines the project's primary
+visual mark. Treat `docs/CONCEITO-protagonista.md` and
+`assets/sprites/caipora_pop_dark_contact_sheet.png` as canonical references for
+the playable Caipora and as the north star for the wider art direction.
+
+When a task touches protagonist art, character silhouettes, VFX, key art,
+marketing images, UI motifs, palette, enemy readability, or scene mood, use the
+local skill `.agents/skills/visual-identity/SKILL.md` before editing. The core
+identity is:
+
+- **Orange serrated cloak/juba as dominant silhouette** — the Caipora reads at
+  32px as an orange hostile shape with white eyes.
+- **Black void/body/horns/staff** — no facial features, no cute expression, no
+  clothing detail that competes with the silhouette.
+- **Two pure white eyes** — equal, round, readable, and unsettling.
+- **Tiny green crystal core only as Furia anchor** — green is an accent, never
+  the protagonist's dominant read.
+- **Flat pixel-art finish** — closed palette, hard shapes, 1px dark outline,
+  no soft gradients, no dither haze, no glossy rendering.
+- **Horror stays physical** — blood, darkness, hostile forest shapes, ritual
+  marks, and predatory poses are part of the brand.
+
 ---
 
 ## Harness Layer — Agent Interaction Model
