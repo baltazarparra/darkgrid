@@ -1,0 +1,4 @@
+[gd_resource type="CanvasItemMaterial" format=3 uid="uid://additive_glow_mat"]
+
+[resource]
+blend_mode = 1
