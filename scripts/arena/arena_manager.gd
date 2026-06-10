@@ -314,6 +314,15 @@ func _start_enemy_turn() -> void:
 func _on_enemy_attack_started() -> void:
 	if not _both_alive():
 		return
+	# S9 (experimental, atrás de AudioDirector.BEAT_SYNC_ENABLED — hoje OFF): o
+	# wind-up de inimigo COMUM espera o próximo beat (máx. 1 beat). A janela de
+	# timing não muda; bosses ficam fora. Com a flag desligada, wait = 0.0 sempre.
+	if not GameState.active_combat_is_boss:
+		var wait := AudioDirector.time_to_next_beat()
+		if wait > 0.0:
+			await get_tree().create_timer(wait).timeout
+			if not _both_alive() or _combat_over:
+				return
 	# Pose de telegrafia (espingarda na pontaria / machados içados) junto do tint.
 	_animator.play_pose(_enemy, &"windup")
 	var window: float = _phase_window(_active_enemy_pattern.attack_duration)

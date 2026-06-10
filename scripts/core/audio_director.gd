@@ -98,6 +98,20 @@ const STING_BAG_DROP: String = "fragment_bag_drop"
 const STING_BAG_RECOVER: String = "fragment_bag_recover"
 const FINAL_PHASE: int = 5
 
+# ─── Beat-sync experimental (S9) ───────────────────
+## KILL SWITCH: telegraphs de inimigo comum alinhados ao pulso. DESLIGADO por
+## padrão — ligar só em playtest; se o feel piorar, fica desligado e o experimento
+## se encerra documentado. Janela de timing NÃO muda; bosses ficam fora.
+const BEAT_SYNC_ENABLED: bool = false
+## BPM por faixa de arena (fonte: gen_sfx._arena_layers(bpm, ...)).
+const TRACK_BPM: Dictionary = {
+	"mus_arena_p1": 100.0,
+	"mus_arena_p2": 106.0,
+	"mus_arena_p3": 104.0,
+	"mus_arena_p4": 112.0,
+	"mus_arena_p5": 120.0,
+}
+
 # ─── State ─────────────────────────────────────────
 ## Volume linear (0..1) alvo por bus — fonte da verdade que o ducking respeita.
 var _bus_volume: Dictionary = {
@@ -299,6 +313,24 @@ func _on_boss_intro() -> void:
 		set_music_intensity(2)
 		if _ambience_player.playing:
 			_fade_player(_ambience_player, 0.0, false))
+
+# ─── Beat-sync experimental (S9) ───────────────────
+## Segundos até o próximo beat da faixa atual. 0.0 = sem espera (flag desligada,
+## nada tocando ou faixa fora do mapa) — o chamador segue imediatamente.
+func time_to_next_beat() -> float:
+	if not BEAT_SYNC_ENABLED or _music_active == null or not _music_active.playing:
+		return 0.0
+	var bpm := _bpm_for_track(_current_music)
+	if bpm <= 0.0:
+		return 0.0
+	var beat := 60.0 / bpm
+	return beat - fmod(_music_active.get_playback_position(), beat)
+
+func _bpm_for_track(path: String) -> float:
+	for track_name: String in TRACK_BPM:
+		if path.contains(track_name):
+			return TRACK_BPM[track_name]
+	return 0.0
 
 func _kill_silence_tween() -> void:
 	if _silence_tween != null and _silence_tween.is_valid():

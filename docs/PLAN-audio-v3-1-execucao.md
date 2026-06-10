@@ -491,6 +491,14 @@ Tipo: timing/input, alto risco.
 
 Objetivo: experimentar telegraphs de inimigos comuns alinhados ao pulso musical.
 
+Status: scaffolded, DESLIGADO (`AudioDirector.BEAT_SYNC_ENABLED := false`).
+`TRACK_BPM` cobre as 5 arenas (100/106/104/112/120, fonte: `_arena_layers`);
+`time_to_next_beat()` devolve 0.0 com a flag off, faixa sem BPM ou sem musica;
+o wind-up de comum em `_on_enemy_attack_started` espera no maximo 1 beat —
+bosses fora, janela de timing intocada. Ligar a flag SO em playtest deliberado
+(browser, `/validate-controls` + `/validate-platforms`); se o feel piorar, fica
+off e o experimento se encerra aqui, documentado.
+
 Arquivos provaveis:
 
 - `scripts/core/audio_director.gd`

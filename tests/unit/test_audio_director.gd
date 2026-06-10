@@ -336,6 +336,19 @@ func test_screen_change_kills_pending_silence():
 		"o tween de silêncio morre na troca de tela — sem callback órfão")
 	GameState.active_combat_is_boss = false
 
+func test_beat_sync_ships_disabled_and_waits_zero():
+	# S9: kill switch — a flag NUNCA deve ir para true sem playtest deliberado.
+	assert_false(AudioDirector.BEAT_SYNC_ENABLED, "beat-sync é experimento: ships OFF")
+	assert_eq(AudioDirector.time_to_next_beat(), 0.0,
+		"com a flag desligada o wind-up nunca espera")
+
+func test_bpm_map_covers_arena_tracks_only():
+	assert_eq(AudioDirector._bpm_for_track("res://assets/audio/music/mus_arena_p1_base.wav"), 100.0)
+	assert_eq(AudioDirector._bpm_for_track("res://assets/audio/music/mus_arena_p5.wav"), 120.0)
+	assert_eq(AudioDirector._bpm_for_track("res://assets/audio/music/mus_boss_saci.wav"), 0.0,
+		"bosses ficam fora do beat-sync v1")
+	assert_eq(AudioDirector._bpm_for_track("res://assets/audio/music/mus_menu.wav"), 0.0)
+
 func test_force_loop_handles_8_and_16_bit():
 	# A música é gravada em PCM 8-bit (1 byte por frame mono); SFX seguem 16-bit.
 	var wav8 := AudioStreamWAV.new()
