@@ -8,6 +8,7 @@ android/
 
 # Carimbo de versão gerado por `make export` (derivado do git; nunca commitado).
 scripts/core/build_info.gd
+scripts/core/build_info.gd.uid
 
 # Python (geradores de arte/sfx em scripts/tools/)
 __pycache__/
