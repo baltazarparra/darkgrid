@@ -6,7 +6,8 @@ que tornam cada personagem identificável:
 
   Caipora  — PROTAGONISTA: gerada por gen_caipora.py (pipeline premium próprio,
              ver docs/CONCEITO-protagonista.md). Este módulo apenas delega.
-  Caçador  — 48x48: chapéu, poncho, espingarda (inimigo humano predador)
+  Caçador & Bruxo — INIMIGOS COMUNS: gerados por gen_inimigos.py (pipeline
+             premium 48px, ver docs/PLANO-redesign-cacador-bruxo.md). Delega.
   Caçador c/ machados — 48x48: capuz, manto, dois machados, olhos brilhando (boss base)
   Mula sem Cabeça     — 48x48: sem cabeça, jato de fogo no toco do pescoço,
                         ferraduras de ferro, arreio amaldiçoado (boss da Fase 1)
@@ -18,6 +19,7 @@ import os
 from PIL import Image
 
 import gen_caipora
+import gen_inimigos
 
 S = 48
 OUT = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sprites")
@@ -34,16 +36,6 @@ EARTH_DK = (40, 20, 20)
 LEAF = (34, 58, 30)
 LEAF_DK = (20, 38, 20)
 
-HAT = (38, 25, 16)
-HAT_DK = (24, 15, 9)
-HAT_BAND = (96, 30, 18)
-PONCHO = (74, 42, 30)
-PONCHO_DK = (50, 28, 20)
-HUMAN_SKIN = (150, 112, 82)
-HUMAN_SKIN_DK = (108, 78, 54)
-GUN = (28, 24, 22)
-GUN_HL = (70, 64, 58)
-
 HOOD = (47, 16, 62)
 HOOD_DK = (28, 9, 40)
 ROBE = (33, 13, 48)
@@ -54,7 +46,7 @@ AXE_HAFT = (58, 34, 18)        # cabo de madeira escura
 AXE_HAFT_DK = (38, 22, 12)
 AXE_STEEL = (60, 56, 52)       # lâmina de aço sombrio
 AXE_EDGE = (140, 138, 146)     # fio reluzente da lâmina
-STRAP = (96, 30, 18)           # correia/couro do caçador (reaproveita tom da fita)
+STRAP = (96, 30, 18)           # correia/couro cruzada do boss
 
 
 class C:
@@ -106,60 +98,6 @@ class C:
         im2.paste(self.im, (dx, dy))
         self.im = im2
         self.p = im2.load()
-
-
-def hunter(pose="idle"):
-    """Caçador humano: chapéu, poncho, espingarda apontada.
-
-    pose "windup": espingarda erguida na pontaria, corpo cravado — telegrafa o tiro.
-    """
-    c = C()
-    # ── Chapéu de aba larga ──
-    c.rect(14, 13, 33, 15, HAT_DK)      # aba
-    c.rect(13, 14, 34, 15, HAT_DK)
-    c.rect(18, 6, 29, 13, HAT)          # copa
-    c.rect(18, 11, 29, 12, HAT_BAND)    # fita
-    c.rect(18, 6, 19, 13, HAT_DK)
-    # ── Rosto na sombra do chapéu ──
-    c.rect(19, 16, 28, 23, HUMAN_SKIN)
-    c.rect(19, 16, 28, 17, HUMAN_SKIN_DK)  # sombra da aba
-    c.rect(20, 19, 21, 20, (20, 10, 8))    # olhos fundos
-    c.rect(26, 19, 27, 20, (20, 10, 8))
-    c.rect(22, 22, 25, 23, HUMAN_SKIN_DK)  # barba/queixo
-    # ── Poncho ──
-    c.rect(15, 24, 32, 38, PONCHO)
-    c.rect(15, 24, 17, 38, PONCHO_DK)
-    c.rect(30, 24, 32, 38, PONCHO_DK)
-    c.rect(22, 24, 25, 38, PONCHO_DK)   # vinco central
-    for y in range(38, 41):             # franja
-        for x in range(15, 33, 2):
-            c.px(x, y, PONCHO_DK)
-    # ── Pernas/botas ──
-    c.rect(19, 40, 22, 46, EARTH_DK)
-    c.rect(25, 40, 28, 46, EARTH_DK)
-    c.rect(18, 45, 23, 46, HAT_DK)
-    c.rect(24, 45, 29, 46, HAT_DK)
-    # ── Espingarda ──
-    if pose == "windup":
-        # Erguida na pontaria: cano na altura do olho, coronha cravada no ombro.
-        c.rect(30, 21, 46, 23, GUN)     # cano nivelado com o olhar
-        c.rect(30, 20, 46, 20, GUN_HL)
-        c.rect(26, 22, 32, 27, EARTH_DK)  # coronha no ombro
-        c.px(46, 21, (255, 240, 200))   # reflexo na boca do cano (ameaça)
-        # mãos na pontaria
-        c.rect(30, 23, 32, 25, HUMAN_SKIN)
-        c.rect(38, 22, 40, 24, HUMAN_SKIN)
-        c.shift(0, 1)                   # peso cravado no chão
-    else:
-        # Atravessada, apontando p/ frente-baixo.
-        c.rect(30, 27, 45, 29, GUN)     # cano
-        c.rect(30, 26, 45, 26, GUN_HL)
-        c.rect(27, 28, 33, 33, EARTH_DK)  # coronha
-        c.px(45, 27, GUN_HL)
-        # mãos segurando
-        c.rect(30, 29, 32, 31, HUMAN_SKIN)
-        c.rect(36, 28, 38, 30, HUMAN_SKIN)
-    return c
 
 
 def _axe(c, haft_x, blade_side, dy=0):
@@ -641,8 +579,7 @@ def mula():
 
 if __name__ == "__main__":
     gen_caipora.generate_all()   # protagonista (pipeline premium próprio)
-    hunter().save("enemy_idle.png")
-    hunter("windup").save("enemy_windup.png")
+    gen_inimigos.generate_all()  # caçador (pipeline premium 48px)
     axe_hunter().save("boss_idle.png")
     axe_hunter("windup").save("boss_windup.png")
     boitata().save("boitata_idle.png")
@@ -650,9 +587,4 @@ if __name__ == "__main__":
     saci().save("saci_idle.png")
     mula().save("mula_idle.png")
     jesuita().save("jesuita_idle.png")
-    # Bruxo dos machados: mesmo desenho do antigo boss-caçador, agora reaproveitado
-    # como monstro comum das fases (junto com o caçador). boss_idle.png segue como
-    # fixture do Boss base; bruxo_idle.png é o asset dedicado do monstro.
-    axe_hunter().save("bruxo_idle.png")
-    axe_hunter("windup").save("bruxo_windup.png")
-    print("[gen_chars] caipora (via gen_caipora) + caçador + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça + jesuíta-bandeirante (48x48) gerados")
+    print("[gen_chars] caipora (via gen_caipora) + caçador/bruxo (via gen_inimigos) + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça + jesuíta-bandeirante (48x48) gerados")
