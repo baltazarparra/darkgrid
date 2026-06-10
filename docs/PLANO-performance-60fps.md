@@ -135,18 +135,21 @@ não estoura o orçamento (≤1 frame perdido) e a exploração roda 60fps.
 
 ## 5. Fase 2 — GPU fill-rate
 
-### 2.1 Cap de devicePixelRatio no export web (G4) — sessão 5
-- No `head_include` do `export_presets.cfg`: capar DPR **condicionalmente**
-  (ex. `hardwareConcurrency <= 4` ou heurística de GPU) via
-  `Object.defineProperty(window, 'devicePixelRatio', ...)` antes do engine
-  iniciar, + `image-rendering: pixelated` no CSS do canvas (pixel art nearest
-  upscala bem).
-- Kill-switch por query param (`?dpr=native`) para A/B no device.
-- **Aceite:** fill-rate cai (medir fps em arena P5 e exploração P3 antes/
-  depois no Android real); nitidez aceitável validada a olho.
-- **Gate extra:** `/validate-platforms` (mexe em render/viewport — gotcha 10).
-- **Risco:** médio (tradeoff de nitidez — decisão de arte; por isso é
-  condicional e reversível).
+### 2.1 Cap de devicePixelRatio no export web (G4) — sessão 5 ✅ implementado, A/B pendente
+- IMPLEMENTADO (refinado durante a execução): heurística de hardware é
+  imprevisível (`hardwareConcurrency` mente em phone fraco moderno) — o
+  default virou um **cap fixo em DPR 2** via `Object.defineProperty` no
+  `head_include`, antes do engine iniciar. Telas 3x (maioria dos Android/
+  iPhone atuais) ganham 2,25x menos fill-rate; telas ≤2x ficam intactas.
+- `?dpr=1` força cap total (para medir o teto de ganho no device);
+  `?dpr=native` é o kill-switch (DPR nativo).
+- `image-rendering: pixelated` aplicado ao canvas quando capado (nearest
+  upscale — coerente com a arte).
+- **Aceite (PENDENTE, exige device real):** fps em arena P5 e exploração P3
+  antes/depois no Android de referência; nitidez aprovada a olho; rodar
+  `/validate-platforms` no device (gotcha 10).
+- **Risco:** médio (tradeoff de nitidez — reversível por query param e por
+  revert do `export_presets.cfg`).
 
 ### 2.2 Shaders fullscreen mais baratos (G7) — sessão 6
 - `atmosphere.gdshader`: vignette via textura radial pré-cozida (256×256,
