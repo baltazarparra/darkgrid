@@ -299,6 +299,12 @@ Tipo: assets + runtime/tuning.
 
 Objetivo: estabelecer o equivalente diegetico da ocarina sem copiar Zelda.
 
+Status: implementado (100% na geracao, zero runtime novo). `assovio()` ganhou
+contorno (`freq_end`) e ar (`breath`) com fase integrada: perfect = assovio curto
+subindo sob o agogo; dodge = assovio aspirado caindo; boss intro = assovio de
+caca longo/plano/grave com eco de mata; chama = assovio quente subindo devagar;
+ending ja carregava o assovio distante. Reconhecivel pelo contorno, nao pelo volume.
+
 Sons/casos:
 
 - assovio curto para timing perfect;

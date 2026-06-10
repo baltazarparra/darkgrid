@@ -403,18 +403,25 @@ def gongue(dur=0.16, freq=620.0):
     )
 
 
-def assovio(dur=0.5, freq=900.0):
-    """Leitmotif da Caipora: seno com vibrato + fiapo de sopro. Suave nas pontas."""
+def assovio(dur=0.5, freq=900.0, freq_end=None, breath=0.05):
+    """Leitmotif da Caipora: seno com vibrato + fiapo de sopro. Suave nas pontas.
+    A assinatura vive no CONTORNO (S5): `freq_end` desenha o glide — sobe no
+    perfect, cai aspirado no dodge, fica plano e baixo na caça (boss intro).
+    `breath` controla o fiapo de ar (o dodge aspirado usa mais). Fase contínua
+    (integrada): glide sem artefato de chirp."""
     n = int(SAMPLE_RATE * dur)
     freq *= _jit(0.02)
+    end = freq if freq_end is None else freq_end * _jit(0.02)
     out = []
+    phase = 0.0
     for i in range(n):
         t = i / SAMPLE_RATE
         vib = 1.0 + 0.012 * math.sin(2 * math.pi * 6.0 * t)
-        tone = math.sin(2 * math.pi * freq * vib * t)
-        breath = _noise() * 0.05
+        f = freq + (end - freq) * (i / n)
+        phase += f * vib / SAMPLE_RATE
+        tone = math.sin(2 * math.pi * phase)
         e = _env(i, n, 0.15, 0.4)
-        out.append((tone + breath) * e * 0.5)
+        out.append((tone + _noise() * breath) * e * 0.5)
     return out
 
 
@@ -505,19 +512,24 @@ def hit_wav():
 
 def dodge_wav():
     # Alívio aéreo: chocalho rápido + sopro de pulso descendente (whoosh 8-bit), crush leve.
+    # S5: assovio ASPIRADO caindo — a respiração da esquiva (mais ar que tom).
     swoosh = pulse(0.12, 660.0, duty=0.5, vib=0.0, release=0.7)
-    return _normalize(bitcrush(_mix(ganza(0.18, rising=False), [s * 0.3 for s in swoosh]), bits=7), 0.55)
+    gasp = assovio(0.15, 1080.0, freq_end=740.0, breath=0.20)
+    return _normalize(bitcrush(_mix(ganza(0.18, rising=False), [s * 0.3 for s in swoosh],
+                                    [s * 0.4 for s in gasp]), bits=7), 0.55)
 
 
 def timing_perfect_wav():
     # Recompensa híbrida: ding de agogô + arpejo ascendente de pulso (o "8-bit ding").
+    # S5: assovio curto SUBINDO por baixo — a Caipora aprova o golpe (contorno, não volume).
     bell = agogo(0.22, freq=1320.0, bend=0.05)
     arp = _seq(
         (pulse(0.05, 880.0, duty=0.25, release=0.5), 0.0, 0.5),
         (pulse(0.05, 1108.0, duty=0.25, release=0.5), 0.04, 0.5),
         (pulse(0.10, 1760.0, duty=0.25, release=0.6), 0.08, 0.55),
     )
-    return _normalize(bitcrush(_mix(bell, arp), bits=7), 0.7)
+    whistle = assovio(0.18, 1175.0, freq_end=1568.0, breath=0.03)
+    return _normalize(bitcrush(_mix(bell, arp, [s * 0.45 for s in whistle]), bits=7), 0.7)
 
 
 def timing_alert_wav():
@@ -1353,8 +1365,13 @@ def sting_boss_intro():
         pulse(0.45, note(220.0, 7), duty=0.5, attack=0.11, release=0.4),
     )
     # v2: reverb após o crush — corpo granulado, cauda limpa de ameaça.
+    # S5: assovio de CAÇA — longo, plano, grave, com eco de mata: a Caipora marca a
+    # presa antes do nome aparecer. Nasce sob o gonguê, não compete com o impacto.
+    hunt = echo(assovio(0.85, 640.0, freq_end=605.0, breath=0.10),
+                time_s=0.22, feedback=0.28, mix=0.22, taps=3)
     return _normalize(schroeder(bitcrush(_seq(
         (gongue(0.4, 300.0), 0.0, 0.8),
+        (hunt, 0.05, 0.4),
         (chord, 0.06, 0.5),
         (alfaia(0.3, 48.0, punch=1.0), 0.34, 1.0),
         (agogo(0.2, 1320.0), 0.40, 0.4),
@@ -1364,11 +1381,14 @@ def sting_boss_intro():
 def sting_chama():
     # Elemento CHAMA (raro): sopro de fogo no canal de ruído + arpejo de pulso
     # ascendente brilhante (ganho de poder).
+    # S5: assovio QUENTE subindo devagar — a Caipora sente o fogo aderir à espada.
+    warm = assovio(0.45, 880.0, freq_end=1046.0, breath=0.07)
     return _normalize(schroeder(bitcrush(_seq(
         (nes_noise(0.3, decay=10.0, lp=0.4, gain=0.5), 0.0, 0.5),
         (pulse(0.08, 880.0, duty=0.25, release=0.5), 0.04, 0.5),
         (pulse(0.08, 1320.0, duty=0.25, release=0.5), 0.10, 0.5),
         (pulse(0.18, 1760.0, duty=0.25, release=0.6), 0.16, 0.55),
+        (warm, 0.12, 0.4),
     ), bits=7), mix=0.12, decay=0.65, tail=0.4), 0.78)
 
 
