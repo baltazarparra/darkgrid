@@ -47,6 +47,9 @@ const STEM_MID: String = "mid"
 const STEM_TOP: String = "top"
 const STEM_LAYERS: PackedStringArray = [STEM_BASE, STEM_MID, STEM_TOP]
 const STEM_SILENCE_DB: float = -40.0
+const CRITICAL_HP_RATIO: float = 0.30
+const HEARTBEAT_VOLUME_DB: float = -6.0
+const HEART_STEM_BASE_DB: float = -8.0
 
 # Caminhos das ambiências (carregadas só se existirem — graceful). Uma por clima de fase.
 const AMB_FOREST: String = "res://assets/audio/ambience/amb_forest.wav"
@@ -54,6 +57,7 @@ const AMB_DREAD: String = "res://assets/audio/ambience/amb_dread.wav"
 const AMB_FIRE: String = "res://assets/audio/ambience/amb_fire.wav"
 const AMB_FOG: String = "res://assets/audio/ambience/amb_fog.wav"
 const AMB_CHURCH: String = "res://assets/audio/ambience/amb_church.wav"
+const AMB_HEARTBEAT: String = "res://assets/audio/ambience/heartbeat.wav"
 
 # Música por contexto: um loop híbrido (maracatu + chiptune) por tela/fase/boss.
 const MUSIC_DIR: String = "res://assets/audio/music/"
@@ -81,6 +85,7 @@ var _bus_volume: Dictionary = {
 var _audio_unlocked: bool = false
 var _music_enabled: bool = true
 var _ambience_player: AudioStreamPlayer
+var _heartbeat_player: AudioStreamPlayer
 var _current_ambience: String = ""
 var _duck_tween: Tween
 ## Par de players para crossfade de música (bus Music). _music_active é o que toca agora.
@@ -93,6 +98,7 @@ var _music_stem_mid: AudioStreamPlayer
 var _music_stem_top: AudioStreamPlayer
 var _stems_active: bool = false
 var _music_intensity: int = 0
+var _heart_mode: bool = false
 var _stinger_player: AudioStreamPlayer
 
 # ─── Lifecycle ─────────────────────────────────────
@@ -102,6 +108,11 @@ func _ready() -> void:
 	_ambience_player = AudioStreamPlayer.new()
 	_ambience_player.bus = BUS_AMBIENCE
 	add_child(_ambience_player)
+
+	_heartbeat_player = AudioStreamPlayer.new()
+	_heartbeat_player.bus = BUS_AMBIENCE
+	_heartbeat_player.volume_db = STEM_SILENCE_DB
+	add_child(_heartbeat_player)
 
 	_music_a = AudioStreamPlayer.new()
 	_music_a.bus = BUS_MUSIC
@@ -128,6 +139,7 @@ func _ready() -> void:
 	SignalBus.boss_intro_started.connect(_on_boss_intro)
 	SignalBus.chama_gained.connect(_on_chama)
 	SignalBus.boss_special_telegraph.connect(_on_boss_special_telegraph)
+	SignalBus.caipora_health_changed.connect(_on_caipora_health_changed)
 
 # ─── Public API: volume ────────────────────────────
 ## Define o volume linear (0..1) de um bus, aplica e persiste.
@@ -187,6 +199,7 @@ func unlock_audio() -> void:
 		return
 	_audio_unlocked = true
 	_apply_screen_audio(GameState.current_screen)
+	_sync_heart_mode_audio()
 
 # ─── Reação às telas ───────────────────────────────
 func _on_screen_changed(new_screen: int) -> void:
@@ -240,6 +253,32 @@ func _on_chama() -> void:
 func _on_boss_special_telegraph(boss_type: String) -> void:
 	if _audio_unlocked and boss_type == "jesuita":
 		_play_stinger(STING_AGUA_BENTA)
+
+func _on_caipora_health_changed(new_health: float, max_health: float) -> void:
+	if max_health <= 0.0:
+		_set_heart_mode(false)
+		return
+	_set_heart_mode(new_health > 0.0 and (new_health / max_health) < CRITICAL_HP_RATIO)
+
+func _set_heart_mode(enabled: bool) -> void:
+	if _heart_mode == enabled:
+		return
+	_heart_mode = enabled
+	if _stems_active:
+		_apply_stem_intensity(MUSIC_FADE)
+	_sync_heart_mode_audio()
+
+func _sync_heart_mode_audio() -> void:
+	if _heart_mode and _audio_unlocked and ResourceLoader.exists(AMB_HEARTBEAT):
+		if not _heartbeat_player.playing:
+			var stream: AudioStream = load(AMB_HEARTBEAT)
+			_force_loop(stream)
+			_heartbeat_player.stream = stream
+			_heartbeat_player.volume_db = STEM_SILENCE_DB
+			_heartbeat_player.play()
+		_fade_player(_heartbeat_player, HEARTBEAT_VOLUME_DB, false, MUSIC_FADE)
+	elif _heartbeat_player.playing:
+		_fade_player(_heartbeat_player, STEM_SILENCE_DB, true, MUSIC_FADE)
 
 # ─── Espaço acústico (bus Reverb) ──────────────────
 ## Resolve o perfil de espaço da tela. Fase 5 inteira (explore+arena) é a igreja
@@ -478,6 +517,8 @@ func _apply_stem_intensity(fade: float) -> void:
 		_fade_player(_stem_player(layer), _stem_target_db(layer), false, fade)
 
 func _stem_target_db(layer: String) -> float:
+	if _heart_mode:
+		return HEART_STEM_BASE_DB if layer == STEM_BASE else STEM_SILENCE_DB
 	match layer:
 		STEM_MID:
 			return 0.0 if _music_intensity >= 1 else STEM_SILENCE_DB

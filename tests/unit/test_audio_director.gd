@@ -17,10 +17,12 @@ func after_each():
 	AudioDirector._music_stem_top.stop()
 	AudioDirector._stems_active = false
 	AudioDirector._music_intensity = 0
+	AudioDirector._heart_mode = false
 	AudioDirector._music_active = null
 	AudioDirector._current_music = ""
 	AudioDirector._stinger_player.stop()
 	AudioDirector._ambience_player.stop()
+	AudioDirector._heartbeat_player.stop()
 	AudioDirector._current_ambience = ""
 	AudioDirector.set_bus_volume("Music", 0.8)
 
@@ -137,6 +139,44 @@ func test_boss_uses_stems_at_intensity_two():
 	assert_eq(AudioDirector._music_intensity, 2, "boss entra em intensidade 2")
 	assert_true(AudioDirector._music_stem_base.stream.resource_path.ends_with("mus_boss_saci_base.wav"))
 	GameState.active_combat_is_boss = false
+
+func test_heart_mode_activates_on_critical_hp():
+	AudioDirector.unlock_audio()
+	GameState.active_combat_is_boss = false
+	AudioDirector._apply_screen_audio(SignalBus.Screen.ARENA_PHASE2)
+	SignalBus.caipora_health_changed.emit(2.0, 10.0)
+	assert_true(AudioDirector._heart_mode, "HP abaixo de 30% ativa modo coração")
+	assert_true(AudioDirector._heartbeat_player.playing, "heartbeat deve tocar após unlock")
+	assert_almost_eq(AudioDirector._stem_target_db(AudioDirector.STEM_BASE),
+		AudioDirector.HEART_STEM_BASE_DB, 0.01)
+	assert_almost_eq(AudioDirector._stem_target_db(AudioDirector.STEM_MID),
+		AudioDirector.STEM_SILENCE_DB, 0.01)
+	assert_almost_eq(AudioDirector._stem_target_db(AudioDirector.STEM_TOP),
+		AudioDirector.STEM_SILENCE_DB, 0.01)
+
+func test_heart_mode_waits_for_audio_unlock():
+	AudioDirector._audio_unlocked = false
+	SignalBus.caipora_health_changed.emit(1.0, 10.0)
+	assert_true(AudioDirector._heart_mode, "estado crítico deve ser guardado")
+	assert_false(AudioDirector._heartbeat_player.playing,
+		"heartbeat não deve tocar antes do gesto que libera áudio")
+
+func test_heart_mode_restores_previous_intensity_after_recovery():
+	AudioDirector.unlock_audio()
+	GameState.active_combat_is_boss = false
+	AudioDirector._apply_screen_audio(SignalBus.Screen.ARENA_PHASE2)
+	SignalBus.caipora_health_changed.emit(2.0, 10.0)
+	SignalBus.caipora_health_changed.emit(5.0, 10.0)
+	assert_false(AudioDirector._heart_mode, "HP recuperado acima do limiar sai do modo coração")
+	assert_almost_eq(AudioDirector._stem_target_db(AudioDirector.STEM_BASE), 0.0, 0.01)
+	assert_almost_eq(AudioDirector._stem_target_db(AudioDirector.STEM_MID), 0.0, 0.01)
+	assert_almost_eq(AudioDirector._stem_target_db(AudioDirector.STEM_TOP),
+		AudioDirector.STEM_SILENCE_DB, 0.01)
+
+func test_heart_mode_ignores_death_zero_hp():
+	AudioDirector.unlock_audio()
+	SignalBus.caipora_health_changed.emit(0.0, 10.0)
+	assert_false(AudioDirector._heart_mode, "HP zero é morte, não estado crítico")
 
 func test_same_track_does_not_restart():
 	# Boss-intro inicia o tema; a arena pede a MESMA faixa → não reinicia (sem corte).

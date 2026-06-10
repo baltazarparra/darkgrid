@@ -135,6 +135,11 @@ Tipo: runtime.
 Objetivo: comunicar HP critico como estado fisico, inspirado na clareza de Zelda, mas
 com alfaia/heartbeat de caipora.
 
+Status: implementado. `AudioDirector` reage a `SignalBus.caipora_health_changed`,
+ativa `heartbeat.wav` abaixo de 30% de HP apos o unlock de audio, reduz os stems
+para base baixa durante o risco, restaura a intensidade ao curar e ignora HP zero
+como morte em vez de estado critico.
+
 Arquivos provaveis:
 
 - `scripts/core/audio_director.gd`
