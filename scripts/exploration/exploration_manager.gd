@@ -124,11 +124,16 @@ var _fog: FogOfWar
 # Bolsa de fragmentos (souls-like): nó caído + tile onde a Caipora a recupera ao pisar.
 var _bag_node: Node2D = null
 var _bag_pos: Vector2i = Vector2i(-1, -1)
+# SFX táteis da exploração (passos, dano de hazard). Criado por código: as cenas de
+# exploração não têm nó SfxSystem e editar .tscn à mão é proibido (gotcha 7).
+var _sfx: SfxSystem
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	GameState.active_phase = phase
 	_profile = _build_profile()
+	_sfx = SfxSystem.new()
+	add_child(_sfx)
 	_config = MapConfig.for_phase(phase)
 	var reached: int = _profile["phase_reached_on_enter"]
 	if reached > 0 and MetaProgression.phase_reached < reached:
@@ -312,6 +317,9 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 	if _locked:
 		return
 	_player_grid_pos = new_grid_pos
+	# move_finished só dispara em movimento CONFIRMADO (colisão nem emite) —
+	# passo bloqueado nunca soa. Fase 5 pisa em laje; o resto, em serrapilheira.
+	_sfx.play_named(_profile["step_sfx"], Constants.STEP_VOLUME_DB)
 	if _profile["has_fog"]:
 		_update_fog()
 
@@ -364,6 +372,7 @@ func _open_chest() -> void:
 func _apply_hazard_damage() -> void:
 	var dmg: int = _profile["hazard_damage"]
 	GameState.caipora_current_hp = maxi(0, GameState.caipora_current_hp - dmg)
+	_sfx.play_named("hurt_caipora")
 	SignalBus.caipora_health_changed.emit(GameState.caipora_current_hp, GameState.caipora_max_hp)
 	if GameState.caipora_current_hp <= 0:
 		_locked = true
@@ -551,6 +560,7 @@ func _build_profile() -> Dictionary:
 				"boss_aura": Constants.COLOR_AURA_BOITATA,
 				"next_screen_on_exit": SignalBus.Screen.EXPLORATION_PHASE3,
 				"hazard_damage": Constants.FIRE_TILE_DAMAGE,
+				"step_sfx": "step_grass",
 				"aura": Aura.NONE,
 				"safe_spawn": false,
 				"ambient_life": false,
@@ -571,6 +581,7 @@ func _build_profile() -> Dictionary:
 				"boss_aura": Constants.COLOR_AURA_CURUPIRA,
 				"next_screen_on_exit": SignalBus.Screen.EXPLORATION_PHASE4,
 				"hazard_damage": Constants.FIRE_TILE_DAMAGE,
+				"step_sfx": "step_grass",
 				"aura": Aura.FIRE,
 				"safe_spawn": true,
 				"ambient_life": false,
@@ -591,6 +602,7 @@ func _build_profile() -> Dictionary:
 				"boss_aura": Constants.COLOR_AURA_SACI,
 				"next_screen_on_exit": SignalBus.Screen.ENDING,
 				"hazard_damage": Constants.FIRE_TILE_DAMAGE,
+				"step_sfx": "step_grass",
 				"aura": Aura.FIRE,
 				"safe_spawn": true,
 				"ambient_life": false,
@@ -615,6 +627,7 @@ func _build_profile() -> Dictionary:
 				"boss_aura": Constants.COLOR_AURA_JESUITA,
 				"next_screen_on_exit": SignalBus.Screen.ENDING,
 				"hazard_damage": Constants.FIRE_TILE_DAMAGE,
+				"step_sfx": "step_stone",  # laje da igreja, não serrapilheira
 				"aura": Aura.TORCH,
 				"safe_spawn": true,
 				"ambient_life": false,
@@ -641,6 +654,7 @@ func _build_profile() -> Dictionary:
 				"boss_aura": Constants.COLOR_AURA_MULA,
 				"next_screen_on_exit": SignalBus.Screen.EXPLORATION_PHASE2,
 				"hazard_damage": 1,
+				"step_sfx": "step_grass",
 				"aura": Aura.TORCH,
 				"safe_spawn": false,
 				"ambient_life": true,

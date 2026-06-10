@@ -34,3 +34,23 @@ func test_play_routes_to_sfx_bus():
 			break
 	assert_not_null(player, "play() deve criar um AudioStreamPlayer")
 	assert_eq(player.bus, SfxSystem.SFX_BUS)
+
+func test_play_named_resolves_and_discovers_variants():
+	assert_true(_sfx.play_named("hurt_caipora"), "asset existente deve tocar")
+	var list: Array = _sfx._variants.get("res://assets/audio/sfx/hurt_caipora.wav", [])
+	assert_eq(list.size(), 3, "play_named deve descobrir primário + _2/_3 por convenção")
+
+func test_play_named_missing_asset_is_silent_noop():
+	assert_false(_sfx.play_named("som_que_nao_existe"),
+		"asset ausente devolve false (fallback fica no chamador) e não quebra")
+	var players := 0
+	for child in _sfx.get_children():
+		if child is AudioStreamPlayer:
+			players += 1
+	assert_eq(players, 0, "no-op não deve criar player")
+
+func test_step_assets_exist_for_both_grounds():
+	# S3: serrapilheira (fases 1-4 e hub) e laje da igreja (fase 5).
+	for sound_name in ["step_grass", "step_stone"]:
+		assert_true(_sfx.play_named(sound_name, Constants.STEP_VOLUME_DB),
+			"%s deve existir com geração procedural" % sound_name)

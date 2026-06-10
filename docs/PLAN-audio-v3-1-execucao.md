@@ -188,6 +188,12 @@ Tipo: assets + runtime.
 
 Objetivo: preencher eventos basicos que hoje reduzem a qualidade percebida.
 
+Status: implementado. `SfxSystem.play_named()` resolve SFX por nome com fallback
+silencioso e round-robin de variantes; exploracao e hub tocam passo apenas em
+movimento confirmado (`move_finished` nao dispara em colisao), a Fase 5 pisa em
+pedra via `step_sfx` no profile, e a Caipora ferida tem voz propria
+(`hurt_caipora`) na arena e no hazard — com fallback para `hit`.
+
 Sons P0:
 
 - `step_grass`

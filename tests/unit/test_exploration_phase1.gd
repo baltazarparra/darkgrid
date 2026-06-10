@@ -24,6 +24,8 @@ func test_phase1_loads_and_spawns_generated_map() -> void:
 	var caipora := scene.get_node("Caipora")
 	assert_eq(caipora.position, Vector2(expected.player_start) * Constants.TILE_SIZE,
 		"Caipora nasce no player_start do mapa gerado")
+	assert_eq(scene._profile["step_sfx"], "step_grass",
+		"fases de mata pisam em serrapilheira (S3)")
 
 func test_phase1_tilemap_keeps_forest_atlases() -> void:
 	# Protege o default do _profile.get(): só a Fase 5 troca para os tiles de igreja.

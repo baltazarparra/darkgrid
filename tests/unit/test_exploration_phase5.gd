@@ -78,3 +78,8 @@ func _find_dialogue(scene: Node) -> Node:
 		if child is DialogueScreen:
 			return child
 	return null
+
+func test_phase5_steps_on_stone() -> void:
+	# S3: a igreja tem laje sob os pés; o resto do jogo pisa em serrapilheira.
+	var scene := await _load_phase5()
+	assert_eq(scene._profile["step_sfx"], "step_stone", "Fase 5 pisa em pedra")

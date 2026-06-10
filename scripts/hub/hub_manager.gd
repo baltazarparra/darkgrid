@@ -87,6 +87,8 @@ func _on_denied(_key: String) -> void:
 func _on_caipora_moved(grid_pos: Vector2i) -> void:
 	if _locked:
 		return
+	# move_finished = movimento confirmado; o acampamento é chão de mata.
+	_sfx.play_named("step_grass", Constants.STEP_VOLUME_DB)
 	if grid_pos == _exit_pos:
 		_trigger_exit()
 

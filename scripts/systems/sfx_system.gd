@@ -11,6 +11,7 @@ extends Node
 
 # ─── Constants ─────────────────────────────────────
 const SFX_BUS: String = "SFX"
+const SFX_DIR: String = "res://assets/audio/sfx"
 const MAX_VARIANTS: int = 8
 const PITCH_JITTER: float = 0.05  # ±5%
 const VOLUME_JITTER_DB: float = 1.0  # ±1 dB
@@ -29,6 +30,8 @@ const VOLUME_JITTER_DB: float = 1.0  # ±1 dB
 var _variants: Dictionary = {}
 ## resource_path -> índice atual do round-robin.
 var _rr_index: Dictionary = {}
+## nome (play_named) -> stream primário resolvido (ou null se o asset não existe).
+var _named: Dictionary = {}
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -67,6 +70,21 @@ func play(sound: AudioStream, volume_db: float = 0.0) -> void:
 	player.finished.connect(player.queue_free)
 	add_child(player)
 	player.play()
+
+## Toca um SFX por nome de arquivo (sem export): "hurt_caipora" -> sfx/hurt_caipora.wav.
+## Resolve com ResourceLoader.exists e cacheia; asset ausente é no-op silencioso
+## (fallback fica no chamador). Devolve true se tocou.
+func play_named(sound_name: String, volume_db: float = 0.0) -> bool:
+	if not _named.has(sound_name):
+		var path := "%s/%s.wav" % [SFX_DIR, sound_name]
+		var stream: AudioStream = load(path) if ResourceLoader.exists(path) else null
+		_named[sound_name] = stream
+		_register_variants(stream)
+	var primary: AudioStream = _named[sound_name]
+	if primary == null:
+		return false
+	play(primary, volume_db)
+	return true
 
 # ─── Private helpers ───────────────────────────────
 ## Round-robin entre as variantes do som; se não houver registro, devolve o próprio.

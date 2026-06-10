@@ -555,6 +555,39 @@ def ui_click_wav():
     return _normalize(bitcrush(_mix(caixa(0.045, bright=1.1), [s * 0.4 for s in blip]), bits=6), 0.5)
 
 
+def step_grass_wav():
+    # Passo na serrapilheira: folha esmagada (ruído LP curto) + sombra de ganzá.
+    # O nível "baixo" é dado no play (volume_db), não no asset (o fiscal normaliza).
+    n = int(SAMPLE_RATE * 0.07)
+    crush = [_noise() * _env(i, n, 0.004, 0.6) for i in range(n)]
+    crush = biquad(crush, "lp", 2600.0 * _jit(0.15), q=0.9)
+    return _normalize(_mix(crush, [s * 0.35 for s in ganza(0.06, rising=False)]), 0.6)
+
+
+def step_stone_wav():
+    # Passo na laje da igreja: tock seco de caixa + nó grave curtíssimo. Sem cauda —
+    # o espaço (reverb da igreja) vem do bus, não do asset.
+    knock = pulse(0.035, 190.0 * _jit(0.1), duty=0.5, attack=0.001, release=0.5)
+    tock = caixa(0.04, bright=1.2)
+    return _normalize(biquad(_mix(tock, [s * 0.5 for s in knock]), "hp", 140.0), 0.6)
+
+
+def hurt_caipora_wav():
+    # A guardiã sangra: alfaia no corpo + respiro rasgado descendente. Mais curto e
+    # mais "carne" que o hit (que é o impacto NO inimigo); nada de heroísmo.
+    n = int(SAMPLE_RATE * 0.22)
+    gasp = []
+    for i in range(n):
+        t = i / SAMPLE_RATE
+        freq = 240.0 * (1.0 - 0.55 * (i / n))
+        phase = (t * freq) % 1.0
+        saw = 2.0 * phase - 1.0
+        e = _env(i, n, 0.008, 0.55)
+        gasp.append((0.45 * saw + 0.55 * _noise()) * e * 0.6)
+    gasp = biquad(gasp, "lp", 1900.0, q=1.0)
+    return _normalize(_mix(alfaia(0.16, base=58.0, punch=0.9), gasp), 0.9)
+
+
 GENERATORS = {
     "attack": attack_wav,
     "hit": hit_wav,
@@ -563,6 +596,9 @@ GENERATORS = {
     "timing_alert": timing_alert_wav,
     "death": death_wav,
     "ui_click": ui_click_wav,
+    "step_grass": step_grass_wav,
+    "step_stone": step_stone_wav,
+    "hurt_caipora": hurt_caipora_wav,
 }
 
 

@@ -37,6 +37,11 @@ const TIMING_DOUBLE_BUBBLE_SPREAD_MIN := 60.0
 const TIMING_DOUBLE_BUBBLE_SPREAD_MAX := 80.0
 const TIMING_DOUBLE_BLOCK_DURATION := 0.55  # TIMING_WINDOW_ATTACK (0.8) - 0.25
 
+# ─── Audio ─────────────────────────────────────────
+# Passo bem abaixo dos SFX de combate: presença tátil, nunca spam. O asset é
+# normalizado pelo fiscal (check_audio); o "baixo" vive no play, não no arquivo.
+const STEP_VOLUME_DB := -10.0
+
 # ─── Damage ────────────────────────────────────────
 const DAMAGE_BASE := 1
 const DAMAGE_CRIT_MULTIPLIER := 1.0

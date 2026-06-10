@@ -372,7 +372,9 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		elif GameState.active_phase == 5:
 			damage += Constants.PHASE5_ENEMY_DAMAGE_BONUS
 		_caipora.take_damage(damage)
-		_sfx.play(_sfx.hit_sound)
+		# A guardiã sangrando tem voz própria — hit_sound é o impacto NO inimigo.
+		if not _sfx.play_named("hurt_caipora"):
+			_sfx.play(_sfx.hit_sound)
 		_feedback.trigger_screenshake(14.0, 0.35)
 		_feedback.spawn_fail_particles(_timing_bubble.position)
 		_feedback.spawn_blood_particles(_caipora.position)
