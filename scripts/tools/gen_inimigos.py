@@ -201,9 +201,9 @@ def _cacador_head(p: Painter) -> None:
 
 
 def _cacador_eyes(p: Painter, windup: bool) -> None:
-    ry = 0.55 if windup else 0.7
-    p.ellipse(20.8, 17.0, 1.3, ry, EYE_RED)
-    p.ellipse(25.6, 17.0, 1.3, ry, EYE_RED)
+    ry = 0.7 if windup else 0.9
+    p.ellipse(20.8, 17.0, 1.5, ry, EYE_RED)
+    p.ellipse(25.6, 17.0, 1.5, ry, EYE_RED)
 
 
 def cacador(pose: str = "idle") -> Image.Image:
