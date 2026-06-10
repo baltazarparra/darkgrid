@@ -863,6 +863,7 @@ aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no fo
 | KI-008 | Média | ✅ Resolvida | `GameState.heal_to_full()` preserva o `caipora_max_hp` ganho dentro da run e só sobe para o novo teto meta se uma erva de Cura comprada no hub tornar esse teto maior. |
 | KI-009 | Média | ✅ Resolvida | `Constants.caipora_base_damage_for_phase()` voltou a ser base fixa (`1`) em toda fase; a arena soma apenas Fúria/CHAMA por cima, então o texto das ervas volta a ser o teto real comunicado ao jogador. |
 | KI-010 | Média | ✅ Resolvida | A vitória terminal libera `phase_reached = 6`: matar o Jesuíta marca o marco no `ArenaManager`, e `GameState.end_run(true)` também garante o unlock pós-clear antes de salvar a vitória. |
+| KI-011 | Baixa | ✅ Resolvida | O loop de hover do menu tipava `Button` num array que inclui o `GithubLink` (`LinkButton`, irmão de `Button`): o array tipado rejeitava o item (vira `null`) e o som de hover do link morria em silêncio com SCRIPT ERROR no console. Corrigido tipando `BaseButton`. |
 
 ---
 
