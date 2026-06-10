@@ -25,3 +25,9 @@ signal boss_intro_finished
 signal dialogue_finished
 ## Wind-up de especial de chefe com cue de áudio próprio (Fase 5: água benta).
 signal boss_special_telegraph(boss_type: String)
+
+# ─── Bolsa de fragmentos (corpse run) ──────────────
+# Emitidos pelo MetaProgression; o AudioDirector (persistente) toca os one-shots —
+# a cena que derruba a bolsa morre na transição para GAME_OVER e cortaria o som.
+signal fragment_bag_dropped(amount: float)
+signal fragment_bag_recovered(amount: float)

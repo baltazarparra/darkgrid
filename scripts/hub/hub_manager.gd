@@ -77,8 +77,16 @@ func _setup_caipora() -> void:
 	_caipora.move_finished.connect(_on_caipora_moved)
 
 # ─── SFX da compra (dono do SfxSystem) ─────────────
+## "Fumar a erva": chocalho da colheita e, um tempo de tragada depois, o sopro no
+## cachimbo. Timer da cena (morre com ela); fallback preserva o feedback antigo.
+const PIPE_SMOKE_DELAY: float = 0.25
+
 func _on_purchased(_key: String) -> void:
-	_sfx.play(_sfx.timing_perfect_sound, -3.0)   # "fumar": chiado da recompensa
+	if not _sfx.play_named("herb_pickup"):
+		_sfx.play(_sfx.timing_perfect_sound, -3.0)
+		return
+	get_tree().create_timer(PIPE_SMOKE_DELAY).timeout.connect(
+		func() -> void: _sfx.play_named("pipe_smoke"))
 
 func _on_denied(_key: String) -> void:
 	_sfx.play(_sfx.ui_click_sound, -8.0)          # insuficiente: clique seco e baixo

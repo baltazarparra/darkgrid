@@ -59,6 +59,8 @@ func _build() -> void:
 	_options = OptionsPanel.new()
 	add_child(_options)
 	_options_button.pressed.connect(_options.open)
+	_options_button.mouse_entered.connect(AudioDirector.play_ui_hover)
+	_options_button.focus_entered.connect(AudioDirector.play_ui_hover)
 
 	_apply_safe_margins()
 	_relayout()
@@ -172,6 +174,8 @@ func _build_column(parent: BoxContainer, title: String, keys: Array) -> Dictiona
 			vbox.add_child(card)
 			card.setup(key)
 			card.pressed.connect(_on_card_pressed.bind(card))
+			card.mouse_entered.connect(AudioDirector.play_ui_hover)
+			card.focus_entered.connect(AudioDirector.play_ui_hover)
 			column["cards"].append(card)
 	return column
 

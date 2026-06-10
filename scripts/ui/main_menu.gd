@@ -30,7 +30,11 @@ func _ready() -> void:
 	_setup_fade()
 	_setup_logo()
 	_setup_version_label()
+	# Foco inicial ANTES de ligar o hover: abrir o menu não dá tick, navegar dá.
 	_start_button.grab_focus()
+	for button: Button in [$Center/VBox/StartButton, $Center/VBox/QuitButton, $Center/VBox/GithubLink]:
+		button.focus_entered.connect(AudioDirector.play_ui_hover)
+		button.mouse_entered.connect(AudioDirector.play_ui_hover)
 
 ## Versão atual (canto inferior direito).
 func _setup_version_label() -> void:

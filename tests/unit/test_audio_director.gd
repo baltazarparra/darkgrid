@@ -198,6 +198,45 @@ func test_missing_single_loop_falls_back_to_base_stem():
 	assert_eq(AudioDirector._music_stream_path(path),
 		"res://assets/audio/music/mus_arena_p1_base.wav")
 
+func _count_transient_players() -> int:
+	# Players one-shot criados por _play_oneshot_sfx (filhos diretos além dos fixos).
+	var fixed := [AudioDirector._music_a, AudioDirector._music_b,
+		AudioDirector._music_stem_base, AudioDirector._music_stem_mid,
+		AudioDirector._music_stem_top, AudioDirector._stinger_player,
+		AudioDirector._ambience_player, AudioDirector._heartbeat_player]
+	var extras := 0
+	for child in AudioDirector.get_children():
+		if child is AudioStreamPlayer and not fixed.has(child):
+			extras += 1
+	return extras
+
+func test_ui_hover_respects_unlock_and_cooldown():
+	AudioDirector._audio_unlocked = false
+	AudioDirector._last_hover_msec = -AudioDirector.UI_HOVER_COOLDOWN_MSEC
+	AudioDirector.play_ui_hover()
+	assert_eq(_count_transient_players(), 0, "hover não toca antes do unlock de áudio")
+	AudioDirector.unlock_audio()
+	AudioDirector.play_ui_hover()
+	AudioDirector.play_ui_hover()  # foco+mouse do mesmo controle: colapsa num tick só
+	assert_eq(_count_transient_players(), 1, "cooldown colapsa hover duplo num único player")
+
+func test_oneshot_sfx_missing_asset_is_noop():
+	AudioDirector.unlock_audio()
+	AudioDirector._play_oneshot_sfx("res://assets/audio/sfx/nao_existe.wav")
+	assert_eq(_count_transient_players(), 0, "asset ausente não cria player nem quebra")
+
+func test_bag_signals_play_oneshots_when_assets_exist():
+	AudioDirector.unlock_audio()
+	SignalBus.fragment_bag_dropped.emit(5.0)
+	SignalBus.fragment_bag_recovered.emit(5.0)
+	var expected := 0
+	if ResourceLoader.exists(AudioDirector.STING_DIR + AudioDirector.STING_BAG_DROP + ".wav"):
+		expected += 1
+	if ResourceLoader.exists(AudioDirector.STING_DIR + AudioDirector.STING_BAG_RECOVER + ".wav"):
+		expected += 1
+	assert_eq(_count_transient_players(), expected,
+		"cada sinal da bolsa toca um one-shot (graceful se o asset faltar)")
+
 func test_force_loop_handles_8_and_16_bit():
 	# A música é gravada em PCM 8-bit (1 byte por frame mono); SFX seguem 16-bit.
 	var wav8 := AudioStreamWAV.new()

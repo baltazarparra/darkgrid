@@ -110,6 +110,9 @@ func drop_fragment_bag(phase: int, pos: Vector2i) -> void:
 	frag_bag_active = dropped > 0.0
 	fragments = 0.0
 	save_progress()
+	# Só quando algo caiu de fato: morrer de bolso vazio não tem som de perda.
+	if frag_bag_active:
+		SignalBus.fragment_bag_dropped.emit(dropped)
 
 ## Há uma bolsa caída para recuperar nesta fase?
 func has_bag_in_phase(phase: int) -> bool:
@@ -126,6 +129,7 @@ func recover_fragment_bag() -> float:
 	frag_bag_amount = 0.0
 	save_progress()
 	SignalBus.fragment_gained.emit(fragments, amount)
+	SignalBus.fragment_bag_recovered.emit(amount)
 	return amount
 
 # ─── Upgrades ──────────────────────────────────────

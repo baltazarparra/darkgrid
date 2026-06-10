@@ -588,6 +588,38 @@ def hurt_caipora_wav():
     return _normalize(_mix(alfaia(0.16, base=58.0, punch=0.9), gasp), 0.9)
 
 
+def ui_hover_wav():
+    # Tick de foco: agogô ultracurto e abafado — menor que o ui_click em tudo
+    # (duração, brilho, presença). O volume final baixo vem do play (-14 dB).
+    tick = agogo(0.045, freq=1980.0, bend=0.02)
+    return _normalize(biquad(bitcrush(tick, bits=6), "lp", 5200.0), 0.4)
+
+
+def herb_pickup_wav():
+    # Colher a erva: chocalho de ganzá subindo + folha amassada (ruído LP curto).
+    n = int(SAMPLE_RATE * 0.10)
+    crush = [_noise() * _env(i, n, 0.006, 0.5) for i in range(n)]
+    crush = biquad(crush, "lp", 3400.0, q=0.8)
+    return _normalize(_mix(ganza(0.14, rising=True), [s * 0.6 for s in crush]), 0.6)
+
+
+def pipe_smoke_wav():
+    # Tragada no cachimbo: sopro grave (ruído LP com swell de uma tragada) +
+    # crepitar de brasa (estalos esparsos agudos) aceso pela sucção.
+    n = int(SAMPLE_RATE * 0.40)
+    breath = []
+    for i in range(n):
+        swell = math.sin(math.pi * i / n)  # cresce e morre
+        breath.append(_noise() * swell * 0.6)
+    breath = biquad(breath, "lp", 900.0, q=0.9)
+    ember = []
+    for i in range(n):
+        pop = _noise() if random.random() < 0.004 else 0.0
+        ember.append(pop * _env(i, n, 0.2, 0.4))
+    ember = biquad(ember, "hp", 2400.0)
+    return _normalize(_mix(breath, [s * 0.5 for s in ember]), 0.7)
+
+
 GENERATORS = {
     "attack": attack_wav,
     "hit": hit_wav,
@@ -599,6 +631,9 @@ GENERATORS = {
     "step_grass": step_grass_wav,
     "step_stone": step_stone_wav,
     "hurt_caipora": hurt_caipora_wav,
+    "ui_hover": ui_hover_wav,
+    "herb_pickup": herb_pickup_wav,
+    "pipe_smoke": pipe_smoke_wav,
 }
 
 
@@ -1391,6 +1426,28 @@ def sting_agua_benta():
     ), 0.6)
 
 
+def fragment_bag_drop():
+    # Corpse run — a perda: queda grave (alfaia + gonguê descendo) e os fragmentos
+    # âmbar se espalhando no chão (cintilação metálica caindo de registro).
+    return _normalize(schroeder(_seq(
+        (alfaia(0.30, 48.0, punch=0.9), 0.0, 0.85),
+        (gongue(0.35, 240.0), 0.04, 0.7),
+        (agogo(0.10, 1760.0), 0.16, 0.45),
+        (agogo(0.10, 1320.0), 0.26, 0.4),
+        (agogo(0.14, 990.0), 0.36, 0.35),
+    ), mix=0.22, decay=0.7, tail=0.5), 0.85)
+
+
+def fragment_bag_recover():
+    # Corpse run — o alívio contido: chocalho de reencontro + assovio curto de
+    # retorno. Sem fanfarra: a mata segue hostil, só a bolsa voltou.
+    return _normalize(schroeder(_seq(
+        (ganza(0.18, rising=True), 0.0, 0.6),
+        (agogo(0.14, 1320.0), 0.08, 0.5),
+        (echo(assovio(0.45, 1100.0), time_s=0.18, feedback=0.25, mix=0.2, taps=2), 0.16, 0.45),
+    ), mix=0.15, decay=0.6, tail=0.4), 0.75)
+
+
 STINGERS = {
     "sting_arena_enter": sting_arena_enter,
     "sting_victory": sting_victory,
@@ -1401,6 +1458,8 @@ STINGERS = {
     "sting_sino_igreja": sting_sino_igreja,
     "sting_orgao_estertor": sting_orgao_estertor,
     "sting_agua_benta": sting_agua_benta,
+    "fragment_bag_drop": fragment_bag_drop,
+    "fragment_bag_recover": fragment_bag_recover,
 }
 
 

@@ -60,6 +60,29 @@ func test_drop_with_zero_fragments_marks_no_bag():
 	MetaProgression.drop_fragment_bag(1, Vector2i(2, 2))
 	assert_false(MetaProgression.frag_bag_active, "morrer sem fragmento não deixa bolsa")
 
+func test_drop_emits_bag_dropped_signal_once():
+	MetaProgression.fragments = 9.0
+	watch_signals(SignalBus)
+	MetaProgression.drop_fragment_bag(2, Vector2i(3, 3))
+	assert_signal_emit_count(SignalBus, "fragment_bag_dropped", 1,
+		"queda com fragmentos emite o som da perda (S4)")
+	assert_signal_emitted_with_parameters(SignalBus, "fragment_bag_dropped", [9.0])
+
+func test_drop_with_zero_fragments_emits_no_signal():
+	MetaProgression.fragments = 0.0
+	watch_signals(SignalBus)
+	MetaProgression.drop_fragment_bag(1, Vector2i(2, 2))
+	assert_signal_emit_count(SignalBus, "fragment_bag_dropped", 0,
+		"morrer de bolso vazio não tem som de perda")
+
+func test_recover_emits_bag_recovered_signal():
+	MetaProgression.fragments = 7.0
+	MetaProgression.drop_fragment_bag(1, Vector2i(4, 4))
+	watch_signals(SignalBus)
+	MetaProgression.recover_fragment_bag()
+	assert_signal_emit_count(SignalBus, "fragment_bag_recovered", 1)
+	assert_signal_emitted_with_parameters(SignalBus, "fragment_bag_recovered", [7.0])
+
 func test_dying_again_overwrites_and_loses_old_bag():
 	# Derruba 30 na fase 2 e morre de novo (já com 0) na fase 1 antes de recuperar:
 	# a bolsa antiga (e seus 30) some — segue com zero.

@@ -83,6 +83,13 @@ func _build() -> void:
 	_close_button.add_theme_font_size_override("font_size", 16)
 	_close_button.pressed.connect(close)
 	vbox.add_child(_close_button)
+	for control: Control in [_touch_option, _reset_button, _close_button]:
+		_hook_hover(control)
+
+## Tick de hover/foco central no AudioDirector (cooldown lá colapsa foco+mouse).
+func _hook_hover(control: Control) -> void:
+	control.focus_entered.connect(AudioDirector.play_ui_hover)
+	control.mouse_entered.connect(AudioDirector.play_ui_hover)
 
 func _add_touch_controls_row(parent: VBoxContainer) -> void:
 	var row := HBoxContainer.new()
@@ -169,6 +176,7 @@ func _add_slider_row(parent: VBoxContainer, label_text: String, bus_name: String
 	slider.custom_minimum_size = Vector2(220, 0)
 	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	slider.value_changed.connect(_on_slider_changed.bind(bus_name))
+	_hook_hover(slider)
 	row.add_child(slider)
 
 	if _first_slider == null:

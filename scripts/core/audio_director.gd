@@ -62,6 +62,13 @@ const AMB_HEARTBEAT: String = "res://assets/audio/ambience/heartbeat.wav"
 # Música por contexto: um loop híbrido (maracatu + chiptune) por tela/fase/boss.
 const MUSIC_DIR: String = "res://assets/audio/music/"
 
+# SFX one-shot tocados pelo diretor (persistente): sons que atravessam a morte da
+# cena (bolsa de fragmentos) e micro-feedback de UI compartilhado entre telas.
+const SFX_DIR: String = "res://assets/audio/sfx/"
+const UI_HOVER_VOLUME_DB: float = -14.0
+## Foco+mouse disparam juntos no mesmo controle; o cooldown colapsa o par num som só.
+const UI_HOVER_COOLDOWN_MSEC: int = 80
+
 # Stingers de estado (one-shot).
 const STING_DIR: String = "res://assets/audio/stingers/"
 const STING_ARENA: String = "sting_arena_enter"
@@ -75,6 +82,11 @@ const STING_CHAMA: String = "sting_chama"
 const STING_SINO_IGREJA: String = "sting_sino_igreja"
 const STING_AGUA_BENTA: String = "sting_agua_benta"
 const STING_ORGAO_ESTERTOR: String = "sting_orgao_estertor"
+# Bolsa de fragmentos (corpse run): vivem em stingers/ (alvo de loudness emocional),
+# mas tocam em player transiente — o _stinger_player é reutilizado pelo GAME_OVER
+# logo depois da queda e cortaria o som da perda.
+const STING_BAG_DROP: String = "fragment_bag_drop"
+const STING_BAG_RECOVER: String = "fragment_bag_recover"
 const FINAL_PHASE: int = 5
 
 # ─── State ─────────────────────────────────────────
@@ -100,6 +112,7 @@ var _stems_active: bool = false
 var _music_intensity: int = 0
 var _heart_mode: bool = false
 var _stinger_player: AudioStreamPlayer
+var _last_hover_msec: int = -UI_HOVER_COOLDOWN_MSEC
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -140,6 +153,8 @@ func _ready() -> void:
 	SignalBus.chama_gained.connect(_on_chama)
 	SignalBus.boss_special_telegraph.connect(_on_boss_special_telegraph)
 	SignalBus.caipora_health_changed.connect(_on_caipora_health_changed)
+	SignalBus.fragment_bag_dropped.connect(_on_fragment_bag_dropped)
+	SignalBus.fragment_bag_recovered.connect(_on_fragment_bag_recovered)
 
 # ─── Public API: volume ────────────────────────────
 ## Define o volume linear (0..1) de um bus, aplica e persiste.
@@ -253,6 +268,40 @@ func _on_chama() -> void:
 func _on_boss_special_telegraph(boss_type: String) -> void:
 	if _audio_unlocked and boss_type == "jesuita":
 		_play_stinger(STING_AGUA_BENTA)
+
+# ─── Bolsa de fragmentos (corpse run) ──────────────
+func _on_fragment_bag_dropped(_amount: float) -> void:
+	if _audio_unlocked:
+		_play_oneshot_sfx(STING_DIR + STING_BAG_DROP + ".wav")
+
+func _on_fragment_bag_recovered(_amount: float) -> void:
+	if _audio_unlocked:
+		_play_oneshot_sfx(STING_DIR + STING_BAG_RECOVER + ".wav")
+
+# ─── Micro-feedback de UI (hover/foco) ─────────────
+## Tick de hover compartilhado entre menus. Cooldown central: focus_entered e
+## mouse_entered do mesmo controle (e travessias de slider) não viram spam.
+func play_ui_hover() -> void:
+	if not _audio_unlocked:
+		return
+	var now := Time.get_ticks_msec()
+	if now - _last_hover_msec < UI_HOVER_COOLDOWN_MSEC:
+		return
+	_last_hover_msec = now
+	_play_oneshot_sfx(SFX_DIR + "ui_hover.wav", UI_HOVER_VOLUME_DB)
+
+## Player transiente no bus SFX (audível mesmo com música desligada); asset
+## ausente é no-op — o catálogo pode chegar depois do código (graceful).
+func _play_oneshot_sfx(path: String, volume_db: float = 0.0) -> void:
+	if not ResourceLoader.exists(path):
+		return
+	var player := AudioStreamPlayer.new()
+	player.stream = load(path)
+	player.bus = BUS_SFX
+	player.volume_db = volume_db
+	player.finished.connect(player.queue_free)
+	add_child(player)
+	player.play()
 
 func _on_caipora_health_changed(new_health: float, max_health: float) -> void:
 	if max_health <= 0.0:
