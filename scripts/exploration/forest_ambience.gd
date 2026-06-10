@@ -120,9 +120,7 @@ func _spawn_spores() -> void:
 	spores.scale_amount_max = 2.2
 	spores.color_ramp = _spore_ramp()
 	# Blend aditivo: brilham fraco sobre a escuridão (poeira encantada).
-	var glow := CanvasItemMaterial.new()
-	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	spores.material = glow
+	spores.material = Constants.ADDITIVE_MATERIAL
 	add_child(spores)
 
 func _spore_ramp() -> Gradient:

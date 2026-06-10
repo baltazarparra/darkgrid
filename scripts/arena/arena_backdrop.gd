@@ -286,9 +286,7 @@ func _spawn_horizon_mist() -> void:
 	mist.scale_amount_min = 0.6
 	mist.scale_amount_max = 1.2
 	mist.color_ramp = _mist_ramp()
-	var add_mat := CanvasItemMaterial.new()
-	add_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	mist.material = add_mat
+	mist.material = Constants.ADDITIVE_MATERIAL
 	add_child(mist)
 
 func _mist_ramp() -> Gradient:
@@ -352,9 +350,7 @@ func _spawn_rising_embers() -> void:
 	embers.scale_amount_min = 1.0
 	embers.scale_amount_max = 2.2
 	embers.color_ramp = _ember_ramp()
-	var add_mat := CanvasItemMaterial.new()
-	add_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	embers.material = add_mat
+	embers.material = Constants.ADDITIVE_MATERIAL
 	add_child(embers)
 
 func _ember_ramp() -> Gradient:

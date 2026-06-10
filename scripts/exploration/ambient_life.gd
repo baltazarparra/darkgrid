@@ -161,9 +161,7 @@ func _spawn_fireflies() -> void:
 	fireflies.scale_amount_max = 3.2
 	fireflies.color_ramp = _firefly_glow_ramp()
 	# Blend aditivo: o brilho fura o CanvasModulate da noite (vaga-lume realmente acende).
-	var glow := CanvasItemMaterial.new()
-	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	fireflies.material = glow
+	fireflies.material = Constants.ADDITIVE_MATERIAL
 	add_child(fireflies)
 
 ## Gradiente de alpha ao longo da vida: acende e apaga (pulso de vaga-lume).
