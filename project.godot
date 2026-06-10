@@ -30,6 +30,7 @@ MetaProgression="*res://scripts/core/meta_progression.gd"
 AudioDirector="*res://scripts/core/audio_director.gd"
 TouchControls="*res://scripts/ui/controls_hud.gd"
 PortraitGuard="*res://scripts/ui/portrait_guard.gd"
+PerfOverlay="*res://scripts/ui/perf_overlay.gd"
 
 [audio]
 
