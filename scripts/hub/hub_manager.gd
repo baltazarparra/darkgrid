@@ -2,7 +2,7 @@ extends Node2D
 
 # Acampamento jogável (HUB entre fases). Mini-clareira cercada de mata onde a floresta não
 # alcança: fogueira baixa, cachimbo, e a interface de aprimoramentos (HubShop) por cima — cards
-# grandes e clicáveis das ervas que a Caipora pode fumar. A Caipora anda, recupera HP cheio ao
+# clicáveis das ervas que a Caipora pode fumar, numa faixa no topo. A Caipora anda, recupera HP cheio ao
 # entrar e pisa no RASTRO (saída pulsante) para voltar à mata — à próxima exploração pendente
 # (advance_phase_via_hub) ou, vindo de uma derrota, ao começo de uma caçada nova (santuário).
 #
