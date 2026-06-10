@@ -23,9 +23,12 @@ Nunca editar os PNGs gerados à mão: toda mudança passa por aqui.
 
 from __future__ import annotations
 
+import base64
+import io
 import math
 import os
 import random
+import re
 
 from PIL import Image, ImageDraw
 
@@ -324,26 +327,59 @@ def icon(size: int, base: int, factor: int) -> Image.Image:
     return img
 
 
+def _b64(img: Image.Image) -> str:
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+def inject_shell(mark_open: Image.Image, mark_blink: Image.Image,
+                 word_img: Image.Image) -> None:
+    """Embute os PNGs da marca em base64 no loader HTML (html/shell.html).
+
+    O shell replica a composição do boot_splash; os blocos GEN_BRAND são a
+    única parte gerada — o resto do arquivo é código-fonte normal."""
+    path = os.path.join(ROOT, "html", "shell.html")
+    if not os.path.exists(path):
+        print("[gen_brand] html/shell.html ausente — injeção de base64 pulada")
+        return
+    with open(path, encoding="utf-8") as fh:
+        html = fh.read()
+    for elem_id, img in (("brand-mark-open", mark_open),
+                         ("brand-mark-blink", mark_blink),
+                         ("brand-wordmark", word_img)):
+        pattern = r'(<img id="%s" src=")[^"]*(")' % elem_id
+        html, n = re.subn(pattern, r"\g<1>%s\g<2>" % _b64(img), html, count=1)
+        if n != 1:
+            raise SystemExit("[gen_brand] âncora <img id=\"%s\"> não encontrada no shell" % elem_id)
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(html)
+
+
 def generate_all() -> None:
     os.makedirs(SPRITES, exist_ok=True)
     os.makedirs(ICONS, exist_ok=True)
 
-    mark(REF).save(os.path.join(SPRITES, "brand_mark.png"))
-    mark(REF, blink=True).save(os.path.join(SPRITES, "brand_mark_blink.png"))
+    mark_open = mark(REF)
+    mark_blink = mark(REF, blink=True)
+    mark_open.save(os.path.join(SPRITES, "brand_mark.png"))
+    mark_blink.save(os.path.join(SPRITES, "brand_mark_blink.png"))
 
     word_open = wordmark()
     word_open.save(os.path.join(SPRITES, "logo_title.png"))
     wordmark(blink=True).save(os.path.join(SPRITES, "logo_title_blink.png"))
 
-    boot_splash(mark(REF), word_open).save(os.path.join(SPRITES, "boot_splash.png"))
+    boot_splash(mark_open, word_open).save(os.path.join(SPRITES, "boot_splash.png"))
 
     icon(512, 64, 8).save(os.path.join(ROOT, "icon.png"))
     icon(512, 64, 8).save(os.path.join(ICONS, "icon_512.png"))
     icon(144, 48, 3).save(os.path.join(ICONS, "icon_144.png"))
     icon(180, 60, 3).save(os.path.join(ICONS, "icon_180.png"))
 
+    inject_shell(mark_open, mark_blink, word_open)
+
     print("[gen_brand] marca regenerada: brand_mark(+blink), logo_title(+blink), "
-          "boot_splash, icon.png, icons PWA 144/180/512")
+          "boot_splash, icon.png, icons PWA 144/180/512, base64 do shell")
 
 
 if __name__ == "__main__":
