@@ -37,16 +37,18 @@ assets/
 2. **Tamanho:** **personagens 48×48**, **tiles/itens 32×32** (grid lógico = 32).
    Sprites de 48px transbordam o tile pra cima (offset.y = -8 no AnimatedSprite2D;
    pés na base). Background transparente.
-   **Exceção — Caipora (protagonista/guardiã): 64×64** (dentro do limite ≤64×64),
-   por ser imponente (maior que os caçadores). Usa offset/scale próprios por cena
-   (arena vs exploração) para os pés assentarem na base do tile.
+   **Exceção — Caipora (protagonista/guardiã): 96×96**, por ser imponente
+   (maior que os caçadores) e carregar a silhueta-ícone (juba + chifres + cajado).
+   Usa offset/scale próprios por cena (arena vs exploração vs título) para os
+   pés assentarem na base do tile.
 2b. **Pipeline de limpeza para IA (obrigatório):** quantizar para a paleta
    (`constants.gd`), alinhar ao grid, garantir alpha limpo (sem halos), ≤ 64×64.
    Sprite que não passar por isso não entra.
 2c. **Protagonista é especial:** os `player_*.png` saem SOMENTE de
    `scripts/tools/gen_caipora.py` (pipeline premium: supersample 8× → snap de
-   paleta → selout → rim light térmico). NUNCA editar esses PNGs à mão nem
-   recriá-los pelo `gen_chars.py`. O design é lei: `docs/CONCEITO-protagonista.md`.
+   paleta → selout → rim light duplo, quente da juba + frio do cristal). NUNCA
+   editar esses PNGs à mão nem recriá-los pelo `gen_chars.py`. O design é lei:
+   `docs/CONCEITO-protagonista.md`.
 3. **Audio:** Generate with [jsfxr](https://sfxr.me/) or [sfxr](https://www.drpetter.se/project_sfxr.html). Export as `.wav`. Short, punchy, under 100KB each.
 4. **No music in MVP.** SFX only. Music adds complexity and file size we don't need for the first Web build.
 5. **UI:** Use Godot's native UI nodes (`Button`, `Panel`, `Label`, `ProgressBar`). Do not create custom UI sprite sheets.

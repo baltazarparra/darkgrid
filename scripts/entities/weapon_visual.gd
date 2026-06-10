@@ -7,7 +7,7 @@ extends Node2D
 ##
 ## CPUParticles2D obrigatório (export web em GL Compatibility, sem GPUParticles).
 
-const WEAPON_OFFSET := Vector2(22, -47)
+const WEAPON_OFFSET := Vector2(33, -70.5)
 
 const TEXTURES: Array[Texture2D] = [
 	preload("res://assets/sprites/weapon_forca1.png"),   # T1

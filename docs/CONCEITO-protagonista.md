@@ -1,151 +1,116 @@
-# CONCEITO — A Caipora, Protagonista
+# CONCEITO — A Caipora, Protagonista ("A Guardia da Mata")
 
 > **Este documento é lei visual.** Todo asset, animação, partícula, key art,
 > ícone ou material promocional que envolva a protagonista deriva daqui.
-> Gerador canônico: `scripts/tools/gen_caipora.py`.
+> Gerador canônico: `scripts/tools/gen_caipora.py`. Fonte do conceito: arte de
+> referência aprovada em 2026-06 (criatura encapuzada de juba vermelha, rosto
+> vazio de olhos brancos, chifres, manto de folhas e cajado de cristal verde).
 
 ---
 
-## 1. Diagnóstico — por que redesenhar
+## 1. O conceito
 
-A Caipora da Fase 7 cumpria o checklist de assinaturas (cabelo de fogo, olhos
-brilhando, folhas, cipó) mas falhava no teste que importa: **ninguém olha pra
-ela e quer jogar**. Causas:
+A Caipora não tem rosto. Sob o capuz de folhas existe apenas **vazio negro e
+dois olhos brancos, redondos, que brilham** — a última coisa que o caçador vê.
+A juba vermelho-sangue cai sobre os ombros como uma capa viva. Chifres escuros
+rompem o capuz. Na mão, um cajado de madeira retorcida coroado por um **cristal
+verde** que pinga luz — o único frio numa criatura de sangue e terra.
 
-| Problema | Efeito |
-|----------|--------|
-| Construção por retângulos simétricos | Lê como "boneco", não como criatura |
-| Sem anatomia (sem cintura, ombro, joelho) | Sem peso, sem gênero, sem espécie |
-| Cabelo = listras verticais | Lê como "vassoura/coroa", não como fogo |
-| Pose frontal estática | Zero atitude; protagonista parece NPC |
-| Sem luz | O fogo na cabeça não ilumina nada — vira chapéu |
+Ela não é mascote. É a dona da mata, e a mata cobra em sangue.
 
-## 2. Análise — o que faz uma protagonista 2D ser *hype*
+## 2. Assinaturas visuais (as 5 travas do design)
 
-Princípios extraídos dos personagens que carregam jogos da indústria popular
-(Zagreus/*Hades*, o Prisioneiro/*Dead Cells*, o Cavaleiro/*Hollow Knight*,
-o Penitente/*Blasphemous*):
+1. **Juba-capa de sangue** — massa vermelha volumosa que envolve o capuz dos
+   dois lados e flui pelas costas quase até o chão. É A silhueta: a 32px, a
+   protagonista é "a mancha vermelha de olhos brancos". No strike estica
+   horizontal (velocidade); no windup eriça pra cima (ameaça); no recover
+   assenta.
+2. **Rosto-vazio de olhos brancos** — elipse de vazio (`VOID`) emoldurada pelo
+   capuz; dois olhos circulares brancos com halo esverdeado (`EYE_GLOW` →
+   `EYE_WHITE`). O olho da frente é maior (encara a presa). Sem boca, sem
+   traços: o horror é a ausência. No windup arregalam; no strike viram fendas.
+3. **Chifres do capuz de folhas** — dois chifres curvos de madeira escura
+   rompendo a linha do capuz, assimétricos (o da frente é mais longo). As
+   pontas SEMPRE ultrapassam a silhueta da juba (ganham outline e leitura).
+4. **Cajado do cristal verde** — madeira retorcida com nós, coroada por cristal
+   facetado esmeralda (`CR`/`CR_HL`) que goteja faíscas. É a arma: ergue e
+   carrega no windup (flare + raios), varre com **smear verde de 3 tons**
+   no strike, pinga no recover. O verde do cristal é o ÚNICO acento frio e a
+   cor do crítico (`Constants.COLOR_PARTICLE_SPARK`).
+5. **Vestes vivas + pés descalços** — poncho de folhas escuras em 3 fileiras
+   recortadas, bolsa de couro no quadril (ela colhe o que a mata dá), pés
+   descalços marrons. **PÉS NORMAIS PRA FRENTE** — o pé-pra-trás é do Curupira
+   (parente), não dela.
 
-1. **Silhueta primeiro.** O personagem precisa ser identificável em preto
-   sólido a 32px. Formas: uma massa grande característica (a juba), um corpo
-   médio tenso (o tronco felino), detalhes pequenos (chicote, saiote).
-2. **Um único acento de cor saturada sobre corpo escuro.** *Dead Cells* é
-   laranja-sobre-teal; *Hades* é vermelho-sobre-bronze. A Caipora é
-   **fogo-sobre-terra**: todo o resto da paleta é dessaturado para o fogo
-   estourar.
-3. **Luz própria.** Personagens "premium" carregam a própria iluminação (a
-   chama do Prisioneiro, o lampião de *Childe of Light*). O fogo da juba gera
-   **rim light térmico** nas bordas do corpo — é isso que separa "sprite com
-   cabelo laranja" de "criatura iluminada por fogo".
-4. **Assimetria.** Ombreira só de um lado, juba varrida para trás, arma numa
-   mão só. Simetria = estática; assimetria = movimento congelado.
-5. **Atitude na pose neutra.** O idle já conta a história: tronco inclinado,
-   olhar por baixo da testa, mão na arma. Predadora, nunca turista.
-6. **Anticipação e smear legíveis.** O windup comprime (mola), o strike vira
-   mancha de luz (smear de 3 tons), o recover assenta. A linguagem do corpo
-   ecoa a mecânica central (timing).
-
-## 3. Autenticidade — o folclore como fonte, não fantasia genérica
-
-Travas de lore (inegociáveis, já estabelecidas no projeto):
-
-- **Caboclinha da mata**: pele escura. Não suavizar.
-- **Cabelo de fogo**: a juba é chama viva, não cabelo ruivo.
-- **PÉS NORMAIS PRA FRENTE** — o pé-pra-trás é do Curupira (parente), não dela.
-- **Senhora dos rastros e da vingança**: ela pune caçadores; é ameaça, não mascote.
-- **Cachimbo** existe no universo (hub); não entra no sprite de combate.
-
-Elementos folclóricos incorporados ao redesign:
-
-- **Urucum**: risco de garra vermelho na bochecha (pintura de guerra).
-- **Jenipapo**: faixa preto-azulada atravessando os olhos (máscara de caça)
-  e faixa diagonal no peito — faz a brasa dos olhos estourar no escuro.
-- **Folhas e cipós como vestes vivas**: peitoral, saiote, ombreira (um lado
-  só), braceletes de cipó no antebraço e na canela.
-
-## 4. O conceito: **A Predadora-Rainha da Mata**
-
-Uma entidade antiga com corpo de caçadora: silhueta felina, tronco inclinado
-pra frente, ombros largos, cintura estreita — sempre a meio passo do bote.
-A juba de fogo flui pra trás em **arco de cometa ascendente**: mesmo parada,
-ela parece estar avançando. O fogo é dela; a mata escura existe ao redor do
-brilho que ela carrega.
-
-### Assinaturas visuais (as 5 travas do design)
-
-1. **Juba-cometa de fogo** — nasce do couro cabeludo, sobe em línguas curtas
-   na coroa e flui pra trás afinando até brasas soltas. No strike, estica
-   horizontal (velocidade); no windup, eriça (ameaça).
-2. **Rim light térmico** — toda borda superior do corpo voltada ao fogo recebe
-   um pixel de realce quente (`SK_HL`). A fonte de luz é ELA.
-3. **Olhos de brasa na máscara de jenipapo** — faixa escura na linha dos
-   olhos; dentro, âmbar com núcleo branco-quente. O olho da frente é maior
-   (encara a presa).
-4. **Cipó-chicote vivo** — madeira escura, folhas brotando, **ponta em brasa**
-   (o estalo crítico nasce ali). No strike vira smear de 3 tons de fogo.
-5. **Vestes vivas assimétricas** — ombreira de folhas só no ombro do chicote;
-   peitoral e saiote de folhas com pontas irregulares; urucum na bochecha.
-
-### Paleta (ramps fechados — fonte: `gen_caipora.py`)
+## 3. Paleta (fechada — fonte: `gen_caipora.py`, 20 cores)
 
 | Material | Ramp |
 |----------|------|
-| Fogo | `#941c08 → #d03604 → #ff6b00 → #ffac30 → #ffecb4` |
-| Pele | `#341c16 → #54301e → #7c4c2c → #b2743e` (rim) |
-| Folha/cipó | `#102012 → #223a1e → #546e30` (realce) |
-| Terra/madeira | `#221210 → #3d1f1f` |
-| Urucum / Jenipapo | `#c42c14` / `#181014` |
-| Olhos | `#ffd654` + núcleo `#ffffdc` |
+| Juba (base) | `#440b10 → #8e1c12 → #ce3208` (fosca, sangue seco) |
+| Juba (CHAMA) | `#440b10 → #ce3208 → #ff6808 → #ffb032` + coração `#ffefb2` |
+| Pele | `#46281c → #74462c → #a86c40` (rim) |
+| Folha | `#0a130e → #162717 → #304e26 → #5c7a38` (rim) |
+| Madeira (cajado/chifre/bolsa) | `#1f1210 → #41261d` (+ `#46281c` como realce de couro) |
+| Vazio do rosto | `#0a0712` |
+| Olhos | halo `#c8e8d4` + núcleo `#ffffff` |
+| Cristal | `#0a130e (faceta escura) → #1da75c → #8af0b0 → #ffffff (brilho)` |
 
-O fogo é o ÚNICO material de alta saturação. Se um novo asset da Caipora
-precisa de destaque, a resposta é sempre fogo — nunca uma cor nova.
+**Regra da luz dupla:** a criatura carrega duas luzes próprias — a quente da
+juba (rim light no topo/dorso, mais forte na CHAMA) e a fria do cristal (rim
+verde em dither, lado do cajado). Nenhuma outra cor saturada entra no sprite.
 
-### Linguagem corporal por frame
+## 4. Linguagem corporal por frame
 
-| Frame | Corpo | Juba | Chicote |
-|-------|-------|------|---------|
-| `idle` | Tronco inclinado, mão na arma | Arco de cometa | Pende vivo, ondulando |
-| `walk_1/2` | Passada em tesoura + contrabalanço dos braços | Balança com a fase | Pende |
-| `windup` | Agachada, mola comprimida | Eriçada pra cima | Arco tensionado atrás do ombro |
-| `strike` | Afundo, queixo avançado | Esticada horizontal | **Smear de 3 tons + estalo branco** |
-| `recover` | Assentando o peso | Assentando | Caindo à frente, ainda balançando |
+| Frame | Corpo | Juba | Cajado |
+|-------|-------|------|--------|
+| `idle` | Inclinada 2px, peso pronto | Arco de cometa até o chão | Fincado vertical, cristal na altura dos chifres |
+| `walk_1/2` | Passada em tesoura | Bounce com a fase | Carregado, inclinado ~10° |
+| `windup` | Agachada, mola comprimida | Eriçada pra cima | Erguido na diagonal, **cristal carregando** (flare + raios), olhos arregalados |
+| `strike` | Afundo, lean 7px | Esticada horizontal atrás | Varrido à frente: **smear verde CR→CR_HL→branco**, olhos em fenda |
+| `recover` | Assentando o peso | Dobrando de volta | Descendo pra fincar, cristal **pingando** 3 gotas |
 
 ## 5. Pipeline técnico (o "premium" reprodutível)
 
 `gen_caipora.py`, determinístico, stdlib + Pillow:
 
-1. **Desenho vetorial supersampled 8×** (512×512): membros capsulares com
-   afunilamento, polígonos orgânicos, juba por discos ao longo de spline.
-2. **Downsample por área → 64×64** + threshold de alpha (sem halos).
-3. **Snap de paleta**: cada pixel cai no ramp mais próximo (paleta fechada).
+1. **Desenho vetorial supersampled 8×** (768×768): membros capsulares, juba por
+   lóbulos ao longo de spline + mechas afiladas, polígonos orgânicos.
+2. **Downsample por área → 96×96** + threshold de alpha (sem halos).
+3. **Snap de paleta**: cada pixel cai na cor mais próxima (paleta fechada).
 4. **Selout**: borda externa escurecida (1px) — coesão contra qualquer fundo.
-   Fogo e olhos ficam de fora (material emissivo não tem contorno).
-5. **Rim light procedural**: bordas superiores (e dorsais, em dither) de
-   pele/folha/terra dentro do alcance do fogo sobem um degrau no ramp.
-6. **Dither de bandas no fogo**: xadrez na fronteira entre tons — chama
-   orgânica, não listras.
+   Materiais emissivos (fogo, olhos, cristal) ficam de fora.
+5. **Rim light duplo procedural**: quente (juba, bordas superiores + dorsais em
+   dither) e frio (cristal, bordas do lado do cajado em dither). O rim vence o
+   outline na borda iluminada.
+6. **Dither de bandas na juba**: xadrez na fronteira entre tons do ramp —
+   cabelo orgânico, não listras (na CHAMA o ramp inteiro de fogo participa).
 
-Regra de manutenção: **nunca editar os PNGs `player_*` à mão** — toda mudança
-visual da protagonista passa por `gen_caipora.py` e por este documento.
+Regras de manutenção:
+- **Nunca editar os PNGs `player_*` à mão** — toda mudança visual da
+  protagonista passa por `gen_caipora.py` e por este documento.
+- **`gen_chars.py` NUNCA toca os `player_*`** — protagonista só sai do gerador
+  canônico.
+- Contrato de saída: 6 poses × 2 variantes, 96×96, validado por
+  `tests/unit/test_caipora_sprite_assets.gd`.
 
 ## 6. O que NUNCA muda / o que pode evoluir
 
-**Imutável:** pele escura; juba de fogo fluindo PRA TRÁS; pés normais pra
-frente; fogo como único acento saturado; olhos de brasa; chicote com ponta em
-brasa; postura de predadora.
+**Imutável:** rosto-vazio com olhos brancos circulares; juba vermelha como
+silhueta dominante fluindo PRA TRÁS; chifres rompendo o capuz; cristal verde
+como único acento frio e cor do crítico; pés normais pra frente; postura de
+predadora; tom GORE/TERROR — a mata é hostil, a Caipora é perigosa, nunca
+suavizar.
 
 **Evolui livremente:** densidade de folhas (upgrades podem vesti-la mais),
-intensidade da juba (fúria/CHAMA podem incendiá-la), partículas, key art em
-resolução maior — desde que derive das 5 assinaturas.
+intensidade da juba e do cristal, partículas, key art em resolução maior —
+desde que derive das 5 assinaturas.
 
-**Já realizado:** a CHAMA incendeia a própria Caipora — variante
-`player_*_chama.png` (`caipora(..., chama=True)`): juba +longa/+quente, brasas
-orbitando, estalo do chicote maior. Selecionada e aplicada em runtime por
-`CaiporaSkin` (exploração, arena — inclusive na conquista em pleno combate —
-e TitleWalker).
-> Status atual: o conceito ativo de producao e **Caipora Brasa**, definido em
-> `docs/PLANO-redesign-caipora-pop-dark.md` e implementado no gerador canonico
-> `scripts/tools/gen_caipora.py`. A direcao antiga "Predadora-Rainha da Mata"
-> permanece neste documento como base historica e lore visual, mas toda
-> proporcao/execucao de sprite conflitante deve seguir a versao pop dark:
-> cabeca maior, corpo compacto, rosto iconico, fogo como silhueta principal.
+**CHAMA (meta-progressão) = "juba em brasa":** a variante `player_*_chama.png`
+(`caipora(..., chama=True)`) acende a juba — ramp de fogo no lugar do sangue
+seco, coração `F_CORE`, brasas orbitando e rim light térmico mais largo. Mesma
+geometria, outro estado: a fúria antiga da mata acordou. Selecionada em runtime
+por `CaiporaSkin` (exploração, arena e TitleWalker).
+
+> Direções anteriores ("Predadora-Rainha da Mata", "Caipora Brasa" /
+> `docs/PLANO-redesign-caipora-pop-dark.md`) ficam como histórico; em qualquer
+> conflito, vale este documento.

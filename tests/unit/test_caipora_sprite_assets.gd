@@ -15,13 +15,13 @@ const SPRITE_PATHS: Array[String] = [
 	"res://assets/sprites/player_recover_chama.png",
 ]
 
-func test_caipora_sprite_contract_assets_are_64x64() -> void:
+func test_caipora_sprite_contract_assets_are_96x96() -> void:
 	for path: String in SPRITE_PATHS:
 		var texture := load(path) as Texture2D
 		assert_not_null(texture, "%s carrega" % path)
 		if texture == null:
 			continue
-		assert_eq(texture.get_size(), Vector2(64, 64), "%s mantem contrato 64x64" % path)
+		assert_eq(texture.get_size(), Vector2(96, 96), "%s mantem contrato 96x96" % path)
 
 func test_caipora_sprite_contract_assets_are_not_blank() -> void:
 	for path: String in SPRITE_PATHS:
@@ -29,7 +29,7 @@ func test_caipora_sprite_contract_assets_are_not_blank() -> void:
 		assert_false(image.is_empty(), "%s carrega como Image" % path)
 		if image.is_empty():
 			continue
-		assert_gt(_count_opaque_pixels(image), 80, "%s tem massa visual suficiente" % path)
+		assert_gt(_count_opaque_pixels(image), 180, "%s tem massa visual suficiente" % path)
 
 func _count_opaque_pixels(image: Image) -> int:
 	var count := 0

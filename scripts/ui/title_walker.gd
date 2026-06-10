@@ -12,8 +12,8 @@ extends Node2D
 @export var layer_z: int = -40
 
 # ─── Constants ─────────────────────────────────────
-const SPRITE_HALF: float = 32.0  # Caipora é 64×64 (assets/AGENTS.md)
-const WALK_SCALE: float = 2.6
+const SPRITE_HALF: float = 48.0  # Caipora é 96×96 (assets/AGENTS.md)
+const WALK_SCALE: float = 1.733333
 const START_X: float = -120.0
 const CROSS_DURATION: float = 22.0
 const BOB_AMPLITUDE: float = 4.0

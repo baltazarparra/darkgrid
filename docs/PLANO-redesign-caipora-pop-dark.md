@@ -1,5 +1,10 @@
 # PLANO - Redesign Pop Dark da Caipora
 
+> **SUPERSEDED (2026-06):** este plano foi executado e depois substituído pelo
+> conceito "A Guardia da Mata" (96×96, juba-capa, rosto-vazio, chifres, cajado
+> de cristal). A lei visual vigente é `docs/CONCEITO-protagonista.md`. Mantido
+> como histórico.
+
 > Objetivo: transformar a protagonista em uma figura mais memoravel, pop,
 > simpatica e sombria, sem perder o horror folclorico brasileiro nem copiar a
 > identidade visual de jogos de referencia.

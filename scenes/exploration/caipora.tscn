@@ -10,8 +10,8 @@ size = Vector2(32, 32)
 script = ExtResource("1_script")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-offset = Vector2(0, -12)
-scale = Vector2(0.8, 0.8)
+offset = Vector2(0, -18)
+scale = Vector2(0.533333, 0.533333)
 sprite_frames = ExtResource("2_frames")
 animation = &"idle"
 autoplay = "idle"

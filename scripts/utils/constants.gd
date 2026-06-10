@@ -106,6 +106,10 @@ const COLOR_FIRE_HOT := Color(1.00, 0.55, 0.05)
 const COLOR_FIRE_MID := Color(0.85, 0.30, 0.0)
 const COLOR_FIRE_LOW := Color(0.75, 0.20, 0.0)
 
+# Cristal do cajado da Caipora (acento frio da protagonista).
+const COLOR_CRYSTAL := Color("#1da75c")                  # esmeralda (= CR do gen_caipora.py)
+const COLOR_CRYSTAL_GLOW := Color(0.55, 1.7, 0.9, 1.0)   # overbright p/ glow aditivo
+
 # Materiais de props/decoração (derivados intencionais da paleta).
 const COLOR_GOLD := Color(0.92, 0.78, 0.12)
 const COLOR_GOLD_DARK := Color(0.55, 0.42, 0.04)
@@ -158,7 +162,7 @@ const COLOR_DIALOGUE_MULA     := Color(1.0,  0.50, 0.10, 1.0)  # voz da Mula sem
 const COLOR_DIALOGUE_JESUITA  := Color(0.92, 0.82, 0.45, 1.0)  # voz do Jesuíta (ouro litúrgico corrompido)
 
 # Partículas de feedback de combate (>1 = overbright p/ glow aditivo intencional).
-const COLOR_PARTICLE_SPARK := Color(1.0, 0.92, 0.6, 1.0)  # faísca de crítico (dourado)
+const COLOR_PARTICLE_SPARK := Color(0.6, 1.6, 0.9, 1.0)   # faísca de crítico (cristal do cajado)
 const COLOR_PARTICLE_DODGE := Color(0.9, 0.95, 1.0, 0.95) # flash de esquiva (azul-claro)
 const COLOR_PARTICLE_FAIL := Color(0.20, 0.18, 0.22, 0.9) # estilhaço de erro (cinza-fumaça morto, deriva de COLOR_STONE_DARK)
 
