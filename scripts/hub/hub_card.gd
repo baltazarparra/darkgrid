@@ -1,20 +1,19 @@
 class_name HubCard
 extends Button
 
-# Card grande e clicável de UMA erva de aprimoramento no Hub: ícone + nome + efeito derivado
+# Card clicável de UMA erva de aprimoramento no Hub: ícone + nome + efeito derivado
 # (ex: "Dano +1/hit (total 2)") + custo em fragmentos. Clicar/tocar pede a compra ao HubShop
 # (que valida via MetaProgression.purchase_upgrade — fonte única). Estado visual ACESSÍVEL
 # (borda âmbar viva, custo âmbar, respiro pulsante) vs. CARO (borda apagada, custo em sangue).
-# É um Button: foco por teclado/D-pad e clique/toque de graça; o conteúdo (VBox) ignora o mouse
+# É um Button: foco por teclado/D-pad e clique/toque de graça; o conteúdo (HBox) ignora o mouse
 # para os cliques caírem no botão.
+#
+# O card é HORIZONTAL e baixo (ícone à esquerda, textos à direita) nas DUAS orientações: a
+# pilha das trilhas mora na FAIXA SUPERIOR da tela, deixando o resto livre pro mundo/rastro/
+# D-pad — em retrato empilhadas, em paisagem lado a lado. A largura vem do HubShop em relayout().
 
-const ICON_PX: int = 60               # lado do ícone no topo do card (paisagem)
-const ICON_PX_PORTRAIT: int = 46      # ícone menor à esquerda no card horizontal (retrato)
-const CARD_MIN := Vector2(330, 200)   # tamanho confortável de leitura/toque (paisagem, base 1280×720)
-# Em retrato o card vira HORIZONTAL e baixo (ícone à esquerda, textos à direita): a pilha das
-# duas trilhas precisa caber na FAIXA SUPERIOR da tela alta sem rolar, deixando a metade de baixo
-# livre pro mundo/rastro/D-pad. A largura real vem do HubShop em relayout().
-const CARD_HEIGHT_PORTRAIT := 96
+const ICON_PX: int = 46               # lado do ícone à esquerda do card
+const CARD_HEIGHT := 96               # altura baixa: faixa de cards, não parede de cards
 const BORDER := 3                     # bordas duras (sem cantos arredondados — guia de UI)
 # Fonte do nome entre MD(18) e LG(28): a fonte pixelada é larga, então 28 estoura a largura do
 # card; 22 mantém os nomes curtos numa linha (os longos quebram no hífen, leitura natural).
@@ -41,16 +40,15 @@ func setup(erva_key: String) -> void:
 	var def: Dictionary = MetaProgression.UPGRADE_DEFS[key]
 	cost = int(def.get("fragment_cost", 0))
 
-	custom_minimum_size = CARD_MIN
+	custom_minimum_size = Vector2(0, CARD_HEIGHT)
 	# Clique/toque apenas: sem foco de teclado, pra não sequestrar as setas (ui_left/right/up/
 	# down) que movem a Caipora pelo acampamento nem comprar por engano com Enter.
 	focus_mode = Control.FOCUS_NONE
 	clip_text = false
 	_build_styles()
 
-	# Conteúdo dentro do botão: ícone + coluna de textos (nome → efeito → custo). Tudo ignora o
-	# mouse para o clique cair no Button. O eixo do _content é definido por relayout(): vertical
-	# (ícone em cima) em paisagem, horizontal (ícone à esquerda) em retrato — card baixo e legível.
+	# Conteúdo dentro do botão: ícone à esquerda + coluna de textos (nome → efeito → custo).
+	# Tudo ignora o mouse para o clique cair no Button.
 	_content = BoxContainer.new()
 	_content.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_content.add_theme_constant_override("separation", 10)
@@ -69,7 +67,7 @@ func setup(erva_key: String) -> void:
 	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_content.add_child(_icon)
 
-	# Coluna de textos: preenche o espaço ao lado do ícone (à direita em retrato, abaixo em paisagem).
+	# Coluna de textos: preenche o espaço à direita do ícone.
 	_text = VBoxContainer.new()
 	_text.add_theme_constant_override("separation", 4)
 	_text.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -82,7 +80,7 @@ func setup(erva_key: String) -> void:
 	_name_label.text = String(def.get("name", key))
 	_name_label.add_theme_font_size_override("font_size", NAME_FONT)
 	_name_label.add_theme_color_override("font_color", Constants.COLOR_TEXT)
-	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -93,7 +91,7 @@ func setup(erva_key: String) -> void:
 	_effect_label.text = MetaProgression.effect_text(key)
 	_effect_label.add_theme_font_size_override("font_size", Constants.FONT_MD)
 	_effect_label.add_theme_color_override("font_color", Constants.COLOR_TEXT)
-	_effect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_effect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_effect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_effect_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_effect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -103,7 +101,7 @@ func setup(erva_key: String) -> void:
 	_cost_label = Label.new()
 	_cost_label.text = "%d fragmentos" % cost
 	_cost_label.add_theme_font_size_override("font_size", Constants.FONT_MD)
-	_cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_cost_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_text.add_child(_cost_label)
@@ -141,25 +139,11 @@ func set_affordable(affordable: bool) -> void:
 	else:
 		_cost_label.add_theme_color_override("font_color", Constants.COLOR_BLOOD)
 
-## Reajusta o card à orientação/largura corrente (chamado pelo HubShop em size_changed). Em
-## retrato o card vira HORIZONTAL e baixo (ícone à esquerda, textos alinhados à esquerda) pra
-## caber na faixa superior; em paisagem volta ao layout vertical e ao tamanho confortável de
-## coluna. A largura é imposta como mínimo e o Button preenche a coluna.
-func relayout(width: float, portrait: bool) -> void:
-	var h: float = float(CARD_HEIGHT_PORTRAIT) if portrait else CARD_MIN.y
-	custom_minimum_size = Vector2(width, h)
+## Reajusta o card à largura de coluna corrente (chamado pelo HubShop em size_changed).
+## A largura é imposta como mínimo e o Button preenche a coluna.
+func relayout(width: float) -> void:
+	custom_minimum_size = Vector2(width, CARD_HEIGHT)
 	size_flags_horizontal = Control.SIZE_FILL
-	if _content == null:
-		return
-	# BoxContainer.vertical: paisagem empilha (ícone em cima), retrato deita (ícone à esquerda).
-	_content.vertical = not portrait
-	var ipx: int = ICON_PX_PORTRAIT if portrait else ICON_PX
-	_icon.custom_minimum_size = Vector2(ipx, ipx)
-	# Retrato horizontal: textos à esquerda (linha do ícone); paisagem vertical: centralizados.
-	var halign: int = HORIZONTAL_ALIGNMENT_LEFT if portrait else HORIZONTAL_ALIGNMENT_CENTER
-	_name_label.horizontal_alignment = halign
-	_effect_label.horizontal_alignment = halign
-	_cost_label.horizontal_alignment = halign
 
 ## Comprada: encolhe e some (fumada no cachimbo) e se libera.
 func consume() -> void:

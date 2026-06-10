@@ -2,9 +2,9 @@ class_name HubShop
 extends CanvasLayer
 
 # Interface de aprimoramentos do Hub: cabeçalho com FRAGMENTOS + resumo de bônus + Opções, e
-# os cards grandes e clicáveis das ervas disponíveis, agrupados por trilha (FÚRIA · dano e
-# CURA · vida). Substitui as ervas pequenas no chão da Fase 9 por algo grande de ler/clicar/
-# entender. purchase_upgrade continua a fonte única de custo/requires/persistência.
+# os cards clicáveis das ervas disponíveis numa faixa compacta no topo, agrupados por trilha
+# (FÚRIA · dano e CURA · vida). Substitui as ervas pequenas no chão da Fase 9 por algo claro
+# de ler/clicar/entender. purchase_upgrade continua a fonte única de custo/requires/persistência.
 #
 # Regra de pacing preservada da Etapa 2: o conjunto de cards é montado UMA vez na ENTRADA
 # (available_keys). Comprar uma erva NÃO faz a próxima da cadeia aparecer nesta fogueira — ela
@@ -20,7 +20,12 @@ const TITLE_FURIA := "FÚRIA · dano"
 const TITLE_CURA := "CURA · vida"
 const COLUMN_SEP := 48         # separação entre as trilhas lado a lado (paisagem)
 const PORTRAIT_TRACK_SEP := 16 # separação entre as trilhas empilhadas (retrato)
-const CARD_WIDTH := 330        # largura da coluna/status em paisagem (casa com HubCard.CARD_MIN.x)
+const CARD_WIDTH_MAX := 330    # teto da largura de coluna em paisagem
+const CARD_WIDTH_MIN := 240    # piso tocável/legível da coluna (ambas orientações)
+# Em paisagem cada coluna fica em ≤30% da largura: os cards saem do centro do mapa e moram
+# numa faixa compacta no topo, junto do cabeçalho (o acampamento volta a ser o protagonista).
+const LANDSCAPE_COLUMN_FRACTION := 0.30
+const HEADER_BAND_OFFSET := 64.0  # altura das duas linhas do cabeçalho (fragmentos + bônus)
 
 # ─── State ─────────────────────────────────────────
 var _root: Control
@@ -30,14 +35,16 @@ var _hint: Label
 var _options: OptionsPanel
 var _options_button: Button
 var _margin: MarginContainer
-# Bandeja dos cards: centralizada (paisagem) ou ancorada no topo, abaixo do cabeçalho (retrato),
-# definida em _relayout. VBoxContainer (não CenterContainer) para que, em retrato, a pilha cresça
-# pra BAIXO — nunca pra cima invadindo o cabeçalho — quando uma trilha trouxer mais de um card.
+# Bandeja dos cards: ancorada no topo, abaixo do cabeçalho (ambas as orientações).
+# VBoxContainer (não CenterContainer) para que a pilha cresça pra BAIXO — nunca pra cima
+# invadindo o cabeçalho — quando uma trilha trouxer mais de um card.
 var _band: VBoxContainer
 # Container das trilhas: alterna entre lado a lado (paisagem) e empilhado (retrato) em _relayout.
 var _tracks: BoxContainer
+# Estilo da bandeja: o padding encolhe em paisagem (_relayout) pra faixa ficar baixa.
+var _tray_box: StyleBoxFlat
 # Largura corrente dos cards/colunas (recalculada por orientação em _relayout).
-var _card_w: float = float(CARD_WIDTH)
+var _card_w: float = float(CARD_WIDTH_MAX)
 
 # Colunas por trilha: { "furia"/"cura": { "vbox": VBox, "cards": Array[HubCard] } }.
 var _columns: Dictionary = {}
@@ -104,9 +111,9 @@ func _build_header() -> void:
 	_options_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	row.add_child(_options_button)
 
-# Corpo: as duas trilhas, centradas, sobre uma bandeja escura (legibilidade contra a mata viva).
-# Lado a lado em paisagem, empilhadas em retrato — a orientação é definida em _relayout. Deixa o
-# rodapé livre pro D-pad e o rastro.
+# Corpo: as duas trilhas sobre uma bandeja escura (legibilidade contra a mata viva), na faixa
+# superior da tela. Lado a lado em paisagem, empilhadas em retrato — a orientação é definida em
+# _relayout. Deixa o centro pro acampamento e o rodapé livre pro D-pad e o rastro.
 func _build_cards() -> void:
 	_band = VBoxContainer.new()
 	_band.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -118,7 +125,8 @@ func _build_cards() -> void:
 	var tray := PanelContainer.new()
 	tray.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tray.add_theme_stylebox_override("panel", _tray_style())
+	_tray_box = _tray_style()
+	tray.add_theme_stylebox_override("panel", _tray_box)
 	_band.add_child(tray)
 
 	var stack := VBoxContainer.new()
@@ -295,7 +303,8 @@ func _apply_safe_margins() -> void:
 # ─── Layout responsivo (orientação + largura dos cards) ───
 ## Alterna as trilhas entre lado a lado (paisagem) e empilhadas (retrato), e dimensiona cards/
 ## colunas à largura útil corrente. Em retrato dois cards de 330px nunca caberiam lado a lado na
-## tela estreita — empilhar + alargar cada card é o que torna a tela legível e tocável.
+## tela estreita — empilhar + alargar cada card é o que torna a tela legível e tocável. Em
+## paisagem cada coluna fica em ≤30% da largura e a bandeja encolhe o padding: faixa compacta.
 func _relayout() -> void:
 	if _tracks == null:
 		return
@@ -307,38 +316,36 @@ func _relayout() -> void:
 	)
 	var side: float = clampf(minf(vp.x, vp.y) * 0.055, 40.0, 80.0)
 	# Retrato: card ocupa quase a largura útil (capado pra não estourar em tablet retrato).
-	# Paisagem: largura fixa de coluna, duas trilhas lado a lado.
-	_card_w = clampf(vp.x - side * 2.0, 240.0, 520.0) if portrait else float(CARD_WIDTH)
+	# Paisagem: coluna em ≤30% da largura, duas trilhas lado a lado.
+	_card_w = clampf(vp.x - side * 2.0, CARD_WIDTH_MIN, 520.0) if portrait \
+		else clampf(vp.x * LANDSCAPE_COLUMN_FRACTION, CARD_WIDTH_MIN, CARD_WIDTH_MAX)
+	if _tray_box != null:
+		_tray_box.set_content_margin_all(Constants.SPACE_MD if portrait else Constants.SPACE_SM)
 	for line: String in _columns:
 		var col: Dictionary = _columns[line]
 		col["vbox"].custom_minimum_size = Vector2(_card_w, 0)
 		if col.has("status") and is_instance_valid(col["status"]):
 			col["status"].custom_minimum_size = Vector2(_card_w, 0)
 		for card: HubCard in col["cards"]:
-			card.relayout(_card_w, portrait)
+			card.relayout(_card_w)
 	# Mantém a dica na largura da coluna de cards (quebra dentro dela, nunca alarga a bandeja).
 	if _hint != null:
 		_hint.custom_minimum_size = Vector2(_card_w, 0)
-	_position_band(vp, portrait)
+	_position_band(vp)
 
-## Posiciona a bandeja dos cards. Retrato: ancora ABAIXO do cabeçalho (margem superior segura +
-## as duas linhas de fragmentos/bônus) e alinha a pilha ao TOPO — os cards moram na faixa de cima
-## e a metade de baixo da tela alta fica livre pro mundo, o rastro de saída e o D-pad. Paisagem:
-## ocupa a tela inteira e centraliza na vertical (tela baixa e larga, sem espaço sobrando).
-func _position_band(vp: Vector2, portrait: bool) -> void:
+## Posiciona a bandeja dos cards: ancorada ABAIXO do cabeçalho (margem superior segura + as
+## duas linhas de fragmentos/bônus), pilha alinhada ao TOPO — nas DUAS orientações. Os cards
+## moram na faixa de cima e o resto da tela fica livre pro acampamento, o rastro de saída e o
+## D-pad (em paisagem, centralizar na vertical cobria o mapa).
+func _position_band(vp: Vector2) -> void:
 	if _band == null:
 		return
 	_band.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_band.offset_left = 0.0
 	_band.offset_right = 0.0
 	_band.offset_bottom = 0.0
-	if portrait:
-		var top: float = clampf(minf(vp.x, vp.y) * 0.05, 28.0, 64.0)
-		_band.offset_top = top + 64.0
-		_band.alignment = BoxContainer.ALIGNMENT_BEGIN
-	else:
-		_band.offset_top = 0.0
-		_band.alignment = BoxContainer.ALIGNMENT_CENTER
+	_band.offset_top = clampf(minf(vp.x, vp.y) * 0.05, 28.0, 64.0) + HEADER_BAND_OFFSET
+	_band.alignment = BoxContainer.ALIGNMENT_BEGIN
 
 ## Bandeja escura de borda dura atrás dos cards (sem cantos arredondados — guia de UI). Translúcida
 ## para deixar a fogueira e a vida ambiente respirarem por trás, mas firme o bastante pra leitura.

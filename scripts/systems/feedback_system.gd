@@ -5,21 +5,6 @@ const BLOOD_PARTICLES := preload("res://scenes/shared/blood_particles.tscn")
 const CRITICAL_PARTICLES := preload("res://scenes/shared/critical_particles.tscn")
 const DEATH_PARTICLES := preload("res://scenes/shared/death_particles.tscn")
 
-## Material aditivo compartilhado do projeto. Um único recurso: instâncias
-## idênticas de CanvasItemMaterial quebram o batching do Compatibility e
-## alocavam a cada golpe (PLANO-performance-60fps §4, G2/G9).
-const ADDITIVE_MATERIAL := preload("res://resources/materials/additive_glow.tres")
-
-## Pool de emissores pré-instanciados no _ready: o caminho do hit não pode
-## alocar nó nem material (o spike caía exatamente no frame do impacto, junto
-## de hit-stop + screenshake). 2 por tipo cobre bursts sobrepostos (crítico +
-## morte no mesmo golpe); esgotado, rouba o mais antigo — com lifetimes de
-## 0.4-1.2s o burst roubado já está praticamente concluído.
-const POOL_PER_KIND: int = 2
-## Acima dos atores (z 0, como os bursts avulsos desenhavam ao entrar por
-## último na cena), abaixo das bolhas de timing (z 10).
-const PARTICLES_Z: int = 5
-
 # ─── Signals ───────────────────────────────────────
 signal hit_stop_started(duration: float)
 signal hit_stop_ended
@@ -31,12 +16,6 @@ signal blood_spilled(at_position: Vector2, intensity: float)
 @export var shake_duration: float = 0.3
 
 var _hit_stop_active: bool = false
-var _pools: Dictionary = {}        # kind: String -> Array[CPUParticles2D]
-var _pool_cursor: Dictionary = {}  # kind: String -> int
-
-# ─── Lifecycle ─────────────────────────────────────
-func _ready() -> void:
-	_build_pools()
 
 # ─── Screenshake ───────────────────────────────────
 func trigger_screenshake(intensity: float = shake_intensity, duration: float = shake_duration) -> void:
@@ -87,109 +66,110 @@ func force_clear_hit_stop() -> void:
 	_hit_stop_active = false
 	hit_stop_ended.emit()
 
-# ─── Partículas ────────────────────────────────────
+# ─── Partículas (pool, Fase 10) ────────────────────
+# Cada efeito reusa CPUParticles2D via restart() em vez de instantiate() +
+# queue_free() por golpe: a alocação acontecia exatamente no frame do impacto —
+# o momento crítico do timing — e era o maior suspeito de stutter em Android
+# modesto. POOL_PER_KEY=2 em round-robin: um golpe duplo não mata em voo as
+# gotas do golpe anterior. Os nós pertencem à cena ativa e morrem com ela; o
+# pool detecta o cache inválido e recria. Em telefone, a densidade cai pela
+# metade (Constants.particle_amount_scale) — o gore fica nos decals, que são
+# baratos e permanentes.
+const POOL_PER_KEY := 2
+
+var _pool: Dictionary = {}       # StringName -> Array[CPUParticles2D]
+var _pool_idx: Dictionary = {}   # StringName -> int (round-robin)
+
 func spawn_blood_particles(at_position: Vector2) -> void:
 	blood_spilled.emit(at_position, 1.0)
-	_fire("blood", at_position)
+	# Dobro da densidade base: o golpe espirra muito mais sangue (tom gore).
+	_burst(&"blood", _scene_factory(BLOOD_PARTICLES, 2.0), at_position)
 
 func spawn_critical_particles(at_position: Vector2) -> void:
 	blood_spilled.emit(at_position, 1.6)
-	_fire("critical", at_position)
+	_burst(&"critical", _scene_factory(CRITICAL_PARTICLES, 2.0), at_position)
 	# Segundo burst: faíscas claras overbright (blend aditivo) por cima do sangue,
 	# para a leitura do acerto crítico "estourar" e ficar nítida.
-	_fire("spark", at_position)
+	_burst(&"spark", _make_spark, at_position)
 
 func spawn_death_particles(at_position: Vector2) -> void:
 	blood_spilled.emit(at_position, 2.6)
-	_fire("death", at_position)
+	_burst(&"death", _scene_factory(DEATH_PARTICLES, 1.0), at_position)
 
 func spawn_dodge_particles(at_position: Vector2) -> void:
-	_fire("dodge", at_position)
+	_burst(&"dodge", _make_dodge, at_position)
 
 ## Estouro radial na posição da bolha no acerto — nasce onde o olho do jogador está,
 ## reforçando a leitura do timing. Aditivo (glow) na cor do contexto.
 func spawn_bubble_burst(at_position: Vector2, tint: Color) -> void:
-	var burst := _next("bubble")
-	burst.position = at_position
-	burst.color = tint
-	burst.restart()
+	_burst(&"bubble", _make_bubble, at_position, tint)
 
 ## Estilhaço negativo do erro: partículas escuras dessaturadas, blend normal (sem
-## brilho — leitura "morta") que despencam e dispersam rápido.
+## brilho — leitura "morta") que despencam e dispersam rápido. Comunica a falha sem
+## premiar o jogador.
 func spawn_fail_particles(at_position: Vector2) -> void:
-	_fire("fail", at_position)
+	_burst(&"fail", _make_fail, at_position)
 
-## Mantido como alias de sangue para chamadas legadas (densidade base, sem o
-## dobro do golpe).
+## Mantido como alias de sangue para chamadas legadas.
 func spawn_impact_particles(at_position: Vector2) -> void:
-	_fire("impact", at_position)
+	_burst(&"impact", _scene_factory(BLOOD_PARTICLES, 1.0), at_position)
 
-# ─── Pool ──────────────────────────────────────────
-func _fire(kind: String, at_position: Vector2) -> void:
-	var emitter := _next(kind)
-	emitter.position = at_position
-	emitter.restart()
+## Dispara o efeito `key` em `at_position`, criando o nó na primeira vez (ou se o
+## cache morreu com a cena anterior). `tint.a > 0` recolore antes do restart.
+func _burst(key: StringName, factory: Callable, at_position: Vector2, tint: Color = Color.TRANSPARENT) -> void:
+	if not _pool.has(key):
+		var fresh: Array = []
+		fresh.resize(POOL_PER_KEY)
+		_pool[key] = fresh
+		_pool_idx[key] = -1
+	var nodes: Array = _pool[key]
+	var idx: int = (int(_pool_idx[key]) + 1) % POOL_PER_KEY
+	_pool_idx[key] = idx
+	var p: CPUParticles2D = nodes[idx]
+	if not is_instance_valid(p) or not p.is_inside_tree():
+		p = factory.call()
+		p.one_shot = true
+		p.explosiveness = 1.0
+		var vp := get_viewport().get_visible_rect().size
+		p.amount = maxi(1, int(float(p.amount) * Constants.particle_amount_scale(vp)))
+		if not _attach_to_scene(p):
+			nodes[idx] = null
+			return
+		nodes[idx] = p
+	p.position = at_position
+	if tint.a > 0.0:
+		p.color = tint
+	p.restart()
 
-func _next(kind: String) -> CPUParticles2D:
-	var pool: Array = _pools[kind]
-	var idx: int = _pool_cursor[kind]
-	_pool_cursor[kind] = (idx + 1) % pool.size()
-	return pool[idx]
+## Factory de efeito vindo de cena (.tscn), com escala de densidade própria.
+func _scene_factory(scene: PackedScene, amount_scale: float) -> Callable:
+	return func() -> CPUParticles2D:
+		var p: CPUParticles2D = scene.instantiate()
+		if amount_scale != 1.0:
+			p.amount = int(p.amount * amount_scale)
+		return p
 
-func _build_pools() -> void:
-	# Densidades preservadas do tom gore: golpe espirra o DOBRO do sangue base
-	# da cena; crítico idem.
-	_register("blood", func() -> CPUParticles2D: return _from_scene(BLOOD_PARTICLES, 2.0))
-	_register("impact", func() -> CPUParticles2D: return _from_scene(BLOOD_PARTICLES, 1.0))
-	_register("critical", func() -> CPUParticles2D: return _from_scene(CRITICAL_PARTICLES, 2.0))
-	_register("death", func() -> CPUParticles2D: return _from_scene(DEATH_PARTICLES, 1.0))
-	_register("spark", _build_spark)
-	_register("dodge", _build_dodge)
-	_register("bubble", _build_bubble_burst)
-	_register("fail", _build_fail)
+func _make_spark() -> CPUParticles2D:
+	var p := CPUParticles2D.new()
+	p.amount = 28
+	p.lifetime = 0.4
+	p.direction = Vector2(0, -1)
+	p.spread = 180.0
+	p.gravity = Vector2(0, 60)
+	p.initial_velocity_min = 220.0
+	p.initial_velocity_max = 480.0
+	p.scale_amount_min = 2.0
+	p.scale_amount_max = 5.0
+	p.color = Constants.COLOR_PARTICLE_SPARK
+	p.material = _glow_material()
+	return p
 
-func _register(kind: String, builder: Callable) -> void:
-	var pool: Array[CPUParticles2D] = []
-	for i in POOL_PER_KIND:
-		var emitter: CPUParticles2D = builder.call()
-		emitter.emitting = false
-		emitter.z_index = PARTICLES_Z
-		add_child(emitter)
-		pool.append(emitter)
-	_pools[kind] = pool
-	_pool_cursor[kind] = 0
-
-func _from_scene(scene: PackedScene, amount_scale: float) -> CPUParticles2D:
-	var particles: CPUParticles2D = scene.instantiate()
-	if amount_scale != 1.0:
-		particles.amount = int(particles.amount * amount_scale)
-	return particles
-
-func _build_spark() -> CPUParticles2D:
-	var spark := CPUParticles2D.new()
-	spark.amount = 28
-	spark.lifetime = 0.4
-	spark.one_shot = true
-	spark.explosiveness = 1.0
-	spark.direction = Vector2(0, -1)
-	spark.spread = 180.0
-	spark.gravity = Vector2(0, 60)
-	spark.initial_velocity_min = 220.0
-	spark.initial_velocity_max = 480.0
-	spark.scale_amount_min = 2.0
-	spark.scale_amount_max = 5.0
-	spark.color = Constants.COLOR_PARTICLE_SPARK
-	spark.material = ADDITIVE_MATERIAL
-	return spark
-
-func _build_dodge() -> CPUParticles2D:
+# Spread estreito + blend aditivo: vira um "flash" de alívio limpo, não uma
+# nuvem dispersa — leitura clara da esquiva perfeita.
+func _make_dodge() -> CPUParticles2D:
 	var p := CPUParticles2D.new()
 	p.amount = 50
 	p.lifetime = 0.6
-	p.one_shot = true
-	p.explosiveness = 1.0
-	# Spread estreito + blend aditivo: vira um "flash" de alívio limpo, não uma
-	# nuvem dispersa — leitura clara da esquiva perfeita.
 	p.spread = 45.0
 	p.gravity = Vector2(0, -120)
 	p.initial_velocity_min = 120.0
@@ -197,30 +177,26 @@ func _build_dodge() -> CPUParticles2D:
 	p.scale_amount_min = 2.5
 	p.scale_amount_max = 6.0
 	p.color = Constants.COLOR_PARTICLE_DODGE
-	p.material = ADDITIVE_MATERIAL
+	p.material = _glow_material()
 	return p
 
-func _build_bubble_burst() -> CPUParticles2D:
+func _make_bubble() -> CPUParticles2D:
 	var p := CPUParticles2D.new()
 	p.amount = 32
 	p.lifetime = 0.45
-	p.one_shot = true
-	p.explosiveness = 1.0
 	p.spread = 180.0
 	p.gravity = Vector2.ZERO
 	p.initial_velocity_min = 160.0
 	p.initial_velocity_max = 360.0
 	p.scale_amount_min = 1.5
 	p.scale_amount_max = 4.0
-	p.material = ADDITIVE_MATERIAL
+	p.material = _glow_material()
 	return p
 
-func _build_fail() -> CPUParticles2D:
+func _make_fail() -> CPUParticles2D:
 	var p := CPUParticles2D.new()
 	p.amount = 22
 	p.lifetime = 0.4
-	p.one_shot = true
-	p.explosiveness = 1.0
 	p.spread = 180.0
 	p.gravity = Vector2(0, 320)
 	p.initial_velocity_min = 90.0
@@ -229,3 +205,19 @@ func _build_fail() -> CPUParticles2D:
 	p.scale_amount_max = 3.5
 	p.color = Constants.COLOR_PARTICLE_FAIL
 	return p
+
+func _glow_material() -> CanvasItemMaterial:
+	# Recurso compartilhado, nunca CanvasItemMaterial.new(): instâncias idênticas
+	# quebram o batching do Compatibility (PLANO-performance-60fps G9).
+	return Constants.ADDITIVE_MATERIAL
+
+## Anexa um nó de partículas à cena ativa. Retorna false (e descarta o nó) se a árvore
+## ou a cena atual não existir — ex.: durante/depois de uma troca de cena. Evita erro de
+## add_child em cena inválida quando a coroutine nasce no meio da transição.
+func _attach_to_scene(node: Node) -> bool:
+	var tree := get_tree()
+	if tree == null or tree.current_scene == null:
+		node.queue_free()
+		return false
+	tree.current_scene.add_child(node)
+	return true

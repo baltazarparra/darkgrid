@@ -15,9 +15,14 @@ const FADE_OUT_DURATION: float = 0.6
 const LOGO_PATH: String = "res://assets/sprites/logo_title.png"
 const LOGO_BLINK_PATH: String = "res://assets/sprites/logo_title_blink.png"
 const LOGO_BASE_SIZE := Vector2(256.0, 96.0)
+# Retrato (primário): o logo domina a tela alta. Paisagem (tablet/desktop): logo e
+# botões ficam em no máximo 30% da largura, pra não engolir o horizonte da abertura.
+const LOGO_FIT_FRACTION_PORTRAIT := 0.85
+const MENU_MAX_WIDTH_FRACTION := 0.30
 
 # ─── State ─────────────────────────────────────────
 @onready var _start_button: Button = $Center/VBox/StartButton
+@onready var _quit_button: Button = $Center/VBox/QuitButton
 
 var _fade: ColorRect
 var _logo: TextureRect
@@ -30,10 +35,12 @@ func _ready() -> void:
 	_setup_fade()
 	_setup_logo()
 	_setup_version_label()
+	_relayout_buttons()
+	get_viewport().size_changed.connect(_relayout_buttons)
 	# Foco inicial ANTES de ligar o hover: abrir o menu não dá tick, navegar dá.
 	_start_button.grab_focus()
-	# BaseButton, não Button: GithubLink é LinkButton (irmão de Button) — o tipo
-	# errado virava Nil no loop tipado e o hover do link nunca conectava (KI-011).
+	# BaseButton, não Button: GithubLink é LinkButton (irmão de Button) — tipar Button
+	# faz o array tipado rejeitá-lo (vira null) e o hover do link morre em silêncio.
 	for button: BaseButton in [$Center/VBox/StartButton, $Center/VBox/QuitButton, $Center/VBox/GithubLink]:
 		button.focus_entered.connect(AudioDirector.play_ui_hover)
 		button.mouse_entered.connect(AudioDirector.play_ui_hover)
@@ -97,14 +104,32 @@ func _setup_logo() -> void:
 	get_viewport().size_changed.connect(_fit_logo)
 	_schedule_blink()
 
-## Escala INTEIRA do logo (texel uniforme, mesma regra do PixelScale): a maior
-## que couber em ~85% da largura do viewport.
+## Escala INTEIRA do logo (texel uniforme, mesma regra do PixelScale): a maior que
+## couber na fração da largura do viewport — ~85% em retrato, 30% em paisagem.
 func _fit_logo() -> void:
 	if _logo == null:
 		return
 	var vp := get_viewport().get_visible_rect().size
-	var scale_i: float = maxf(1.0, floorf(vp.x * 0.85 / LOGO_BASE_SIZE.x))
+	var fit: float = LOGO_FIT_FRACTION_PORTRAIT if Constants.is_portrait(vp) \
+		else MENU_MAX_WIDTH_FRACTION
+	var scale_i: float = maxf(1.0, floorf(vp.x * fit / LOGO_BASE_SIZE.x))
 	_logo.custom_minimum_size = LOGO_BASE_SIZE * scale_i
+
+## Em paisagem Iniciar/Sair não esticam até a largura do logo: ficam em no máximo 30%
+## da largura do viewport, centralizados (e o link do github acompanha o centro). Em
+## retrato preenchem o VBox (comportamento original, intocado).
+func _relayout_buttons() -> void:
+	var vp := get_viewport().get_visible_rect().size
+	var portrait := Constants.is_portrait(vp)
+	for button: Button in [_start_button, _quit_button]:
+		if portrait:
+			button.size_flags_horizontal = Control.SIZE_FILL
+			button.custom_minimum_size.x = 0.0
+		else:
+			button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			button.custom_minimum_size.x = vp.x * MENU_MAX_WIDTH_FRACTION
+	var link: LinkButton = $Center/VBox/GithubLink
+	link.size_flags_horizontal = Control.SIZE_FILL if portrait else Control.SIZE_SHRINK_CENTER
 
 ## Os olhos no "O" piscam em intervalos irregulares — a mata olha de volta.
 func _schedule_blink() -> void:

@@ -54,7 +54,10 @@ funciona); `HealthBar`/`TimingBubble` redesenham pouco e só quando ativos;
 
 > Sem isso, as fases 1–3 são fé, não engenharia.
 
-### 0.1 Overlay de frame-time (debug)
+### 0.1 Overlay de frame-time (debug) ✅ (convergiu com o `PerfHud` da Fase 10)
+> A main implementou o `PerfHud` (autoload, `?perf` na URL / `CAIPORA_PERF`)
+> em paralelo; no merge ele absorveu a janela de p95 e os monitores de render
+> deste plano. Um overlay só, melhor dos dois.
 - Overlay opcional (query param `?perf=1` ou tecla em debug build) mostrando
   FPS, frame-time médio/p95 e `Performance.get_monitor` (draw calls, objects).
 - CanvasLayer próprio, custo zero quando desligado. Sem MCP em cenas (gotcha 7):
@@ -92,7 +95,11 @@ com números.
   frame-time do menu e da arena cai mensuravelmente no throttle 6x.
 - **Risco:** baixo. Rollback = reverter constantes.
 
-### 1.2 Pooling no FeedbackSystem (G2 + parte de G9) — sessão 2
+### 1.2 Pooling no FeedbackSystem (G2 + parte de G9) — sessão 2 ✅ (convergiu com a Fase 10)
+> A main implementou o mesmo pool (lazy, preso à cena ativa, com densidade
+> por device via `Constants.particle_amount_scale`) em paralelo. No merge a
+> versão da main venceu (operacionalmente melhor) e absorveu o material
+> aditivo compartilhado deste plano (`_glow_material()` → recurso único).
 - Pré-instanciar no `_ready` da arena um nó por tipo de burst (sangue,
   crítico, morte, faísca, dodge, bubble burst, fail) e reusar com
   `restart()` + reposicionamento. `one_shot` já é o modo de todos.

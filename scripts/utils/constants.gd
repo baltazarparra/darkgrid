@@ -7,13 +7,22 @@ const GRID_WIDTH := 26
 const GRID_HEIGHT := 18
 
 # ─── Viewport / Orientação ─────────────────────────
-# Fonte ÚNICA da lógica de orientação: guard, D-pad e câmera consultam isto em vez de
+# Fonte ÚNICA da lógica de orientação: D-pad, hub e câmera consultam isto em vez de
 # comparar vp.x/vp.y soltos. Telefone = lado curto abaixo deste limite (tablet/desktop isento).
 const PHONE_SHORT_SIDE_MAX := 640.0
 
 ## True quando o viewport está em retrato (mais alto que largo).
 static func is_portrait(vp: Vector2) -> bool:
 	return vp.y > vp.x
+
+# Densidade de partículas por classe de device (Fase 10): telefone corta pela
+# metade — orçamento de 60fps em Android modesto. O gore não recua: os decals
+# de sangue (baratos e permanentes) seguem em densidade cheia.
+const PHONE_PARTICLE_SCALE := 0.5
+
+## Fator aplicado ao `amount` dos CPUParticles2D do FeedbackSystem.
+static func particle_amount_scale(vp: Vector2) -> float:
+	return PHONE_PARTICLE_SCALE if minf(vp.x, vp.y) < PHONE_SHORT_SIDE_MAX else 1.0
 
 # ─── Color grading (gradient map) ──────────────────
 # Lê SCREEN_TEXTURE (custo real em gl_compatibility) — por isso a chave dupla:
