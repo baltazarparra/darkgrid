@@ -4,12 +4,18 @@ extends GutTest
 # gen_inimigos.py. Lei: docs/PLANO-redesign-cacador-bruxo.md §2 (travas de
 # marca: nada de olhos brancos, laranja da juba ou verde do cristal em inimigo).
 
-const SPRITE_PATHS: Array[String] = [
-	"res://assets/sprites/enemy_idle.png",
-	"res://assets/sprites/enemy_windup.png",
-	"res://assets/sprites/bruxo_idle.png",
-	"res://assets/sprites/bruxo_windup.png",
-]
+# Arena 112x112 (invasores adultos > Caipora 96/corpo ~75px); mapa 56x56
+# (re-render dos mesmos vetores — a Caipora anda o mapa a ~51px visuais).
+const SPRITE_SIZES: Dictionary = {
+	"res://assets/sprites/enemy_idle.png": Vector2(112, 112),
+	"res://assets/sprites/enemy_windup.png": Vector2(112, 112),
+	"res://assets/sprites/bruxo_idle.png": Vector2(112, 112),
+	"res://assets/sprites/bruxo_windup.png": Vector2(112, 112),
+	"res://assets/sprites/enemy_map.png": Vector2(56, 56),
+	"res://assets/sprites/bruxo_map.png": Vector2(56, 56),
+}
+# Fração mínima do canvas com pixels opacos (medido: idle ~0.28, mapa ~0.28).
+const MIN_OPAQUE_FRACTION := 0.15
 
 const CACADOR_IDLE := "res://assets/sprites/enemy_idle.png"
 const CACADOR_WINDUP := "res://assets/sprites/enemy_windup.png"
@@ -33,21 +39,25 @@ const COLOR_CAIPORA_MANE := Color8(255, 69, 0)
 const COLOR_CAIPORA_MANE_DK := Color8(139, 42, 0)
 const COLOR_CAIPORA_CRYSTAL := Color8(0, 250, 154)
 
-func test_inimigos_sprite_contract_assets_are_48x48() -> void:
-	for path: String in SPRITE_PATHS:
+func test_inimigos_sprite_contract_sizes() -> void:
+	for path: String in SPRITE_SIZES:
 		var texture := load(path) as Texture2D
 		assert_not_null(texture, "%s carrega" % path)
 		if texture == null:
 			continue
-		assert_eq(texture.get_size(), Vector2(48, 48), "%s mantem contrato 48x48" % path)
+		assert_eq(texture.get_size(), SPRITE_SIZES[path],
+			"%s mantem contrato %s" % [path, SPRITE_SIZES[path]])
 
 func test_inimigos_sprite_contract_assets_are_not_blank() -> void:
-	for path: String in SPRITE_PATHS:
+	for path: String in SPRITE_SIZES:
 		var image := Image.load_from_file(ProjectSettings.globalize_path(path))
 		assert_false(image.is_empty(), "%s carrega como Image" % path)
 		if image.is_empty():
 			continue
-		assert_gt(_count_opaque_pixels(image), 400, "%s tem massa visual suficiente" % path)
+		var expected: Vector2 = SPRITE_SIZES[path]
+		var min_opaque := int(expected.x * expected.y * MIN_OPAQUE_FRACTION)
+		assert_gt(_count_opaque_pixels(image), min_opaque,
+			"%s tem massa visual suficiente" % path)
 
 func test_cacador_idle_keeps_signature_colors() -> void:
 	var image := Image.load_from_file(ProjectSettings.globalize_path(CACADOR_IDLE))
@@ -78,6 +88,22 @@ func test_bruxo_windup_lights_the_fetish() -> void:
 		return
 	assert_true(_has_color(image, COLOR_EMBER_HOT), "windup acende o fetiche (telegraph)")
 
+func test_invasores_arena_sao_maiores_que_caipora() -> void:
+	# Lei de escala: invasores adultos se agigantam sobre a Caipora-criança.
+	# Mesma escala de nó (1.2) na arena — a hierarquia vem do corpo desenhado.
+	var caipora := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/player_idle.png"))
+	assert_false(caipora.is_empty(), "player_idle carrega como Image")
+	if caipora.is_empty():
+		return
+	var caipora_h := _opaque_height(caipora)
+	for path: String in ["res://assets/sprites/enemy_idle.png", "res://assets/sprites/bruxo_idle.png"]:
+		var invasor := Image.load_from_file(ProjectSettings.globalize_path(path))
+		if invasor.is_empty():
+			fail_test("%s carrega como Image" % path)
+			continue
+		assert_gt(_opaque_height(invasor), int(caipora_h * 1.2),
+			"%s lê pelo menos 1.2x mais alto que a Caipora (corpo %dpx)" % [path, caipora_h])
+
 func test_windup_silhouettes_differ_from_idle() -> void:
 	for pair: Array in [[CACADOR_IDLE, CACADOR_WINDUP], [BRUXO_IDLE, BRUXO_WINDUP]]:
 		var idle := Image.load_from_file(ProjectSettings.globalize_path(pair[0]))
@@ -89,7 +115,7 @@ func test_windup_silhouettes_differ_from_idle() -> void:
 			"%s telegrafa: silhueta do windup difere do idle" % pair[1])
 
 func test_inimigos_never_steal_caipora_brand() -> void:
-	for path: String in SPRITE_PATHS:
+	for path: String in SPRITE_SIZES:
 		var image := Image.load_from_file(ProjectSettings.globalize_path(path))
 		assert_false(image.is_empty(), "%s carrega como Image" % path)
 		if image.is_empty():
@@ -102,6 +128,17 @@ func test_inimigos_never_steal_caipora_brand() -> void:
 			"%s sem o laranja escuro da juba" % path)
 		assert_false(_has_color(image, COLOR_CAIPORA_CRYSTAL),
 			"%s sem o verde do cristal/Fúria" % path)
+
+func _opaque_height(image: Image) -> int:
+	var top := image.get_height()
+	var bottom := -1
+	for y: int in range(image.get_height()):
+		for x: int in range(image.get_width()):
+			if image.get_pixel(x, y).a > 0.1:
+				top = mini(top, y)
+				bottom = maxi(bottom, y)
+				break
+	return maxi(bottom - top + 1, 0)
 
 func _count_opaque_pixels(image: Image) -> int:
 	var count := 0

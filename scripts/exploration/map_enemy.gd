@@ -2,8 +2,8 @@ class_name MapEnemy
 extends Node2D
 
 # ─── Constants ─────────────────────────────────────
-const ENEMY_TEXTURE    = preload("res://assets/sprites/enemy_idle.png")
-const BRUXO_TEXTURE    = preload("res://assets/sprites/bruxo_idle.png")
+const ENEMY_TEXTURE    = preload("res://assets/sprites/enemy_map.png")
+const BRUXO_TEXTURE    = preload("res://assets/sprites/bruxo_map.png")
 const BOSS_TEXTURE     = preload("res://assets/sprites/boss_idle.png")
 const MULA_TEXTURE     = preload("res://assets/sprites/mula_idle.png")
 const BOITATA_TEXTURE  = preload("res://assets/sprites/boitata_idle.png")
@@ -64,7 +64,10 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 			"saci":     sprite.texture = SACI_TEXTURE
 			"bruxo":    sprite.texture = BRUXO_TEXTURE
 			_:          sprite.texture = ENEMY_TEXTURE
-	sprite.offset = Vector2(0, -8)  # 48px transborda pra cima, pés na base do tile
+	# Invasores comuns usam a variante de mapa 56px (maiores que a Caipora, que
+	# anda o mapa a ~51px); bosses/minibosses seguem 48px até seus redesigns.
+	# Sempre transborda pra cima: pés na base do tile.
+	sprite.offset = Vector2(0, -13) if (not boss and not miniboss) else Vector2(0, -8)
 	add_child(sprite)
 
 	if boss:

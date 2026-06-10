@@ -7,7 +7,7 @@ que tornam cada personagem identificável:
   Caipora  — PROTAGONISTA: gerada por gen_caipora.py (pipeline premium próprio,
              ver docs/CONCEITO-protagonista.md). Este módulo apenas delega.
   Caçador & Bruxo — INIMIGOS COMUNS: gerados por gen_inimigos.py (pipeline
-             premium 48px, ver docs/PLANO-redesign-cacador-bruxo.md). Delega.
+             premium 112px arena + 56px mapa, ver docs/CONCEITO-inimigos.md). Delega.
   Caçador c/ machados — 48x48: capuz, manto, dois machados, olhos brilhando (boss base)
   Mula sem Cabeça     — 48x48: sem cabeça, jato de fogo no toco do pescoço,
                         ferraduras de ferro, arreio amaldiçoado (boss da Fase 1)

@@ -22,6 +22,9 @@ const STAGE_FILL: float = 0.92
 # morto embaixo. Levanta a ação para o meio do espaço ACIMA do D-pad. 1.0 = centra cheio
 # nesse espaço; 0.5 = meio-termo (nudge suave). Sem D-pad (desktop) o efeito é nulo.
 const ACTION_LIFT_FRACTION: float = 0.5
+# Folga entre o topo do sprite do inimigo e o centro da bolha de timing
+# (equivale ao -78 fixo da era 48px: 46px acima do canvas do inimigo).
+const BUBBLE_HEAD_GAP: float = 46.0
 
 # Folga extra (px de tela) somada ao raio da bolha ao testar contra o D-pad.
 const DPAD_BUBBLE_PADDING: float = 12.0
@@ -230,7 +233,7 @@ func _start_caipora_turn() -> void:
 	_sfx.play(_sfx.attack_sound)
 	# Cipó armado enquanto a janela está aberta — antecipação do bote.
 	_animator.play_pose(_caipora, &"windup")
-	_first_bubble_pos = _enemy.position + Vector2(0, -78)
+	_first_bubble_pos = _enemy.position + Vector2(0, _enemy_head_top_y() - BUBBLE_HEAD_GAP)
 	var atk_window: float = _phase_window(Constants.TIMING_WINDOW_ATTACK)
 	_timing_bubble.show_bubble(
 		_first_bubble_pos,
@@ -257,6 +260,18 @@ func _start_caipora_turn() -> void:
 			false, 0.0, 0.0, "ui_up"
 		)
 		_timing_system.timing_result.connect(_on_attack_timing_result)
+
+## Topo do canvas do sprite do inimigo em y local (negativo). A bolha ancora
+## acima da cabeça qualquer que seja o tamanho do inimigo (invasor 112px,
+## boss legado 48px) — nada de offset absoluto que quebra ao trocar a arte.
+func _enemy_head_top_y() -> float:
+	var spr := _enemy.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if spr == null or spr.sprite_frames == null:
+		return -32.0
+	var tex := spr.sprite_frames.get_frame_texture(spr.animation, 0)
+	if tex == null:
+		return -32.0
+	return (spr.offset.y - tex.get_height() * 0.5) * spr.scale.y
 
 func _spawn_second_bubble() -> void:
 	if not _both_alive() or not _timing_system.is_open():
