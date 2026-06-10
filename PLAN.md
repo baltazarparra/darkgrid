@@ -717,6 +717,123 @@ sprite 96×96 — o cajado se move por pose, então um overlay estático nunca a
   Curto e em outro tom do telegraph do Curupira (modulate sustentado no sprite
   do inimigo) — sem colisão de linguagem. Testes: `test_timing_bubble.gd`.
 
+### Fase 10: PWA livre + 60fps + música do hub + loader "peleja" 🚧
+
+Update de plataforma e polish. Quatro frentes independentes; **uma sessão por
+frente** (Session Protocol), na ordem abaixo. Cada sessão fecha com `make gate`
++ skill de validação pertinente + commit.
+
+#### 10.1 Orientação livre na PWA (sem trava de paisagem)
+
+Estado atual: o jogo é retrato-primário internamente (viewport 750×1334,
+`handheld/orientation=1`), mas o manifest PWA exportado trava
+`"orientation":"landscape"` — porque no exporter web do Godot o enum de
+`progressive_web_app/orientation` é **0=Any, 1=Landscape, 2=Portrait** (a doc
+em `validate-platforms/SKILL.md` afirma `1=retrato`, o que está errado e
+causou a trava acidental). O `PortraitGuard` (layer 128) ainda bloqueia
+telefones em paisagem com "gire o dispositivo".
+
+- [ ] `export_presets.cfg`: `progressive_web_app/orientation=0` (Any). Conferir
+  `export/index.manifest.json` gerado: `"orientation":"any"`.
+- [ ] `project.godot`: `window/handheld/orientation=6` (SENSOR — segue o giro
+  do aparelho em qualquer build nativa; na web quem manda é o manifest).
+- [ ] Remover o autoload `PortraitGuard` (project.godot + script + testes que o
+  referenciam). Com orientação livre não existe orientação "errada" — o layout
+  já é responsivo (D-pad escala 1.5×/1.3× por orientação em `controls_hud.gd`,
+  câmera contain-fit recalcula em `size_changed` no `arena_manager.gd`,
+  `ACTION_LIFT_FRACTION` levanta a ação acima do D-pad).
+- [ ] Auditar telefone em PAISAGEM (844×390), que era bloqueado e nunca foi
+  exercitado de verdade: arena, exploração, hub (cards de aprimoramento),
+  diálogos, menus, safe areas (notch lateral via CSS `env()`).
+- [ ] Tratar o giro **durante** o jogo: tudo que se posiciona por viewport deve
+  reagir a `size_changed` (já é o padrão; conferir hub e telas de UI estáticas).
+- [ ] Atualizar docs: gotcha #10 do `AGENTS.md`, `validate-platforms/SKILL.md`
+  (corrigir o enum errado e o checklist de manifest), PRD se citado.
+- [ ] `/validate-platforms` + `make gate` + `make export`.
+
+#### 10.2 Loader "peleja" antes do combate
+
+O início de combate hoje é seco: `_trigger_combat` → `change_screen(arena)` →
+fade de 0.22s → `ArenaManager._ready()` chama `_start_caipora_turn()` no mesmo
+frame. Não há feedback de "a luta vai começar" nem máscara de carregamento.
+
+Design: TODA transição para tela `ARENA_*` ganha um modo combat-intro no
+`SceneTransition` (autoload layer 100, único ponto por onde toda troca já
+passa e que sobrevive ao swap — não criar overlay paralelo):
+
+- [ ] Fade-out preto (igual hoje) → texto **"PELEJA"** grande (`FONT_TITLE`,
+  fonte pixel do theme, cor sangue/âmbar) com animação de carga (reveal
+  letra-a-letra como o `BossIntroScreen` + pulso) enquanto a cena troca por
+  baixo → hold → fade-out do texto → fade-in da arena.
+- [ ] `PELEJA_MIN_HOLD := 2.0` — o texto fica **no mínimo 2s** em tela,
+  contando do fim do reveal; constante no topo, sem número mágico.
+- [ ] Gate de início: novo sinal `SignalBus.combat_intro_finished`. O
+  `ArenaManager._ready()` spawna atores mas só dispara `_start_caipora_turn()`
+  quando o sinal chega; se nenhuma intro estiver ativa (run direto do editor,
+  testes headless), começa imediato (query `SceneTransition.is_combat_intro_active()`).
+- [ ] Engolir input durante o loader (o fade já usa `MOUSE_FILTER_STOP`;
+  garantir que Space não buffere um input de timing pré-combate).
+- [ ] Boss: a sequência vira BossIntro → diálogo → peleja → arena. O peleja é
+  o feedback de carga (acontece NA troca de cena, que o BossIntro não cobre);
+  manter ambos — linguagens diferentes (apresentação vs. carregamento).
+- [ ] Stinger curto na entrada do texto (reusar pipeline de stingers do
+  `AudioDirector`). GORE/TERROR: a palavra chega como golpe, não como splash
+  de loading bonitinho.
+- [ ] Testes GUT: ordem fade→texto→hold≥2s→sinal; `ArenaManager` não inicia
+  turno antes de `combat_intro_finished`; fallback sem intro ativa.
+- [ ] `/validate-controls` (toca arena/timing) + `make gate`.
+
+#### 10.3 Música do hub (tela de aprimoramento) — matar a sirene de vez
+
+Diagnóstico (gen_sfx.py:1056-1060): o comping de acordes usa **4 vozes de
+triângulo sustentadas ~0.9s** e cada nota passa por `_jit(0.004)` (detune
+aleatório de até ±0.4%). Quatro vozes sustentadas e detunadas batem entre si
+em poucos Hz → **batimento lento de amplitude = uí-uí de sirene**, amplificado
+pelo bitcrush de 7 bits e pelo loop curto de 2 compassos (~9s) que martela o
+artefato. O lead pulse (duty 0.25) nos graus 7–12 com sustain de ~0.36s
+contribui com o "bip" agudo.
+
+- [ ] Reescrever `mus_hub()`: trocar o pad sustentado por comping rítmico
+  curto (stabs com release ≤0.15s) **ou** arpejo (notas em sequência, nunca
+  sustentadas juntas) — elimina o batimento entre vozes na raiz.
+- [ ] Onde restar tom sustentado, zerar o detune (`_jit`) dessas vozes.
+- [ ] Lead uma oitava abaixo (graus 0–7), envelope pluck mantido, mais esparso.
+- [ ] Loop de 4 compassos com variação entre eles (hoje 2 compassos repetidos
+  hipnotizam qualquer defeito).
+- [ ] Regenerar e commitar `assets/audio/music/mus_hub.wav` (+ `.import`).
+- [ ] Verificação objetiva (CI não escuta): script de análise checa o envelope
+  do trecho de acordes por modulação de amplitude < 8 Hz (batimento) e por
+  tom sustentado > 1s acima de limiar. Validação subjetiva no device fica
+  com o Baltz.
+- [ ] Tom: continua samba lofi morno — o acampamento é o respiro ("o
+  acampamento respira..."). Não virar horror; o horror mora lá fora.
+
+#### 10.4 Performance: 60fps em Android modesto
+
+Base já é enxuta (gl_compatibility, CPUParticles2D, pixel art, sem threads na
+web). Os suspeitos de stutter são **picos de alocação** e overdraw, não custo
+médio. Medir antes de mexer.
+
+- [ ] Overlay de debug de frame-time/FPS atrás de flag (query string `?perf` ou
+  setting), via `Performance.get_monitor` — testar num Android classe Moto G
+  em Chrome, cenário pior: arena com crítico (hoje ~150 partículas + shake +
+  hit-stop num frame).
+- [ ] **Pool de partículas no `FeedbackSystem`**: pré-instanciar os
+  CPUParticles2D one-shot (sangue/spark/dodge/burst) e reusar via `restart()`
+  em vez de `instantiate()`+`queue_free()` a cada golpe — elimina o pico de
+  alocação exatamente no momento crítico do timing.
+- [ ] Fator de qualidade em telefone: escalar `amount` das partículas (~0.5 em
+  web com viewport pequena). O gore não recua — decals de sangue ficam, são
+  baratos e permanentes.
+- [ ] `BloodDecals`: garantir desenho acumulado barato (canvas/multimesh ou cap
+  de nós) — sangue infinito sim, nós infinitos não.
+- [ ] Auditar `_process` quentes (`ambient_life`, `atmosphere`, HUD) por
+  alocações por frame (arrays/strings novos, `Tween` por frame).
+- [ ] `application/run/max_fps=60`: telas de 120Hz queimam bateria e induzem
+  throttle térmico — o vilão real de "60fps em device modesto".
+- [ ] Registrar a medição (antes/depois, device, cenário) nesta seção.
+- [ ] `make gate` + `make export` + teste de carga da página (gotcha #5).
+
 ---
 
 ## 11.1 Known Issues
