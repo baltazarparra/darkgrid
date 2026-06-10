@@ -143,3 +143,9 @@ resolução maior — desde que derive das 5 assinaturas.
 orbitando, estalo do chicote maior. Selecionada e aplicada em runtime por
 `CaiporaSkin` (exploração, arena — inclusive na conquista em pleno combate —
 e TitleWalker).
+> Status atual: o conceito ativo de producao e **Caipora Brasa**, definido em
+> `docs/PLANO-redesign-caipora-pop-dark.md` e implementado no gerador canonico
+> `scripts/tools/gen_caipora.py`. A direcao antiga "Predadora-Rainha da Mata"
+> permanece neste documento como base historica e lore visual, mas toda
+> proporcao/execucao de sprite conflitante deve seguir a versao pop dark:
+> cabeca maior, corpo compacto, rosto iconico, fogo como silhueta principal.
