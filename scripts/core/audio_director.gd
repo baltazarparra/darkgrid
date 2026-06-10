@@ -337,13 +337,19 @@ func _play_music(path: String) -> void:
 		return
 	_current_music = path
 	var outgoing := _music_active
-	if path == "" or not ResourceLoader.exists(path):
+	var stream_path := _music_stream_path(path)
+	if stream_path == "":
 		if outgoing != null and outgoing.playing:
 			_fade_player(outgoing, -40.0, true, MUSIC_FADE)
 		_music_active = null
 		return
 	var incoming: AudioStreamPlayer = _music_b if _music_active == _music_a else _music_a
-	var s: AudioStream = load(path)
+	var s := _load_music_stream(stream_path)
+	if s == null:
+		if outgoing != null and outgoing.playing:
+			_fade_player(outgoing, -40.0, true, MUSIC_FADE)
+		_music_active = null
+		return
 	_force_loop(s)
 	incoming.stop()
 	incoming.stream = s
@@ -353,6 +359,23 @@ func _play_music(path: String) -> void:
 	if outgoing != null and outgoing.playing:
 		_fade_player(outgoing, -40.0, true, MUSIC_FADE)
 	_music_active = incoming
+
+func _music_stream_path(path: String) -> String:
+	if path == "":
+		return ""
+	if ResourceLoader.exists(path) or FileAccess.file_exists(path):
+		return path
+	var base_stem_path := "%s_base.%s" % [path.get_basename(), path.get_extension()]
+	if ResourceLoader.exists(base_stem_path) or FileAccess.file_exists(base_stem_path):
+		return base_stem_path
+	return ""
+
+func _load_music_stream(path: String) -> AudioStream:
+	if ResourceLoader.exists(path):
+		return load(path) as AudioStream
+	if path.get_extension().to_lower() == "wav" and FileAccess.file_exists(path):
+		return AudioStreamWAV.load_from_file(path)
+	return null
 
 # ─── Stingers ──────────────────────────────────────
 func _play_stinger(name: String) -> void:
