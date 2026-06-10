@@ -733,23 +733,25 @@ em `validate-platforms/SKILL.md` afirma `1=retrato`, o que está errado e
 causou a trava acidental). O `PortraitGuard` (layer 128) ainda bloqueia
 telefones em paisagem com "gire o dispositivo".
 
-- [ ] `export_presets.cfg`: `progressive_web_app/orientation=0` (Any). Conferir
+- [x] `export_presets.cfg`: `progressive_web_app/orientation=0` (Any). Conferir
   `export/index.manifest.json` gerado: `"orientation":"any"`.
-- [ ] `project.godot`: `window/handheld/orientation=6` (SENSOR — segue o giro
+- [x] `project.godot`: `window/handheld/orientation=6` (SENSOR — segue o giro
   do aparelho em qualquer build nativa; na web quem manda é o manifest).
-- [ ] Remover o autoload `PortraitGuard` (project.godot + script + testes que o
+- [x] Remover o autoload `PortraitGuard` (project.godot + script + testes que o
   referenciam). Com orientação livre não existe orientação "errada" — o layout
   já é responsivo (D-pad escala 1.5×/1.3× por orientação em `controls_hud.gd`,
   câmera contain-fit recalcula em `size_changed` no `arena_manager.gd`,
   `ACTION_LIFT_FRACTION` levanta a ação acima do D-pad).
-- [ ] Auditar telefone em PAISAGEM (844×390), que era bloqueado e nunca foi
-  exercitado de verdade: arena, exploração, hub (cards de aprimoramento),
-  diálogos, menus, safe areas (notch lateral via CSS `env()`).
-- [ ] Tratar o giro **durante** o jogo: tudo que se posiciona por viewport deve
-  reagir a `size_changed` (já é o padrão; conferir hub e telas de UI estáticas).
-- [ ] Atualizar docs: gotcha #10 do `AGENTS.md`, `validate-platforms/SKILL.md`
+- [ ] Auditar telefone em PAISAGEM (844×390) **num device real**, que era
+  bloqueado e nunca foi exercitado de verdade: arena, exploração, hub (cards
+  de aprimoramento), diálogos, menus, safe areas (notch lateral via CSS `env()`).
+- [x] Tratar o giro **durante** o jogo: tudo que se posiciona por viewport deve
+  reagir a `size_changed` (já é o padrão; conferido nos consumidores de
+  `is_portrait`: D-pad, hub e câmera da arena).
+- [x] Atualizar docs: gotcha #10 do `AGENTS.md`, `validate-platforms/SKILL.md`
   (corrigir o enum errado e o checklist de manifest), PRD se citado.
-- [ ] `/validate-platforms` + `make gate` + `make export`.
+- [x] `/validate-platforms` + `make gate` + `make export` (export único no fim
+  da Fase 10, para não rebuildar binário a cada frente).
 
 #### 10.2 Loader "peleja" antes do combate
 

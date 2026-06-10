@@ -7,7 +7,7 @@ const GRID_WIDTH := 26
 const GRID_HEIGHT := 18
 
 # ─── Viewport / Orientação ─────────────────────────
-# Fonte ÚNICA da lógica de orientação: guard, D-pad e câmera consultam isto em vez de
+# Fonte ÚNICA da lógica de orientação: D-pad, hub e câmera consultam isto em vez de
 # comparar vp.x/vp.y soltos. Telefone = lado curto abaixo deste limite (tablet/desktop isento).
 const PHONE_SHORT_SIDE_MAX := 640.0
 

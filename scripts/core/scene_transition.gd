@@ -1,6 +1,6 @@
 extends CanvasLayer
 # Autoload registrado como SceneTransition em project.godot.
-# Sem class_name: conflita com o nome do autoload em Godot 4 (ver PortraitGuard).
+# Sem class_name: conflita com o nome do autoload em Godot 4.
 #
 # Mascara TODA troca de cena com um fade preto curto, escondendo o hard-cut do
 # change_scene_to_file. Em avanços de fase — entrada numa exploração NOVA (run start
@@ -10,7 +10,7 @@ extends CanvasLayer
 # GameState.change_screen → SignalBus.screen_changed → GameState resolve o caminho
 # e delega aqui. O autoload sobrevive ao swap, então o overlay cobre a troca.
 
-# Layer entre o HUD (baixo) e o PortraitGuard (128, que deve ficar por cima).
+# Acima do HUD e de qualquer overlay de jogo: a transição cobre tudo.
 const LAYER := 100
 const FADE_OUT := 0.22       # cobre a cena atual
 const FADE_IN := 0.28        # revela a nova cena
