@@ -43,6 +43,17 @@ CACADOR_PALETTE = [
     SKIN, STEEL_DK, STEEL, EYE_RED, BLOOD, BONE,
 ]
 
+# ── Bruxo (feiticeiro do breu) ────────────────────
+ROBE_DK = (28, 15, 40)          # #1c0f28 breu-roxo podre (sombra)
+ROBE = (58, 31, 82)             # #3a1f52 manto
+BONE_DK = (156, 140, 112)       # #9c8c70 osso em sombra / mão de galho
+EMBER = (200, 60, 20)           # #c83c14 brasa mortiça (olhos em fenda)
+EMBER_HOT = (232, 116, 44)      # #e8742c ponto vivo da brasa ritual
+
+BRUXO_PALETTE = [
+    OUTLINE, ROBE_DK, ROBE, BONE_DK, BONE, EMBER, EMBER_HOT, BLOOD,
+]
+
 
 class Painter:
     def __init__(self) -> None:
@@ -226,6 +237,105 @@ def cacador(pose: str = "idle") -> Image.Image:
 
 
 # ════════════════════════════════════════════════════
+# Bruxo — leitura a 32px: o capuz torto e o cajado de osso
+# ════════════════════════════════════════════════════
+
+def _bruxo_robe(p: Painter, windup: bool) -> None:
+    spread = 2.5 if windup else 0.0
+    hem = [
+        (31.5 + spread, 38.0), (29.5, 41.5), (27.0 + spread * 0.4, 45.5),
+        (25.0, 41.0), (22.0, 45.5), (19.0, 41.5), (16.0 - spread * 0.4, 45.5),
+        (13.5, 40.5), (12.0 - spread, 37.5),
+    ]
+    body = [(16.5, 20.0), (22.0, 18.5), (28.5, 20.5), (31.0, 28.0), (32.0 + spread, 34.0)] + hem + [(13.0 - spread, 30.0), (15.0, 24.0)]
+    p.poly(body, ROBE)
+    # sombra interna: o manto come a luz do lado direito e no vão central
+    p.poly([(27.5, 21.5), (31.0, 28.0), (32.0 + spread, 34.0), (31.5 + spread, 38.0), (29.5, 41.5), (27.5, 36.0), (26.5, 23.0)], ROBE_DK)
+    p.poly([(21.0, 30.0), (24.0, 30.5), (24.5, 43.0), (21.5, 41.0)], ROBE_DK)
+    # marca ritual de sangue no peito — talhos diagonais (NUNCA uma cruz;
+    # cruz é do invasor catequizador, não do bruxo do mato)
+    p.limb((18.0, 25.5), (21.5, 30.5), 1.1, 0.9, BLOOD)
+    p.limb((21.0, 25.0), (18.0, 29.0), 0.9, 0.8, BLOOD)
+    p.ellipse(20.0, 32.2, 0.7, 0.6, BLOOD)
+
+
+def _bruxo_hood(p: Painter, windup: bool) -> None:
+    # capuz fechado em volta do vazio, pico QUEBRADO tombando pra esquerda
+    p.poly([(15.5, 19.5), (16.5, 11.0), (21.0, 7.0), (26.5, 7.5), (30.0, 12.5), (30.5, 19.5), (27.0, 22.0), (18.5, 22.0)], ROBE)
+    p.poly([(27.5, 10.5), (30.0, 12.5), (30.5, 19.5), (27.0, 22.0), (26.0, 13.0)], ROBE_DK)
+    # pico torto: sobe e DOBRA no meio, tombando morto pra esquerda
+    p.poly([(19.0, 10.0), (22.5, 3.5), (26.0, 9.0)], ROBE)
+    p.poly([(23.5, 5.5), (22.0, 2.5), (16.5, 1.5), (13.0, 3.5), (18.5, 5.5)], ROBE)
+    p.ellipse(13.5, 3.2, 1.5, 1.2, ROBE_DK)   # ponta morta caída
+    # vazio do rosto
+    p.ellipse(22.5, 16.0, 4.6, 4.0, OUTLINE)
+
+
+def _bruxo_eyes(p: Painter, windup: bool) -> None:
+    col = EMBER_HOT if windup else EMBER
+    ry = 0.8 if windup else 0.55
+    p.ellipse(20.4, 15.6, 1.3, ry, col)
+    p.ellipse(24.9, 15.6, 1.3, ry, col)
+
+
+def _bruxo_staff(p: Painter, windup: bool) -> None:
+    if windup:
+        base = (24.0, 39.0)
+        top = (7.5, 11.0)
+    else:
+        base = (10.5, 45.5)
+        top = (12.0, 12.5)
+    p.limb(base, top, 1.7, 1.5, BONE_DK)
+    # fetiche: crânio de bicho pequeno coroando o osso
+    sx, sy = top[0], top[1] - 2.4
+    p.ellipse(sx, sy, 2.9, 2.5, BONE)
+    p.poly([(sx - 1.8, sy + 1.8), (sx + 1.8, sy + 1.8), (sx + 1.0, sy + 4.0), (sx - 1.0, sy + 4.0)], BONE_DK)  # focinho/mandíbula
+    p.ellipse(sx - 1.2, sy - 0.3, 0.8, 0.7, OUTLINE)   # órbitas
+    p.ellipse(sx + 1.2, sy - 0.3, 0.8, 0.7, OUTLINE)
+    if windup:
+        # o fetiche ACENDE — brasa ritual nas órbitas e faíscas soltas
+        p.ellipse(sx - 1.2, sy - 0.3, 0.55, 0.45, EMBER_HOT)
+        p.ellipse(sx + 1.2, sy - 0.3, 0.55, 0.45, EMBER_HOT)
+        p.ellipse(sx - 3.2, sy - 2.6, 0.6, 0.6, EMBER)
+        p.ellipse(sx + 2.4, sy - 3.4, 0.5, 0.5, EMBER_HOT)
+        p.ellipse(sx - 0.4, sy - 4.2, 0.5, 0.5, EMBER)
+    # amarrado de ossos pendurado abaixo do crânio
+    ax, ay = (sx + 2.0, sy + 3.4) if windup else (sx + 1.6, sy + 3.0)
+    p.limb((ax, ay), (ax + 1.2, ay + 3.6), 0.7, 0.6, BONE_DK)
+    p.ellipse(ax + 1.4, ay + 4.2, 0.9, 0.6, BONE)
+
+
+def _bruxo_hands(p: Painter, windup: bool) -> None:
+    if windup:
+        # braço do cajado erguido + mão livre aberta de dedos de galho
+        p.limb((19.0, 22.5), (13.0, 17.5), 3.2, 2.2, ROBE)
+        p.ellipse(13.0, 17.0, 1.6, 1.4, BONE_DK)
+        p.limb((27.0, 23.5), (31.5, 17.5), 3.0, 2.0, ROBE)
+        for tip in ((30.0, 13.0), (32.5, 12.8), (34.5, 14.2), (35.0, 16.8)):
+            p.limb((31.5, 17.0), tip, 1.0, 0.55, BONE_DK)
+    else:
+        # curvado sobre o cajado fincado, dedos longos enroscados na haste
+        p.limb((18.5, 24.0), (12.5, 27.5), 3.2, 2.0, ROBE)
+        for tip in ((9.8, 26.5), (9.6, 28.3), (10.2, 30.0)):
+            p.limb((13.0, 27.0), tip, 1.0, 0.55, BONE_DK)
+
+
+def bruxo(pose: str = "idle") -> Image.Image:
+    p = Painter()
+    windup = pose == "windup"
+    _bruxo_staff(p, windup)
+    _bruxo_robe(p, windup)
+    _bruxo_hood(p, windup)
+    _bruxo_eyes(p, windup)
+    _bruxo_hands(p, windup)
+    img = p.render(BRUXO_PALETTE)
+    if windup:
+        img = _shift_down(img, 1)   # assenta o peso antes do ataque
+    _outline(img)
+    return img
+
+
+# ════════════════════════════════════════════════════
 # Prancha de conceito
 # ════════════════════════════════════════════════════
 
@@ -260,12 +370,18 @@ def _contact_sheet(frames: list[tuple[str, Image.Image]]) -> None:
 def generate_all() -> None:
     os.makedirs(OUT, exist_ok=True)
     frames: list[tuple[str, Image.Image]] = []
-    for name, pose in (("enemy_idle.png", "idle"), ("enemy_windup.png", "windup")):
-        img = cacador(pose)
+    jobs = (
+        ("enemy_idle.png", "cacador idle", cacador, "idle"),
+        ("enemy_windup.png", "cacador windup", cacador, "windup"),
+        ("bruxo_idle.png", "bruxo idle", bruxo, "idle"),
+        ("bruxo_windup.png", "bruxo windup", bruxo, "windup"),
+    )
+    for name, label, fn, pose in jobs:
+        img = fn(pose)
         img.save(os.path.join(OUT, name))
-        frames.append(("cacador " + pose, img))
+        frames.append((label, img))
     _contact_sheet(frames)
-    print("[gen_inimigos] cacador idle/windup (48x48 premium) + prancha gerados")
+    print("[gen_inimigos] cacador + bruxo idle/windup (48x48 premium) + prancha gerados")
 
 
 if __name__ == "__main__":

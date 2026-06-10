@@ -6,8 +6,8 @@ que tornam cada personagem identificável:
 
   Caipora  — PROTAGONISTA: gerada por gen_caipora.py (pipeline premium próprio,
              ver docs/CONCEITO-protagonista.md). Este módulo apenas delega.
-  Caçador  — INIMIGO COMUM: gerado por gen_inimigos.py (pipeline premium 48px,
-             ver docs/PLANO-redesign-cacador-bruxo.md). Este módulo apenas delega.
+  Caçador & Bruxo — INIMIGOS COMUNS: gerados por gen_inimigos.py (pipeline
+             premium 48px, ver docs/PLANO-redesign-cacador-bruxo.md). Delega.
   Caçador c/ machados — 48x48: capuz, manto, dois machados, olhos brilhando (boss base)
   Mula sem Cabeça     — 48x48: sem cabeça, jato de fogo no toco do pescoço,
                         ferraduras de ferro, arreio amaldiçoado (boss da Fase 1)
@@ -587,9 +587,4 @@ if __name__ == "__main__":
     saci().save("saci_idle.png")
     mula().save("mula_idle.png")
     jesuita().save("jesuita_idle.png")
-    # Bruxo dos machados: mesmo desenho do antigo boss-caçador, agora reaproveitado
-    # como monstro comum das fases (junto com o caçador). boss_idle.png segue como
-    # fixture do Boss base; bruxo_idle.png é o asset dedicado do monstro.
-    axe_hunter().save("bruxo_idle.png")
-    axe_hunter("windup").save("bruxo_windup.png")
-    print("[gen_chars] caipora (via gen_caipora) + caçador (via gen_inimigos) + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça + jesuíta-bandeirante (48x48) gerados")
+    print("[gen_chars] caipora (via gen_caipora) + caçador/bruxo (via gen_inimigos) + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça + jesuíta-bandeirante (48x48) gerados")
