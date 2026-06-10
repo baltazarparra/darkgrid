@@ -11,6 +11,7 @@ Outputs:
   assets/sprites/tile_floor_church.png   128x32, 4 corrupted church floor variants
   assets/sprites/tile_wall_church.png     64x32, 2 corrupted church wall variants
   assets/sprites/tile_identity_contact_sheet.png  preview sheet for art review
+  assets/sprites/tile_identity_value_sheet.png    grayscale value review sheet
   assets/sprites/light_radial.png
   assets/sprites/light_vitral.png
 
@@ -30,31 +31,31 @@ OUT = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sprites")
 
 BLACK = (0, 0, 0)
 NIGHT = (13, 17, 23)
-VOID_BROWN = (24, 12, 10)
-EARTH_DARK = (34, 15, 12)
-EARTH = (61, 31, 31)
-EARTH_WET = (48, 23, 22)
-BARK = (46, 27, 13)
-BARK_DARK = (20, 12, 6)
-MOSS_DARK = (12, 28, 11)
-MOSS = (26, 47, 18)
-LEAF_DARK = (20, 38, 16)
+VOID_BROWN = (38, 20, 17)
+EARTH_DARK = (54, 29, 24)
+EARTH = (88, 52, 45)
+EARTH_WET = (70, 39, 35)
+BARK = (70, 42, 20)
+BARK_DARK = (34, 20, 10)
+MOSS_DARK = (21, 45, 18)
+MOSS = (38, 68, 28)
+LEAF_DARK = (31, 54, 24)
 ORANGE_DK = (139, 42, 0)
 ORANGE = (255, 69, 0)
 FIRE = (255, 104, 8)
 FIRE_HOT = (255, 176, 50)
 BLOOD_DARK = (66, 0, 0)
 BLOOD = (139, 0, 0)
-BONE_DARK = (66, 58, 47)
+BONE_DARK = (80, 70, 56)
 BONE = (175, 164, 134)
 WATER = (14, 22, 26)
-WATER_LIGHT = (32, 48, 56)
+WATER_LIGHT = (58, 82, 90)
 
-STONE_DARK = (30, 30, 38)
-STONE = (74, 74, 84)
-STONE_LIGHT = (112, 108, 96)
-LIME_DARK = (86, 78, 66)
-LIME = (150, 140, 120)
+STONE_DARK = (46, 46, 56)
+STONE = (98, 96, 104)
+STONE_LIGHT = (142, 136, 118)
+LIME_DARK = (86, 78, 68)
+LIME = (160, 150, 128)
 WAX = (190, 170, 128)
 
 
@@ -139,12 +140,13 @@ def _forest_floor_variant(v: int) -> Image.Image:
     img = _new_tile(EARTH_DARK)
     px = img.load()
     draw = ImageDraw.Draw(img)
-    _noise(px, rng, [VOID_BROWN, EARTH, EARTH_WET, BARK_DARK], 0.24)
+    _noise(px, rng, [EARTH_DARK, EARTH, EARTH_WET, VOID_BROWN], 0.15)
 
     if v == 0:
         # Wet soil crossed by living roots.
         for start in [(0, 7), (2, 26), (31, 14)]:
-            _root(draw, rng, start, BARK_DARK, 3)
+            _root(draw, rng, start, BARK_DARK, 2)
+            _root(draw, rng, (start[0], max(0, start[1] - 1)), BARK, 1)
         _jagged_leaf(draw, 20, 7, 1, LEAF_DARK)
     elif v == 1:
         # Serrated leaf litter, echoing the Caipora cloak edge.
@@ -154,14 +156,17 @@ def _forest_floor_variant(v: int) -> Image.Image:
         _line(draw, [(3, 28), (12, 23), (25, 25)], BARK_DARK, 2)
     elif v == 2:
         # Dry blood and clawed roots.
-        _blood_smear(draw, rng, 17, 16, 8)
-        _root(draw, rng, (0, 18), BLACK, 3)
+        _blood_smear(draw, rng, 17, 16, 7)
+        _root(draw, rng, (0, 18), BARK_DARK, 2)
         _root(draw, rng, (31, 4), BARK_DARK, 2)
     else:
-        # Black puddle with bone and orange rot.
+        # Dark puddle with bone and orange rot; it stays readable as floor by
+        # keeping a brown rim and a small water highlight.
+        _ellipse(draw, (2, 6, 29, 26), EARTH_WET)
         _ellipse(draw, (4, 8, 27, 24), WATER)
-        _ellipse(draw, (9, 11, 22, 19), BLACK)
-        _line(draw, [(8, 13), (19, 12)], WATER_LIGHT, 1)
+        _ellipse(draw, (10, 12, 21, 18), NIGHT)
+        _line(draw, [(8, 13), (21, 12)], WATER_LIGHT, 1)
+        _line(draw, [(7, 20), (18, 21)], EARTH, 1)
         _bone_chip(draw, 22, 22, 1)
         _jagged_leaf(draw, 3, 7, 1, ORANGE_DK)
 
@@ -189,6 +194,9 @@ def _forest_wall_variant(v: int) -> Image.Image:
         x0, y0, x1, y1 = box
         _line(draw, [(x0 + 2, y0 + 2), (x0 + 1, y1 - 2)], BARK, 1)
         _line(draw, [(x1 - 2, y0), (x1 - 3, y1)], BLACK, 1)
+        # A dark base lip helps the wall read as blocking depth against the
+        # lighter playable floor.
+        draw.rectangle((x0 - 1, 26, x1 + 1, 31), fill=BLACK + (255,))
 
     # Leaf teeth and thorn silhouettes.
     for _ in range(12 if v == 0 else 16):
@@ -218,12 +226,12 @@ def _church_floor_variant(v: int) -> Image.Image:
         for x in range(SIZE):
             joint = x % 16 == 0 or y % 16 == 0
             if joint:
-                px[x, y] = BLACK + (255,)
+                px[x, y] = STONE_DARK + (255,)
             else:
-                px[x, y] = rng.choice([STONE_DARK, STONE, LIME_DARK]) + (255,)
+                px[x, y] = rng.choice([STONE, STONE, STONE_LIGHT, LIME_DARK]) + (255,)
 
     if v == 0:
-        _line(draw, [(4, 0), (7, 9), (5, 18), (12, 31)], BLACK, 2)
+        _line(draw, [(4, 0), (7, 9), (5, 18), (12, 31)], STONE_DARK, 2)
         _line(draw, [(5, 0), (8, 9), (6, 18), (13, 31)], STONE_LIGHT, 1)
     elif v == 1:
         for _ in range(4):
@@ -241,7 +249,7 @@ def _church_floor_variant(v: int) -> Image.Image:
         # Wax, ash, and a broken tile edge.
         _ellipse(draw, (6, 8, 14, 18), WAX)
         _ellipse(draw, (16, 17, 23, 25), WAX)
-        _line(draw, [(0, 24), (7, 21), (15, 23), (28, 19)], BLACK, 2)
+        _line(draw, [(0, 24), (7, 21), (15, 23), (28, 19)], STONE_DARK, 2)
         _jagged_leaf(draw, 24, 6, -1, ORANGE_DK)
     return img
 
@@ -253,7 +261,7 @@ def _church_wall_variant(v: int) -> Image.Image:
     draw = ImageDraw.Draw(img)
     for y in range(SIZE):
         t = y / (SIZE - 1)
-        base = LIME_DARK if t > 0.35 else STONE_DARK
+        base = STONE_DARK if t > 0.35 else NIGHT
         for x in range(SIZE):
             if rng.random() < 0.18:
                 px[x, y] = rng.choice([BLACK, STONE_DARK, LIME_DARK, VOID_BROWN]) + (255,)
@@ -323,6 +331,25 @@ def gen_contact_sheet(atlases: list[tuple[str, Image.Image]]) -> None:
     sheet.save(os.path.join(OUT, "tile_identity_contact_sheet.png"))
 
 
+def gen_value_sheet(atlases: list[tuple[str, Image.Image]]) -> None:
+    scale = 4
+    label_h = 14
+    gap = 8
+    width = max(img.width for _, img in atlases) * scale + gap * 2
+    height = sum(img.height * scale + label_h + gap for _, img in atlases) + gap
+    sheet = Image.new("RGBA", (width, height), (18, 18, 18, 255))
+    draw = ImageDraw.Draw(sheet)
+    y = gap
+    for label, img in atlases:
+        draw.text((gap, y), label, fill=(230, 230, 230, 255))
+        y += label_h
+        gray = img.convert("LA").convert("RGBA")
+        preview = gray.resize((img.width * scale, img.height * scale), Image.Resampling.NEAREST)
+        sheet.paste(preview, (gap, y))
+        y += preview.height + gap
+    sheet.save(os.path.join(OUT, "tile_identity_value_sheet.png"))
+
+
 def gen_light() -> None:
     """Radial white-to-transparent texture for PointLight2D."""
     n = 256
@@ -367,6 +394,12 @@ if __name__ == "__main__":
         ("forest wall: dense hostile silhouette", wall),
         ("church floor: stone infected by forest and blood", church_floor),
         ("church wall: altar shadow, roots, corrupted lime", church_wall),
+    ])
+    gen_value_sheet([
+        ("forest floor value", floor),
+        ("forest wall value", wall),
+        ("church floor value", church_floor),
+        ("church wall value", church_wall),
     ])
     gen_light()
     gen_light_beam()
