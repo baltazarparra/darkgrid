@@ -763,27 +763,30 @@ Design: TODA transição para tela `ARENA_*` ganha um modo combat-intro no
 `SceneTransition` (autoload layer 100, único ponto por onde toda troca já
 passa e que sobrevive ao swap — não criar overlay paralelo):
 
-- [ ] Fade-out preto (igual hoje) → texto **"PELEJA"** grande (`FONT_TITLE`,
-  fonte pixel do theme, cor sangue/âmbar) com animação de carga (reveal
-  letra-a-letra como o `BossIntroScreen` + pulso) enquanto a cena troca por
-  baixo → hold → fade-out do texto → fade-in da arena.
-- [ ] `PELEJA_MIN_HOLD := 2.0` — o texto fica **no mínimo 2s** em tela,
-  contando do fim do reveal; constante no topo, sem número mágico.
-- [ ] Gate de início: novo sinal `SignalBus.combat_intro_finished`. O
+- [x] Fade-out preto (igual hoje) → texto **"peleja"** grande (`FONT_TITLE`,
+  fonte pixel do theme, âmbar de cue) com reveal letra-a-letra (carregando)
+  enquanto a cena troca por baixo → hold → fade-out do texto → fade-in da arena.
+- [x] `PELEJA_MIN_HOLD := 2.0` — o texto fica **no mínimo 2s** em tela,
+  contando do fim do reveal; constante no topo, sem número mágico. Guardado
+  por `test_peleja_min_hold_honors_requirement`.
+- [x] Gate de início: novo sinal `SignalBus.combat_intro_finished`. O
   `ArenaManager._ready()` spawna atores mas só dispara `_start_caipora_turn()`
   quando o sinal chega; se nenhuma intro estiver ativa (run direto do editor,
   testes headless), começa imediato (query `SceneTransition.is_combat_intro_active()`).
-- [ ] Engolir input durante o loader (o fade já usa `MOUSE_FILTER_STOP`;
-  garantir que Space não buffere um input de timing pré-combate).
-- [ ] Boss: a sequência vira BossIntro → diálogo → peleja → arena. O peleja é
+- [x] Engolir input durante o loader (o fade usa `MOUSE_FILTER_STOP`; Space não
+  buffera timing porque o TimingSystem só arma no primeiro turno, pós-sinal).
+- [x] Boss: a sequência vira BossIntro → diálogo → peleja → arena. O peleja é
   o feedback de carga (acontece NA troca de cena, que o BossIntro não cobre);
-  manter ambos — linguagens diferentes (apresentação vs. carregamento).
-- [ ] Stinger curto na entrada do texto (reusar pipeline de stingers do
-  `AudioDirector`). GORE/TERROR: a palavra chega como golpe, não como splash
-  de loading bonitinho.
-- [ ] Testes GUT: ordem fade→texto→hold≥2s→sinal; `ArenaManager` não inicia
-  turno antes de `combat_intro_finished`; fallback sem intro ativa.
-- [ ] `/validate-controls` (toca arena/timing) + `make gate`.
+  ambos mantidos — linguagens diferentes (apresentação vs. carregamento).
+- [x] Stinger: `sting_arena_enter` já toca na entrada da arena via
+  `AudioDirector` (reage ao `screen_changed`) — soa junto do texto, sem
+  pipeline novo.
+- [x] Testes GUT: `_is_arena` nas 5 telas, hold ≥ 2s, flag ligada só na arena e
+  zerada em transição não-arena, sinal existe no SignalBus. O gate do
+  `ArenaManager` não tem harness headless — validar no device junto com o
+  checklist visual.
+- [x] `/validate-controls` passo 1 (`make test` ✅ 317/317); passos 2–5 exigem
+  display — checklist manual pendente no device.
 
 #### 10.3 Música do hub (tela de aprimoramento) — matar a sirene de vez
 

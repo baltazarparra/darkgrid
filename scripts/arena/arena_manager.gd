@@ -82,7 +82,14 @@ func _ready() -> void:
 
 	_spawn_caipora()
 	_spawn_enemy()
-	_start_caipora_turn()
+	# Loader "peleja" (Fase 10): a arena nasce pronta sob o preto, mas o primeiro
+	# turno só dispara quando o overlay libera — o jogador nunca perde um cue de
+	# timing escondido atrás do texto. Sem intro ativa (testes headless, run
+	# direto do editor), começa imediato.
+	if SceneTransition.is_combat_intro_active():
+		SignalBus.combat_intro_finished.connect(_start_caipora_turn, CONNECT_ONE_SHOT)
+	else:
+		_start_caipora_turn()
 
 func _update_camera_fit() -> void:
 	# Zoom "contain": encaixa STAGE_SIZE na viewport sem cortar a ação. Em paisagem o
