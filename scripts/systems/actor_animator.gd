@@ -35,20 +35,12 @@ func track(actor: CombatActor) -> void:
 	actor.health.health_changed.connect(_on_health_changed.bind(actor))
 	_start_breathing(actor)
 
-## Material não propaga a filhos: o WeaponSprite (WeaponVisual) recebe uma
-## cópia própria do ShaderMaterial para o flash alcançar a arma também.
 func _apply_flash_material(sprite: AnimatedSprite2D) -> Array:
 	var mats: Array = []
 	var mat := ShaderMaterial.new()
 	mat.shader = FLASH_SHADER
 	sprite.material = mat
 	mats.append(mat)
-	var weapon := sprite.get_node_or_null("WeaponSprite") as Sprite2D
-	if weapon != null:
-		var wmat := ShaderMaterial.new()
-		wmat.shader = FLASH_SHADER
-		weapon.material = wmat
-		mats.append(wmat)
 	return mats
 
 # ─── Poses ─────────────────────────────────────────

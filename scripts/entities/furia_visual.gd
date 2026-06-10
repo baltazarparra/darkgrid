@@ -1,31 +1,29 @@
-class_name WeaponVisual
+class_name FuriaVisual
 extends Node2D
 
-## Visual evolutivo da arma da Caipora por tier de Fúria (forca_1..forca_6).
-## Cada tier desbloqueia um sprite mais imponente + partículas escalonadas.
-## Componente reutilizável: usado na exploração (Caipora) e na arena (ArenaManager).
+## Manifestação visual da Fúria da Caipora por tier (forca..forca_6), ancorada
+## no CRISTAL do cajado (embutido no sprite 96×96 — ver gen_caipora.py).
+## Cada tier mantém sua identidade de lore via partículas (fumaça, aura, breu,
+## osso, carne) + um glow verde-cristal que escala. Sem sprite de arma separado:
+## o cajado é parte do corpo da protagonista.
 ##
+## Componente reutilizável: usado na exploração (Caipora) e na arena (ArenaManager).
 ## CPUParticles2D obrigatório (export web em GL Compatibility, sem GPUParticles).
 
-const WEAPON_OFFSET := Vector2(33, -70.5)
+## Posição do cristal em idle no espaço local do AnimatedSprite2D (centrado):
+## staff_tip (66.5, 23.5) do _rig em gen_caipora.py menos o centro (48, 48).
+## O cajado se MOVE por pose (windup/strike); as poses duram ~0.2-0.5s e o
+## smear das partículas cobre isso — não rastrear por frame.
+const CRYSTAL_ANCHOR := Vector2(18.5, -24.5)
 
-const TEXTURES: Array[Texture2D] = [
-	preload("res://assets/sprites/weapon_forca1.png"),   # T1
-	preload("res://assets/sprites/weapon_forca2.png"),   # T2
-	preload("res://assets/sprites/weapon_forca3.png"),   # T3
-	preload("res://assets/sprites/weapon_forca4.png"),   # T4
-	preload("res://assets/sprites/weapon_forca5.png"),   # T5
-	preload("res://assets/sprites/weapon_forca6.png"),   # T6
-]
+var _base_x: float = 0.0
 
-const TEXTURES_FIRE: Array[Texture2D] = [
-	preload("res://assets/sprites/weapon_forca1_fogo.png"),
-	preload("res://assets/sprites/weapon_forca2_fogo.png"),
-	preload("res://assets/sprites/weapon_forca3_fogo.png"),
-	preload("res://assets/sprites/weapon_forca4_fogo.png"),
-	preload("res://assets/sprites/weapon_forca5_fogo.png"),
-	preload("res://assets/sprites/weapon_forca6_fogo.png"),
-]
+func _process(_delta: float) -> void:
+	# flip_h do AnimatedSprite2D não espelha filhos: espelhar o anchor à mão
+	# (exploração anda para a esquerda).
+	var sprite := get_parent() as AnimatedSprite2D
+	if sprite != null:
+		position.x = -_base_x if sprite.flip_h else _base_x
 
 ## Retorna o tier máximo de Fúria desbloqueado (1–6), ou 0 se nenhum.
 static func _max_furia_tier() -> int:
@@ -35,56 +33,98 @@ static func _max_furia_tier() -> int:
 			tier = i + 1
 	return tier
 
-## Anexa o sprite de arma + partículas escalonadas ao `parent` (AnimatedSprite2D).
+## Anexa o visual da Fúria ao `parent` (AnimatedSprite2D), ancorado no cristal.
+## Idempotente: remove um FuriaVisual anterior antes de recriar — permite
+## refresh mid-run (ex.: CHAMA conquistada em pleno combate).
 ## No-op se nenhum tier de Fúria estiver desbloqueado.
 static func attach_to(parent: Node2D) -> void:
+	var previous := parent.get_node_or_null("FuriaVisual")
+	if previous != null:
+		# free() imediato: queue_free deixaria o nome ocupado neste frame e o
+		# novo nó seria renomeado, quebrando lookups por "FuriaVisual".
+		previous.free()
+
 	var tier := _max_furia_tier()
 	if tier < 1:
 		return
 
-	var on_fire := MetaProgression.has_chama
-	var textures: Array[Texture2D] = TEXTURES_FIRE if on_fire else TEXTURES
-	var weapon := Sprite2D.new()
-	weapon.name = "WeaponSprite"
-	weapon.texture = textures[tier - 1]
-	weapon.position = WEAPON_OFFSET
-	weapon.z_index = 1
-	parent.add_child(weapon)
+	var visual := FuriaVisual.new()
+	visual.name = "FuriaVisual"
+	var sprite_offset := Vector2.ZERO
+	if parent is AnimatedSprite2D:
+		sprite_offset = (parent as AnimatedSprite2D).offset
+	visual.position = CRYSTAL_ANCHOR + sprite_offset
+	visual._base_x = visual.position.x
+	visual.z_index = 1
+	parent.add_child(visual)
 
-	# Partículas escalonadas por tier
+	# Glow do cristal: presente em todo tier, escala com a Fúria.
+	visual.add_child(_build_crystal_glow(tier))
+
+	# Partículas de lore escalonadas por tier
 	if tier >= 2:
-		weapon.add_child(_build_smoke(tier))
+		visual.add_child(_build_smoke(tier))
 	if tier >= 3:
-		weapon.add_child(_build_gold_aura(tier))
+		visual.add_child(_build_gold_aura(tier))
 	if tier >= 4:
-		weapon.add_child(_build_residue(tier))
+		visual.add_child(_build_residue(tier))
 	if tier >= 5:
-		weapon.add_child(_build_bone_fragments(tier))
+		visual.add_child(_build_bone_fragments(tier))
 	if tier >= 6:
-		weapon.add_child(_build_flesh_spines(tier))
+		visual.add_child(_build_flesh_spines(tier))
 
 	# CHAMA: chama viva somada às partículas do tier
-	if on_fire:
-		weapon.add_child(_build_flame(tier))
+	if MetaProgression.has_chama:
+		visual.add_child(_build_flame(tier))
 
-	# Respiro sutil: pulso lento no modulate
-	var pulse := weapon.create_tween().set_loops()
-	var peak := Color(1.08, 1.05, 0.96) if tier < 6 else Color(1.12, 1.0, 0.95)
-	pulse.tween_property(weapon, "modulate", peak, 1.6)
-	pulse.tween_property(weapon, "modulate", Color(1.0, 1.0, 1.0), 1.6)
+	# Respiro sutil: pulso lento esverdeado no modulate (filhos herdam)
+	var pulse := visual.create_tween().set_loops()
+	var peak := Color(0.96, 1.12, 1.02) if tier < 6 else Color(1.0, 1.18, 1.05)
+	pulse.tween_property(visual, "modulate", peak, 1.6)
+	pulse.tween_property(visual, "modulate", Color(1.0, 1.0, 1.0), 1.6)
 
 
 # ─── Partículas escalonadas ──────────────────────────────────────────────────
 
+## Glow do cristal (T1+): motas verdes subindo do cristal, intensidade por tier.
+static func _build_crystal_glow(tier: int) -> CPUParticles2D:
+	var glow_p := CPUParticles2D.new()
+	glow_p.name = "CrystalGlow"
+	glow_p.z_index = 1
+	glow_p.amount = 6 + tier * 2          # T1=8, … T6=18
+	glow_p.lifetime = 0.9 + tier * 0.05
+	glow_p.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	glow_p.emission_sphere_radius = 4.0 + tier
+	glow_p.direction = Vector2(0, -1)
+	glow_p.spread = 180.0
+	glow_p.gravity = Vector2(0, -6 - tier)
+	glow_p.initial_velocity_min = 2.0
+	glow_p.initial_velocity_max = 6.0 + tier
+	glow_p.scale_amount_min = 1.0
+	glow_p.scale_amount_max = 1.8 + tier * 0.2
+	glow_p.color = Constants.COLOR_CRYSTAL
+	var ramp := Gradient.new()
+	ramp.set_offset(0, 0.0)
+	ramp.set_color(0, Constants.COLOR_CRYSTAL_GLOW)
+	ramp.add_point(0.5, Constants.COLOR_CRYSTAL)
+	ramp.add_point(1.0, Color(Constants.COLOR_CRYSTAL.r, Constants.COLOR_CRYSTAL.g, Constants.COLOR_CRYSTAL.b, 0.0))
+	glow_p.color_ramp = ramp
+	var glow := CanvasItemMaterial.new()
+	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	glow_p.material = glow
+	glow_p.emitting = true
+	return glow_p
+
+
 static func _build_smoke(tier: int) -> CPUParticles2D:
 	var smoke := CPUParticles2D.new()
 	smoke.name = "Smoke"
-	smoke.position = Vector2(0, -28)
+	smoke.position = Vector2(0, 2)
 	smoke.z_index = -1
-	smoke.amount = 8 + tier * 2          # T2=12, T3=14, … T6=20
+	smoke.amount = 4 + tier              # T2=6, T3=7, … T6=10
 	smoke.lifetime = 1.4 + tier * 0.1
 	smoke.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	smoke.emission_rect_extents = Vector2(10 + tier, 38 + tier * 2)
+	smoke.emission_rect_extents = Vector2(4 + tier * 0.5, 6 + tier)
 	smoke.direction = Vector2(0, -1)
 	smoke.spread = 20.0 + tier * 3.0
 	smoke.gravity = Vector2(0, -14 - tier * 2)
@@ -101,12 +141,11 @@ static func _build_smoke(tier: int) -> CPUParticles2D:
 static func _build_gold_aura(tier: int) -> CPUParticles2D:
 	var aura := CPUParticles2D.new()
 	aura.name = "GoldAura"
-	aura.position = Vector2(0, -28)
 	aura.z_index = 1
-	aura.amount = 12 + tier * 3          # T3=21, T4=24, … T6=30
+	aura.amount = 8 + tier * 2           # T3=14, T4=16, … T6=20
 	aura.lifetime = 1.2 + tier * 0.05
 	aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	aura.emission_rect_extents = Vector2(12 + tier * 2, 40 + tier * 3)
+	aura.emission_rect_extents = Vector2(5 + tier, 7 + tier)
 	aura.direction = Vector2(0, -1)
 	aura.spread = 30.0 + tier * 2.5
 	aura.gravity = Vector2(0, -8 - tier)
@@ -123,16 +162,17 @@ static func _build_gold_aura(tier: int) -> CPUParticles2D:
 	return aura
 
 
-## Resíduos de breu/resina (T4+): partículas escuras que caem lentamente.
+## Resíduos de breu/resina (T4+): pingam DO cristal (par das gotas embutidas
+## no sprite), caindo lentamente.
 static func _build_residue(tier: int) -> CPUParticles2D:
 	var res := CPUParticles2D.new()
 	res.name = "BreuResidue"
-	res.position = Vector2(0, -20)
+	res.position = Vector2(0, 4)
 	res.z_index = -1
 	res.amount = 6 + (tier - 3) * 3
 	res.lifetime = 1.6
 	res.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	res.emission_rect_extents = Vector2(14, 36)
+	res.emission_rect_extents = Vector2(5, 8)
 	res.direction = Vector2(0, 1)
 	res.spread = 45.0
 	res.gravity = Vector2(0, 25)
@@ -154,12 +194,11 @@ static func _build_residue(tier: int) -> CPUParticles2D:
 static func _build_bone_fragments(tier: int) -> CPUParticles2D:
 	var frag := CPUParticles2D.new()
 	frag.name = "BoneFragments"
-	frag.position = Vector2(0, -24)
 	frag.z_index = 1
 	frag.amount = 8 + (tier - 4) * 4
 	frag.lifetime = 1.0
 	frag.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	frag.emission_rect_extents = Vector2(16, 42)
+	frag.emission_rect_extents = Vector2(6, 9)
 	frag.direction = Vector2(0, -1)
 	frag.spread = 55.0
 	frag.gravity = Vector2(0, -20)
@@ -182,15 +221,14 @@ static func _build_bone_fragments(tier: int) -> CPUParticles2D:
 
 
 ## Espinhos de carne viva (T6): partículas carmim escuras, pulsantes.
-static func _build_flesh_spines(tier: int) -> CPUParticles2D:
+static func _build_flesh_spines(_tier: int) -> CPUParticles2D:
 	var sp := CPUParticles2D.new()
 	sp.name = "FleshSpines"
-	sp.position = Vector2(0, -28)
 	sp.z_index = 2
-	sp.amount = 14
+	sp.amount = 10
 	sp.lifetime = 0.9
 	sp.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	sp.emission_rect_extents = Vector2(18, 48)
+	sp.emission_rect_extents = Vector2(7, 10)
 	sp.direction = Vector2(0, -1)
 	sp.spread = 25.0
 	sp.gravity = Vector2(0, -35)
@@ -217,12 +255,11 @@ static func _build_flesh_spines(tier: int) -> CPUParticles2D:
 static func _build_flame(tier: int) -> CPUParticles2D:
 	var flame := CPUParticles2D.new()
 	flame.name = "ChamaFlame"
-	flame.position = Vector2(0, -28)
 	flame.z_index = 1
-	flame.amount = 16 + tier * 3       # T1=19, … T6=34
+	flame.amount = 10 + tier * 2       # T1=12, … T6=22
 	flame.lifetime = 0.6 + tier * 0.03
 	flame.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	flame.emission_rect_extents = Vector2(10 + tier * 2, 38 + tier * 3)
+	flame.emission_rect_extents = Vector2(4 + tier * 0.5, 6 + tier)
 	flame.direction = Vector2(0, -1)
 	flame.spread = 15.0 + tier * 2.0
 	flame.gravity = Vector2(0, -40 - tier * 4)

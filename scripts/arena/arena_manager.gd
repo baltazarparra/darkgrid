@@ -123,8 +123,7 @@ func _spawn_caipora() -> void:
 	_caipora.health.died.connect(_on_actor_died.bind(_caipora))
 	_caipora.health.died.connect(func(): SignalBus.caipora_died.emit())
 	SignalBus.caipora_health_changed.emit(_caipora.health.current_health, _caipora.health.max_health)
-	_apply_weapon_visual()
-	# Depois da arma: o animator clona o material de flash para o WeaponSprite.
+	_apply_furia_visual()
 	_animator.track(_caipora)
 
 func _on_caipora_health_changed(new_health: float, max_health: float) -> void:
@@ -133,12 +132,14 @@ func _on_caipora_health_changed(new_health: float, max_health: float) -> void:
 func _on_chama_gained() -> void:
 	if _caipora != null and is_instance_valid(_caipora):
 		CaiporaSkin.apply(_caipora.animated_sprite)
+		# Re-attach idempotente: a ChamaFlame aparece no cristal em pleno combate.
+		_apply_furia_visual()
 
-func _apply_weapon_visual() -> void:
+func _apply_furia_visual() -> void:
 	var animated_sprite := _caipora.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
 	if animated_sprite == null:
 		return
-	WeaponVisual.attach_to(animated_sprite)
+	FuriaVisual.attach_to(animated_sprite)
 
 func _spawn_enemy() -> void:
 	# Consome o flag volátil ANTES de qualquer early-return, para nunca vazar estado

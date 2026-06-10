@@ -35,7 +35,7 @@ func _ready() -> void:
 	_update_camera_zoom()
 	get_viewport().size_changed.connect(_update_camera_zoom)
 	CaiporaSkin.apply(_animated_sprite)
-	_apply_weapon_visual()
+	_apply_furia_visual()
 
 func _process(_delta: float) -> void:
 	if _is_moving:
@@ -49,8 +49,8 @@ func try_move(direction: Vector2) -> void:
 	_try_move(direction)
 
 # ─── Private helpers ───────────────────────────────
-func _apply_weapon_visual() -> void:
-	WeaponVisual.attach_to(_animated_sprite)
+func _apply_furia_visual() -> void:
+	FuriaVisual.attach_to(_animated_sprite)
 
 func _get_cardinal_input() -> Vector2:
 	var x := int(Input.is_action_pressed("ui_right")) - int(Input.is_action_pressed("ui_left"))

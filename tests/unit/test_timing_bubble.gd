@@ -1,0 +1,52 @@
+extends GutTest
+
+## Flash verde-cristal da janela perfeita no TimingBubble. Testa a LÓGICA
+## (timer + blend de cor) dirigindo _process manualmente, sem depender de render.
+
+var _bubble: TimingBubble
+
+func before_each() -> void:
+	_bubble = TimingBubble.new()
+	add_child_autofree(_bubble)
+	_bubble.set_process(false)  # dirigimos _process na mão
+
+func test_flash_fires_on_perfect_window_entry() -> void:
+	_bubble.show_bubble(Vector2.ZERO, 1.0, 0.5, 0.7)
+	_bubble._process(0.45)
+	assert_eq(_bubble._flash_timer, 0.0, "antes da janela: sem flash")
+	assert_gt(_bubble._color.r, _bubble._color.g, "antes da janela: anel vermelho (ataque)")
+
+	_bubble._process(0.06)  # progress 0.51 — entrou na janela perfeita
+	assert_gt(_bubble._flash_timer, 0.0, "entrada na janela liga o flash")
+	assert_gt(_bubble._color.g, _bubble._color.r, "flash puxa o anel para o verde-cristal")
+
+func test_flash_decays_back_to_mode_color() -> void:
+	_bubble.show_bubble(Vector2.ZERO, 1.0, 0.5, 0.7)
+	_bubble._process(0.51)
+	assert_gt(_bubble._flash_timer, 0.0, "flash ativo na entrada")
+	_bubble._process(0.15)  # > FLASH_S — flash esgotado, ainda na janela
+	assert_eq(_bubble._flash_timer, 0.0, "flash decai em FLASH_S")
+	assert_gt(_bubble._color.r, _bubble._color.g, "anel volta ao vermelho de ataque")
+
+func test_flash_in_defense_mode_returns_to_blue() -> void:
+	_bubble.show_bubble(Vector2.ZERO, 1.0, 0.5, 0.7, true)
+	_bubble._process(0.51)
+	assert_gt(_bubble._color.g, _bubble._color.r, "flash verde também na esquiva")
+	_bubble._process(0.15)
+	assert_gt(_bubble._color.b, _bubble._color.g, "anel volta ao azul de esquiva")
+
+func test_frozen_holds_flash() -> void:
+	_bubble.show_bubble(Vector2.ZERO, 1.0, 0.5, 0.7)
+	_bubble._process(0.51)
+	var held: float = _bubble._flash_timer
+	assert_gt(held, 0.0, "flash ativo")
+	_bubble.set_frozen(true)
+	_bubble._process(0.2)
+	assert_eq(_bubble._flash_timer, held, "hit-stop congela o flash junto")
+
+func test_show_bubble_resets_stale_flash() -> void:
+	_bubble.show_bubble(Vector2.ZERO, 1.0, 0.5, 0.7)
+	_bubble._process(0.51)
+	assert_gt(_bubble._flash_timer, 0.0, "flash ativo")
+	_bubble.show_bubble(Vector2.ZERO, 1.0, 0.5, 0.7)
+	assert_eq(_bubble._flash_timer, 0.0, "bolha re-mostrada não herda flash")

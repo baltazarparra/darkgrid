@@ -404,6 +404,9 @@ make export
       somadas às douradas** e **sprite flamejante** `weapon_forca3_fogo.png`
       (gerador `scripts/gen_weapon_forca3_fogo.py`) — em `weapon_visual.gd`, visível na **arena e na
       exploração** (ambas via `WeaponVisual.attach_to`).
+      *(Superado: os sprites de arma foram removidos no redesign "Guardia da Mata" —
+      a Fúria/CHAMA manifesta no cristal do cajado via `furia_visual.gd`; ver entrada
+      "Fúria no cristal" abaixo.)*
 - [x] Testes: `tests/unit/test_chama.gd`.
 
 ### Fase 8: Geração Procedural de Mapas 🚧
@@ -693,6 +696,26 @@ todo asset futuro da protagonista.
   combate incendeia na hora (`SignalBus.chama_gained` → re-apply preservando a
   pose). Mesmo contrato de animações — `ActorAnimator` não percebe. Testes:
   `test_caipora_chama_frames.gd`.
+
+### Fúria no cristal + flash de janela perfeita ✅
+
+Follow-up do redesign "A Guardia da Mata" (cajado com cristal verde embutido no
+sprite 96×96 — o cajado se move por pose, então um overlay estático nunca alinha):
+
+- [x] **Overlay de forca removido.** `weapon_visual.gd` → `furia_visual.gd`
+  (`FuriaVisual`): Node2D ancorado no cristal (`CRYSTAL_ANCHOR` derivado do
+  `staff_tip` do `gen_caipora.py` + `offset` do sprite lido em runtime), espelha
+  com `flip_h`, re-attach idempotente. Tiers T1–T6 mantêm a identidade de lore
+  via partículas (fumaça/aura/breu/osso/carne) + `CrystalGlow` verde que escala;
+  CHAMA soma a chama viva — e agora aparece **mid-run** (re-attach no
+  `_on_chama_gained`). Deletados os 12 `weapon_forca*.png`, `gen_weapons.py` e
+  os geradores legados `gen_weapon_forca3*.py`. Testes: `test_furia_visual.gd`.
+- [x] **Flash verde-cristal na janela perfeita** (`timing_bubble.gd`): ao entrar
+  na zona perfeita o anel pisca `COLOR_CRYSTAL_GLOW` por 0.12s (sincronizado com
+  o `timing_alert_sound`) e decai para a cor de modo (vermelho/azul/roxo
+  intocados; barra âmbar do hub intocada). Hit-stop congela o flash junto.
+  Curto e em outro tom do telegraph do Curupira (modulate sustentado no sprite
+  do inimigo) — sem colisão de linguagem. Testes: `test_timing_bubble.gd`.
 
 ---
 

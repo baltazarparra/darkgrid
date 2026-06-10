@@ -97,13 +97,18 @@ Regras de manutenção:
 
 **Imutável:** rosto-vazio com olhos brancos circulares; juba vermelha como
 silhueta dominante fluindo PRA TRÁS; chifres rompendo o capuz; cristal verde
-como único acento frio e cor do crítico; pés normais pra frente; postura de
-predadora; tom GORE/TERROR — a mata é hostil, a Caipora é perigosa, nunca
-suavizar.
+como único acento frio, cor do crítico e do flash de janela perfeita; pés
+normais pra frente; postura de predadora; tom GORE/TERROR — a mata é hostil,
+a Caipora é perigosa, nunca suavizar.
 
 **Evolui livremente:** densidade de folhas (upgrades podem vesti-la mais),
 intensidade da juba e do cristal, partículas, key art em resolução maior —
 desde que derive das 5 assinaturas.
+
+**Fúria (T1–T6) manifesta no cristal:** sem sprite de arma separado — o cajado
+é parte do corpo. `furia_visual.gd` ancora partículas no cristal: glow verde
+que escala com o tier + identidade de lore por tier (fumaça, aura dourada,
+breu, osso, carne viva). A CHAMA soma a chama viva ao conjunto.
 
 **CHAMA (meta-progressão) = "juba em brasa":** a variante `player_*_chama.png`
 (`caipora(..., chama=True)`) acende a juba — ramp de fogo no lugar do sangue

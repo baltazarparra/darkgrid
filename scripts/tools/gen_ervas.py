@@ -13,14 +13,14 @@ Saídas em assets/sprites/ (32×32 cada erva; cachimbo 48×32):
   cachimbo.png
 
 Pipeline stdlib puro (struct/zlib), determinístico, na paleta de constants.gd —
-espelha gen_weapon_forca3.py (zero dependência externa, pixel-art NEAREST).
+PNG encode stdlib puro (zero dependência externa, pixel-art NEAREST).
 """
 import struct, zlib, os, math
 
 ICON = 32  # ervas: tamanho de item (32×32)
 
 
-# ─── PNG encode (idêntico a gen_weapon_forca3.py) ─────────────────────────────
+# ─── PNG encode (stdlib puro: struct/zlib) ────────────────────────────────────
 def png_chunk(tag: bytes, data: bytes) -> bytes:
     c = zlib.crc32(tag + data) & 0xFFFFFFFF
     return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", c)

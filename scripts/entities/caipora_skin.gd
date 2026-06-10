@@ -2,7 +2,7 @@ class_name CaiporaSkin
 extends RefCounted
 
 ## Aparência da Caipora dirigida pela meta-progressão — ponto ÚNICO de seleção
-## E aplicação dos SpriteFrames (par do WeaponVisual.attach_to). Com a CHAMA
+## E aplicação dos SpriteFrames (par do FuriaVisual.attach_to). Com a CHAMA
 ## conquistada é ELA que se incendeia: variante com juba mais longa/quente e
 ## brasas orbitando (docs/CONCEITO-protagonista.md, §6).
 ##

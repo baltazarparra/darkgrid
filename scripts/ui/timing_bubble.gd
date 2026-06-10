@@ -18,6 +18,12 @@ const RADIUS_COLLAPSE: float = RADIUS_TARGET * 0.12
 const PHASE_ACTIVE: int = 0
 const PHASE_IDLE: int = 1
 
+## Flash verde-cristal ao ENTRAR na janela perfeita ("o cristal carregou").
+## Curto de propósito: o telegraph do Curupira é um modulate sustentado no
+## sprite do inimigo (curupira.gd), verde-folha; isto é um pop de 0.12s no anel,
+## verde-menta, sempre pareado com o timing_alert_sound — outra linguagem.
+const FLASH_S: float = 0.12
+
 # ─── State ─────────────────────────────────────────
 var _duration: float = 0.8
 var _perfect_start: float = 0.65
@@ -37,6 +43,7 @@ var _defense_mode: bool = false
 var _vuln_color: Color = Color.TRANSPARENT
 var _key_hint: String = "up"
 var _frozen: bool = false
+var _flash_timer: float = 0.0
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -51,6 +58,9 @@ func _process(delta: float) -> void:
 
 	if _phase == PHASE_IDLE:
 		return
+
+	# Decai depois dos early-returns: o hit-stop (_frozen) congela o flash junto.
+	_flash_timer = maxf(0.0, _flash_timer - delta)
 
 	_elapsed += delta
 	var progress: float = clampf(_elapsed / _duration, 0.0, 1.0)
@@ -68,6 +78,7 @@ func _process(delta: float) -> void:
 	var in_perfect: bool = progress >= _perfect_start and progress <= _perfect_end
 	if in_perfect and not _vuln_emitted:
 		_vuln_emitted = true
+		_flash_timer = FLASH_S  # sincronizado com o timing_alert_sound do listener
 		vulnerable_entered.emit()
 
 	# Cor do anel convergente + brilho do alvo + opacidade da seta.
@@ -90,6 +101,7 @@ func _process(delta: float) -> void:
 		_target_alpha = lerpf(0.25, 0.0, t)
 		_arrow_alpha = lerpf(0.35, 0.0, t)
 
+	_color = _flashed(_color)
 	queue_redraw()
 
 func _process_burst(delta: float) -> void:
@@ -117,7 +129,7 @@ func _draw() -> void:
 		return
 
 	# 1. Anel-alvo fixo (a janela de acerto). Acende na zona perfeita.
-	var target_col: Color = _mode_color()
+	var target_col: Color = _flashed(_mode_color())
 	draw_circle(Vector2.ZERO, RADIUS_TARGET, Color(target_col.r, target_col.g, target_col.b, _target_alpha * 0.35))
 	draw_arc(Vector2.ZERO, RADIUS_TARGET, 0.0, TAU, 40, Color(target_col.r, target_col.g, target_col.b, _target_alpha), 2.0)
 
@@ -134,6 +146,15 @@ func _mode_color() -> Color:
 	if _defense_mode:
 		return Color(0.1, 0.6, 1.0, 1.0)
 	return Color(1.0, 0.15, 0.1, 1.0)
+
+## Lerp para o verde-cristal enquanto o flash da janela perfeita está ativo;
+## decai linearmente de volta à cor de modo. Preserva o alpha de entrada.
+func _flashed(c: Color) -> Color:
+	if _flash_timer <= 0.0:
+		return c
+	var f: float = _flash_timer / FLASH_S
+	var g: Color = Constants.COLOR_CRYSTAL_GLOW
+	return Color(lerpf(c.r, g.r, f), lerpf(c.g, g.g, f), lerpf(c.b, g.b, f), c.a)
 
 func _draw_arrow(dir: String, alpha: float) -> void:
 	const PX: float = 5.0
@@ -203,6 +224,7 @@ func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perf
 	_outer_radius = RADIUS_MAX
 	_target_alpha = 0.25
 	_arrow_alpha = 0.35
+	_flash_timer = 0.0
 	_color = Color(1, 1, 1, 0.45)
 	position = world_pos
 	visible = true
