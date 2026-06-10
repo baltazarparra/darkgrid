@@ -244,6 +244,13 @@ Tipo: assets + runtime.
 
 Objetivo: elevar hub, UI e corpse run para padrao premium.
 
+Status: implementado. Compra no hub colhe a erva e fuma o cachimbo (herb_pickup +
+pipe_smoke com delay de tragada; negada segue clique seco); a bolsa de fragmentos
+emite `fragment_bag_dropped/recovered` via SignalBus e o AudioDirector (persistente)
+toca os one-shots em player transiente (o `_stinger_player` seria cortado pelo
+GAME_OVER); `AudioDirector.play_ui_hover()` centraliza o tick de foco/hover com
+cooldown de 80 ms e respeito ao unlock, ligado em menu, opcoes e cards do hub.
+
 Sons P1:
 
 - `ui_hover`

@@ -54,3 +54,9 @@ func test_step_assets_exist_for_both_grounds():
 	for sound_name in ["step_grass", "step_stone"]:
 		assert_true(_sfx.play_named(sound_name, Constants.STEP_VOLUME_DB),
 			"%s deve existir com geração procedural" % sound_name)
+
+func test_p1_tactile_assets_exist():
+	# S4: hub/UI premium — colher a erva, fumar o cachimbo, tick de hover.
+	for sound_name in ["herb_pickup", "pipe_smoke", "ui_hover"]:
+		assert_true(_sfx.play_named(sound_name),
+			"%s deve existir com geração procedural" % sound_name)

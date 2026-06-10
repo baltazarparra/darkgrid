@@ -25,6 +25,16 @@ func after_each():
 	AudioDirector._heartbeat_player.stop()
 	AudioDirector._current_ambience = ""
 	AudioDirector.set_bus_volume("Music", 0.8)
+	# Remove players one-shot (hover/bolsa) na hora — queue_free só age no idle e
+	# vazaria contagem para o teste seguinte.
+	var fixed := [AudioDirector._music_a, AudioDirector._music_b,
+		AudioDirector._music_stem_base, AudioDirector._music_stem_mid,
+		AudioDirector._music_stem_top, AudioDirector._stinger_player,
+		AudioDirector._ambience_player, AudioDirector._heartbeat_player]
+	for child in AudioDirector.get_children():
+		if child is AudioStreamPlayer and not fixed.has(child):
+			child.free()
+	AudioDirector._last_hover_msec = -AudioDirector.UI_HOVER_COOLDOWN_MSEC
 
 func test_layout_buses_exist():
 	for bus_name in ["Master", "SFX", "Music", "Ambience"]:
