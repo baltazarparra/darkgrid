@@ -35,6 +35,15 @@ const SPACE_PROFILES: Dictionary = {
 const MASTER_TRIM_DB: float = -6.0
 
 const AMBIENCE_FADE: float = 1.2
+## Silêncio dramático (S7): a mata cala RÁPIDO antes da revelação/morte, segura um
+## vazio curto, e o stinger nasce dele. O retorno usa o AMBIENCE_FADE normal.
+const AMBIENCE_FAST_FADE: float = 0.25
+const SILENCE_BEFORE_STING: float = 0.35
+const GAME_OVER_SILENCE: float = 0.5
+## Eventos raros da mata: a floresta se mexe a cada 8-20 s, só na exploração.
+const MATA_EVENT_MIN_SECS: float = 8.0
+const MATA_EVENT_MAX_SECS: float = 20.0
+const MATA_EVENT_VOLUME_DB: float = -10.0
 const DUCK_AMOUNT_DB: float = -8.0
 const DUCK_TIME: float = 0.35
 ## Duck mais fundo no timing perfeito: o mundo cala para o crítico soar enorme.
@@ -113,6 +122,12 @@ var _music_intensity: int = 0
 var _heart_mode: bool = false
 var _stinger_player: AudioStreamPlayer
 var _last_hover_msec: int = -UI_HOVER_COOLDOWN_MSEC
+## Scheduler dos eventos raros da mata. Filho do autoload; morto em toda troca de
+## tela por _apply_screen_audio — nenhum timer sobrevive fora da exploração.
+var _mata_timer: Timer
+## Tween do silêncio dramático (boss intro / game over). Membro de propósito:
+## troca de tela mata o tween — sem callback órfão tocando stinger atrasado.
+var _silence_tween: Tween
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -143,6 +158,11 @@ func _ready() -> void:
 	_stinger_player = AudioStreamPlayer.new()
 	_stinger_player.bus = BUS_MUSIC
 	add_child(_stinger_player)
+
+	_mata_timer = Timer.new()
+	_mata_timer.one_shot = true
+	_mata_timer.timeout.connect(_on_mata_event_timeout)
+	add_child(_mata_timer)
 
 	_load_settings()
 	_apply_all_volumes()
@@ -224,6 +244,10 @@ func _on_screen_changed(new_screen: int) -> void:
 
 ## Casa ambiência, música e stinger ao estado da tela.
 func _apply_screen_audio(screen: int) -> void:
+	# Toda transição passa por aqui: mata o silêncio pendente (sem stinger órfão)
+	# e rearma/para o scheduler da mata — nenhum timer vaza da exploração.
+	_kill_silence_tween()
+	_update_mata_scheduler(screen)
 	_apply_space_profile(screen)
 	_refresh_ambience(screen)
 	_play_music(_music_for_screen(screen))
@@ -242,7 +266,12 @@ func _apply_screen_audio(screen: int) -> void:
 			_play_stinger(STING_ORGAO_ESTERTOR)
 		SignalBus.Screen.GAME_OVER:
 			set_music_intensity(0)
-			_play_stinger(STING_GAME_OVER)
+			# A morte esvazia o mundo (S7): música já cai via _play_music(""),
+			# a ambiência cala rápido, e o stinger nasce do vazio.
+			_fade_player(_ambience_player, STEM_SILENCE_DB, true, AMBIENCE_FAST_FADE)
+			_silence_tween = create_tween()
+			_silence_tween.tween_interval(GAME_OVER_SILENCE)
+			_silence_tween.tween_callback(_play_stinger.bind(STING_GAME_OVER))
 		_:
 			set_music_intensity(0)
 
@@ -252,14 +281,51 @@ func _on_chest_opened() -> void:
 
 ## A revelação do boss (overlay durante a exploração) já dispara o tema do boss, que
 ## atravessa para a arena sem corte (o _play_music no-opa quando a faixa é a mesma).
+## S7: a mata cala primeiro — fade rápido da ambiência, um vazio curto, e o stinger
+## nasce dele. A ambiência volta por baixo do tema no fade normal (contínua na
+## Fase 5, onde a arena é a MESMA igreja e _play_ambience no-oparia).
 func _on_boss_intro() -> void:
 	if not _audio_unlocked:
 		return
 	# Fase FINAL: a revelação do Jesuíta toca o sino da torre, não o stinger genérico.
 	var sting := STING_SINO_IGREJA if GameState.active_phase == FINAL_PHASE else STING_BOSS_INTRO
-	_play_stinger(sting)
-	_play_music(_mus(_boss_track(GameState.active_phase)))
-	set_music_intensity(2)
+	_fade_player(_ambience_player, STEM_SILENCE_DB, false, AMBIENCE_FAST_FADE)
+	_kill_silence_tween()
+	_silence_tween = create_tween()
+	_silence_tween.tween_interval(SILENCE_BEFORE_STING)
+	_silence_tween.tween_callback(func() -> void:
+		_play_stinger(sting)
+		_play_music(_mus(_boss_track(GameState.active_phase)))
+		set_music_intensity(2)
+		if _ambience_player.playing:
+			_fade_player(_ambience_player, 0.0, false))
+
+func _kill_silence_tween() -> void:
+	if _silence_tween != null and _silence_tween.is_valid():
+		_silence_tween.kill()
+
+# ─── A mata respira (S7) ───────────────────────────
+## Liga o scheduler só nas telas de exploração; qualquer outra tela o para.
+func _update_mata_scheduler(screen: int) -> void:
+	match screen:
+		SignalBus.Screen.EXPLORATION, SignalBus.Screen.EXPLORATION_PHASE2, \
+		SignalBus.Screen.EXPLORATION_PHASE3, SignalBus.Screen.EXPLORATION_PHASE4, \
+		SignalBus.Screen.EXPLORATION_PHASE5:
+			_mata_timer.start(randf_range(MATA_EVENT_MIN_SECS, MATA_EVENT_MAX_SECS))
+		_:
+			_mata_timer.stop()
+
+## Evento raro: variante por convenção (_2/_3), volume baixo, bus Ambience.
+## Rearma mesmo sem asset (graceful — o catálogo pode chegar depois).
+func _on_mata_event_timeout() -> void:
+	var options: Array[String] = []
+	for suffix: String in ["", "_2", "_3"]:
+		var path := SFX_DIR + "mata_event%s.wav" % suffix
+		if ResourceLoader.exists(path):
+			options.append(path)
+	if not options.is_empty():
+		_play_oneshot_sfx(options.pick_random(), MATA_EVENT_VOLUME_DB, BUS_AMBIENCE)
+	_mata_timer.start(randf_range(MATA_EVENT_MIN_SECS, MATA_EVENT_MAX_SECS))
 
 func _on_chama() -> void:
 	if _audio_unlocked:
@@ -300,14 +366,14 @@ func play_ui_hover() -> void:
 	_last_hover_msec = now
 	_play_oneshot_sfx(SFX_DIR + "ui_hover.wav", UI_HOVER_VOLUME_DB)
 
-## Player transiente no bus SFX (audível mesmo com música desligada); asset
-## ausente é no-op — o catálogo pode chegar depois do código (graceful).
-func _play_oneshot_sfx(path: String, volume_db: float = 0.0) -> void:
+## Player transiente (default bus SFX — audível mesmo com música desligada;
+## eventos da mata usam o bus Ambience). Asset ausente é no-op (graceful).
+func _play_oneshot_sfx(path: String, volume_db: float = 0.0, bus: String = BUS_SFX) -> void:
 	if not ResourceLoader.exists(path):
 		return
 	var player := AudioStreamPlayer.new()
 	player.stream = load(path)
-	player.bus = BUS_SFX
+	player.bus = bus
 	player.volume_db = volume_db
 	player.finished.connect(player.queue_free)
 	add_child(player)

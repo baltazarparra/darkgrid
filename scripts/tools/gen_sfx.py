@@ -632,6 +632,43 @@ def pipe_smoke_wav():
     return _normalize(_mix(breath, [s * 0.5 for s in ember]), 0.7)
 
 
+def mata_event_wav():
+    # Evento raro da mata (S7): a floresta se mexe LONGE — ave agourenta, galho
+    # quebrando ou sussurro respirado. O caráter muda com a seed da variante;
+    # o eco de mata empurra tudo para trás. Volume baixo vem do play (-10 dB).
+    kind = random.random()
+    if kind < 0.34:
+        # ave agourenta: dois gritos curtos descendo, o segundo mais fraco
+        core = _seq(
+            (assovio(0.16, 1400.0 * _jit(0.1), freq_end=960.0, breath=0.12), 0.0, 0.7),
+            (assovio(0.20, 1280.0 * _jit(0.1), freq_end=840.0, breath=0.16), 0.26, 0.55),
+        )
+    elif kind < 0.67:
+        # galho quebrando: estalo seco de madeira + folhas caindo
+        n = int(SAMPLE_RATE * 0.30)
+        leaves = biquad([_noise() * _env(i, n, 0.05, 0.6) for i in range(n)], "lp", 2200.0)
+        core = _seq(
+            (caixa(0.06, bright=0.6), 0.0, 0.9),
+            (leaves, 0.05, 0.5),
+        )
+    else:
+        # sussurro respirado: ar grave modulado devagar, quase voz — quase
+        n = int(SAMPLE_RATE * 0.50)
+        whisper = []
+        for i in range(n):
+            t = i / SAMPLE_RATE
+            am = 0.55 + 0.45 * math.sin(2 * math.pi * 3.3 * t + 1.0)
+            whisper.append(_noise() * am * _env(i, n, 0.2, 0.5))
+        core = biquad(whisper, "lp", 1100.0, q=1.2)
+    out = echo(core, time_s=0.3, feedback=0.3, mix=0.35, taps=3)
+    # Cama de ar contínua sob o evento: preenche os vãos (o fiscal exige corpo
+    # RMS mesmo em som esparso) e cola o grito na respiração da mata.
+    n_total = len(out)
+    bed = biquad([_noise() * 0.55 * _env(i, n_total, 0.25, 0.4) for i in range(n_total)],
+                 "lp", 750.0)
+    return _normalize(_mix(out, bed), 0.5)
+
+
 GENERATORS = {
     "attack": attack_wav,
     "hit": hit_wav,
@@ -646,6 +683,7 @@ GENERATORS = {
     "ui_hover": ui_hover_wav,
     "herb_pickup": herb_pickup_wav,
     "pipe_smoke": pipe_smoke_wav,
+    "mata_event": mata_event_wav,
 }
 
 

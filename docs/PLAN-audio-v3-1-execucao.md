@@ -398,6 +398,15 @@ Tipo: runtime + assets opcionais.
 
 Objetivo: ambiencia reativa, eventos raros e silencio dramatico.
 
+Status: implementado. `_mata_timer` (8-20s, one-shot, rearmado a cada disparo)
+roda SO em telas de exploracao — `_apply_screen_audio` e o funil de toda troca de
+tela, entao nenhum timer vaza; `mata_event` (3 variantes: ave agourenta, galho
+quebrando, sussurro) toca em player transiente no bus Ambience a -10 dB. Boss
+intro: ambiencia cala em 0.25s, vazio de 0.35s, stinger + tema nascem do silencio
+e a ambiencia volta por baixo (continua na igreja da Fase 5). Game over: musica e
+ambiencia esvaziam rapido e o stinger vem 0.5s depois. `_silence_tween` e membro,
+morto em toda troca de tela — sem stinger orfao.
+
 Arquivos provaveis:
 
 - `scripts/core/audio_director.gd`

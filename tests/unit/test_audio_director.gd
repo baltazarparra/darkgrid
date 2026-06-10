@@ -35,6 +35,8 @@ func after_each():
 		if child is AudioStreamPlayer and not fixed.has(child):
 			child.free()
 	AudioDirector._last_hover_msec = -AudioDirector.UI_HOVER_COOLDOWN_MSEC
+	AudioDirector._mata_timer.stop()
+	AudioDirector._kill_silence_tween()
 
 func test_layout_buses_exist():
 	for bus_name in ["Master", "SFX", "Music", "Ambience"]:
@@ -93,18 +95,35 @@ func _stinger_path() -> String:
 	return AudioDirector._stinger_player.stream.resource_path
 
 func test_boss_intro_stinger_is_church_bell_on_final_phase():
+	# S7: o stinger nasce do silêncio — espera o vazio curto antes de afirmar.
 	AudioDirector.unlock_audio()
 	var phase_before := GameState.active_phase
 	GameState.active_phase = 5
 	GameState.active_combat_is_boss = true
 	AudioDirector._on_boss_intro()
+	await get_tree().create_timer(AudioDirector.SILENCE_BEFORE_STING + 0.1).timeout
 	assert_true(_stinger_path().ends_with("sting_sino_igreja.wav"),
 		"revelação do Jesuíta toca o sino da torre")
 	GameState.active_phase = 1
 	AudioDirector._on_boss_intro()
+	await get_tree().create_timer(AudioDirector.SILENCE_BEFORE_STING + 0.1).timeout
 	assert_true(_stinger_path().ends_with("sting_boss_intro.wav"),
 		"fases 1–4 mantêm o stinger genérico de revelação")
 	GameState.active_phase = phase_before
+	GameState.active_combat_is_boss = false
+
+func test_boss_intro_defers_stinger_into_the_silence():
+	# A mata cala primeiro: nada toca no frame da revelação; o stinger vem depois.
+	AudioDirector.unlock_audio()
+	GameState.active_phase = 1
+	GameState.active_combat_is_boss = true
+	AudioDirector._stinger_player.stop()
+	AudioDirector._stinger_player.stream = null
+	AudioDirector._on_boss_intro()
+	assert_false(AudioDirector._stinger_player.playing,
+		"no frame da revelação o mundo está calando, não tocando")
+	await get_tree().create_timer(AudioDirector.SILENCE_BEFORE_STING + 0.1).timeout
+	assert_true(AudioDirector._stinger_player.playing, "o stinger nasce do vazio")
 	GameState.active_combat_is_boss = false
 
 func test_ending_plays_organ_death_rattle():
@@ -189,11 +208,13 @@ func test_heart_mode_ignores_death_zero_hp():
 	assert_false(AudioDirector._heart_mode, "HP zero é morte, não estado crítico")
 
 func test_same_track_does_not_restart():
-	# Boss-intro inicia o tema; a arena pede a MESMA faixa → não reinicia (sem corte).
+	# Boss-intro inicia o tema (após o silêncio dramático); a arena pede a MESMA
+	# faixa → não reinicia (sem corte).
 	AudioDirector.unlock_audio()
 	GameState.active_phase = 1
 	GameState.active_combat_is_boss = true
 	AudioDirector._on_boss_intro()
+	await get_tree().create_timer(AudioDirector.SILENCE_BEFORE_STING + 0.1).timeout
 	var active_before := AudioDirector._music_active
 	AudioDirector._apply_screen_audio(SignalBus.Screen.ARENA)
 	assert_eq(AudioDirector._music_active, active_before,
@@ -266,6 +287,54 @@ func test_boss_died_missing_asset_does_not_crash():
 	AudioDirector.unlock_audio()
 	AudioDirector._play_stinger("boss_death_inexistente")
 	assert_true(true, "stinger ausente é no-op (o death_sound comum é o fallback)")
+
+func test_mata_scheduler_runs_only_in_exploration():
+	AudioDirector.unlock_audio()
+	for screen: int in [SignalBus.Screen.EXPLORATION, SignalBus.Screen.EXPLORATION_PHASE3,
+			SignalBus.Screen.EXPLORATION_PHASE5]:
+		AudioDirector._apply_screen_audio(screen)
+		assert_false(AudioDirector._mata_timer.is_stopped(),
+			"a mata respira na exploração (tela %d)" % screen)
+		var wait := AudioDirector._mata_timer.time_left
+		assert_between(wait, AudioDirector.MATA_EVENT_MIN_SECS - 0.01,
+			AudioDirector.MATA_EVENT_MAX_SECS + 0.01, "intervalo dentro de 8-20s")
+	for screen: int in [SignalBus.Screen.ARENA, SignalBus.Screen.HUB,
+			SignalBus.Screen.MAIN_MENU, SignalBus.Screen.GAME_OVER]:
+		AudioDirector._apply_screen_audio(screen)
+		assert_true(AudioDirector._mata_timer.is_stopped(),
+			"nenhum timer da mata sobrevive fora da exploração (tela %d)" % screen)
+
+func test_mata_event_rearms_after_firing():
+	AudioDirector.unlock_audio()
+	AudioDirector._apply_screen_audio(SignalBus.Screen.EXPLORATION)
+	AudioDirector._on_mata_event_timeout()
+	assert_false(AudioDirector._mata_timer.is_stopped(),
+		"o evento rearma o scheduler (mesmo sem asset)")
+
+func test_game_over_empties_world_before_stinger():
+	AudioDirector.unlock_audio()
+	AudioDirector._stinger_player.stop()
+	AudioDirector._stinger_player.stream = null
+	AudioDirector._apply_screen_audio(SignalBus.Screen.GAME_OVER)
+	assert_false(AudioDirector._stinger_player.playing,
+		"a morte esvazia o mundo primeiro — o stinger não toca no mesmo frame")
+	await get_tree().create_timer(AudioDirector.GAME_OVER_SILENCE + 0.1).timeout
+	assert_true(_stinger_path().ends_with("sting_game_over.wav"),
+		"o stinger de game over nasce do vazio")
+
+func test_screen_change_kills_pending_silence():
+	# Troca de tela no meio do vazio: o stinger pendente NÃO pode tocar atrasado.
+	AudioDirector.unlock_audio()
+	GameState.active_phase = 1
+	GameState.active_combat_is_boss = true
+	AudioDirector._stinger_player.stop()
+	AudioDirector._stinger_player.stream = null
+	AudioDirector._on_boss_intro()
+	AudioDirector._apply_screen_audio(SignalBus.Screen.MAIN_MENU)
+	await get_tree().create_timer(AudioDirector.SILENCE_BEFORE_STING + 0.1).timeout
+	assert_false(AudioDirector._stinger_player.playing,
+		"o tween de silêncio morre na troca de tela — sem callback órfão")
+	GameState.active_combat_is_boss = false
 
 func test_force_loop_handles_8_and_16_bit():
 	# A música é gravada em PCM 8-bit (1 byte por frame mono); SFX seguem 16-bit.
