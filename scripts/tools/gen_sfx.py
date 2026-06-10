@@ -89,10 +89,12 @@ def _conform_sfx(samples):
     return cand
 
 
-def _write(name, samples, subdir="sfx", rate=SAMPLE_RATE, gain=None):
+def _write(name, samples, subdir="sfx", rate=SAMPLE_RATE, gain=None, width=2):
     """Grava o WAV já conforme ao padrão (PRD-audio-v2 §3). `gain=None` calcula o
     ganho pelo alvo da categoria (= subdir), MEDINDO NO RATE FINAL (o mesmo que o
-    fiscal mede); `gain: float` aplica ganho linear direto (caminho dos stems)."""
+    fiscal mede); `gain: float` aplica ganho linear direto (caminho dos stems).
+    `width=1` grava PCM 8-bit unsigned: a música já é bitcrushada a 7 bits, então
+    8-bit é quase lossless aqui — e corta o peso pela metade (browser-first)."""
     out_dir = os.path.join(AUDIO_DIR, subdir)
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, name)
@@ -107,18 +109,43 @@ def _write(name, samples, subdir="sfx", rate=SAMPLE_RATE, gain=None):
         samples = [s * gain for s in samples]
         peak = check_audio.sample_peak_db(samples)
         if peak > _PEAK_CEIL_DB:  # clamp de segurança (não deve disparar nos stems)
+            print(f"  AVISO: {name} clampado em {peak:.1f} dBFS (balanço relativo alterado)")
             g = _db_to_gain(_PEAK_CEIL_DB - peak)
             samples = [s * g for s in samples]
     with wave.open(path, "w") as w:
         w.setnchannels(1)
-        w.setsampwidth(2)
+        w.setsampwidth(width)
         w.setframerate(rate)
         frames = bytearray()
         for s in samples:
-            v = int(max(-1.0, min(1.0, s)) * 32767)
-            frames += struct.pack("<h", v)
+            c = max(-1.0, min(1.0, s))
+            if width == 1:
+                frames += struct.pack("<B", max(0, min(255, 128 + int(round(c * 127.0)))))
+            else:
+                frames += struct.pack("<h", int(c * 32767))
         w.writeframes(frames)
-    print(f"  {name}: {len(samples)} samples ({len(samples) * 2} bytes)")
+    print(f"  {name}: {len(samples)} samples ({len(samples) * width} bytes)")
+
+
+def _write_stems(name, layers):
+    """Grava stems sincronizados (mus_<name>_{base,mid,top}.wav) com NORMALIZAÇÃO
+    EM GRUPO: o ganho é calculado sobre o MIX das camadas (alvo LUFS de música) e
+    aplicado igual nas três — normalizar stem a stem destruiria o balanço relativo.
+    O fiscal checa só o pico dos stems (LUFS individual não se aplica a camada)."""
+    n = max(len(s) for s in layers.values())
+    mix = [0.0] * n
+    for samples in layers.values():
+        for i, s in enumerate(samples):
+            mix[i] += s
+    mix = _resample(mix, SAMPLE_RATE, MUSIC_RATE)
+    gain_db = _LUFS_TARGET["music"] - check_audio.lufs(mix, MUSIC_RATE)
+    peak = check_audio.sample_peak_db(mix) + gain_db
+    if peak > _PEAK_CEIL_DB:
+        gain_db -= peak - _PEAK_CEIL_DB  # o mix nunca estoura quando somado no bus
+    g = _db_to_gain(gain_db)
+    for layer, samples in layers.items():
+        _write(f"{name}_{layer}.wav", samples, subdir="music", rate=MUSIC_RATE, gain=g,
+               width=1)
 
 
 # ─── Helpers de síntese ────────────────────────────
@@ -698,12 +725,28 @@ def amb_church(dur=10.0):
     return _normalize(_loopify(out, n, fade), 0.55)
 
 
+def heartbeat(dur=2.0):
+    """Coração da Caipora (HP crítico, 'modo coração'): lub-dub de alfaia surda a
+    60 BPM. Loop limpo sem costura — o tambor decai a zero antes da virada."""
+    n = int(SAMPLE_RATE * dur)
+    out = [0.0] * n
+    for beat_at in (0.0, 1.0):
+        lub = alfaia(0.16, base=55.0, punch=0.5)
+        dub = alfaia(0.13, base=50.0, punch=0.3)
+        for i, s in enumerate(lub):
+            out[(int(beat_at * SAMPLE_RATE) + i) % n] += s
+        for i, s in enumerate(dub):
+            out[(int((beat_at + 0.32) * SAMPLE_RATE) + i) % n] += s * 0.7
+    return _normalize(biquad(out, "lp", 320.0, q=0.9), 0.7)  # surdo: bate no peito
+
+
 AMBIENCES = {
     "amb_forest": amb_forest,
     "amb_dread": amb_dread,
     "amb_fire": amb_fire,
     "amb_fog": amb_fog,
     "amb_church": amb_church,
+    "heartbeat": heartbeat,
 }
 
 
@@ -814,36 +857,46 @@ def _bass():
     return lambda d, f: triangle(d, f, release=0.15)
 
 
-def _arena_track(bpm, root, scale, density):
-    """Baque virado de combate: alfaia + caixa + ganzá + lead-ostinato chiptune + baixo.
-    'density' (1..3) adiciona hats de ruído NES e ghost notes — intensidade por fase."""
-    buf, step = _new_buf(bpm, 4)
-    _drums(buf, step, lambda: alfaia(0.18, base=root * 0.5, punch=0.9), _baque_alfaia(4),
+def _arena_layers(bpm, root, scale, density):
+    """Baque virado de combate em 3 STEMS verticais sincronizados (mesmo grid,
+    mesmo tamanho): base = chão (alfaia + gonguê no 1 + baixo, sempre toca),
+    mid = miudezas (caixa/ganzá/hats, combate ativo), top = melodia (lead
+    ostinato + agogô, alta intensidade). O AudioDirector abre/fecha mid/top.
+    bitcrush POR STEM: é não-linear (crush(a+b) != crush(a)+crush(b))."""
+    base, step = _new_buf(bpm, 4)
+    mid, _ = _new_buf(bpm, 4)
+    top, _ = _new_buf(bpm, 4)
+    # BASE — o coração que nunca para
+    _drums(base, step, lambda: alfaia(0.18, base=root * 0.5, punch=0.9), _baque_alfaia(4),
            humanize=True)
-    _drums(buf, step, lambda: caixa(0.08, bright=1.0),
-           [(st, 0.55) for b in range(4) for st in (b * 16 + 4, b * 16 + 12)],
-           humanize=True)
-    _drums(buf, step, lambda: caixa(0.06, bright=0.8), _ghost_fill(4, every=2))  # viradas
-    _drums(buf, step, lambda: ganza(0.06, rising=False), _shaker_run(4))
-    if density >= 2:
-        _drums(buf, step, lambda: nes_noise(0.05, decay=55.0, lp=0.4, gain=0.35),
-               [(st, 0.4) for st in range(64) if st % 2 == 1])
-    # baixo: tônica/quinta pulsando nos tempos
+    _drums(base, step, lambda: gongue(0.14, 420.0), [(b * 16, 0.38) for b in range(4)])
     bass_notes = []
     for b in range(4):
         deg = 0 if b % 2 == 0 else 4
         bass_notes += [(b * 16, deg, 4, 0.8), (b * 16 + 8, deg, 4, 0.7)]
-    _melody(buf, step, root, scale, _bass(), bass_notes)
-    # lead ostinato (8ª acima): motivo de agogô traduzido para pulso
-    lo, hi, md, top = 7, 11, 9, 14
-    base_pat = [(0, hi, 2), (2, lo, 2), (4, hi, 2), (6, top, 2), (8, lo, 2), (10, hi, 2), (12, md, 2), (14, top, 2)]
-    var_pat = [(0, hi, 2), (2, md, 2), (4, top, 2), (6, lo, 2), (8, md, 2), (10, hi, 2), (12, lo, 2), (14, md, 2)]
+    _melody(base, step, root, scale, _bass(), bass_notes)
+    # MID — caixa, ganzá e hats (a luta esquenta)
+    _drums(mid, step, lambda: caixa(0.08, bright=1.0),
+           [(st, 0.55) for b in range(4) for st in (b * 16 + 4, b * 16 + 12)],
+           humanize=True)
+    _drums(mid, step, lambda: caixa(0.06, bright=0.8), _ghost_fill(4, every=2))  # viradas
+    _drums(mid, step, lambda: ganza(0.06, rising=False), _shaker_run(4))
+    if density >= 2:
+        _drums(mid, step, lambda: nes_noise(0.05, decay=55.0, lp=0.4, gain=0.35),
+               [(st, 0.4) for st in range(64) if st % 2 == 1])
+    # TOP — lead ostinato (8ª acima) + agogô de brilho
+    lo, hi, md, tp = 7, 11, 9, 14
+    base_pat = [(0, hi, 2), (2, lo, 2), (4, hi, 2), (6, tp, 2), (8, lo, 2), (10, hi, 2), (12, md, 2), (14, tp, 2)]
+    var_pat = [(0, hi, 2), (2, md, 2), (4, tp, 2), (6, lo, 2), (8, md, 2), (10, hi, 2), (12, lo, 2), (14, md, 2)]
     lead_notes = []
     for b in range(4):
         pat = var_pat if b == 2 else base_pat
         lead_notes += [(st + b * 16, deg, ln, 0.4) for st, deg, ln in pat]
-    _melody(buf, step, root, scale, _lead(duty=0.25), lead_notes)
-    return _normalize(bitcrush(buf, bits=7), 0.85)
+    _melody(top, step, root, scale, _lead(duty=0.25), lead_notes)
+    _drums(top, step, lambda: agogo(0.12, freq=1320.0, bend=0.0),
+           [(b * 16 + 4, 0.22) for b in (1, 3)])
+    return {"base": bitcrush(base, bits=7), "mid": bitcrush(mid, bits=7),
+            "top": bitcrush(top, bits=7)}
 
 
 # ─── Faixas: telas ─────────────────────────────────
@@ -956,102 +1009,118 @@ def mus_explore_p4():
     return _normalize(bitcrush(buf, bits=6), 0.78)
 
 
-# ─── Faixas: arenas (intensidade crescente por fase) ───
+# ─── Faixas: arenas (stems; intensidade crescente por fase) ───
 def mus_arena_p1():
-    return _arena_track(100, A2, MINOR_HARM, density=1)
+    return _arena_layers(100, A2, MINOR_HARM, density=1)
 
 
 def mus_arena_p2():
-    return _arena_track(106, AS2, PHRYGIAN, density=2)
+    return _arena_layers(106, AS2, PHRYGIAN, density=2)
 
 
 def mus_arena_p3():
-    return _arena_track(104, G2, PHRYGIAN, density=2)
+    return _arena_layers(104, G2, PHRYGIAN, density=2)
 
 
 def mus_arena_p4():
-    return _arena_track(112, F2, PHRYGIAN, density=3)
+    return _arena_layers(112, F2, PHRYGIAN, density=3)
 
 
 # ─── Faixas: bosses (tema próprio) ─────────────────
 def mus_boss_mula():
-    """Mula Sem Cabeça: galope (kick em tercinas) e lead agressivo. Jatos de fogo no
-    canal de ruído."""
-    buf, step = _new_buf(120, 4)
+    """Mula Sem Cabeça (stems): galope (kick em tercinas) e lead agressivo. Jatos
+    de fogo no canal de ruído. base=galope+baixo, mid=fogo+ganzá, top=lead."""
+    base, step = _new_buf(120, 4)
+    mid, _ = _new_buf(120, 4)
+    top, _ = _new_buf(120, 4)
     gallop = [(st, 0.9 if st % 4 == 0 else 0.55) for b in range(4) for st in (b * 16, b * 16 + 3, b * 16 + 4, b * 16 + 8, b * 16 + 11, b * 16 + 12)]
-    _drums(buf, step, lambda: alfaia(0.14, base=D2 * 0.5, punch=1.0), gallop, humanize=True)
-    _drums(buf, step, lambda: nes_noise(0.06, decay=40.0, lp=0.2, gain=0.4),
-           [(b * 16 + 6, 0.45) for b in range(4)] + [(b * 16 + 14, 0.4) for b in range(4)])
-    _drums(buf, step, lambda: ganza(0.05, rising=False), _shaker_run(4))
-    _melody(buf, step, D2, MINOR_HARM, _bass(),
+    _drums(base, step, lambda: alfaia(0.14, base=D2 * 0.5, punch=1.0), gallop, humanize=True)
+    _drums(base, step, lambda: gongue(0.14, 420.0), [(b * 16, 0.36) for b in range(4)])
+    _melody(base, step, D2, MINOR_HARM, _bass(),
             [(st, 0, 2, 0.8) for st in range(0, 64, 4)])
-    _melody(buf, step, D2, MINOR_HARM, _lead(duty=0.25),
+    _drums(mid, step, lambda: nes_noise(0.06, decay=40.0, lp=0.2, gain=0.4),
+           [(b * 16 + 6, 0.45) for b in range(4)] + [(b * 16 + 14, 0.4) for b in range(4)])
+    _drums(mid, step, lambda: ganza(0.05, rising=False), _shaker_run(4))
+    _melody(top, step, D2, MINOR_HARM, _lead(duty=0.25),
             [(st, deg, 1, 0.42) for b in range(4) for st, deg in
              ((b * 16, 7), (b * 16 + 2, 10), (b * 16 + 4, 11), (b * 16 + 6, 10),
               (b * 16 + 8, 7), (b * 16 + 10, 12), (b * 16 + 12, 11), (b * 16 + 14, 9))])
-    return _normalize(bitcrush(buf, bits=7), 0.86)
+    return {"base": bitcrush(base, bits=7), "mid": bitcrush(mid, bits=7),
+            "top": bitcrush(top, bits=7)}
 
 
 def mus_boss_boitata():
-    """Boitatá: serpenteante e veloz. Lead cromático com vibrato (a cobra desliza),
-    ruído denso (fogo), baixo em semicolcheias."""
-    buf, step = _new_buf(132, 4)
-    _drums(buf, step, lambda: alfaia(0.12, base=E2 * 0.5, punch=0.95), _baque_alfaia(4),
+    """Boitatá (stems): serpenteante e veloz. base=baque+baixo-semicolcheia,
+    mid=fogo denso+caixa, top=lead cromático com vibrato (a cobra desliza)."""
+    base, step = _new_buf(132, 4)
+    mid, _ = _new_buf(132, 4)
+    top, _ = _new_buf(132, 4)
+    _drums(base, step, lambda: alfaia(0.12, base=E2 * 0.5, punch=0.95), _baque_alfaia(4),
            humanize=True)
-    _drums(buf, step, lambda: nes_noise(0.04, decay=80.0, lp=0.35, gain=0.4),
+    _drums(base, step, lambda: gongue(0.14, 440.0), [(b * 16, 0.34) for b in range(4)])
+    _melody(base, step, E2, PHRYGIAN, _bass(),
+            [(st, (st // 4) % 3, 1, 0.7) for st in range(0, 64, 2)])
+    _drums(mid, step, lambda: nes_noise(0.04, decay=80.0, lp=0.35, gain=0.4),
            [(st, 0.4) for st in range(64) if st % 2 == 1])
-    _drums(buf, step, lambda: caixa(0.07, bright=1.1),
+    _drums(mid, step, lambda: caixa(0.07, bright=1.1),
            [(b * 16 + 4, 0.5) for b in range(4)] + [(b * 16 + 12, 0.55) for b in range(4)],
            humanize=True)
-    _drums(buf, step, lambda: caixa(0.05, bright=0.9), _ghost_fill(4, every=2))
-    _melody(buf, step, E2, PHRYGIAN, _bass(),
-            [(st, (st // 4) % 3, 1, 0.7) for st in range(0, 64, 2)])
+    _drums(mid, step, lambda: caixa(0.05, bright=0.9), _ghost_fill(4, every=2))
     serp = [0, 1, 2, 1, 3, 2, 4, 3]  # subir e escorregar
-    _melody(buf, step, E2, PHRYGIAN, _lead(duty=0.25, vib=0.04),
+    _melody(top, step, E2, PHRYGIAN, _lead(duty=0.25, vib=0.04),
             [(b * 16 + i * 2, 7 + serp[i], 1, 0.42) for b in range(4) for i in range(8)])
-    return _normalize(bitcrush(buf, bits=7), 0.86)
+    return {"base": bitcrush(base, bits=7), "mid": bitcrush(mid, bits=7),
+            "top": bitcrush(top, bits=7)}
 
 
 def mus_boss_curupira():
-    """Curupira: tribal e telúrico. Alfaia pesada, agogô ritualístico e o leitmotif do
-    assovio (protetor da mata) por cima."""
-    buf, step = _new_buf(116, 4)
-    _drums(buf, step, lambda: alfaia(0.16, base=A2 * 0.5, punch=1.0),
+    """Curupira (stems): tribal e telúrico. base=alfaia pesada+baixo,
+    mid=agogô ritualístico+ganzá, top=assovio-leitmotif com eco + lead."""
+    base, step = _new_buf(116, 4)
+    mid, _ = _new_buf(116, 4)
+    top, _ = _new_buf(116, 4)
+    _drums(base, step, lambda: alfaia(0.16, base=A2 * 0.5, punch=1.0),
            [(st, 0.9 if st % 8 == 0 else 0.6) for b in range(4) for st in (b * 16, b * 16 + 3, b * 16 + 6, b * 16 + 8, b * 16 + 11, b * 16 + 14)],
            humanize=True)
-    _drums(buf, step, lambda: agogo(0.14, freq=1100.0, bend=0.0),
-           [(b * 16 + st, 0.4) for b in range(4) for st in (2, 10)])
-    _drums(buf, step, lambda: ganza(0.05, rising=False), _shaker_run(4))
-    _melody(buf, step, A2, MINOR_HARM, _bass(),
+    _drums(base, step, lambda: gongue(0.14, 400.0), [(b * 16, 0.36) for b in range(4)])
+    _melody(base, step, A2, MINOR_HARM, _bass(),
             [(b * 16, 0, 8, 0.8) for b in range(4)])
+    _drums(mid, step, lambda: agogo(0.14, freq=1100.0, bend=0.0),
+           [(b * 16 + st, 0.4) for b in range(4) for st in (2, 10)])
+    _drums(mid, step, lambda: ganza(0.05, rising=False), _shaker_run(4))
     # leitmotif do assovio (a voz da floresta) em dois pontos — v2 com eco de mata
     # (aplicado ao sample antes do _put: o wrap do grid mantém o loop sem emenda).
     for at in (0, 32):
-        _put(buf, echo(assovio(1.0, freq=note(A2, 19)), time_s=0.24, feedback=0.3,
+        _put(top, echo(assovio(1.0, freq=note(A2, 19)), time_s=0.24, feedback=0.3,
                        mix=0.25, taps=3), at, step, 0.34)
-    _melody(buf, step, A2, MINOR_HARM, _lead(duty=0.25),
+    _melody(top, step, A2, MINOR_HARM, _lead(duty=0.25),
             [(b * 16 + st, deg, 2, 0.36) for b in range(4) for st, deg in ((4, 9), (12, 11))])
-    return _normalize(bitcrush(buf, bits=7), 0.86)
+    return {"base": bitcrush(base, bits=7), "mid": bitcrush(mid, bits=7),
+            "top": bitcrush(top, bits=7)}
 
 
 def mus_boss_saci():
-    """Saci: redemoinho travesso e épico-dark (boss final). Tudo denso — alfaia, ruído
-    em varreduras (vento), lead frenético frígio, baixo motor."""
-    buf, step = _new_buf(126, 4)
-    _drums(buf, step, lambda: alfaia(0.13, base=C2 * 0.5, punch=1.0), _baque_alfaia(4),
+    """Saci (stems): redemoinho travesso e épico-dark. base=baque+baixo-motor,
+    mid=vento+caixa+ganzá, top=lead frenético frígio."""
+    base, step = _new_buf(126, 4)
+    mid, _ = _new_buf(126, 4)
+    top, _ = _new_buf(126, 4)
+    _drums(base, step, lambda: alfaia(0.13, base=C2 * 0.5, punch=1.0), _baque_alfaia(4),
            humanize=True)
-    _drums(buf, step, lambda: caixa(0.05, bright=1.0), _ghost_fill(4, every=2))
-    _drums(buf, step, lambda: nes_noise(0.08, decay=18.0, lp=0.5, gain=0.35),
-           [(b * 16, 0.45) for b in range(4)])  # varredura de vento por compasso
-    _drums(buf, step, lambda: caixa(0.06, bright=1.2),
-           [(st, 0.45) for st in range(64) if st % 4 == 2])
-    _drums(buf, step, lambda: ganza(0.05, rising=False), _shaker_run(4))
-    _melody(buf, step, C2, PHRYGIAN, _bass(),
+    _drums(base, step, lambda: gongue(0.14, 410.0), [(b * 16, 0.34) for b in range(4)])
+    _melody(base, step, C2, PHRYGIAN, _bass(),
             [(st, 0 if (st // 8) % 2 == 0 else 1, 1, 0.78) for st in range(0, 64, 2)])
+    _drums(mid, step, lambda: caixa(0.05, bright=1.0), _ghost_fill(4, every=2))
+    _drums(mid, step, lambda: nes_noise(0.08, decay=18.0, lp=0.5, gain=0.35),
+           [(b * 16, 0.45) for b in range(4)])  # varredura de vento por compasso
+    _drums(mid, step, lambda: caixa(0.06, bright=1.2),
+           [(st, 0.45) for st in range(64) if st % 4 == 2])
+    _drums(mid, step, lambda: ganza(0.05, rising=False), _shaker_run(4))
     whirl = [7, 8, 10, 11, 12, 11, 10, 8]
-    _melody(buf, step, C2, PHRYGIAN, _lead(duty=0.125, vib=0.02),
+    _melody(top, step, C2, PHRYGIAN, _lead(duty=0.125, vib=0.02),
             [(b * 16 + i * 2, whirl[(i + b) % 8], 1, 0.44) for b in range(4) for i in range(8)])
-    return _normalize(bitcrush(buf, bits=7), 0.87)
+    return {"base": bitcrush(base, bits=7), "mid": bitcrush(mid, bits=7),
+            "top": bitcrush(top, bits=7)}
 
 
 def mus_ending():
@@ -1090,7 +1159,7 @@ def mus_explore_p5():
 
 def mus_arena_p5():
     """Arena da Fase 5: a mais intensa do jogo. Baque virado denso em frígio grave."""
-    return _arena_track(120, C2, PHRYGIAN, density=3)
+    return _arena_layers(120, C2, PHRYGIAN, density=3)
 
 
 def mus_boss_jesuita():
@@ -1098,26 +1167,30 @@ def mus_boss_jesuita():
     chefes — a música também. Baque virado denso + sino de igreja (gonguê/agogô)
     dobrando como condenação, varredura de ruído (aspersão de água benta),
     baixo-motor e um lead frenético em frígio. O sagrado colonial em fúria total."""
-    buf, step = _new_buf(128, 4)
+    base, step = _new_buf(128, 4)
+    mid, _ = _new_buf(128, 4)
+    top, _ = _new_buf(128, 4)
     root = C2
-    _drums(buf, step, lambda: alfaia(0.13, base=root * 0.5, punch=1.0), _baque_alfaia(4),
+    _drums(base, step, lambda: alfaia(0.13, base=root * 0.5, punch=1.0), _baque_alfaia(4),
            humanize=True)
-    _drums(buf, step, lambda: caixa(0.05, bright=1.0), _ghost_fill(4, every=2))
-    _drums(buf, step, lambda: caixa(0.06, bright=1.2),
-           [(st, 0.48) for st in range(64) if st % 4 == 2])
-    _drums(buf, step, lambda: ganza(0.05, rising=False), _shaker_run(4))
-    _drums(buf, step, lambda: gongue(0.18, 320.0), [(b * 16, 0.5) for b in range(4)])  # condenação
-    _drums(buf, step, lambda: agogo(0.14, freq=990.0, bend=0.0), [(b * 16 + 8, 0.34) for b in range(4)])
-    _drums(buf, step, lambda: nes_noise(0.08, decay=16.0, lp=0.5, gain=0.34),  # aspersão
-           [(b * 16, 0.42) for b in range(4)])
-    _melody(buf, step, root, PHRYGIAN, _bass(),  # baixo-motor
+    _drums(base, step, lambda: gongue(0.18, 320.0), [(b * 16, 0.5) for b in range(4)])  # condenação
+    _melody(base, step, root, PHRYGIAN, _bass(),  # baixo-motor
             [(st, 0 if (st // 8) % 2 == 0 else 1, 1, 0.78) for st in range(0, 64, 2)])
+    _drums(mid, step, lambda: caixa(0.05, bright=1.0), _ghost_fill(4, every=2))
+    _drums(mid, step, lambda: caixa(0.06, bright=1.2),
+           [(st, 0.48) for st in range(64) if st % 4 == 2])
+    _drums(mid, step, lambda: ganza(0.05, rising=False), _shaker_run(4))
+    _drums(mid, step, lambda: nes_noise(0.08, decay=16.0, lp=0.5, gain=0.34),  # aspersão
+           [(b * 16, 0.42) for b in range(4)])
+    _drums(top, step, lambda: agogo(0.14, freq=990.0, bend=0.0), [(b * 16 + 8, 0.34) for b in range(4)])
     zeal = [7, 8, 10, 11, 12, 11, 10, 8]
-    _melody(buf, step, root, PHRYGIAN, _lead(duty=0.125, vib=0.03),  # lead frenético
+    _melody(top, step, root, PHRYGIAN, _lead(duty=0.125, vib=0.03),  # lead frenético
             [(b * 16 + i * 2, zeal[(i + b) % 8], 1, 0.44) for b in range(4) for i in range(8)])
-    return _normalize(bitcrush(buf, bits=7), 0.88)
+    return {"base": bitcrush(base, bits=7), "mid": bitcrush(mid, bits=7),
+            "top": bitcrush(top, bits=7)}
 
 
+# Loops únicos (telas sem intensidade dinâmica).
 MUSIC = {
     "mus_menu": mus_menu,
     "mus_hub": mus_hub,
@@ -1125,18 +1198,23 @@ MUSIC = {
     "mus_explore_p2": mus_explore_p2,
     "mus_explore_p3": mus_explore_p3,
     "mus_explore_p4": mus_explore_p4,
+    "mus_explore_p5": mus_explore_p5,
+    "mus_ending": mus_ending,
+}
+
+# Stems verticais (arena/bosses): geradores devolvem {"base","mid","top"} e o
+# loop único correspondente NÃO existe mais (o MusicStems mixa em runtime).
+MUSIC_STEMS = {
     "mus_arena_p1": mus_arena_p1,
     "mus_arena_p2": mus_arena_p2,
     "mus_arena_p3": mus_arena_p3,
     "mus_arena_p4": mus_arena_p4,
-    "mus_explore_p5": mus_explore_p5,
     "mus_arena_p5": mus_arena_p5,
-    "mus_boss_jesuita": mus_boss_jesuita,
     "mus_boss_mula": mus_boss_mula,
     "mus_boss_boitata": mus_boss_boitata,
     "mus_boss_curupira": mus_boss_curupira,
     "mus_boss_saci": mus_boss_saci,
-    "mus_ending": mus_ending,
+    "mus_boss_jesuita": mus_boss_jesuita,
 }
 
 
@@ -1311,7 +1389,11 @@ def main(only=None):
         print("Gerando música por contexto (maracatu 8-bits dark)...")
         for name, gen in MUSIC.items():
             random.seed(11)
-            _write(f"{name}.wav", gen(), subdir="music", rate=MUSIC_RATE)
+            _write(f"{name}.wav", gen(), subdir="music", rate=MUSIC_RATE, width=1)
+        print("Gerando stems de arena/boss (música adaptativa)...")
+        for name, gen in MUSIC_STEMS.items():
+            random.seed(11)
+            _write_stems(name, gen())
 
     if only in (None, "stingers"):
         print("Gerando stingers de estado...")

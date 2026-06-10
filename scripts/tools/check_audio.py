@@ -38,7 +38,12 @@ TARGETS = {
     "ambience": {"lufs": (-17.0, -15.0), "peak_max": -1.2},
     "stingers": {"lufs": (-15.0, -13.0), "peak_max": -1.2},
     "sfx": {"peak": (-3.5, -2.5), "rms": (-12.0, -9.0), "peak_max": -1.2},
+    # Stems (mus_*_{base,mid,top}.wav): só o teto de pico — LUFS individual não se
+    # aplica a camada (a normalização é em GRUPO, sobre o mix, no gen_sfx).
+    "stem": {"peak_max": -1.2},
 }
+
+STEM_SUFFIXES = ("_base.wav", "_mid.wav", "_top.wav")
 
 BLOCK_SECS = 0.400
 HOP_SECS = 0.100
@@ -174,13 +179,16 @@ def main(root=None):
     rows = []
     failures = 0
     for category in sorted(TARGETS):
+        if category == "stem":
+            continue  # stems vivem em music/ e são detectados pelo sufixo
         cat_dir = os.path.join(root, category)
         if not os.path.isdir(cat_dir):
             continue
         for name in sorted(os.listdir(cat_dir)):
             if not name.endswith(".wav"):
                 continue
-            ok, info = check_file(os.path.join(cat_dir, name), category)
+            effective = "stem" if name.endswith(STEM_SUFFIXES) else category
+            ok, info = check_file(os.path.join(cat_dir, name), effective)
             failures += 0 if ok else 1
             rows.append(("✅" if ok else "❌", f"{category}/{name}", info))
     width = max((len(r[1]) for r in rows), default=0)
