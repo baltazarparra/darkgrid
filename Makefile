@@ -3,7 +3,7 @@
 GODOT   ?= $(HOME)/.local/bin/godot
 PROJECT := .
 
-.PHONY: help smoke test export gate audio audio-check
+.PHONY: help smoke test export gate audio audio-check audio-budget
 
 help: ## list available targets
 	@grep -hE '^[a-z]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t-/' | sort
@@ -39,5 +39,7 @@ audio: ## regenerate all procedural audio, reimport and verify loudness
 
 audio-check: ## verify assets/audio against the loudness standard (PRD-audio-v2 §3)
 	python3 scripts/tools/check_audio.py
+
+audio-budget: audio-check ## alias: loudness + weight report live in check_audio.py
 
 gate: smoke test ## full verification before commit

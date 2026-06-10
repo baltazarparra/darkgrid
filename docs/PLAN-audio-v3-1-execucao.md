@@ -413,6 +413,13 @@ Tipo: tools/build.
 
 Objetivo: controlar peso antes de continuar adicionando assets.
 
+Status: parte (a) implementada. `check_audio.py` agora imprime bytes por categoria
+e total, com warn acima de 9 MB (exit 0) e fail acima de 10 MB (exit 1), dentro do
+`make audio-check` (alias `make audio-budget`). A sessao foi promovida para ANTES
+de S3-S7: o catalogo ja estava em 9.7 MB antes de qualquer asset novo. Parte (b)
+pendente: regenerar musica em 8-bit (gen_sfx ja grava `width=1`; falta check_audio
+aceitar 8-bit e `_force_loop` tratar `FORMAT_8_BITS`).
+
 Arquivos provaveis:
 
 - `scripts/tools/check_audio.py`

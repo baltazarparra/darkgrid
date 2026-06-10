@@ -49,6 +49,11 @@ BLOCK_SECS = 0.400
 HOP_SECS = 0.100
 ABS_GATE_LUFS = -70.0
 
+# Budget de peso do catálogo (PLAN-audio-v3-1 S8): browser-first, cada MB custa
+# tempo de load. Warn avisa sem quebrar; fail bloqueia o gate.
+BUDGET_WARN_MB = 9.0
+BUDGET_FAIL_MB = 10.0
+
 
 # ─── IO ────────────────────────────────────────────
 def read_wav(path):
@@ -178,6 +183,7 @@ def main(root=None):
     root = os.path.abspath(root or AUDIO_DIR)
     rows = []
     failures = 0
+    bytes_by_category = {}
     for category in sorted(TARGETS):
         if category == "stem":
             continue  # stems vivem em music/ e são detectados pelo sufixo
@@ -187,14 +193,28 @@ def main(root=None):
         for name in sorted(os.listdir(cat_dir)):
             if not name.endswith(".wav"):
                 continue
+            path = os.path.join(cat_dir, name)
+            bytes_by_category[category] = bytes_by_category.get(category, 0) \
+                + os.path.getsize(path)
             effective = "stem" if name.endswith(STEM_SUFFIXES) else category
-            ok, info = check_file(os.path.join(cat_dir, name), effective)
+            ok, info = check_file(path, effective)
             failures += 0 if ok else 1
             rows.append(("✅" if ok else "❌", f"{category}/{name}", info))
     width = max((len(r[1]) for r in rows), default=0)
     for mark, rel, info in rows:
         print(f"  {mark} {rel:<{width}}  {info}")
     print(f"\n{len(rows)} assets, {failures} fora do padrão")
+
+    total_mb = sum(bytes_by_category.values()) / 1_000_000.0
+    print("\nbudget (MB):")
+    for category, size in sorted(bytes_by_category.items()):
+        print(f"  {category:<10} {size / 1_000_000.0:6.2f}")
+    print(f"  {'total':<10} {total_mb:6.2f}  (warn > {BUDGET_WARN_MB}, fail > {BUDGET_FAIL_MB})")
+    if total_mb > BUDGET_FAIL_MB:
+        print(f"  ❌ budget estourado: {total_mb:.2f} MB > {BUDGET_FAIL_MB} MB")
+        failures += 1
+    elif total_mb > BUDGET_WARN_MB:
+        print(f"  ⚠️  acima da linha de aviso ({BUDGET_WARN_MB} MB) — ver S8 do PLAN-audio-v3-1")
     return 1 if failures else 0
 
 
