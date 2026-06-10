@@ -717,6 +717,132 @@ sprite 96×96 — o cajado se move por pose, então um overlay estático nunca a
   Curto e em outro tom do telegraph do Curupira (modulate sustentado no sprite
   do inimigo) — sem colisão de linguagem. Testes: `test_timing_bubble.gd`.
 
+### Fase 10: PWA livre + 60fps + música do hub + loader "peleja" 🚧
+
+Update de plataforma e polish. Quatro frentes independentes; **uma sessão por
+frente** (Session Protocol), na ordem abaixo. Cada sessão fecha com `make gate`
++ skill de validação pertinente + commit.
+
+#### 10.1 Orientação livre na PWA (sem trava de paisagem)
+
+Estado atual: o jogo é retrato-primário internamente (viewport 750×1334,
+`handheld/orientation=1`), mas o manifest PWA exportado trava
+`"orientation":"landscape"` — porque no exporter web do Godot o enum de
+`progressive_web_app/orientation` é **0=Any, 1=Landscape, 2=Portrait** (a doc
+em `validate-platforms/SKILL.md` afirma `1=retrato`, o que está errado e
+causou a trava acidental). O `PortraitGuard` (layer 128) ainda bloqueia
+telefones em paisagem com "gire o dispositivo".
+
+- [x] `export_presets.cfg`: `progressive_web_app/orientation=0` (Any). Conferir
+  `export/index.manifest.json` gerado: `"orientation":"any"`.
+- [x] `project.godot`: `window/handheld/orientation=6` (SENSOR — segue o giro
+  do aparelho em qualquer build nativa; na web quem manda é o manifest).
+- [x] Remover o autoload `PortraitGuard` (project.godot + script + testes que o
+  referenciam). Com orientação livre não existe orientação "errada" — o layout
+  já é responsivo (D-pad escala 1.5×/1.3× por orientação em `controls_hud.gd`,
+  câmera contain-fit recalcula em `size_changed` no `arena_manager.gd`,
+  `ACTION_LIFT_FRACTION` levanta a ação acima do D-pad).
+- [ ] Auditar telefone em PAISAGEM (844×390) **num device real**, que era
+  bloqueado e nunca foi exercitado de verdade: arena, exploração, hub (cards
+  de aprimoramento), diálogos, menus, safe areas (notch lateral via CSS `env()`).
+- [x] Tratar o giro **durante** o jogo: tudo que se posiciona por viewport deve
+  reagir a `size_changed` (já é o padrão; conferido nos consumidores de
+  `is_portrait`: D-pad, hub e câmera da arena).
+- [x] Atualizar docs: gotcha #10 do `AGENTS.md`, `validate-platforms/SKILL.md`
+  (corrigir o enum errado e o checklist de manifest), PRD se citado.
+- [x] `/validate-platforms` + `make gate` + `make export` (export único no fim
+  da Fase 10, para não rebuildar binário a cada frente).
+
+#### 10.2 Loader "peleja" antes do combate
+
+O início de combate hoje é seco: `_trigger_combat` → `change_screen(arena)` →
+fade de 0.22s → `ArenaManager._ready()` chama `_start_caipora_turn()` no mesmo
+frame. Não há feedback de "a luta vai começar" nem máscara de carregamento.
+
+Design: TODA entrada em tela `ARENA_*` ganha um loader interno no próprio
+`ArenaManager`, depois do fade global limpo. A arena nasce pronta por baixo,
+mas o primeiro turno só abre quando o overlay libera — o jogador nunca perde
+um cue de timing escondido atrás do texto:
+
+- [x] Fade global preto (igual hoje, sem texto de luta) → loader interno da
+  arena com **"PREPARE-SE"** → **"PELEJAR"** (`FONT_TITLE`, âmbar de cue) →
+  fade-out do loader → primeiro turno.
+- [x] Constantes no topo do `ArenaManager`: `COMBAT_LOADER_FADE`,
+  `COMBAT_LOADER_PREPARE_HOLD` e `COMBAT_LOADER_FIGHT_HOLD`, sem número mágico.
+- [x] Gate de início: `ArenaManager._ready()` spawna atores e chama
+  `_run_combat_loader()`; `_start_caipora_turn()` só roda no final do tween.
+- [x] Engolir input durante o loader (o fade usa `MOUSE_FILTER_STOP`; Space não
+  buffera timing porque o TimingSystem só arma no primeiro turno, pós-loader).
+- [x] Boss: a sequência vira BossIntro → diálogo → arena → loader interno. O loader é
+  o feedback de carga já dentro do combate, que o BossIntro não cobre;
+  ambos mantidos — linguagens diferentes (apresentação vs. carregamento).
+- [x] Stinger: `sting_arena_enter` já toca na entrada da arena via
+  `AudioDirector` (reage ao `screen_changed`) — soa junto do texto, sem
+  pipeline novo.
+- [x] Testes GUT: a transição global confirma que arena não mostra texto de luta;
+  `test_controls_hud.gd` cobre o modo de arena com setas. O gate do loader visual
+  não tem harness headless — validar no device junto com o checklist visual.
+- [x] `/validate-controls` passo 1 (`make test` ✅ 317/317); passos 2–5 exigem
+  display — checklist manual pendente no device.
+
+#### 10.3 Música do hub (tela de aprimoramento) — matar a sirene de vez
+
+Diagnóstico (gen_sfx.py:1056-1060): o comping de acordes usa **4 vozes de
+triângulo sustentadas ~0.9s** e cada nota passa por `_jit(0.004)` (detune
+aleatório de até ±0.4%). Quatro vozes sustentadas e detunadas batem entre si
+em poucos Hz → **batimento lento de amplitude = uí-uí de sirene**, amplificado
+pelo bitcrush de 7 bits e pelo loop curto de 2 compassos (~9s) que martela o
+artefato. O lead pulse (duty 0.25) nos graus 7–12 com sustain de ~0.36s
+contribui com o "bip" agudo.
+
+- [x] Reescrever `mus_hub()`: o pad sustentado virou violão dedilhado (arpejo
+  de triângulo, nota a nota, nunca vozes sustentadas juntas) **uma oitava
+  acima do baixo** — o pad antigo ainda sustentava o grau 0 em UNÍSSONO com o
+  baixo (cada um com seu detune), o pior par possível de batimento.
+- [x] Onde restar tom sustentado: só o baixo, voz única — sozinho não tem com
+  quem bater (detune inofensivo). Regra documentada no docstring.
+- [x] Lead uma oitava abaixo (graus 4–7 sobre root×2, antes chegava a A5),
+  envelope pluck mantido, mais esparso (responde o violão nos vãos).
+- [x] Loop de 4 compassos com variação (era 2 compassos repetidos).
+- [x] Regenerar e commitar `assets/audio/music/mus_hub.wav` (regen determinístico:
+  `--only music` só alterou o mus_hub, faixas vizinhas byte-idênticas).
+- [x] Verificação objetiva: leito harmônico sintetizado isolado (sem percussão),
+  amplitude do parcial de 110 Hz via Goertzel no sustain — profundidade de
+  modulação caiu de 0.19 (antiga, batimento real; dependente do sorteio de
+  detune, no asset chegava a ~1.0) para 0.05 (nova, resíduo de envelope).
+  Validação subjetiva no device fica com o Baltz.
+- [x] Tom: continua samba lofi morno — o acampamento é o respiro ("o
+  acampamento respira..."). Não virou horror; o horror mora lá fora.
+
+#### 10.4 Performance: 60fps em Android modesto
+
+Base já é enxuta (gl_compatibility, CPUParticles2D, pixel art, sem threads na
+web). Os suspeitos de stutter são **picos de alocação** e overdraw, não custo
+médio. Medir antes de mexer.
+
+- [x] Overlay de debug de frame-time/FPS atrás de flag: autoload `PerfHud`
+  (layer 127), liga com `?perf` na URL (web) ou `CAIPORA_PERF=1` (nativo);
+  desligado não cria nó nem processa. Medir num Android classe Moto G em
+  Chrome, cenário pior: arena com crítico.
+- [x] **Pool de partículas no `FeedbackSystem`**: todos os efeitos
+  (sangue/crítico/morte/spark/dodge/bolha/fail) reusam CPUParticles2D via
+  `restart()` — zero `instantiate()`/`queue_free()`/timer por golpe.
+  Round-robin de 2 nós por efeito: golpe duplo não mata o burst anterior em
+  voo. Testes: `test_feedback_pool.gd`.
+- [x] Fator de qualidade em telefone: `Constants.particle_amount_scale` corta
+  `amount` pela metade quando o lado curto < 640. O gore não recua — decals
+  de sangue ficam, são baratos e permanentes.
+- [x] `BloodDecals`: auditado — já é barato (cap de 250 splats, um nó só,
+  redraw apenas em splat novo ou secagem a cada 2s). Sem mudança.
+- [x] Auditar `_process` quentes: `ambient_life` (poucos insetos, sem alocação
+  por frame), `atmosphere` (constrói uma vez, grading off na web), HUD ok.
+- [x] `application/run/max_fps=60`: telas de 120Hz queimam bateria e induzem
+  throttle térmico — o vilão real de "60fps em device modesto".
+- [ ] Registrar a medição no device real (antes/depois, device, cenário) nesta
+  seção — pendente de hardware (usar o `?perf`).
+- [x] `make gate` ✅ 321/321 + `make export` no fechamento da Fase 10; teste de
+  carga da página (gotcha #5) junto da validação no device.
+
 ---
 
 ## 11.1 Known Issues
@@ -734,7 +860,7 @@ aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no fo
 | KI-008 | Média | ✅ Resolvida | `GameState.heal_to_full()` preserva o `caipora_max_hp` ganho dentro da run e só sobe para o novo teto meta se uma erva de Cura comprada no hub tornar esse teto maior. |
 | KI-009 | Média | ✅ Resolvida | `Constants.caipora_base_damage_for_phase()` voltou a ser base fixa (`1`) em toda fase; a arena soma apenas Fúria/CHAMA por cima, então o texto das ervas volta a ser o teto real comunicado ao jogador. |
 | KI-010 | Média | ✅ Resolvida | A vitória terminal libera `phase_reached = 6`: matar o Jesuíta marca o marco no `ArenaManager`, e `GameState.end_run(true)` também garante o unlock pós-clear antes de salvar a vitória. |
-| KI-011 | Média | Aberta | Smoke baseline em 2026-06-10 loga erro em `main_menu.gd:35`: `Array[Button]` recebe `LinkButton`, gerando acesso inválido a `focus_entered` em item nulo. Não bloqueou o `make smoke` (exit 0), mas precisa correção dedicada. |
+| KI-011 | Baixa | ✅ Resolvida | O loop de hover do menu tipava `Button` num array que inclui o `GithubLink` (`LinkButton`, irmão de `Button`): o array tipado rejeitava o item (vira `null`) e o som de hover do link morria em silêncio com SCRIPT ERROR no console. Corrigido tipando `BaseButton`. |
 
 ---
 

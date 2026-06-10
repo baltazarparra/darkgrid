@@ -141,9 +141,7 @@ func _spawn_afterimages(actor: CombatActor, dir: Vector2) -> void:
 		ghost.position = actor.position + dir * (14.0 * (i + 1))
 		ghost.z_index = -1
 		ghost.modulate = Color(0.9, 0.95, 1.0, 0.5 - i * 0.12)
-		var add_mat := CanvasItemMaterial.new()
-		add_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-		ghost.material = add_mat
+		ghost.material = Constants.ADDITIVE_MATERIAL
 		parent.add_child(ghost)
 		var tween := ghost.create_tween()
 		tween.tween_property(ghost, "modulate:a", 0.0, 0.22 + i * 0.06)

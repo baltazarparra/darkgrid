@@ -2,8 +2,16 @@ class_name DoomFire
 extends CanvasLayer
 
 # ─── Constants ─────────────────────────────────────
-const SCALE: int = 8
-const ROWS: int = 90
+# Metade da grade original (90 linhas): ~4x menos células por update. O fogo é
+# fundo atrás de céu com alpha — pixels 2x maiores não mudam a leitura, e o
+# custo (era o maior pico de CPU recorrente do jogo, em todas as arenas + menu)
+# cai junto. Ver PLANO-performance-60fps §4 (G1).
+const SCALE: int = 16
+const ROWS: int = 45
+# Decay médio por linha dobra com a grade pela metade (randi() % 5 → média 2):
+# a chama nasce no índice 36 e morre após ~18 linhas ≈ 40% do viewport — a
+# MESMA altura proporcional do fogo original (36 de 90 linhas).
+const DECAY_RANGE: int = 5
 
 # Dark doom fire: preto transparente → roxo escuro → carmesim → vermelho sangue
 const PALETTE: Array[Color] = [
@@ -50,6 +58,8 @@ const PALETTE: Array[Color] = [
 var _cols: int = 0
 var _vp_size: Vector2 = Vector2.ZERO
 var _grid: PackedInt32Array
+var _frame: PackedByteArray
+var _palette32: PackedInt32Array = _bake_palette()
 var _image: Image
 var _texture: ImageTexture
 var _sprite: Sprite2D
@@ -72,15 +82,17 @@ func _on_viewport_resized() -> void:
 
 func _rebuild(vp: Vector2) -> void:
 	_vp_size = vp
-	# Pixel size escala para que os 90 rows cubram sempre a altura total do viewport.
-	# Em portrait (2768px): pix=31 → fire 90×31=2790px tall, cobre tudo.
-	# Em landscape (720px): pix=8 → comportamento original.
+	# Pixel size escala para que os 45 rows cubram sempre a altura total do viewport.
+	# Em portrait (2768px): pix=62 → fire 45×62=2790px tall, cobre tudo.
+	# Em landscape (720px): pix=16 → mesma cobertura do comportamento original.
 	var pix: int = maxi(SCALE, ceili(vp.y / float(ROWS)))
 	_cols = ceili(vp.x / float(pix))
 	_grid = PackedInt32Array()
 	_grid.resize(_cols * ROWS)
 	for col in _cols:
-		_grid[(ROWS - 1) * _cols + col] = 36
+		_grid[(ROWS - 1) * _cols + col] = PALETTE.size() - 1
+	_frame = PackedByteArray()
+	_frame.resize(_cols * ROWS * 4)
 	_image = Image.create(_cols, ROWS, false, Image.FORMAT_RGBA8)
 	_texture = ImageTexture.create_from_image(_image)
 	_sprite.texture = _texture
@@ -97,19 +109,34 @@ func _process(_delta: float) -> void:
 # ─── Private helpers ───────────────────────────────
 func _update_fire() -> void:
 	for row in range(ROWS - 1):
+		var dst_base: int = row * _cols
+		var src_base: int = (row + 1) * _cols
 		for col in _cols:
-			var src: int = (row + 1) * _cols + col
-			var val: int = _grid[src]
+			var val: int = _grid[src_base + col]
 			if val == 0:
-				_grid[row * _cols + col] = 0
+				_grid[dst_base + col] = 0
 				continue
-			var drift: int = (randi() & 1)
-			var target: int = clampi(col - drift + (randi() & 1), 0, _cols - 1)
-			var decay: int = randi() % 3
-			_grid[row * _cols + target] = maxi(0, val - decay)
+			# Um único randi() alimenta drift (bit 0), espalhamento (bit 1) e
+			# decay (bits altos) — eram 3 chamadas de RNG por célula.
+			var r: int = randi()
+			var target: int = clampi(col - (r & 1) + ((r >> 1) & 1), 0, _cols - 1)
+			_grid[dst_base + target] = maxi(0, val - ((r >> 2) % DECAY_RANGE))
 
 func _blit_image() -> void:
-	for row in ROWS:
-		for col in _cols:
-			_image.set_pixel(col, row, PALETTE[_grid[row * _cols + col]])
+	# Bytes RGBA direto da paleta pré-cozida + um set_data único: sem o
+	# overhead por chamada (bounds check + conversão de Color) do set_pixel.
+	var off: int = 0
+	for i in _grid.size():
+		_frame.encode_u32(off, _palette32[_grid[i]])
+		off += 4
+	_image.set_data(_cols, ROWS, false, Image.FORMAT_RGBA8, _frame)
 	_texture.update(_image)
+
+## Paleta como u32 RGBA little-endian (ordem de bytes do FORMAT_RGBA8).
+static func _bake_palette() -> PackedInt32Array:
+	var packed := PackedInt32Array()
+	packed.resize(PALETTE.size())
+	for i in PALETTE.size():
+		var c: Color = PALETTE[i]
+		packed[i] = c.r8 | (c.g8 << 8) | (c.b8 << 16) | (c.a8 << 24)
+	return packed

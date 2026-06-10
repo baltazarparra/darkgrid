@@ -109,9 +109,7 @@ static func _build_crystal_glow(tier: int) -> CPUParticles2D:
 	ramp.add_point(0.5, Constants.COLOR_CRYSTAL)
 	ramp.add_point(1.0, Color(Constants.COLOR_CRYSTAL.r, Constants.COLOR_CRYSTAL.g, Constants.COLOR_CRYSTAL.b, 0.0))
 	glow_p.color_ramp = ramp
-	var glow := CanvasItemMaterial.new()
-	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	glow_p.material = glow
+	glow_p.material = Constants.ADDITIVE_MATERIAL
 	glow_p.emitting = true
 	return glow_p
 
@@ -155,9 +153,7 @@ static func _build_gold_aura(tier: int) -> CPUParticles2D:
 	aura.scale_amount_max = 2.8 + tier * 0.5
 	aura.color = Constants.COLOR_GOLD
 	aura.color_ramp = _gold_ramp()
-	var glow := CanvasItemMaterial.new()
-	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	aura.material = glow
+	aura.material = Constants.ADDITIVE_MATERIAL
 	aura.emitting = true
 	return aura
 
@@ -213,9 +209,7 @@ static func _build_bone_fragments(tier: int) -> CPUParticles2D:
 	ramp.add_point(0.5, Color(0.55, 0.25, 0.18, 0.5))
 	ramp.add_point(1.0, Color(0.35, 0.12, 0.08, 0.0))
 	frag.color_ramp = ramp
-	var glow := CanvasItemMaterial.new()
-	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	frag.material = glow
+	frag.material = Constants.ADDITIVE_MATERIAL
 	frag.emitting = true
 	return frag
 
@@ -243,9 +237,7 @@ static func _build_flesh_spines(_tier: int) -> CPUParticles2D:
 	ramp.add_point(0.4, Color(0.68, 0.15, 0.15, 0.6))
 	ramp.add_point(1.0, Color(0.25, 0.05, 0.05, 0.0))
 	sp.color_ramp = ramp
-	var glow := CanvasItemMaterial.new()
-	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	sp.material = glow
+	sp.material = Constants.ADDITIVE_MATERIAL
 	sp.emitting = true
 	return sp
 
@@ -269,9 +261,7 @@ static func _build_flame(tier: int) -> CPUParticles2D:
 	flame.scale_amount_max = 3.5 + tier * 0.4
 	flame.color = Constants.COLOR_FIRE_HOT
 	flame.color_ramp = _flame_ramp()
-	var glow := CanvasItemMaterial.new()
-	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	flame.material = glow
+	flame.material = Constants.ADDITIVE_MATERIAL
 	flame.emitting = true
 	return flame
 

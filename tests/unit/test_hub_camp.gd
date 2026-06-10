@@ -43,10 +43,10 @@ func test_caipora_spawns_at_spawn_tile() -> void:
 		"Caipora posicionada no tile de spawn")
 	assert_ne(_hub._spawn_pos, _hub._exit_pos, "spawn e saída em tiles distintos")
 
-# ── O rastro de saída pulsante é instanciado (sprite âmbar + luz) ──
+# ── O rastro de saída pulsante é instanciado (boca de toca + luz) ──
 func test_exit_marker_spawned() -> void:
 	await _instantiate()
-	assert_gte(_hub._objects.get_child_count(), 2, "marcador + luz da saída em Objects")
+	assert_gte(_hub._objects.get_child_count(), 2, "toca de saída + luz em Objects")
 
 # ── Destino do rastro: run em andamento segue a exploração pendente ──
 func test_exit_follows_pending_when_run_active() -> void:
@@ -76,9 +76,11 @@ func test_exit_starts_fresh_when_no_run() -> void:
 
 # ── O D-pad de toque trata o HUB como gameplay (a Caipora anda no acampamento) ──
 func test_hub_is_gameplay_for_dpad() -> void:
-	assert_true(TouchControls._is_gameplay_screen(SignalBus.Screen.HUB),
+	var touch_controls = preload("res://scripts/ui/controls_hud.gd").new()
+	add_child_autofree(touch_controls)
+	assert_true(touch_controls._is_gameplay_screen(SignalBus.Screen.HUB),
 		"D-pad visível no acampamento jogável")
-	assert_true(TouchControls._is_gameplay_screen(SignalBus.Screen.EXPLORATION),
+	assert_true(touch_controls._is_gameplay_screen(SignalBus.Screen.EXPLORATION),
 		"D-pad visível na exploração (sem regressão)")
-	assert_false(TouchControls._is_gameplay_screen(SignalBus.Screen.MAIN_MENU),
+	assert_false(touch_controls._is_gameplay_screen(SignalBus.Screen.MAIN_MENU),
 		"D-pad oculto no menu (sem regressão)")
