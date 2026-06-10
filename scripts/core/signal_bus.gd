@@ -19,6 +19,11 @@ signal fragment_gained(total: float, amount: float)
 signal chama_gained
 signal chest_opened
 
+# ─── Loader de combate "peleja" (Fase 10) ──────────
+## Emitido pelo SceneTransition quando o overlay "peleja" termina (texto >= 2s
+## + fade-in da arena). O ArenaManager segura o primeiro turno até este sinal.
+signal combat_intro_finished
+
 # ─── Apresentação de boss (estilo Mega Man) + diálogo pré-boss ──
 signal boss_intro_started
 signal boss_intro_finished

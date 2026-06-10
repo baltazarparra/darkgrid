@@ -66,55 +66,110 @@ func force_clear_hit_stop() -> void:
 	_hit_stop_active = false
 	hit_stop_ended.emit()
 
-# ─── Partículas ────────────────────────────────────
+# ─── Partículas (pool, Fase 10) ────────────────────
+# Cada efeito reusa CPUParticles2D via restart() em vez de instantiate() +
+# queue_free() por golpe: a alocação acontecia exatamente no frame do impacto —
+# o momento crítico do timing — e era o maior suspeito de stutter em Android
+# modesto. POOL_PER_KEY=2 em round-robin: um golpe duplo não mata em voo as
+# gotas do golpe anterior. Os nós pertencem à cena ativa e morrem com ela; o
+# pool detecta o cache inválido e recria. Em telefone, a densidade cai pela
+# metade (Constants.particle_amount_scale) — o gore fica nos decals, que são
+# baratos e permanentes.
+const POOL_PER_KEY := 2
+
+var _pool: Dictionary = {}       # StringName -> Array[CPUParticles2D]
+var _pool_idx: Dictionary = {}   # StringName -> int (round-robin)
+
 func spawn_blood_particles(at_position: Vector2) -> void:
 	blood_spilled.emit(at_position, 1.0)
 	# Dobro da densidade base: o golpe espirra muito mais sangue (tom gore).
-	_spawn_particles(BLOOD_PARTICLES, at_position, 2.0)
+	_burst(&"blood", _scene_factory(BLOOD_PARTICLES, 2.0), at_position)
 
 func spawn_critical_particles(at_position: Vector2) -> void:
 	blood_spilled.emit(at_position, 1.6)
-	_spawn_particles(CRITICAL_PARTICLES, at_position, 2.0)
+	_burst(&"critical", _scene_factory(CRITICAL_PARTICLES, 2.0), at_position)
 	# Segundo burst: faíscas claras overbright (blend aditivo) por cima do sangue,
-	# para a leitura do acerto crítico "estourar" e ficar nítida. Mais densa e
-	# violenta que o sangue base.
-	var spark := CPUParticles2D.new()
-	spark.position = at_position
-	spark.amount = 28
-	spark.lifetime = 0.4
-	spark.one_shot = true
-	spark.explosiveness = 1.0
-	spark.direction = Vector2(0, -1)
-	spark.spread = 180.0
-	spark.gravity = Vector2(0, 60)
-	spark.initial_velocity_min = 220.0
-	spark.initial_velocity_max = 480.0
-	spark.scale_amount_min = 2.0
-	spark.scale_amount_max = 5.0
-	spark.color = Constants.COLOR_PARTICLE_SPARK
-	var glow := CanvasItemMaterial.new()
-	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	spark.material = glow
-	if not _attach_to_scene(spark):
-		return
-	spark.emitting = true
-	await get_tree().create_timer(spark.lifetime + 0.1).timeout
-	if is_instance_valid(spark):
-		spark.queue_free()
+	# para a leitura do acerto crítico "estourar" e ficar nítida.
+	_burst(&"spark", _make_spark, at_position)
 
 func spawn_death_particles(at_position: Vector2) -> void:
 	blood_spilled.emit(at_position, 2.6)
-	_spawn_particles(DEATH_PARTICLES, at_position)
+	_burst(&"death", _scene_factory(DEATH_PARTICLES, 1.0), at_position)
 
 func spawn_dodge_particles(at_position: Vector2) -> void:
-	var p := CPUParticles2D.new()
+	_burst(&"dodge", _make_dodge, at_position)
+
+## Estouro radial na posição da bolha no acerto — nasce onde o olho do jogador está,
+## reforçando a leitura do timing. Aditivo (glow) na cor do contexto.
+func spawn_bubble_burst(at_position: Vector2, tint: Color) -> void:
+	_burst(&"bubble", _make_bubble, at_position, tint)
+
+## Estilhaço negativo do erro: partículas escuras dessaturadas, blend normal (sem
+## brilho — leitura "morta") que despencam e dispersam rápido. Comunica a falha sem
+## premiar o jogador.
+func spawn_fail_particles(at_position: Vector2) -> void:
+	_burst(&"fail", _make_fail, at_position)
+
+## Mantido como alias de sangue para chamadas legadas.
+func spawn_impact_particles(at_position: Vector2) -> void:
+	_burst(&"impact", _scene_factory(BLOOD_PARTICLES, 1.0), at_position)
+
+## Dispara o efeito `key` em `at_position`, criando o nó na primeira vez (ou se o
+## cache morreu com a cena anterior). `tint.a > 0` recolore antes do restart.
+func _burst(key: StringName, factory: Callable, at_position: Vector2, tint: Color = Color.TRANSPARENT) -> void:
+	if not _pool.has(key):
+		var fresh: Array = []
+		fresh.resize(POOL_PER_KEY)
+		_pool[key] = fresh
+		_pool_idx[key] = -1
+	var nodes: Array = _pool[key]
+	var idx: int = (int(_pool_idx[key]) + 1) % POOL_PER_KEY
+	_pool_idx[key] = idx
+	var p: CPUParticles2D = nodes[idx]
+	if not is_instance_valid(p) or not p.is_inside_tree():
+		p = factory.call()
+		p.one_shot = true
+		p.explosiveness = 1.0
+		var vp := get_viewport().get_visible_rect().size
+		p.amount = maxi(1, int(float(p.amount) * Constants.particle_amount_scale(vp)))
+		if not _attach_to_scene(p):
+			nodes[idx] = null
+			return
+		nodes[idx] = p
 	p.position = at_position
+	if tint.a > 0.0:
+		p.color = tint
+	p.restart()
+
+## Factory de efeito vindo de cena (.tscn), com escala de densidade própria.
+func _scene_factory(scene: PackedScene, amount_scale: float) -> Callable:
+	return func() -> CPUParticles2D:
+		var p: CPUParticles2D = scene.instantiate()
+		if amount_scale != 1.0:
+			p.amount = int(p.amount * amount_scale)
+		return p
+
+func _make_spark() -> CPUParticles2D:
+	var p := CPUParticles2D.new()
+	p.amount = 28
+	p.lifetime = 0.4
+	p.direction = Vector2(0, -1)
+	p.spread = 180.0
+	p.gravity = Vector2(0, 60)
+	p.initial_velocity_min = 220.0
+	p.initial_velocity_max = 480.0
+	p.scale_amount_min = 2.0
+	p.scale_amount_max = 5.0
+	p.color = Constants.COLOR_PARTICLE_SPARK
+	p.material = _glow_material()
+	return p
+
+# Spread estreito + blend aditivo: vira um "flash" de alívio limpo, não uma
+# nuvem dispersa — leitura clara da esquiva perfeita.
+func _make_dodge() -> CPUParticles2D:
+	var p := CPUParticles2D.new()
 	p.amount = 50
 	p.lifetime = 0.6
-	p.one_shot = true
-	p.explosiveness = 1.0
-	# Spread estreito + blend aditivo: vira um "flash" de alívio limpo, não uma
-	# nuvem dispersa — leitura clara da esquiva perfeita.
 	p.spread = 45.0
 	p.gravity = Vector2(0, -120)
 	p.initial_velocity_min = 120.0
@@ -122,52 +177,26 @@ func spawn_dodge_particles(at_position: Vector2) -> void:
 	p.scale_amount_min = 2.5
 	p.scale_amount_max = 6.0
 	p.color = Constants.COLOR_PARTICLE_DODGE
-	var glow := CanvasItemMaterial.new()
-	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	p.material = glow
-	if not _attach_to_scene(p):
-		return
-	p.emitting = true
-	await get_tree().create_timer(p.lifetime + 0.1).timeout
-	if is_instance_valid(p):
-		p.queue_free()
+	p.material = _glow_material()
+	return p
 
-## Estouro radial na posição da bolha no acerto — nasce onde o olho do jogador está,
-## reforçando a leitura do timing. Aditivo (glow) na cor do contexto.
-func spawn_bubble_burst(at_position: Vector2, tint: Color) -> void:
+func _make_bubble() -> CPUParticles2D:
 	var p := CPUParticles2D.new()
-	p.position = at_position
 	p.amount = 32
 	p.lifetime = 0.45
-	p.one_shot = true
-	p.explosiveness = 1.0
 	p.spread = 180.0
 	p.gravity = Vector2.ZERO
 	p.initial_velocity_min = 160.0
 	p.initial_velocity_max = 360.0
 	p.scale_amount_min = 1.5
 	p.scale_amount_max = 4.0
-	p.color = tint
-	var glow := CanvasItemMaterial.new()
-	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	p.material = glow
-	if not _attach_to_scene(p):
-		return
-	p.emitting = true
-	await get_tree().create_timer(p.lifetime + 0.1).timeout
-	if is_instance_valid(p):
-		p.queue_free()
+	p.material = _glow_material()
+	return p
 
-## Estilhaço negativo do erro: partículas escuras dessaturadas, blend normal (sem
-## brilho — leitura "morta") que despencam e dispersam rápido. Comunica a falha sem
-## premiar o jogador.
-func spawn_fail_particles(at_position: Vector2) -> void:
+func _make_fail() -> CPUParticles2D:
 	var p := CPUParticles2D.new()
-	p.position = at_position
 	p.amount = 22
 	p.lifetime = 0.4
-	p.one_shot = true
-	p.explosiveness = 1.0
 	p.spread = 180.0
 	p.gravity = Vector2(0, 320)
 	p.initial_velocity_min = 90.0
@@ -175,28 +204,12 @@ func spawn_fail_particles(at_position: Vector2) -> void:
 	p.scale_amount_min = 1.5
 	p.scale_amount_max = 3.5
 	p.color = Constants.COLOR_PARTICLE_FAIL
-	if not _attach_to_scene(p):
-		return
-	p.emitting = true
-	await get_tree().create_timer(p.lifetime + 0.1).timeout
-	if is_instance_valid(p):
-		p.queue_free()
+	return p
 
-## Mantido como alias de sangue para chamadas legadas.
-func spawn_impact_particles(at_position: Vector2) -> void:
-	_spawn_particles(BLOOD_PARTICLES, at_position)
-
-func _spawn_particles(scene: PackedScene, at_position: Vector2, amount_scale: float = 1.0) -> void:
-	var particles: CPUParticles2D = scene.instantiate()
-	particles.position = at_position
-	if amount_scale != 1.0:
-		particles.amount = int(particles.amount * amount_scale)
-	if not _attach_to_scene(particles):
-		return
-	particles.emitting = true
-	await get_tree().create_timer(particles.lifetime + 0.1).timeout
-	if is_instance_valid(particles):
-		particles.queue_free()
+func _glow_material() -> CanvasItemMaterial:
+	var glow := CanvasItemMaterial.new()
+	glow.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	return glow
 
 ## Anexa um nó de partículas à cena ativa. Retorna false (e descarta o nó) se a árvore
 ## ou a cena atual não existir — ex.: durante/depois de uma troca de cena. Evita erro de
