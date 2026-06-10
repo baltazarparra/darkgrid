@@ -4,19 +4,20 @@
 > ícone ou material promocional que envolva a protagonista deriva daqui.
 > Gerador canônico: `scripts/tools/gen_caipora.py`. Fonte do conceito: prancha
 > aprovada em 2026-06, **"Mata Hostil — Prancha de conceito de personagem:
-> Caipora, guardia perigosa da mata"**: silhueta chibi com juba-capa laranja,
-> rosto-vazio de olhos brancos, chifres, corpo pequeno de folhas/cipós, cajado
-> com cristal verde e variante CHAMA.
+> Caipora, guardia perigosa da mata"**, recorte de **silhuetas A/B/C**: massa
+> laranja serrilhada, rosto/corpo/cajado pretos, dois olhos brancos, chifres
+> pretos e variante CHAMA.
 
 ---
 
 ## 1. O conceito
 
-A Caipora não tem rosto. Sob o capuz de folhas existe apenas **vazio negro e
+A Caipora não tem rosto. Dentro da mancha laranja existe apenas **vazio negro e
 dois olhos brancos, redondos, que brilham** — a última coisa que o caçador vê.
-A juba laranja vibrante envolve o capuz e cai sobre os ombros como uma capa
-viva, quase maior que o corpo. Chifres rompem o cabelo. Na mão, um cajado reto
-coroado por um **cristal verde** — o único frio numa criatura de fogo e terra.
+A juba-capa laranja vibrante envolve tudo como uma pele serrilhada, quase maior
+que o corpo. Chifres pretos rompem a massa laranja. Na mão, um cajado preto com
+miolo verde mínimo no cristal — o verde existe para a Fúria, mas não deve roubar
+a leitura da silhueta.
 
 **Proporção chibi (lei):** cabeça + juba ≈ 55–60% da altura do sprite. O corpo
 é curto, menor que a juba-capa, com pés descalços simples. A fofura é isca: o
@@ -28,7 +29,7 @@ dessaturar o sprite.
 
 ## 2. Assinaturas visuais (as 5 travas do design)
 
-1. **Juba-capa laranja** — massa laranja vibrante volumosa que envolve o capuz
+1. **Juba-capa laranja serrilhada** — massa laranja vibrante que envolve o capuz
    por cima, dos dois lados e pelas costas, quase até o chão. É A
    silhueta: a 32px, a protagonista é "a mancha laranja de olhos brancos". No
    strike estica horizontal (velocidade); no windup eriça pra cima (ameaça);
@@ -37,17 +38,16 @@ dessaturar o sprite.
    capuz; **dois olhos circulares brancos IGUAIS, sem halo** (`EYE_WHITE`
    puro). Sem boca, sem traços: o horror é a ausência. No windup arregalam;
    no strike viram fendas.
-3. **Chifres rompendo a juba** — dois chifres curvos marrons emergindo do
+3. **Chifres rompendo a juba** — dois chifres curvos pretos emergindo do
    cabelo em "V", assimétricos (o do lado da juba é mais longo). As pontas
    SEMPRE ultrapassam a silhueta da juba (ganham outline e leitura).
-4. **Cajado do cristal verde** — haste reta e fina coroada por cristal
-   facetado esmeralda (`CR`/`CR_HL`). É a arma: ergue e carrega no windup
-   (flare + raios), varre com **smear verde de 2 tons** no strike. O verde do
-   cristal é o ÚNICO acento frio e a cor do crítico
-   (`Constants.COLOR_PARTICLE_SPARK`).
-5. **Vestes vivas + pés descalços** — túnica de folhas verde média com folhas
-   avulsas no peito e na barra denteada, pés descalços marrons. **PÉS NORMAIS
-   PRA FRENTE** — o pé-pra-trás é do Curupira (parente), não dela.
+4. **Cajado preto com miolo verde mínimo** — haste reta e fina coroada por uma
+   lâmina/cristal preto, como na silhueta A. O verde (`CR`) fica reduzido a
+   poucos pixels no centro para ancorar `FuriaVisual`; a leitura do cajado deve
+   permanecer preta.
+5. **Corpo preto + pés descalços** — corpo curto em mancha preta irregular, sem
+   detalhe de roupa competindo com a capa. **PÉS NORMAIS PRA FRENTE** — o
+   pé-pra-trás é do Curupira (parente), não dela.
 
 ## 3. Paleta (fechada — fonte: `gen_caipora.py`, 2 tons por material)
 
@@ -55,11 +55,10 @@ dessaturar o sprite.
 |----------|------|
 | Juba (base) | `#8b2a00 → #ff4500` (laranja vibrante da prancha) |
 | Juba (CHAMA) | `#ff6808 → #ffb032` + coração `#ffefb2` |
-| Pele / chifres / cajado | `#482710 → #654321` (um marrom só) |
-| Folha (túnica/cipós) | `#004618 → #006400` |
+| Corpo / chifres / cajado | `#000000` |
 | Vazio do rosto | `#000000` |
 | Olhos | `#ffffff` puro (sem halo) |
-| Cristal | `#00fa9a → #8affcc → #ffffff (brilho)` |
+| Cristal | `#00fa9a` em poucos pixels, nunca dominante |
 | Sangue/acento hostil | `#8b0000` |
 | Contorno | `#1a120a` (1px, toda a silhueta) |
 
@@ -72,18 +71,18 @@ cristal segue sendo o único acento frio.
 
 | Frame | Corpo | Juba | Cajado |
 |-------|-------|------|--------|
-| `idle` | Peso pronto | Coroa o capuz e cai até o chão | Fincado vertical, cristal acima dos chifres |
-| `walk_1/2` | Passada em tesoura | Bounce com a fase | Carregado, inclinado ~10° |
-| `windup` | Agachada, mola comprimida | Eriçada pra cima | Erguido na diagonal, **cristal carregando** (flare + raios), olhos arregalados |
-| `strike` | Afundo, lean 5px | Esticada horizontal atrás | Varrido à frente: **smear verde CR→CR_HL**, olhos em fenda |
-| `recover` | Assentando o peso | Dobrando de volta | Descendo pra fincar |
+| `idle` | Peso pronto, corpo preto simples | Silhueta B frontal | Fincado vertical, quase todo preto |
+| `walk_1/2` | Passada mínima | Bounce sutil da massa laranja | Fincado/carregado, quase todo preto |
+| `windup` | Agachada, mola comprimida | Silhueta A: capa eriçada e serrilhada | Erguido vertical/diagonal, topo preto |
+| `strike` | Afundo, lean forte | Silhueta C: capa puxada pelo golpe | Varrido à frente como forma preta |
+| `recover` | Assentando o peso | Volta para B | Finca de novo |
 
 ## 5. Pipeline técnico (o "premium" reprodutível)
 
 `gen_caipora.py`, determinístico, stdlib + Pillow:
 
-1. **Desenho vetorial supersampled 8×** (768×768): membros capsulares, juba por
-   lóbulos ao longo de spline + tufos afilados, polígonos orgânicos.
+1. **Desenho vetorial supersampled 8×** (768×768): formas chapadas de silhueta,
+   capa serrilhada, corpo preto e cajado preto.
 2. **Downsample por área → 96×96** + threshold de alpha (sem halos).
 3. **Snap de paleta**: cada pixel cai na cor mais próxima (paleta fechada).
 4. **Outline 1px**: todo pixel opaco que toca transparência vira `OUTLINE` —
@@ -102,19 +101,20 @@ Regras de manutenção:
 **Imutável:** rosto-vazio com dois olhos brancos circulares iguais; juba
 laranja como silhueta dominante envolvendo o capuz e fluindo PRA TRÁS;
 proporção chibi (cabeça + juba ≈ 55–60% da altura); chifres rompendo a juba;
-cristal verde como único acento frio, cor do crítico e do flash de janela
-perfeita; acabamento flat + outline 1px; pés normais pra frente; postura de
+corpo/cajado/chifres pretos; cristal verde reduzido a miolo mínimo para a
+Fúria; acabamento flat + outline 1px; pés normais pra frente; postura de
 predadora; tom GORE/TERROR — a mata é hostil, a Caipora é perigosa, nunca
 suavizar.
 
-**Evolui livremente:** densidade de folhas (upgrades podem vesti-la mais),
-intensidade da juba e do cristal, partículas, key art em resolução maior —
-desde que derive das 5 assinaturas.
+**Evolui livremente:** serrilhado da capa, agressividade dos chifres, poses de
+ataque, partículas e key art em resolução maior — desde que derive das 5
+assinaturas de silhueta.
 
 **Fúria (T1–T6) manifesta no cristal:** sem sprite de arma separado — o cajado
-é parte do corpo. `furia_visual.gd` ancora partículas no cristal: glow verde
-que escala com o tier + identidade de lore por tier (fumaça, aura dourada,
-breu, osso, carne viva). A CHAMA soma a chama viva ao conjunto.
+é parte do corpo. `furia_visual.gd` ancora partículas no miolo verde mínimo do
+cristal: glow verde que escala com o tier + identidade de lore por tier
+(fumaça, aura dourada, breu, osso, carne viva). A CHAMA soma a chama viva ao
+conjunto.
 
 **CHAMA (meta-progressão) = "juba em brasa":** a variante `player_*_chama.png`
 (`caipora(..., chama=True)`) acende a juba — ramp quente (`#ff6808 → #ffb032`)

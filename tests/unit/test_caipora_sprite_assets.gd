@@ -50,6 +50,17 @@ func test_caipora_idle_keeps_concept_signature_colors() -> void:
 	assert_true(_has_color(image, COLOR_EYES), "idle preserva olhos brancos puros")
 	assert_true(_has_color(image, COLOR_CRYSTAL), "idle preserva cristal verde")
 
+func test_caipora_idle_is_orange_black_silhouette_first() -> void:
+	var image := Image.load_from_file(ProjectSettings.globalize_path(PLAYER_IDLE))
+	assert_false(image.is_empty(), "idle carrega como Image")
+	if image.is_empty():
+		return
+	var orange_pixels := _count_color(image, COLOR_MANE) + _count_color(image, Color8(139, 42, 0))
+	var black_pixels := _count_color(image, COLOR_VOID)
+	var green_pixels := _count_color(image, COLOR_CRYSTAL)
+	assert_gt(orange_pixels, black_pixels, "juba-capa laranja domina a leitura da silhueta")
+	assert_lte(green_pixels, 12, "cristal verde fica mínimo; cajado lê preto como na referência")
+
 func test_caipora_chama_idle_keeps_fire_variant_color() -> void:
 	var image := Image.load_from_file(ProjectSettings.globalize_path(PLAYER_IDLE_CHAMA))
 	assert_false(image.is_empty(), "idle CHAMA carrega como Image")
@@ -73,3 +84,11 @@ func _has_color(image: Image, expected: Color) -> bool:
 			if image.get_pixel(x, y).is_equal_approx(expected):
 				return true
 	return false
+
+func _count_color(image: Image, expected: Color) -> int:
+	var count := 0
+	for y: int in range(image.get_height()):
+		for x: int in range(image.get_width()):
+			if image.get_pixel(x, y).is_equal_approx(expected):
+				count += 1
+	return count
