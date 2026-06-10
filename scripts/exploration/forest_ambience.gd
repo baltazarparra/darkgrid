@@ -8,6 +8,11 @@ extends Node2D
 ## inchar aquele arquivo (uma responsabilidade por classe).
 
 const SOFT_TEXTURE := preload("res://assets/sprites/light_radial.png")
+## Material aditivo compartilhado do projeto (ver PLANO-performance-60fps G9).
+const ADDITIVE_MATERIAL := preload("res://resources/materials/additive_glow.tres")
+const RAY_COLOR := Color(1.0, 0.85, 0.55)
+const RAY_BASE_ALPHA: float = 0.05
+const RAY_PULSE_ALPHA: float = 0.035
 
 const MIST_COUNT: int = 12
 const SPORE_COUNT: int = 26
@@ -16,16 +21,13 @@ const RAY_COUNT: int = 3
 # ─── State ─────────────────────────────────────────
 var _bounds: Rect2 = Rect2(0, 0, 0, 0)
 var _rays: Array[Dictionary] = []
+var _ray_nodes: Array[Polygon2D] = []
 var _t: float = 0.0
 
 # ─── Public API ────────────────────────────────────
 func setup(bounds: Rect2) -> void:
 	_bounds = bounds
-	# God rays atrás das entidades, somando luz sobre a noite (blend aditivo no _draw).
-	z_index = -1
-	var mat := CanvasItemMaterial.new()
-	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	material = mat
+	z_index = -1  # god rays atrás das entidades
 	_spawn_mist()
 	_spawn_spores()
 	_setup_rays()
@@ -33,37 +35,41 @@ func setup(bounds: Rect2) -> void:
 
 # ─── Lifecycle ─────────────────────────────────────
 func _process(delta: float) -> void:
+	# O pulso só mexe no alpha: self_modulate é um uniform por item — nada de
+	# re-tesselar/re-gravar os polígonos por frame (era queue_redraw a 60Hz
+	# sobre 3 feixes da altura do mapa — PLANO-performance-60fps G6).
 	_t += delta
-	queue_redraw()  # god rays pulsam de leve
+	for i in _ray_nodes.size():
+		var ray: Dictionary = _rays[i]
+		var alpha: float = RAY_BASE_ALPHA + RAY_PULSE_ALPHA * sin(_t * ray["speed"] + ray["phase"])
+		_ray_nodes[i].self_modulate.a = maxf(alpha, 0.0)
 
 # ─── God rays (feixes de luz na copa) ──────────────
 func _setup_rays() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 90210
-	for i in RAY_COUNT:
-		_rays.append({
-			"x": _bounds.position.x + _bounds.size.x * rng.randf_range(0.2, 0.8),
-			"w": rng.randf_range(34.0, 60.0),
-			"phase": rng.randf() * TAU,
-			"speed": rng.randf_range(0.25, 0.5),
-		})
-
-func _draw() -> void:
 	var top := _bounds.position.y
 	var bottom := _bounds.end.y
 	var slant := 90.0  # deslocamento horizontal do topo à base (diagonal de copa)
-	for r in _rays:
-		var x: float = r["x"]
-		var w: float = r["w"]
-		var a: float = 0.05 + 0.035 * sin(_t * r["speed"] + r["phase"])
-		var col := Color(1.0, 0.85, 0.55, maxf(a, 0.0))
-		var poly := PackedVector2Array([
+	for i in RAY_COUNT:
+		var x: float = _bounds.position.x + _bounds.size.x * rng.randf_range(0.2, 0.8)
+		var w: float = rng.randf_range(34.0, 60.0)
+		_rays.append({
+			"phase": rng.randf() * TAU,
+			"speed": rng.randf_range(0.25, 0.5),
+		})
+		var ray := Polygon2D.new()
+		ray.polygon = PackedVector2Array([
 			Vector2(x, top),
 			Vector2(x + w, top),
 			Vector2(x + w + slant, bottom),
 			Vector2(x + slant, bottom),
 		])
-		draw_colored_polygon(poly, col)
+		ray.color = RAY_COLOR
+		ray.material = ADDITIVE_MATERIAL
+		ray.self_modulate.a = RAY_BASE_ALPHA
+		add_child(ray)
+		_ray_nodes.append(ray)
 
 # ─── Neblina rasteira ──────────────────────────────
 func _spawn_mist() -> void:

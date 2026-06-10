@@ -10,6 +10,11 @@ extends Node2D
 ## com thread_support=false). Insetos são desenhados via _draw + _process.
 
 # ─── Constants ─────────────────────────────────────
+## Insetos simulam/redesenham a 20Hz: a formiga mais rápida anda 9px/s — a
+## 20Hz isso é 0,45px por tick, invisível a olho. A 60Hz este nó re-gravava
+## ~200 primitivas de _draw por frame (PLANO-performance-60fps §4, G5).
+const TICK_INTERVAL: float = 1.0 / 20.0
+
 const FIREFLY_COUNT: int = 60
 
 const ANT_COUNT: int = 14
@@ -33,6 +38,7 @@ enum Kind { ANT, SPIDER }
 # ─── State ─────────────────────────────────────────
 var _bounds: Rect2 = Rect2(0, 0, 0, 0)
 var _insects: Array[Dictionary] = []
+var _tick_accum: float = 0.0
 
 # ─── Public API ────────────────────────────────────
 ## `bounds` é a área (em pixels) onde a vida ambiente pode aparecer.
@@ -45,11 +51,17 @@ func setup(bounds: Rect2) -> void:
 
 # ─── Lifecycle ─────────────────────────────────────
 func _process(delta: float) -> void:
+	_tick_accum += delta
+	if _tick_accum < TICK_INTERVAL:
+		return
+	var step: float = _tick_accum
+	_tick_accum = 0.0
+	var any_moved: bool = false
 	for ins in _insects:
 		if ins.kind == Kind.SPIDER:
-			_step_spider(ins, delta)
+			_step_spider(ins, step)
 		else:
-			_step_ant(ins, delta)
+			_step_ant(ins, step)
 		# rebate nas bordas (mantém dentro da área)
 		if ins.pos.x < _bounds.position.x or ins.pos.x > _bounds.end.x:
 			ins.vel.x = -ins.vel.x
@@ -57,7 +69,12 @@ func _process(delta: float) -> void:
 			ins.vel.y = -ins.vel.y
 		ins.pos.x = clampf(ins.pos.x, _bounds.position.x, _bounds.end.x)
 		ins.pos.y = clampf(ins.pos.y, _bounds.position.y, _bounds.end.y)
-	queue_redraw()
+		if ins.vel != Vector2.ZERO:
+			any_moved = true
+	# Aranhas passam a maior parte do tempo congeladas (stop-and-go): com tudo
+	# parado, a cena do tick anterior continua válida — sem re-record.
+	if any_moved:
+		queue_redraw()
 
 # ─── Drawing (insetos) ─────────────────────────────
 func _draw() -> void:
