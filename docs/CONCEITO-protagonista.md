@@ -2,10 +2,11 @@
 
 > **Este documento é lei visual.** Todo asset, animação, partícula, key art,
 > ícone ou material promocional que envolva a protagonista deriva daqui.
-> Gerador canônico: `scripts/tools/gen_caipora.py`. Fonte do conceito: arte de
-> referência aprovada em 2026-06 (`caipora.jpg` — chibi encapuzada de juba
-> laranja vibrante, rosto vazio de olhos brancos, chifres, túnica de folhas e
-> cajado de cristal verde, em formas chapadas com contorno escuro).
+> Gerador canônico: `scripts/tools/gen_caipora.py`. Fonte do conceito: prancha
+> aprovada em 2026-06, **"Mata Hostil — Prancha de conceito de personagem:
+> Caipora, guardia perigosa da mata"**: silhueta chibi com juba-capa laranja,
+> rosto-vazio de olhos brancos, chifres, corpo pequeno de folhas/cipós, cajado
+> com cristal verde e variante CHAMA.
 
 ---
 
@@ -14,11 +15,12 @@
 A Caipora não tem rosto. Sob o capuz de folhas existe apenas **vazio negro e
 dois olhos brancos, redondos, que brilham** — a última coisa que o caçador vê.
 A juba laranja vibrante envolve o capuz e cai sobre os ombros como uma capa
-viva. Chifres rompem o cabelo. Na mão, um cajado reto coroado por um **cristal
-verde** — o único frio numa criatura de fogo e terra.
+viva, quase maior que o corpo. Chifres rompem o cabelo. Na mão, um cajado reto
+coroado por um **cristal verde** — o único frio numa criatura de fogo e terra.
 
 **Proporção chibi (lei):** cabeça + juba ≈ 55–60% da altura do sprite. O corpo
-é curto, os pés são tocos. A fofura é isca: o rosto-vazio é o horror.
+é curto, menor que a juba-capa, com pés descalços simples. A fofura é isca: o
+rosto-vazio é o horror.
 
 Ela não é mascote. É a dona da mata, e a mata cobra em sangue. O clima sombrio
 do jogo vem da atmosfera da cena (vinheta, grão, color-grade) — não de
@@ -27,7 +29,7 @@ dessaturar o sprite.
 ## 2. Assinaturas visuais (as 5 travas do design)
 
 1. **Juba-capa laranja** — massa laranja vibrante volumosa que envolve o capuz
-   por cima e dos dois lados e flui pelas costas quase até o chão. É A
+   por cima, dos dois lados e pelas costas, quase até o chão. É A
    silhueta: a 32px, a protagonista é "a mancha laranja de olhos brancos". No
    strike estica horizontal (velocidade); no windup eriça pra cima (ameaça);
    no recover assenta.
@@ -51,13 +53,14 @@ dessaturar o sprite.
 
 | Material | Ramp |
 |----------|------|
-| Juba (base) | `#a8431a → #d95f23` (laranja vibrante) |
+| Juba (base) | `#8b2a00 → #ff4500` (laranja vibrante da prancha) |
 | Juba (CHAMA) | `#ff6808 → #ffb032` + coração `#ffefb2` |
-| Pele / chifres / cajado | `#5e3a1f → #8a5a32` (um marrom só) |
-| Folha (capuz/túnica) | `#3c5f26 → #5d8b3a` |
-| Vazio do rosto | `#0c0a0c` |
+| Pele / chifres / cajado | `#482710 → #654321` (um marrom só) |
+| Folha (túnica/cipós) | `#004618 → #006400` |
+| Vazio do rosto | `#000000` |
 | Olhos | `#ffffff` puro (sem halo) |
-| Cristal | `#1da75c → #8af0b0 → #ffffff (brilho)` |
+| Cristal | `#00fa9a → #8affcc → #ffffff (brilho)` |
+| Sangue/acento hostil | `#8b0000` |
 | Contorno | `#1a120a` (1px, toda a silhueta) |
 
 **Acabamento chapado (lei):** flat fill + contorno escuro de 1px na silhueta;
