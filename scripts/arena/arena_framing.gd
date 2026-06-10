@@ -56,7 +56,12 @@ static func visible_rect(camera_pos: Vector2, vp: Vector2, zoom: float) -> Rect2
 static func bubble_rect(camera_pos: Vector2, vp: Vector2, zoom: float) -> Rect2:
 	var stage := Rect2(STAGE_CENTER - STAGE_SIZE * 0.5, STAGE_SIZE)
 	var rect := visible_rect(camera_pos, vp, zoom).intersection(stage)
-	return rect.grow(-BUBBLE_MARGIN)
+	var grown := rect.grow(-BUBBLE_MARGIN)
+	# Viewport degenerada (janela minúscula): a margem engoliria o rect e o
+	# randf_range receberia min > max — devolve a interseção sem margem.
+	if grown.size.x <= 0.0 or grown.size.y <= 0.0:
+		return rect
+	return grown
 
 
 ## Clamp de um ponto para dentro do retângulo de bolhas.

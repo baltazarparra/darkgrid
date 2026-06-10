@@ -274,6 +274,8 @@ func _start_caipora_turn() -> void:
 ## Topo do canvas do sprite do inimigo em y local (negativo). A bolha ancora
 ## acima da cabeça qualquer que seja o tamanho do inimigo (invasor 112px,
 ## boss legado 48px) — nada de offset absoluto que quebra ao trocar a arte.
+## Fallback -32: o topo da era 48px (offset -8 - 24), que com BUBBLE_HEAD_GAP
+## reproduz exatamente o -78 legado caso o sprite não carregue.
 func _enemy_head_top_y() -> float:
 	var spr := _enemy.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
 	if spr == null or spr.sprite_frames == null:

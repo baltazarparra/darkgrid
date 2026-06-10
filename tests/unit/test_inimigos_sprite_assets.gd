@@ -104,6 +104,17 @@ func test_invasores_arena_sao_maiores_que_caipora() -> void:
 		assert_gt(_opaque_height(invasor), int(caipora_h * 1.2),
 			"%s lê pelo menos 1.2x mais alto que a Caipora (corpo %dpx)" % [path, caipora_h])
 
+func test_invasores_runtime_scale_matches_caipora() -> void:
+	# Criatura._ready() reaplica o export sprite_scale por cima do scale do nó:
+	# se o export não casar com 1.2, o default 2.0 vence e quebra o contrato
+	# de escala (texels uniformes com a Caipora, pés na linha de chão).
+	for path: String in ["res://scenes/arena/cacador.tscn", "res://scenes/arena/bruxo.tscn"]:
+		var enemy := (load(path) as PackedScene).instantiate()
+		add_child_autofree(enemy)
+		var spr := enemy.get_node("AnimatedSprite2D") as AnimatedSprite2D
+		assert_eq(spr.scale, Vector2(1.2, 1.2),
+			"%s mantém escala 1.2 depois do _ready" % path)
+
 func test_windup_silhouettes_differ_from_idle() -> void:
 	for pair: Array in [[CACADOR_IDLE, CACADOR_WINDUP], [BRUXO_IDLE, BRUXO_WINDUP]]:
 		var idle := Image.load_from_file(ProjectSettings.globalize_path(pair[0]))

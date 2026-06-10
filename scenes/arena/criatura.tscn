@@ -12,6 +12,7 @@ size = Vector2(96, 128)
 [node name="Criatura" type="CharacterBody2D"]
 script = ExtResource("1_script")
 base_attack_damage = 1
+sprite_scale = 1.2
 attack_pattern = ExtResource("5_pattern")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
