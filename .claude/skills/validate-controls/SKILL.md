@@ -14,7 +14,8 @@ Execute esta checklist completa. Os dois caminhos devem funcionar de forma idên
 make test
 ```
 
-Confirmar: `test_touch_controls.gd` (4 testes) e `test_controls_hud.gd` (3 testes) passam.
+Confirmar: `test_touch_controls.gd` (4 testes), `test_controls_hud.gd` (3 testes) e
+`test_floating_dpad.gd` (11 testes) passam.
 Se qualquer desses falha, NÃO commitar — corrigir primeiro.
 
 ## Passo 2 — Exploração: Teclado
@@ -28,14 +29,20 @@ Rodar o jogo (`~/.local/bin/godot --path .`) e validar na tela de exploração:
 - [ ] Diagonal (direita+cima ao mesmo tempo) → move APENAS em X (cardinal puro)
 - [ ] Parede (tile sólido) → movimento bloqueado
 
-## Passo 3 — Exploração: Touch D-pad
+## Passo 3 — Exploração: Touch D-pad flutuante
 
-Ativar D-pad (Options → Touch Controls → Always) e validar:
+Ativar D-pad (Options → Touch Controls → Always) e validar (com mouse no desktop o
+gesto é clicar-e-arrastar; o pad responde igual ao dedo):
 
-- [ ] Botão direito do D-pad → move +1 tile em X
-- [ ] Botão esquerdo → move -1 tile em X
-- [ ] Botão cima → move -1 tile em Y
-- [ ] Botão baixo → move +1 tile em Y
+- [ ] Fantasma do pad visível no canto inferior direito em repouso
+- [ ] Tocar em qualquer ponto da área de jogo → pad se recentra sob o dedo/cursor
+- [ ] Arrastar para a direita além da zona morta → move +1 tile em X
+- [ ] Arrastar para a esquerda → move -1 tile em X
+- [ ] Arrastar para cima → move -1 tile em Y
+- [ ] Arrastar para baixo → move +1 tile em Y
+- [ ] Arrasto longo além do raio → a base segue o dedo (follow)
+- [ ] Soltar → pad some e o fantasma reaparece no repouso; Caipora PARA (action solta)
+- [ ] Tocar na faixa do topo (HUD/botão de áudio) → pad NÃO aparece
 - [ ] D-pad **visível** em telas EXPLORATION, EXPLORATION_PHASE2, EXPLORATION_PHASE3 e HUB
       (o acampamento é jogável: a Caipora caminha por ele entre as fases — Fase 9)
 - [ ] D-pad **invisível** em MAIN_MENU, GAME_OVER, WIN
@@ -49,11 +56,13 @@ Entrar em combate e validar:
 - [ ] Tecla errada dentro da janela → MISS
 - [ ] Boss especial (Curupira): sequência ←→←→ com o teclado gera série de HITs
 
-## Passo 5 — Combate (Arena): Touch D-pad
+## Passo 5 — Combate (Arena): Touch D-pad flutuante
 
-- [ ] Tocar D-pad na direção correta durante janela verde → PERFECT
-- [ ] D-pad **não** cobre bolhas de timing (bolhas nascem longe do D-pad)
-- [ ] Boss especial: sequência de toques na ordem correta avança o padrão
+- [ ] Flick (toque + arrasto curto) na direção correta durante janela verde → PERFECT
+- [ ] Bolhas de timing não nascem atrás do fantasma em repouso
+- [ ] Boss especial: wiggle ←→←→ sem levantar o dedo avança o padrão (o sinal
+      inverte na hora dentro do mesmo eixo)
+- [ ] Arrasto a ~45° não tremula entre eixos (histerese mantém o eixo atual)
 
 ## Diagnóstico Rápido
 
@@ -71,6 +80,7 @@ Entrar em combate e validar:
 | Arquivo | Função-chave | Responsabilidade |
 |---------|-------------|-----------------|
 | `scripts/ui/controls_hud.gd` | `_on_pressed(action)` | Injeção dupla D-pad |
+| `scripts/ui/floating_dpad.gd` | `resolve_action(offset)` | Gesto → direção cardinal |
 | `scripts/entities/caipora.gd` | `_get_cardinal_input()` | Polling exploração |
 | `scripts/systems/timing_system.gd` | `_input(event)` | Event listener combate |
 | `scripts/arena/arena_manager.gd` | `_is_under_dpad()` | Posicionamento bolhas |
