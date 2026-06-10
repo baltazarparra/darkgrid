@@ -1,0 +1,59 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/player_idle_chama.png" id="1_ccmm6"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_1_chama.png" id="2_rq8a5"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_2_chama.png" id="3_lch3r"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_windup_chama.png" id="4_windup"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_strike_chama.png" id="5_strike"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_recover_chama.png" id="6_recover"]
+
+[resource]
+animations = [{
+"frames": [],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_ccmm6")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_rq8a5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_lch3r")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_windup")
+}],
+"loop": false,
+"name": &"windup",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_strike")
+}],
+"loop": false,
+"name": &"strike",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_recover")
+}],
+"loop": false,
+"name": &"recover",
+"speed": 5.0
+}]

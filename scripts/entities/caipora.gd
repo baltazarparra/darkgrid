@@ -34,6 +34,7 @@ func _ready() -> void:
 	# visível (vp/zoom) fica <= mapa nos dois eixos, então os limit_* mantêm a câmera dentro.
 	_update_camera_zoom()
 	get_viewport().size_changed.connect(_update_camera_zoom)
+	CaiporaSkin.apply(_animated_sprite)
 	_apply_weapon_visual()
 
 func _process(_delta: float) -> void:
