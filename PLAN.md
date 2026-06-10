@@ -387,10 +387,11 @@ make export
 - [x] Atmosfera unificadora: vinheta + grão (`atmosphere.gdshader`, sem screen-read)
 - [x] Floresta amazônica: tiles redesenhados + flora (samambaia/cipó)
 - [x] Vida ambiente decorativa: vaga-lumes (CPUParticles2D) + insetos (sem interação)
-- [x] Personagens identificáveis: Caipora 64×64 (cabelo de fogo, olhos brilhando,
-      cobertura de folhas/cipó, chicote de cipó, pés normais pra frente, imponente —
-      maior que o caçador; o pé-pra-trás é do Curupira, parente, NÃO da Caipora),
-      caçador 48×48 (chapéu/espingarda), bruxo 48×48 (capuz/cajado/gema)
+- [x] Personagens identificáveis: Caipora 96×96 (juba-capa laranja, olhos brancos,
+      pés normais pra frente — o pé-pra-trás é do Curupira, parente, NÃO da Caipora;
+      ela é PEQUENA, do tamanho de uma criança — a imponência é da silhueta),
+      caçador e bruxo 112×112 (invasores humanos adultos, ~1.3× a altura dela;
+      leis: `docs/CONCEITO-protagonista.md` e `docs/CONCEITO-inimigos.md`)
 - [x] Geradores algorítmicos: `gen_tiles.py`, `gen_chars.py`; captura: `screenshot.gd`
 
 ### CHAMA — Espada com elemento fogo ✅
@@ -861,12 +862,13 @@ aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no fo
 | KI-009 | Média | ✅ Resolvida | `Constants.caipora_base_damage_for_phase()` voltou a ser base fixa (`1`) em toda fase; a arena soma apenas Fúria/CHAMA por cima, então o texto das ervas volta a ser o teto real comunicado ao jogador. |
 | KI-010 | Média | ✅ Resolvida | A vitória terminal libera `phase_reached = 6`: matar o Jesuíta marca o marco no `ArenaManager`, e `GameState.end_run(true)` também garante o unlock pós-clear antes de salvar a vitória. |
 | KI-011 | Baixa | ✅ Resolvida | O loop de hover do menu tipava `Button` num array que inclui o `GithubLink` (`LinkButton`, irmão de `Button`): o array tipado rejeitava o item (vira `null`) e o som de hover do link morria em silêncio com SCRIPT ERROR no console. Corrigido tipando `BaseButton`. |
+| KI-012 | Baixa | Aberta | Hierarquia de escala interina: bosses/minibosses seguem com arte legada 48×48 e leem MENORES que os invasores comuns (112×112) na arena e no mapa. Resolve nas sessões de redesign de cada chefe no pipeline premium (`gen_inimigos.py`), um por sessão. |
 
 ---
 
 ## 12. Diretrizes de Assets
 
-- **Sprites:** pixel art autoral procedural (preferido), pack CC0 recolorido, ou **IA com pipeline de limpeza obrigatório** (paleta/grid/alpha). Personagens 48×48, tiles/itens 32×32, .png, fundo transparente. Detalhes em `assets/AGENTS.md`.
+- **Sprites:** pixel art autoral procedural (preferido), pack CC0 recolorido, ou **IA com pipeline de limpeza obrigatório** (paleta/grid/alpha). Escada de tamanhos: tiles/itens 32×32; bosses legados 48×48 (até redesign); Caipora 96×96; invasores comuns 112×112 (+ variante de mapa 56×56). .png, fundo transparente. Detalhes em `assets/AGENTS.md`.
 - **Áudio:** Identidade sonora própria (maracatu / Amazônia / folk-horror), sintetizada proceduralmente em `scripts/tools/gen_sfx.py` (stdlib, reproduzível). Direção canônica: [docs/PRD-audio-v3.md](docs/PRD-audio-v3.md); norte de referência Ocarina: [docs/PRD-audio-v3-1-ocarina.md](docs/PRD-audio-v3-1-ocarina.md); execução: [docs/PLAN-audio-v3-1-execucao.md](docs/PLAN-audio-v3-1-execucao.md). Camadas:
   - **SFX de combate** (`assets/audio/sfx/`): .wav curtos, punchy, under 100KB cada, 3 variantes por som (round-robin no `SfxSystem`).
   - **Ambiência** (`assets/audio/ambience/`): loops por tela — floresta amazônica (exploração/hub), dread (arena).

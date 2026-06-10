@@ -8,20 +8,20 @@ extends Node2D
 
 const BOSS_BUBBLE_COLOR := Constants.COLOR_BUBBLE_BOSS
 const BOSS_BUBBLE_SPREAD_MIN: float = 90.0
-const BOSS_BUBBLE_X: Vector2 = Vector2(70.0, 570.0)
-const BOSS_BUBBLE_Y: Vector2 = Vector2(80.0, 370.0)
 
-# Retângulo de conteúdo que envolve toda a ação (atores + timing bubbles + boss-spread).
-# A câmera dá zoom para encaixá-lo na tela, ampliando o combate e eliminando o espaço
-# morto. FILL < 1 deixa um respiro para a HUD (topo) e o D-pad (base).
-const STAGE_CENTER: Vector2 = Vector2(320.0, 225.0)
-const STAGE_SIZE: Vector2 = Vector2(560.0, 340.0)
+# Enquadramento por orientação (palco, retângulo de ação e posição dos atores)
+# vive em ArenaFraming (helper puro): retrato aproxima os atores e estreita o
+# fit para o combate encher a tela do celular. FILL < 1 deixa um respiro para
+# a HUD (topo) e o D-pad (base).
 const STAGE_FILL: float = 0.92
 
 # Em retrato a tela é alta: sem isto a ação fica no centro vertical e o D-pad sobra num vão
 # morto embaixo. Levanta a ação para o meio do espaço ACIMA do D-pad. 1.0 = centra cheio
 # nesse espaço; 0.5 = meio-termo (nudge suave). Sem D-pad (desktop) o efeito é nulo.
 const ACTION_LIFT_FRACTION: float = 0.5
+# Folga entre o topo do sprite do inimigo e o centro da bolha de timing
+# (equivale ao -78 fixo da era 48px: 46px acima do canvas do inimigo).
+const BUBBLE_HEAD_GAP: float = 46.0
 
 # Folga extra (px de tela) somada ao raio da bolha ao testar contra o D-pad.
 const DPAD_BUBBLE_PADDING: float = 12.0
@@ -134,14 +134,16 @@ func _run_combat_loader() -> void:
 		_start_caipora_turn()
 
 func _update_camera_fit() -> void:
-	# Zoom "contain": encaixa STAGE_SIZE na viewport sem cortar a ação. Em paisagem o
-	# limite é a altura (ação grande, leve folga lateral); em retrato cabe inteiro.
+	# Zoom "contain": encaixa o retângulo de ação da orientação atual sem cortar
+	# a ação. Em paisagem o limite é a altura (palco clássico 560x340); em
+	# retrato o retângulo estreito (360) aproxima a câmera do combate.
 	var vp := get_viewport().get_visible_rect().size
-	var raw: float = minf(vp.x / STAGE_SIZE.x, vp.y / STAGE_SIZE.y)
+	var action := ArenaFraming.action_size(vp)
+	var raw: float = minf(vp.x / action.x, vp.y / action.y)
 	var z: float = clampf(raw * STAGE_FILL, 0.5, 2.0)
 	# Texel inteiro: a arte escala em múltiplos exatos de device-pixel (pixel art
 	# uniforme). A folga do STAGE_FILL absorve arredondar pra cima; o contain sem
-	# FILL (e o teto 2.0 do tablet) é o limite duro que não corta o stage.
+	# FILL (e o teto 2.0 do tablet) é o limite duro que não corta a ação.
 	z = PixelScale.snap_contain(z, PixelScale.device_scale(get_viewport()), minf(raw, 2.0))
 	_camera.zoom = Vector2(z, z)
 
@@ -151,14 +153,25 @@ func _update_camera_fit() -> void:
 	var y_offset: float = 0.0
 	if dpad_rect.size.y > 0.0 and Constants.is_portrait(vp):
 		y_offset = (vp.y - dpad_rect.position.y) * 0.5 * ACTION_LIFT_FRACTION / z
-	_camera.position = STAGE_CENTER + Vector2(0.0, y_offset)
+	_camera.position = ArenaFraming.STAGE_CENTER + Vector2(0.0, y_offset)
+
+	# Orientação livre: girar o aparelho no meio do combate reaproxima/afasta
+	# os atores junto com o enquadramento (bolhas vivas mantêm posição — vida
+	# curta; os spawns seguintes usam o rect novo).
+	_apply_actor_positions(vp)
+
+func _apply_actor_positions(vp: Vector2) -> void:
+	if _caipora != null and is_instance_valid(_caipora):
+		_caipora.position = ArenaFraming.caipora_pos(vp)
+	if _enemy != null and is_instance_valid(_enemy):
+		_enemy.position = ArenaFraming.enemy_pos(vp)
 
 func _spawn_caipora() -> void:
 	if caipora_combat_scene == null:
 		push_error("ArenaManager: caipora_combat_scene não atribuído")
 		return
 	_caipora = caipora_combat_scene.instantiate()
-	_caipora.position = Vector2(160, 240)
+	_caipora.position = ArenaFraming.caipora_pos(get_viewport().get_visible_rect().size)
 	add_child(_caipora)
 	CaiporaSkin.apply(_caipora.animated_sprite)
 	# max_health é int; GameState.caipora_max_hp é float (carrega o meio-HP acumulado).
@@ -205,7 +218,7 @@ func _spawn_enemy() -> void:
 		push_error("ArenaManager: enemy_scene não atribuído")
 		return
 	_enemy = scene.instantiate()
-	_enemy.position = Vector2(480, 240)
+	_enemy.position = ArenaFraming.enemy_pos(get_viewport().get_visible_rect().size)
 	add_child(_enemy)
 	if not GameState.active_combat_is_boss and not keeps_own_hp:
 		var hp: int = Constants.common_health_for_phase(GameState.active_phase)
@@ -230,7 +243,7 @@ func _start_caipora_turn() -> void:
 	_sfx.play(_sfx.attack_sound)
 	# Cipó armado enquanto a janela está aberta — antecipação do bote.
 	_animator.play_pose(_caipora, &"windup")
-	_first_bubble_pos = _enemy.position + Vector2(0, -78)
+	_first_bubble_pos = _enemy.position + Vector2(0, _enemy_head_top_y() - BUBBLE_HEAD_GAP)
 	var atk_window: float = _phase_window(Constants.TIMING_WINDOW_ATTACK)
 	_timing_bubble.show_bubble(
 		_first_bubble_pos,
@@ -258,6 +271,20 @@ func _start_caipora_turn() -> void:
 		)
 		_timing_system.timing_result.connect(_on_attack_timing_result)
 
+## Topo do canvas do sprite do inimigo em y local (negativo). A bolha ancora
+## acima da cabeça qualquer que seja o tamanho do inimigo (invasor 112px,
+## boss legado 48px) — nada de offset absoluto que quebra ao trocar a arte.
+## Fallback -32: o topo da era 48px (offset -8 - 24), que com BUBBLE_HEAD_GAP
+## reproduz exatamente o -78 legado caso o sprite não carregue.
+func _enemy_head_top_y() -> float:
+	var spr := _enemy.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if spr == null or spr.sprite_frames == null:
+		return -32.0
+	var tex := spr.sprite_frames.get_frame_texture(spr.animation, 0)
+	if tex == null:
+		return -32.0
+	return (spr.offset.y - tex.get_height() * 0.5) * spr.scale.y
+
 func _spawn_second_bubble() -> void:
 	if not _both_alive() or not _timing_system.is_open():
 		return
@@ -268,6 +295,10 @@ func _spawn_second_bubble() -> void:
 		spread = _first_bubble_pos + Vector2(cos(angle) * dist, sin(angle) * dist)
 		if not _is_under_dpad(spread):
 			break
+	# Com o enquadramento fechado de retrato, o sorteio pode cair na borda:
+	# garante a 2ª bolha inteira dentro do que a câmera vê.
+	spread = ArenaFraming.clamp_to_bubble_rect(spread, ArenaFraming.bubble_rect(
+		_camera.position, get_viewport().get_visible_rect().size, _camera.zoom.x))
 	_timing_bubble_b.show_bubble(
 		spread,
 		_phase_window(Constants.TIMING_WINDOW_ATTACK),
@@ -443,11 +474,15 @@ func _on_enemy_pattern_finished() -> void:
 		_start_caipora_turn()
 
 func _boss_spread_pos() -> Vector2:
+	# Spawna dentro do que a câmera vê (∩ palco, com margem do raio da bolha):
+	# com o zoom de retrato as antigas faixas absolutas vazariam da tela.
+	var rect := ArenaFraming.bubble_rect(
+		_camera.position, get_viewport().get_visible_rect().size, _camera.zoom.x)
 	var pos: Vector2
 	for _i in 20:
 		pos = Vector2(
-			randf_range(BOSS_BUBBLE_X.x, BOSS_BUBBLE_X.y),
-			randf_range(BOSS_BUBBLE_Y.x, BOSS_BUBBLE_Y.y)
+			randf_range(rect.position.x, rect.end.x),
+			randf_range(rect.position.y, rect.end.y)
 		)
 		if _last_boss_bubble_pos.distance_to(pos) >= BOSS_BUBBLE_SPREAD_MIN and not _is_under_dpad(pos):
 			break

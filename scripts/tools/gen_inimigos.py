@@ -20,7 +20,13 @@ from PIL import Image, ImageDraw
 
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sprites")
-SIZE = 48
+# Os invasores são humanos adultos: maiores que a Caipora-criança (96px,
+# corpo ~75px). Combate/arena usa 112px (corpo ~103px ≈ 1.4x ela); o mapa de
+# exploração usa variante 56px re-renderizada dos mesmos vetores (a Caipora
+# anda no mapa a scale 0.533 ≈ 51px). Lei: docs/PLANO-escala-invasores-e-zoom-retrato.md.
+SIZE = 112
+MAP_SIZE = 56
+GRID = 48        # espaço de desenho: as coordenadas abaixo vivem na grade 48
 SS = 8
 
 TRANSPARENT = (0, 0, 0, 0)
@@ -56,16 +62,18 @@ BRUXO_PALETTE = [
 
 
 class Painter:
-    def __init__(self) -> None:
-        self.im = Image.new("RGBA", (SIZE * SS, SIZE * SS), TRANSPARENT)
+    def __init__(self, size: int = SIZE) -> None:
+        self.size = size
+        self.k = size / GRID * SS   # grade 48 → canvas supersampled
+        self.im = Image.new("RGBA", (size * SS, size * SS), TRANSPARENT)
         self.d = ImageDraw.Draw(self.im)
 
     def poly(self, pts: list[tuple[float, float]], col: tuple[int, int, int]) -> None:
-        self.d.polygon([(x * SS, y * SS) for x, y in pts], fill=col)
+        self.d.polygon([(x * self.k, y * self.k) for x, y in pts], fill=col)
 
     def ellipse(self, cx: float, cy: float, rx: float, ry: float, col: tuple[int, int, int]) -> None:
         self.d.ellipse(
-            [(cx - rx) * SS, (cy - ry) * SS, (cx + rx) * SS, (cy + ry) * SS],
+            [(cx - rx) * self.k, (cy - ry) * self.k, (cx + rx) * self.k, (cy + ry) * self.k],
             fill=col,
         )
 
@@ -97,10 +105,10 @@ class Painter:
         self.ellipse(x1, y1, wb / 2, wb / 2, col)
 
     def render(self, palette: list[tuple[int, int, int]]) -> Image.Image:
-        small = self.im.resize((SIZE, SIZE), Image.Resampling.BOX)
+        small = self.im.resize((self.size, self.size), Image.Resampling.BOX)
         px = small.load()
-        for y in range(SIZE):
-            for x in range(SIZE):
+        for y in range(self.size):
+            for x in range(self.size):
                 r, g, b, a = px[x, y]
                 if a < 112:
                     px[x, y] = TRANSPARENT
@@ -127,16 +135,17 @@ def _nearest_palette(
 
 
 def _outline(img: Image.Image) -> None:
+    size = img.width
     px = img.load()
     edge: list[tuple[int, int]] = []
-    for y in range(SIZE):
-        for x in range(SIZE):
+    for y in range(size):
+        for x in range(size):
             if px[x, y][3] == 0:
                 continue
             for ox, oy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                 nx = x + ox
                 ny = y + oy
-                if not (0 <= nx < SIZE and 0 <= ny < SIZE) or px[nx, ny][3] == 0:
+                if not (0 <= nx < size and 0 <= ny < size) or px[nx, ny][3] == 0:
                     edge.append((x, y))
                     break
     for x, y in edge:
@@ -206,8 +215,8 @@ def _cacador_eyes(p: Painter, windup: bool) -> None:
     p.ellipse(25.6, 17.0, 1.5, ry, EYE_RED)
 
 
-def cacador(pose: str = "idle") -> Image.Image:
-    p = Painter()
+def cacador(pose: str = "idle", size: int = SIZE) -> Image.Image:
+    p = Painter(size)
     windup = pose == "windup"
     _cacador_legs(p)
     _cacador_poncho(p)
@@ -231,7 +240,7 @@ def cacador(pose: str = "idle") -> Image.Image:
     _cacador_eyes(p, windup)
     img = p.render(CACADOR_PALETTE)
     if windup:
-        img = _shift_down(img, 1)   # peso cravado no chão
+        img = _shift_down(img, max(1, round(size / GRID)))   # peso cravado no chão
     _outline(img)
     return img
 
@@ -320,8 +329,8 @@ def _bruxo_hands(p: Painter, windup: bool) -> None:
             p.limb((13.0, 27.0), tip, 1.0, 0.55, BONE_DK)
 
 
-def bruxo(pose: str = "idle") -> Image.Image:
-    p = Painter()
+def bruxo(pose: str = "idle", size: int = SIZE) -> Image.Image:
+    p = Painter(size)
     windup = pose == "windup"
     _bruxo_staff(p, windup)
     _bruxo_robe(p, windup)
@@ -330,7 +339,7 @@ def bruxo(pose: str = "idle") -> Image.Image:
     _bruxo_hands(p, windup)
     img = p.render(BRUXO_PALETTE)
     if windup:
-        img = _shift_down(img, 1)   # assenta o peso antes do ataque
+        img = _shift_down(img, max(1, round(size / GRID)))   # assenta o peso antes do ataque
     _outline(img)
     return img
 
@@ -380,8 +389,12 @@ def generate_all() -> None:
         img = fn(pose)
         img.save(os.path.join(OUT, name))
         frames.append((label, img))
+    # Variantes do mapa de exploração: re-render 56px dos MESMOS vetores
+    # (snap+outline corretos — nunca downscale por NEAREST do asset grande).
+    cacador("idle", MAP_SIZE).save(os.path.join(OUT, "enemy_map.png"))
+    bruxo("idle", MAP_SIZE).save(os.path.join(OUT, "bruxo_map.png"))
     _contact_sheet(frames)
-    print("[gen_inimigos] cacador + bruxo idle/windup (48x48 premium) + prancha gerados")
+    print("[gen_inimigos] cacador + bruxo idle/windup (112x112) + variantes de mapa (56x56) + prancha gerados")
 
 
 if __name__ == "__main__":
