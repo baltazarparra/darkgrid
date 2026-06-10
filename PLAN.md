@@ -798,20 +798,24 @@ pelo bitcrush de 7 bits e pelo loop curto de 2 compassos (~9s) que martela o
 artefato. O lead pulse (duty 0.25) nos graus 7–12 com sustain de ~0.36s
 contribui com o "bip" agudo.
 
-- [ ] Reescrever `mus_hub()`: trocar o pad sustentado por comping rítmico
-  curto (stabs com release ≤0.15s) **ou** arpejo (notas em sequência, nunca
-  sustentadas juntas) — elimina o batimento entre vozes na raiz.
-- [ ] Onde restar tom sustentado, zerar o detune (`_jit`) dessas vozes.
-- [ ] Lead uma oitava abaixo (graus 0–7), envelope pluck mantido, mais esparso.
-- [ ] Loop de 4 compassos com variação entre eles (hoje 2 compassos repetidos
-  hipnotizam qualquer defeito).
-- [ ] Regenerar e commitar `assets/audio/music/mus_hub.wav` (+ `.import`).
-- [ ] Verificação objetiva (CI não escuta): script de análise checa o envelope
-  do trecho de acordes por modulação de amplitude < 8 Hz (batimento) e por
-  tom sustentado > 1s acima de limiar. Validação subjetiva no device fica
-  com o Baltz.
-- [ ] Tom: continua samba lofi morno — o acampamento é o respiro ("o
-  acampamento respira..."). Não virar horror; o horror mora lá fora.
+- [x] Reescrever `mus_hub()`: o pad sustentado virou violão dedilhado (arpejo
+  de triângulo, nota a nota, nunca vozes sustentadas juntas) **uma oitava
+  acima do baixo** — o pad antigo ainda sustentava o grau 0 em UNÍSSONO com o
+  baixo (cada um com seu detune), o pior par possível de batimento.
+- [x] Onde restar tom sustentado: só o baixo, voz única — sozinho não tem com
+  quem bater (detune inofensivo). Regra documentada no docstring.
+- [x] Lead uma oitava abaixo (graus 4–7 sobre root×2, antes chegava a A5),
+  envelope pluck mantido, mais esparso (responde o violão nos vãos).
+- [x] Loop de 4 compassos com variação (era 2 compassos repetidos).
+- [x] Regenerar e commitar `assets/audio/music/mus_hub.wav` (regen determinístico:
+  `--only music` só alterou o mus_hub, faixas vizinhas byte-idênticas).
+- [x] Verificação objetiva: leito harmônico sintetizado isolado (sem percussão),
+  amplitude do parcial de 110 Hz via Goertzel no sustain — profundidade de
+  modulação caiu de 0.19 (antiga, batimento real; dependente do sorteio de
+  detune, no asset chegava a ~1.0) para 0.05 (nova, resíduo de envelope).
+  Validação subjetiva no device fica com o Baltz.
+- [x] Tom: continua samba lofi morno — o acampamento é o respiro ("o
+  acampamento respira..."). Não virou horror; o horror mora lá fora.
 
 #### 10.4 Performance: 60fps em Android modesto
 
