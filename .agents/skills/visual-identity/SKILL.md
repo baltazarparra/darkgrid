@@ -1,0 +1,117 @@
+---
+name: visual-identity
+description: Mantem a identidade visual de caipora baseada na protagonista aprovada: silhueta laranja serrilhada, vazio preto, olhos brancos, horror folclorico brasileiro e pixel art chapada.
+disable-model-invocation: true
+---
+
+# Visual Identity — caipora
+
+Use esta skill sempre que mexer em arte, sprites, VFX, UI visual, key art,
+paleta, inimigos, cenarios, thumbnails, marketing, docs de arte ou qualquer
+coisa que possa enfraquecer a marca visual do jogo.
+
+Fonte canonica:
+- `docs/CONCEITO-protagonista.md`
+- `assets/sprites/caipora_pop_dark_contact_sheet.png`
+- `scripts/tools/gen_caipora.py`
+- `tests/unit/test_caipora_sprite_assets.gd`
+
+## 1. Principio-marca
+
+A Caipora aprovada define a marca do jogo. Ela deve ser reconhecivel como:
+
+> uma massa laranja serrilhada, predatoria, com corpo/rosto/chifres/cajado
+> pretos, dois olhos brancos puros, e um minimo verde ritual no cristal.
+
+Tudo no jogo deve parecer que pertence ao mesmo mundo: floresta hostil,
+folclore brasileiro, sangue real, entidade antiga, formas chapadas, leitura
+forte em baixa resolucao.
+
+## 2. Travas da protagonista
+
+Nunca quebrar estas regras:
+
+1. A juba-capa laranja e a silhueta dominante.
+2. Rosto, corpo, chifres e cajado leem como preto.
+3. O rosto nao tem boca, nariz, sobrancelha, sorriso ou expressao humana.
+4. Os olhos sao dois pontos/circulos brancos, simples e assustadores.
+5. O verde do cristal e minimo, so para ancorar `FuriaVisual`.
+6. A proporcao e chibi, mas a leitura e perigosa, nao mascote.
+7. Poses devem sugerir predadora: pronta, eriçada, em bote, ou assentando peso.
+8. O acabamento e pixel art chapada: paleta fechada, 1px outline, sem gradiente
+   suave, sem blur, sem dither decorativo.
+
+## 3. Tecnica de estilo
+
+Use formas grandes primeiro. Se uma ideia nao funciona em silhueta, ela ainda
+nao esta pronta.
+
+Pipeline recomendado:
+
+1. Validar a silhueta em preto/laranja antes de detalhes.
+2. Reduzir o sprite para leitura em 32px mentalmente ou por preview.
+3. Usar no maximo 2 tons por material.
+4. Preservar outline escuro continuo em sprites pequenos.
+5. Fazer o clima sombrio na cena, luz, vinheta, sangue, particulas e contraste,
+   nao dessaturando a Caipora.
+6. Usar acentos frios com muita parcimonia. Verde pertence ao cristal/Furia.
+
+Paleta-guia da protagonista:
+
+| Papel | Cores |
+|-------|-------|
+| Juba/capa | `#8b2a00`, `#ff4500` |
+| CHAMA | `#ff6808`, `#ffb032`, `#ffefb2` |
+| Corpo/rosto/chifres/cajado | `#000000` |
+| Olhos | `#ffffff` |
+| Cristal/Furia | `#00fa9a`, poucos pixels |
+| Sangue/acento hostil | `#8b0000` |
+
+## 4. Aplicando a outros assets
+
+Personagens e inimigos:
+- Devem ter uma silhueta clara e agressiva antes de detalhe interno.
+- Podem contrastar com a Caipora, mas nao podem parecer de outro jogo.
+- Evite excesso de roupa, acessorios ou render brilhante.
+- Prefira olhos, dentes, chifres, ossos, manchas, fogo, lama e sangue como
+  sinais graficos fortes.
+
+Cenarios:
+- A floresta e personagem hostil. Use dentes de folha, troncos como garras,
+  cipó como armadilha, sombras que apertam o caminho.
+- O ambiente pode ser escuro, mas a jogabilidade precisa continuar legivel.
+- O horror deve ser material: sangue, fuligem, carne, osso, lama, vela, breu,
+  marca ritual, madeira podre.
+
+UI e feedback:
+- A UI deve respeitar a leitura de jogo: funcional, brutal, sem enfeite fofo.
+- Use a laranja/preto/branco da Caipora como identidade, e verde so quando o
+  sistema realmente se conecta a Furia/cristal.
+- Critico, esquiva perfeita e golpes devem ter impacto visceral: hit-stop,
+  shake, sangue e contraste alto.
+
+Marketing/key art:
+- A Caipora deve aparecer como sinal de primeira leitura: mancha laranja,
+  vazio preto, olhos brancos.
+- Nao transformar em menina fofa, mascote, heroina limpa ou fantasia generica.
+- Se a imagem for detalhada, ainda deve ser possivel reconhecer a silhueta
+  principal em miniatura.
+
+## 5. Checklist antes de entregar
+
+- A Caipora continua sendo a marca mais memoravel da tela?
+- A silhueta le em 32px?
+- O laranja domina a protagonista e o verde ficou minimo?
+- O rosto ficou vazio, sem expressao humana?
+- O asset parece de horror folclorico brasileiro, nao fantasia generica?
+- O acabamento segue pixel art chapada com paleta controlada?
+- O sangue, a mata e a entidade continuam perigosos?
+
+Se mexer nos sprites da protagonista:
+- Nunca edite PNG `player_*` manualmente.
+- Edite `scripts/tools/gen_caipora.py`.
+- Regenere os PNGs.
+- Rode `make gate` antes de commit.
+
+Se mexer so em docs desta identidade:
+- Rode pelo menos `make smoke`.
