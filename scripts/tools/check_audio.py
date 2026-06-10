@@ -57,14 +57,18 @@ BUDGET_FAIL_MB = 10.0
 
 # ─── IO ────────────────────────────────────────────
 def read_wav(path):
-    """Lê WAV mono 16-bit -> (samples [-1..1], rate). Falha alto em outro formato."""
+    """Lê WAV mono 16-bit ou 8-bit -> (samples [-1..1], rate). Falha alto em outro formato."""
     with wave.open(path, "r") as w:
-        if w.getnchannels() != 1 or w.getsampwidth() != 2:
-            raise ValueError(f"{path}: esperado mono 16-bit")
+        if w.getnchannels() != 1 or w.getsampwidth() not in (1, 2):
+            raise ValueError(f"{path}: esperado mono 8 ou 16-bit")
+        width = w.getsampwidth()
         rate = w.getframerate()
         raw = w.readframes(w.getnframes())
-    n = len(raw) // 2
-    samples = [s / 32768.0 for s in struct.unpack(f"<{n}h", raw)]
+    if width == 1:  # PCM 8-bit é unsigned (0..255, centro em 128)
+        samples = [(b - 128) / 128.0 for b in raw]
+    else:
+        n = len(raw) // 2
+        samples = [s / 32768.0 for s in struct.unpack(f"<{n}h", raw)]
     return samples, rate
 
 

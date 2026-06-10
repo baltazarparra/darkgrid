@@ -198,6 +198,19 @@ func test_missing_single_loop_falls_back_to_base_stem():
 	assert_eq(AudioDirector._music_stream_path(path),
 		"res://assets/audio/music/mus_arena_p1_base.wav")
 
+func test_force_loop_handles_8_and_16_bit():
+	# A música é gravada em PCM 8-bit (1 byte por frame mono); SFX seguem 16-bit.
+	var wav8 := AudioStreamWAV.new()
+	wav8.format = AudioStreamWAV.FORMAT_8_BITS
+	wav8.data = PackedByteArray([128, 200, 60, 128])
+	AudioDirector._force_loop(wav8)
+	assert_eq(wav8.loop_end, 4, "8-bit: loop_end = bytes (1 byte por frame)")
+	var wav16 := AudioStreamWAV.new()
+	wav16.format = AudioStreamWAV.FORMAT_16_BITS
+	wav16.data = PackedByteArray([0, 0, 0, 0])
+	AudioDirector._force_loop(wav16)
+	assert_eq(wav16.loop_end, 2, "16-bit: loop_end = bytes / 2")
+
 func test_reverb_bus_exists_and_routes():
 	var idx_reverb := AudioServer.get_bus_index("Reverb")
 	assert_true(idx_reverb >= 0, "bus Reverb deve existir")

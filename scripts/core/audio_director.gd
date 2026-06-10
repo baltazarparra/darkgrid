@@ -543,7 +543,9 @@ func _force_loop(stream: AudioStream) -> void:
 		var wav := stream as AudioStreamWAV
 		wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		wav.loop_begin = 0
-		wav.loop_end = wav.data.size() / 2
+		# loop_end é em FRAMES: 1 byte por frame em 8-bit, 2 em 16-bit (mono).
+		var bytes_per_frame := 1 if wav.format == AudioStreamWAV.FORMAT_8_BITS else 2
+		wav.loop_end = wav.data.size() / bytes_per_frame
 
 func _fade_player(player: AudioStreamPlayer, to_db: float, stop_after: bool, dur: float = AMBIENCE_FADE) -> void:
 	var tween := create_tween()
