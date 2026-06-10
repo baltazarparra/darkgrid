@@ -25,6 +25,13 @@ const COMBAT_KEY_MIN: float = 56.0
 const COMBAT_KEY_MAX: float = 96.0
 const COMBAT_PORTRAIT_SCALE: float = 1.2
 const COMBAT_MAX_WIDTH_FRACTION: float = 0.58
+const COMBAT_GAP_FRACTION: float = 0.10
+const COMBAT_SIDE_MARGIN_FRACTION: float = 0.45
+const COMBAT_BOTTOM_MARGIN_FRACTION: float = 0.55
+const COMBAT_PRESS_SCALE: float = 0.92
+const COMBAT_PRESS_TWEEN_SECONDS: float = 0.045
+const COMBAT_HAPTIC_MS: int = 10
+const TOUCH_SAFE_MARGIN: float = 28.0
 
 const MODE_EXPLORATION: int = 0
 const MODE_COMBAT: int = 1
@@ -307,12 +314,13 @@ func _layout_combat_buttons() -> void:
 	if _touch_detected and Constants.is_portrait(vp):
 		key *= COMBAT_PORTRAIT_SCALE
 
-	var gap: float = key * 0.10
+	var gap: float = key * COMBAT_GAP_FRACTION
 	var safe: Vector2 = _get_safe_margins()
-	var margin: float = maxf(key * 0.45, safe.x)
+	var side_margin: float = maxf(key * COMBAT_SIDE_MARGIN_FRACTION, safe.x)
+	var bottom_margin: float = maxf(key * COMBAT_BOTTOM_MARGIN_FRACTION, safe.y)
 	var cluster_w: float = key * 3.0 + gap * 2.0
 	var cluster_h: float = key * 2.0 + gap
-	var max_cluster_w: float = vp.x * COMBAT_MAX_WIDTH_FRACTION - margin
+	var max_cluster_w: float = vp.x * COMBAT_MAX_WIDTH_FRACTION - side_margin
 	if cluster_w > max_cluster_w and max_cluster_w > 0.0:
 		var shrink: float = max_cluster_w / cluster_w
 		key *= shrink
@@ -320,7 +328,10 @@ func _layout_combat_buttons() -> void:
 		cluster_w = key * 3.0 + gap * 2.0
 		cluster_h = key * 2.0 + gap
 
-	var origin := Vector2(margin, vp.y - margin - cluster_h - safe.y)
+	var origin := Vector2(
+		vp.x - side_margin - cluster_w,
+		vp.y - bottom_margin - cluster_h
+	)
 	_dpad_rect = Rect2(origin, Vector2(cluster_w, cluster_h))
 
 	var cx: float = origin.x + key + gap
@@ -337,6 +348,7 @@ func _layout_combat_buttons() -> void:
 		var btn := _keys[i]
 		btn.position = positions[i]
 		btn.size = Vector2(key, key)
+		btn.pivot_offset = btn.size * 0.5
 
 
 func _try_begin(index: int, point: Vector2) -> void:
@@ -396,18 +408,21 @@ func _get_safe_margins() -> Vector2:
 		bottom = float(screen_size.y - safe_rect.end.y)
 
 	if _is_touch_device():
-		right = maxf(right, 28.0)
-		bottom = maxf(bottom, 28.0)
+		right = maxf(right, TOUCH_SAFE_MARGIN)
+		bottom = maxf(bottom, TOUCH_SAFE_MARGIN)
 
 	return Vector2(right, bottom)
 
 
 func _on_pressed(action: String) -> void:
+	_apply_combat_button_feedback(action, true)
+	_pulse_combat_haptic()
 	Input.action_press(action)
 	_feed_event(action, true)
 
 
 func _on_released(action: String) -> void:
+	_apply_combat_button_feedback(action, false)
 	Input.action_release(action)
 	_feed_event(action, false)
 
@@ -415,6 +430,8 @@ func _on_released(action: String) -> void:
 func _release_all_actions() -> void:
 	for entry in _ENTRIES:
 		Input.action_release(entry[0])
+	for btn in _keys:
+		btn.scale = Vector2.ONE
 
 
 func _feed_event(action: String, pressed: bool) -> void:
@@ -423,3 +440,35 @@ func _feed_event(action: String, pressed: bool) -> void:
 	ev.pressed = pressed
 	ev.strength = 1.0 if pressed else 0.0
 	Input.parse_input_event(ev)
+
+
+func _apply_combat_button_feedback(action: String, pressed: bool) -> void:
+	if _button_mode != MODE_COMBAT:
+		return
+	var index := _action_index(action)
+	if index < 0 or index >= _keys.size():
+		return
+	var btn := _keys[index]
+	var target := Vector2.ONE * (COMBAT_PRESS_SCALE if pressed else 1.0)
+	var tween := btn.create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(btn, "scale", target, COMBAT_PRESS_TWEEN_SECONDS)
+
+
+func _pulse_combat_haptic() -> void:
+	if _button_mode != MODE_COMBAT:
+		return
+	if not OS.has_feature("web"):
+		return
+	JavaScriptBridge.eval(
+		"if (navigator.vibrate) navigator.vibrate(%d);" % COMBAT_HAPTIC_MS,
+		false
+	)
+
+
+func _action_index(action: String) -> int:
+	for i in _ENTRIES.size():
+		if _ENTRIES[i][0] == action:
+			return i
+	return -1

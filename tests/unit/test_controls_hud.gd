@@ -52,6 +52,23 @@ func test_arena_uses_legacy_arrow_dpad() -> void:
 	assert_eq((_hud._keys[0] as Button).text, "↑", "primeiro botão é a seta para cima")
 	assert_gt(_hud.get_dpad_screen_rect().size.x, 0.0, "arena informa retângulo ocupado")
 
+func test_arena_dpad_sits_in_right_thumb_zone() -> void:
+	_hud._on_screen_changed(SignalBus.Screen.ARENA)
+	var rect: Rect2 = _hud.get_dpad_screen_rect()
+	var vp: Vector2 = _hud.get_viewport().get_visible_rect().size
+	var center: Vector2 = rect.position + rect.size * 0.5
+
+	assert_gt(center.x, vp.x * 0.5, "D-pad de combate fica no lado direito")
+	assert_gt(rect.position.y, vp.y * 0.5, "D-pad de combate fica na metade inferior")
+	assert_lte(rect.end.x, vp.x, "D-pad de combate respeita a borda direita")
+	assert_lte(rect.end.y, vp.y, "D-pad de combate respeita a borda inferior")
+
+func test_arena_dpad_keeps_thumb_sized_targets() -> void:
+	_hud._on_screen_changed(SignalBus.Screen.ARENA)
+	for key in _hud._keys:
+		assert_gte(key.size.x, _hud.COMBAT_KEY_MIN, "alvo de toque mantém largura confortável")
+		assert_gte(key.size.y, _hud.COMBAT_KEY_MIN, "alvo de toque mantém altura confortável")
+
 func test_all_arena_phase_screens_use_legacy_arrow_dpad() -> void:
 	_hud._on_screen_changed(SignalBus.Screen.ARENA_PHASE5)
 	assert_eq(_hud._button_mode, _hud.MODE_COMBAT, "ARENA_PHASE* também usa setas")
