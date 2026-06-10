@@ -34,13 +34,18 @@ assets/
 
 1. **Sprites:** autoral procedural (preferido), CC0 recolorido, ou IA limpa (ver pipeline).
    Sempre `snake_case`, fundo transparente, na paleta.
-2. **Tamanho:** **personagens 48×48**, **tiles/itens 32×32** (grid lógico = 32).
-   Sprites de 48px transbordam o tile pra cima (offset.y = -8 no AnimatedSprite2D;
-   pés na base). Background transparente.
-   **Exceção — Caipora (protagonista/guardiã): 96×96**, por ser imponente
-   (maior que os caçadores) e carregar a silhueta-ícone (juba + chifres + cajado).
-   Usa offset/scale próprios por cena (arena vs exploração vs título) para os
-   pés assentarem na base do tile.
+2. **Tamanho — escada de escala (lore-correta):** a Caipora é PEQUENA, do
+   tamanho de uma criança; os invasores humanos se agigantam sobre ela.
+   | Asset | Canvas |
+   |-------|--------|
+   | Tiles/itens | 32×32 (grid lógico = 32) |
+   | Bosses/minibosses legados | 48×48 (até a sessão de redesign de cada um — KI-012) |
+   | Caipora | 96×96 (corpo ~75px; a imponência é da silhueta, não do tamanho) |
+   | Invasores comuns (caçador/bruxo) | 112×112 arena (~1.3× ela) + variante de mapa 56×56 |
+   Sprites maiores que o tile transbordam pra cima (pés na base, offset.y
+   negativo no sprite). Na arena, Caipora e invasores usam a MESMA escala de
+   nó (1.2) — texels uniformes; a hierarquia vem do canvas/desenho, nunca de
+   escala fracionária diferente por ator. Background transparente.
 2b. **Pipeline de limpeza para IA (obrigatório):** quantizar para a paleta
    (`constants.gd`), alinhar ao grid, garantir alpha limpo (sem halos), ≤ 64×64.
    Sprite que não passar por isso não entra.
@@ -50,8 +55,9 @@ assets/
    editar esses PNGs à mão nem recriá-los pelo `gen_chars.py`. O design é lei:
    `docs/CONCEITO-protagonista.md`.
 2d. **Inimigos comuns idem:** `enemy_*.png` e `bruxo_*.png` saem SOMENTE de
-   `scripts/tools/gen_inimigos.py` (mesma receita premium, 48×48, paleta
-   fechada por personagem; travas de marca cobradas por
+   `scripts/tools/gen_inimigos.py` (mesma receita premium; 112×112 arena +
+   56×56 mapa re-renderizados dos mesmos vetores, paleta fechada por
+   personagem; travas de marca e contrato de tamanho cobrados por
    `tests/unit/test_inimigos_sprite_assets.gd`). O design é lei:
    `docs/CONCEITO-inimigos.md`.
 3. **Audio:** Generate with [jsfxr](https://sfxr.me/) or [sfxr](https://www.drpetter.se/project_sfxr.html). Export as `.wav`. Short, punchy, under 100KB each.

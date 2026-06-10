@@ -19,8 +19,19 @@ quebraram os pactos e entraram onde não deviam. Pertencem ao mesmo mundo
 - Os invasores são **terra, couro, breu e osso** — tons mortos, sujos de mata e
   de sangue. Nada neles rouba a primeira leitura da tela.
 
-Ambos encaram a **esquerda**: na arena o inimigo fica à direita (x=480) mirando
-a Caipora (x=160).
+Ambos encaram a **esquerda**: na arena o inimigo fica à direita mirando a
+Caipora (posições por orientação em `ArenaFraming` — retrato aproxima a dupla).
+
+### Lei de escala — o adulto sobre a criança
+
+A Caipora é PEQUENA: uma entidade do tamanho de uma criança (96px, corpo
+~75px). Os invasores são humanos adultos e **se agigantam sobre ela**:
+**112×112** na arena (corpo ~101–104px ≈ 1.3× ela), com **variante de mapa
+56×56** re-renderizada dos mesmos vetores (a Caipora anda o mapa a ~51px
+visuais). Na arena os dois usam a MESMA escala de nó (1.2) — texels
+uniformes; a hierarquia vem do desenho, nunca de escala fracionária por ator.
+O horror é esse: o predador é maior, e mesmo assim quem manda na mata é ela.
+Guardado por assert (`test_invasores_arena_sao_maiores_que_caipora`).
 
 ## 2. Travas de marca (NUNCA quebrar — viram assert no GUT)
 
@@ -83,10 +94,13 @@ Leitura a 32px: **o capuz torto e o cajado de osso**.
 
 ## 5. Pipeline técnico (premium orgânico reprodutível)
 
-`gen_inimigos.py` — mesma receita da protagonista, parametrizada para 48×48:
+`gen_inimigos.py` — mesma receita da protagonista, parametrizada por tamanho
+(grade de desenho 48 separada do canvas de saída):
 
-1. Formas orgânicas (polígonos/elipses/`limb`) supersampled 8× (384×384).
-2. Downsample por área → 48×48 + threshold de alpha (sem halos).
+1. Formas orgânicas (polígonos/elipses/`limb`) supersampled 8×.
+2. Downsample por área → 112×112 (arena) / 56×56 (mapa) + threshold de alpha
+   (sem halos). A variante de mapa é re-render dos MESMOS vetores — nunca
+   downscale NEAREST do asset grande.
 3. Snap de paleta fechada **por personagem**.
 4. Outline 1px `#1a120a` em toda a silhueta.
 
@@ -94,9 +108,9 @@ Regras de manutenção:
 
 - **Nunca editar `enemy_*.png` / `bruxo_*.png` à mão** — toda mudança passa por
   `gen_inimigos.py` e por este documento. `gen_chars.py` apenas delega.
-- Contrato de saída: 2 poses × 2 inimigos, 48×48, nomes estáveis
-  (`enemy_idle/windup`, `bruxo_idle/windup`) — cenas, `.tres` e colisões não
-  mudam.
+- Contrato de saída: 2 poses × 2 inimigos em 112×112 + 2 variantes de mapa
+  56×56, nomes estáveis (`enemy_idle/windup`, `bruxo_idle/windup`,
+  `enemy_map`, `bruxo_map`) — os `.tres` não mudam.
 - Rodar `make gate` antes de commit; o contrato e as travas de marca são
   cobrados por `test_inimigos_sprite_assets.gd`.
 
