@@ -12,6 +12,11 @@ func after_each():
 	# Para toda reprodução iniciada pelos testes (evita 'resources in use at exit').
 	AudioDirector._music_a.stop()
 	AudioDirector._music_b.stop()
+	AudioDirector._music_stem_base.stop()
+	AudioDirector._music_stem_mid.stop()
+	AudioDirector._music_stem_top.stop()
+	AudioDirector._stems_active = false
+	AudioDirector._music_intensity = 0
 	AudioDirector._music_active = null
 	AudioDirector._current_music = ""
 	AudioDirector._stinger_player.stop()
@@ -112,6 +117,27 @@ func test_arena_starts_music():
 	assert_not_null(AudioDirector._music_active, "deve haver player de música ativo na arena")
 	assert_true(AudioDirector._music_active.playing, "a música da arena deve estar tocando")
 
+func test_arena_uses_stems_at_intensity_one():
+	AudioDirector.unlock_audio()
+	GameState.active_combat_is_boss = false
+	AudioDirector._apply_screen_audio(SignalBus.Screen.ARENA_PHASE2)
+	assert_true(AudioDirector._stems_active, "arena comum deve usar stems verticais")
+	assert_eq(AudioDirector._music_active, AudioDirector._music_stem_base,
+		"o stem base preserva o contrato de player ativo")
+	assert_true(AudioDirector._music_stem_base.playing, "stem base deve tocar")
+	assert_true(AudioDirector._music_stem_mid.playing, "stem mid deve tocar sincronizado")
+	assert_true(AudioDirector._music_stem_top.playing, "stem top deve tocar sincronizado")
+	assert_eq(AudioDirector._music_intensity, 1, "arena comum entra em intensidade 1")
+
+func test_boss_uses_stems_at_intensity_two():
+	AudioDirector.unlock_audio()
+	GameState.active_combat_is_boss = true
+	AudioDirector._apply_screen_audio(SignalBus.Screen.ARENA_PHASE4)
+	assert_true(AudioDirector._stems_active, "boss deve usar stems verticais")
+	assert_eq(AudioDirector._music_intensity, 2, "boss entra em intensidade 2")
+	assert_true(AudioDirector._music_stem_base.stream.resource_path.ends_with("mus_boss_saci_base.wav"))
+	GameState.active_combat_is_boss = false
+
 func test_same_track_does_not_restart():
 	# Boss-intro inicia o tema; a arena pede a MESMA faixa → não reinicia (sem corte).
 	AudioDirector.unlock_audio()
@@ -123,6 +149,14 @@ func test_same_track_does_not_restart():
 	assert_eq(AudioDirector._music_active, active_before,
 		"a faixa de boss não deve trocar de player ao entrar na arena")
 	GameState.active_combat_is_boss = false
+
+func test_missing_single_loop_falls_back_to_base_stem():
+	var path := "res://assets/audio/music/mus_arena_p1.wav"
+	assert_false(ResourceLoader.exists(path), "arena p1 não tem loop único materializado")
+	assert_true(ResourceLoader.exists("res://assets/audio/music/mus_arena_p1_base.wav"),
+		"o fallback base existe")
+	assert_eq(AudioDirector._music_stream_path(path),
+		"res://assets/audio/music/mus_arena_p1_base.wav")
 
 func test_reverb_bus_exists_and_routes():
 	var idx_reverb := AudioServer.get_bus_index("Reverb")

@@ -69,6 +69,10 @@ Tipo: runtime.
 
 Objetivo: fazer o jogo tocar `base`, `mid` e `top` de arenas/bosses em sincronia.
 
+Status: implementado. `AudioDirector` usa stems sincronizados em arenas/bosses,
+arena comum entra em intensidade 1, boss entra em intensidade 2, e o fallback para
+`_base` permanece quando um conjunto completo de stems nao existe.
+
 Arquivos provaveis:
 
 - `scripts/core/audio_director.gd`

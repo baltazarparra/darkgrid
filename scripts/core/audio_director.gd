@@ -42,6 +42,11 @@ const PERFECT_DUCK_DB: float = -14.0
 const PERFECT_DUCK_SECS: float = 0.35
 
 const MUSIC_FADE: float = 0.9
+const STEM_BASE: String = "base"
+const STEM_MID: String = "mid"
+const STEM_TOP: String = "top"
+const STEM_LAYERS: PackedStringArray = [STEM_BASE, STEM_MID, STEM_TOP]
+const STEM_SILENCE_DB: float = -40.0
 
 # Caminhos das ambiências (carregadas só se existirem — graceful). Uma por clima de fase.
 const AMB_FOREST: String = "res://assets/audio/ambience/amb_forest.wav"
@@ -83,6 +88,11 @@ var _music_a: AudioStreamPlayer
 var _music_b: AudioStreamPlayer
 var _music_active: AudioStreamPlayer = null
 var _current_music: String = ""
+var _music_stem_base: AudioStreamPlayer
+var _music_stem_mid: AudioStreamPlayer
+var _music_stem_top: AudioStreamPlayer
+var _stems_active: bool = false
+var _music_intensity: int = 0
 var _stinger_player: AudioStreamPlayer
 
 # ─── Lifecycle ─────────────────────────────────────
@@ -101,6 +111,10 @@ func _ready() -> void:
 	_music_b.bus = BUS_MUSIC
 	_music_b.volume_db = -40.0
 	add_child(_music_b)
+
+	_music_stem_base = _new_music_player()
+	_music_stem_mid = _new_music_player()
+	_music_stem_top = _new_music_player()
 
 	_stinger_player = AudioStreamPlayer.new()
 	_stinger_player.bus = BUS_MUSIC
@@ -136,6 +150,13 @@ func toggle_music_ambience() -> void:
 
 func is_music_enabled() -> bool:
 	return _music_enabled
+
+## Ajusta a intensidade dos stems verticais: 0=base, 1=base+mid, 2=base+mid+top.
+## Single-loops ignoram a intensidade, mas o valor fica guardado para a proxima arena.
+func set_music_intensity(level: int) -> void:
+	_music_intensity = clampi(level, 0, 2)
+	if _stems_active:
+		_apply_stem_intensity(MUSIC_FADE)
 
 # ─── Public API: ducking ───────────────────────────
 ## Abaixa Music+Ambience por um instante (impactos/hit-stop) e recupera com tween.
@@ -181,14 +202,20 @@ func _apply_screen_audio(screen: int) -> void:
 		SignalBus.Screen.ARENA, SignalBus.Screen.ARENA_PHASE2, \
 		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4, \
 		SignalBus.Screen.ARENA_PHASE5:
+			set_music_intensity(2 if GameState.active_combat_is_boss else 1)
 			_play_stinger(STING_ARENA)
 		SignalBus.Screen.WIN:
+			set_music_intensity(0)
 			_play_stinger(STING_VICTORY)
 		SignalBus.Screen.ENDING:
+			set_music_intensity(0)
 			# Só se chega ao ENDING matando o Jesuíta: o órgão dele estertora.
 			_play_stinger(STING_ORGAO_ESTERTOR)
 		SignalBus.Screen.GAME_OVER:
+			set_music_intensity(0)
 			_play_stinger(STING_GAME_OVER)
+		_:
+			set_music_intensity(0)
 
 func _on_chest_opened() -> void:
 	if _audio_unlocked:
@@ -203,6 +230,7 @@ func _on_boss_intro() -> void:
 	var sting := STING_SINO_IGREJA if GameState.active_phase == FINAL_PHASE else STING_BOSS_INTRO
 	_play_stinger(sting)
 	_play_music(_mus(_boss_track(GameState.active_phase)))
+	set_music_intensity(2)
 
 func _on_chama() -> void:
 	if _audio_unlocked:
@@ -337,27 +365,33 @@ func _play_music(path: String) -> void:
 		return
 	_current_music = path
 	var outgoing := _music_active
+	if _has_stems(path):
+		_play_stems(path)
+		if outgoing != null and outgoing != _music_stem_base and outgoing.playing:
+			_fade_player(outgoing, STEM_SILENCE_DB, true, MUSIC_FADE)
+		return
+	_stop_stems(MUSIC_FADE)
 	var stream_path := _music_stream_path(path)
 	if stream_path == "":
 		if outgoing != null and outgoing.playing:
-			_fade_player(outgoing, -40.0, true, MUSIC_FADE)
+			_fade_player(outgoing, STEM_SILENCE_DB, true, MUSIC_FADE)
 		_music_active = null
 		return
 	var incoming: AudioStreamPlayer = _music_b if _music_active == _music_a else _music_a
 	var s := _load_music_stream(stream_path)
 	if s == null:
 		if outgoing != null and outgoing.playing:
-			_fade_player(outgoing, -40.0, true, MUSIC_FADE)
+			_fade_player(outgoing, STEM_SILENCE_DB, true, MUSIC_FADE)
 		_music_active = null
 		return
 	_force_loop(s)
 	incoming.stop()
 	incoming.stream = s
-	incoming.volume_db = -40.0
+	incoming.volume_db = STEM_SILENCE_DB
 	incoming.play()
 	_fade_player(incoming, 0.0, false, MUSIC_FADE)
 	if outgoing != null and outgoing.playing:
-		_fade_player(outgoing, -40.0, true, MUSIC_FADE)
+		_fade_player(outgoing, STEM_SILENCE_DB, true, MUSIC_FADE)
 	_music_active = incoming
 
 func _music_stream_path(path: String) -> String:
@@ -376,6 +410,81 @@ func _load_music_stream(path: String) -> AudioStream:
 	if path.get_extension().to_lower() == "wav" and FileAccess.file_exists(path):
 		return AudioStreamWAV.load_from_file(path)
 	return null
+
+func _new_music_player() -> AudioStreamPlayer:
+	var player := AudioStreamPlayer.new()
+	player.bus = BUS_MUSIC
+	player.volume_db = STEM_SILENCE_DB
+	add_child(player)
+	return player
+
+func _stem_path(path: String, layer: String) -> String:
+	if path == "":
+		return ""
+	return "%s_%s.%s" % [path.get_basename(), layer, path.get_extension()]
+
+func _has_stems(path: String) -> bool:
+	if path == "":
+		return false
+	for layer in STEM_LAYERS:
+		var stem := _stem_path(path, layer)
+		if not (ResourceLoader.exists(stem) or FileAccess.file_exists(stem)):
+			return false
+	return true
+
+func _stem_player(layer: String) -> AudioStreamPlayer:
+	match layer:
+		STEM_MID:
+			return _music_stem_mid
+		STEM_TOP:
+			return _music_stem_top
+		_:
+			return _music_stem_base
+
+func _play_stems(path: String) -> void:
+	if _music_a.playing:
+		_fade_player(_music_a, STEM_SILENCE_DB, true, MUSIC_FADE)
+	if _music_b.playing:
+		_fade_player(_music_b, STEM_SILENCE_DB, true, MUSIC_FADE)
+	for layer in STEM_LAYERS:
+		var player := _stem_player(layer)
+		var stream := _load_music_stream(_stem_path(path, layer))
+		if stream == null:
+			_stop_stems(0.0)
+			return
+		_force_loop(stream)
+		player.stop()
+		player.stream = stream
+		player.volume_db = STEM_SILENCE_DB
+	_stems_active = true
+	_music_active = _music_stem_base
+	for layer in STEM_LAYERS:
+		_stem_player(layer).play()
+	_apply_stem_intensity(MUSIC_FADE)
+
+func _stop_stems(fade: float) -> void:
+	if not _stems_active:
+		return
+	for layer in STEM_LAYERS:
+		var player := _stem_player(layer)
+		if player.playing:
+			_fade_player(player, STEM_SILENCE_DB, true, fade)
+	_stems_active = false
+	if _music_active == _music_stem_base:
+		_music_active = null
+
+func _apply_stem_intensity(fade: float) -> void:
+	for layer in STEM_LAYERS:
+		_fade_player(_stem_player(layer), _stem_target_db(layer), false, fade)
+
+func _stem_target_db(layer: String) -> float:
+	match layer:
+		STEM_MID:
+			return 0.0 if _music_intensity >= 1 else STEM_SILENCE_DB
+		STEM_TOP:
+			return 0.0 if _music_intensity >= 2 else STEM_SILENCE_DB
+		_:
+			return 0.0
 
 # ─── Stingers ──────────────────────────────────────
 func _play_stinger(name: String) -> void:
