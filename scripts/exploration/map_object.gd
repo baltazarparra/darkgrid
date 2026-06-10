@@ -60,11 +60,16 @@ func _draw() -> void:
 		Type.BURROW:     _draw_burrow(cx, cy)
 
 func _draw_fire(cx: float, cy: float) -> void:
-	draw_circle(Vector2(cx, cy), 11.0, Constants.COLOR_FIRE_GLOW)
+	# CHAMA da mata: base preta, silhueta triangular e miolo quente chapado.
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(cx - 12, cy + 10), Vector2(cx - 8, cy + 4), Vector2(cx - 2, cy + 8),
+		Vector2(cx + 5, cy + 3), Vector2(cx + 12, cy + 10),
+	]), Constants.COLOR_NIGHT)
+	draw_circle(Vector2(cx, cy + 2), 12.0, Constants.COLOR_FIRE_GLOW)
 	var flames: Array = [
-		[Vector2(cx - 7, cy + 7), Vector2(cx - 1, cy - 10), Vector2(cx + 5, cy + 7)],
-		[Vector2(cx - 4, cy + 7), Vector2(cx - 2, cy - 5), Vector2(cx + 2, cy + 7)],
-		[Vector2(cx + 2, cy + 7), Vector2(cx + 5, cy - 8), Vector2(cx + 9, cy + 7)],
+		[Vector2(cx - 9, cy + 8), Vector2(cx - 3, cy - 11), Vector2(cx + 2, cy + 8)],
+		[Vector2(cx - 3, cy + 8), Vector2(cx + 1, cy - 7), Vector2(cx + 5, cy + 8)],
+		[Vector2(cx + 3, cy + 8), Vector2(cx + 8, cy - 9), Vector2(cx + 11, cy + 8)],
 	]
 	var fire_colors: Array = [
 		Constants.COLOR_FIRE_MID,
@@ -75,15 +80,20 @@ func _draw_fire(cx: float, cy: float) -> void:
 		draw_colored_polygon(PackedVector2Array(flames[i]), fire_colors[i])
 
 func _draw_spike(cx: float, cy: float) -> void:
-	draw_rect(Rect2(cx - 12, cy + 4, 24, 4), Constants.COLOR_STONE_DARK)
-	var spike_color := Constants.COLOR_STONE
+	# Dentes de raiz/osso saindo do chao, nao cones limpos.
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(cx - 13, cy + 8), Vector2(cx - 6, cy + 4), Vector2(cx + 3, cy + 7),
+		Vector2(cx + 12, cy + 4), Vector2(cx + 13, cy + 10), Vector2(cx - 13, cy + 11),
+	]), Constants.COLOR_NIGHT)
+	var spike_color := Constants.COLOR_BONE
 	for i: int in 4:
 		var bx: float = cx - 9.0 + i * 6.0
 		draw_colored_polygon(PackedVector2Array([
 			Vector2(bx - 3, cy + 8),
-			Vector2(bx,     cy - 8),
+			Vector2(bx + float(i % 2) - 1.0, cy - 9),
 			Vector2(bx + 3, cy + 8),
 		]), spike_color)
+		draw_line(Vector2(bx - 1, cy + 7), Vector2(bx, cy - 5), Constants.COLOR_BONE_HOLLOW, 1.0)
 
 func _draw_key(cx: float, cy: float) -> void:
 	var gold := Constants.COLOR_GOLD
@@ -123,10 +133,14 @@ func _draw_inverted_pentagram(center: Vector2, radius: float, color: Color) -> v
 func _draw_dead_tree(cx: float, cy: float) -> void:
 	var bark      := Constants.COLOR_BARK
 	var bark_dark := Constants.COLOR_BARK_DARK
-	# tronco
-	draw_rect(Rect2(cx - 2.5, cy - 4, 5, 16), bark_dark)
-	draw_rect(Rect2(cx - 1.5, cy - 4, 3, 16), bark)
-	# galhos secos retorcidos
+	# tronco como garra preta, com lascas laranja de madeira viva.
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(cx - 4, cy + 12), Vector2(cx - 3, cy - 5), Vector2(cx + 1, cy - 8),
+		Vector2(cx + 4, cy - 3), Vector2(cx + 3, cy + 12),
+	]), bark_dark)
+	draw_line(Vector2(cx - 1, cy - 4), Vector2(cx - 1, cy + 11), bark, 1.5)
+	draw_line(Vector2(cx + 1, cy - 2), Vector2(cx + 1, cy + 8), Constants.COLOR_AMBER, 1.0)
+	# galhos secos retorcidos, denteados.
 	var branches: Array = [
 		[Vector2(cx, cy - 2),  Vector2(cx - 9, cy - 9)],
 		[Vector2(cx, cy - 4),  Vector2(cx + 8, cy - 11)],
@@ -134,7 +148,8 @@ func _draw_dead_tree(cx: float, cy: float) -> void:
 		[Vector2(cx, cy - 6),  Vector2(cx - 5, cy - 13)],
 	]
 	for b: Array in branches:
-		draw_line(b[0], b[1], bark, 2.0)
+		draw_line(b[0], b[1], bark_dark, 3.0)
+		draw_line(b[0], b[1], bark, 1.0)
 
 func _draw_bones(cx: float, cy: float) -> void:
 	var bone := Constants.COLOR_BONE
@@ -265,7 +280,7 @@ func _draw_totem(cx: float, cy: float) -> void:
 	draw_line(Vector2(cx + 3, cy + 4), Vector2(cx - 3, cy + 6), blood, 1.0)
 
 func _draw_roots(cx: float, cy: float) -> void:
-	# Raízes rastejantes pelo chão (textura orgânica, não-bloqueante).
+	# Raízes rastejantes pelo chão: silhueta preta que morde a trilha.
 	var bark := Constants.COLOR_BARK
 	var bark_dark := Constants.COLOR_BARK_DARK
 	var roots: Array = [
@@ -273,8 +288,9 @@ func _draw_roots(cx: float, cy: float) -> void:
 		[Vector2(cx, cy), Vector2(cx + 9, cy - 7)], [Vector2(cx, cy), Vector2(cx - 8, cy + 8)],
 	]
 	for r: Array in roots:
-		draw_line(r[0], r[1], bark_dark, 3.0)
-		draw_line(r[0], r[1], bark, 1.5)
+		draw_line(r[0], r[1], Constants.COLOR_NIGHT, 4.0)
+		draw_line(r[0], r[1], bark_dark, 2.0)
+		draw_line(r[0], r[1], bark, 1.0)
 
 func _draw_puddle(cx: float, cy: float) -> void:
 	# Poça d'água escura refletindo a noite (leve brilho da superfície).
@@ -362,13 +378,18 @@ func _ellipse(center: Vector2, rx: float, ry: float) -> PackedVector2Array:
 
 # ─── Props de igreja (Fase 5, ambientação não-bloqueante) ──
 func _draw_cross(cx: float, cy: float) -> void:
-	# Cruz de madeira torta com fio de ouro litúrgico.
+	# Cruz torta: madeira preta, fio litúrgico gasto e sangue escorrido.
 	var wood := Constants.COLOR_WOOD_DARK
 	var gold := Constants.COLOR_GOLD_DARK
-	draw_rect(Rect2(cx - 2, cy - 12, 4, 24), wood)   # haste vertical
-	draw_rect(Rect2(cx - 7, cy - 6, 14, 4), wood)    # trave horizontal
-	draw_rect(Rect2(cx - 1, cy - 12, 2, 24), gold)   # brilho dourado
-	draw_rect(Rect2(cx - 7, cy - 5, 14, 1), gold)
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(cx - 2, cy - 13), Vector2(cx + 3, cy - 12), Vector2(cx + 2, cy + 13), Vector2(cx - 3, cy + 12),
+	]), wood)
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(cx - 8, cy - 7), Vector2(cx + 8, cy - 6), Vector2(cx + 7, cy - 2), Vector2(cx - 7, cy - 3),
+	]), wood)
+	draw_line(Vector2(cx, cy - 12), Vector2(cx, cy + 12), gold, 1.0)
+	draw_line(Vector2(cx - 7, cy - 5), Vector2(cx + 7, cy - 4), gold, 1.0)
+	draw_line(Vector2(cx - 1, cy - 2), Vector2(cx - 2, cy + 11), Constants.COLOR_BLOOD, 1.0)
 
 func _draw_mirror(cx: float, cy: float) -> void:
 	# Espelho rachado de moldura dourada (a isca de conversão do Jesuíta).
@@ -399,18 +420,18 @@ func _draw_font(cx: float, cy: float) -> void:
 	draw_line(Vector2(cx - 4, cy - 5), Vector2(cx + 3, cy - 5), water_light, 1.0)
 
 func _draw_candle(cx: float, cy: float) -> void:
-	# Círio votivo aceso (brilho quente na nave fria).
+	# Círio votivo aceso: pequena CHAMA em vez de luz macia.
 	var wax := Constants.COLOR_BONE
 	var wax_dark := Constants.COLOR_BONE_HOLLOW
 	var glow := Constants.COLOR_FIRE_GLOW
 	var flame := Constants.COLOR_FIRE_HOT
 	var flame_mid := Constants.COLOR_FIRE_MID
-	draw_circle(Vector2(cx, cy - 8), 6.0, glow)          # halo
+	draw_circle(Vector2(cx, cy - 8), 6.0, glow)
 	draw_rect(Rect2(cx - 3, cy - 4, 6, 16), wax_dark)    # cera
 	draw_rect(Rect2(cx - 2, cy - 4, 3, 16), wax)
 	draw_rect(Rect2(cx - 1, cy - 7, 2, 3), wax_dark)     # pavio
 	draw_colored_polygon(PackedVector2Array([
-		Vector2(cx - 2, cy - 6), Vector2(cx, cy - 12), Vector2(cx + 2, cy - 6),
+		Vector2(cx - 3, cy - 6), Vector2(cx, cy - 13), Vector2(cx + 3, cy - 6),
 	]), flame_mid)
 	draw_colored_polygon(PackedVector2Array([
 		Vector2(cx - 1, cy - 6), Vector2(cx, cy - 10), Vector2(cx + 1, cy - 6),
