@@ -1,45 +1,36 @@
 class_name ControlsHud
 extends CanvasLayer
 
-# D-pad de toque que espelha as setas do teclado, para jogar em iPhone/iPad.
-# As 4 setas controlam tudo: movimento na exploração e o timing no combate.
-# Cada toque dirige os DOIS consumidores de input do jogo:
+# D-pad de toque flutuante (padrão MOBA/AAA mobile) que espelha as setas do teclado.
+# Em repouso um pad "fantasma" fica no canto inferior direito; tocar em qualquer ponto
+# da área de jogo recentra o pad sob o dedo, e o arrasto além da zona morta pressiona
+# a direção (FloatingDpad cuida do gesto e do visual). Cada press/release dirige os
+# DOIS consumidores de input do jogo:
 #   - Input.action_press/release  -> estado polado por caipora.gd (movimento)
 #   - Input.parse_input_event     -> evento recebido por timing_system._input (combate)
 # Aparece apenas em dispositivos com tela de toque; no desktop o teclado é o controle.
 
 # ─── Constants ─────────────────────────────────────
-# Tamanho como fração do lado menor do viewport (~15%, recomendação de ergonomia mobile),
-# com piso bem acima dos 44pt da Apple HIG e teto para não estourar no iPad.
-const KEY_FRACTION: float = 0.15
-const KEY_MIN: float = 64.0
-const KEY_MAX: float = 140.0
+# Raio do pad como fração do lado menor do viewport, com piso acima dos 44pt da
+# Apple HIG e teto para não dominar tablets.
+const PAD_RADIUS_FRACTION: float = 0.17
+const PAD_RADIUS_MIN: float = 56.0
+const PAD_RADIUS_MAX: float = 120.0
+const PAD_PORTRAIT_SCALE: float = 1.15
+# Margem do pad em repouso (fantasma), em frações do raio.
+const REST_MARGIN_FRACTION: float = 0.55
 
-# Retrato é estreito: o cluster da cruz (3 teclas de largura) nunca pode dominar nem estourar
-# a largura. Teto da largura do cluster como fração do viewport — se passar, a tecla encolhe
-# proporcionalmente (mantém a proporção da cruz e o canto-direito alcançável pelo polegar).
-const DPAD_MAX_WIDTH_FRACTION: float = 0.72
+# Faixa do topo excluída da ativação: ali vivem HUD (barras, fragmentos) e o botão de
+# áudio — um toque nessa faixa nunca deve invocar o pad.
+const TOP_EXCLUSION_FRACTION: float = 0.18
 
-const OPACITY_IDLE: float = 0.45
-const OPACITY_ACTIVE: float = 0.88
-const FADE_IN_DURATION: float = 0.3
-const PRESS_SCALE: float = 0.92
-const SWIPE_DEAD_ZONE: float = 20.0
-const SWIPE_THRESHOLD: float = 40.0
+# Sentinelas de ponteiro: índices de toque reais são >= 0.
+const NO_POINTER: int = -1
+const MOUSE_POINTER_INDEX: int = -1000
 
 # Carimbo de build: logado uma vez no _ready(). Confirma, no console do navegador, que o
 # dispositivo está rodando o build novo (e não um cache de CDN/PWA) ao iterar no mobile.
-const _BUILD_TAG: String = "dpad-sticky-1"
-
-# Caminhos (não preload): como este script é autoload, ele é parseado já no boot — um
-# preload de asset ainda não importado quebraria o parse. As texturas são carregadas com
-# load() em runtime, dentro de _build_buttons(), que só roda numa tela de gameplay.
-const _ENTRIES: Array = [
-	["ui_up",    "res://assets/sprites/dpad_up.png"],
-	["ui_left",  "res://assets/sprites/dpad_left.png"],
-	["ui_down",  "res://assets/sprites/dpad_down.png"],
-	["ui_right", "res://assets/sprites/dpad_right.png"],
-]
+const _BUILD_TAG: String = "dpad-float-1"
 
 # ─── State ─────────────────────────────────────────
 # Telas em que o D-pad fica visível: toda exploração, toda arena e o acampamento jogável
@@ -47,14 +38,13 @@ const _ENTRIES: Array = [
 # (menu, fim de jogo) ele é ocultado. Detectado por convenção de nome do enum Screen —
 # qualquer EXPLORATION*/ARENA*/HUB conta como gameplay — para que uma fase nova (PHASE5…)
 # não precise ser registrada aqui à mão e cause o D-pad sumir no mobile (regressão da Fase 4).
-# Como este nó é um autoload persistente, o D-pad criado na exploração permanece vivo ao
+# Como este nó é um autoload persistente, o pad criado na exploração permanece vivo ao
 # entrar no combate — sem recriação nem novo fade-in, eliminando o delay no início do turno.
 const _GAMEPLAY_SCREEN_PREFIXES: Array = ["EXPLORATION", "ARENA", "HUB"]
 
 var _root: Control = null
-var _dpad_rect: Rect2 = Rect2()
-var _keys: Array[TextureButton] = []
-var _pressed_count: int = 0
+var _pad: FloatingDpad = null
+var _pointer_index: int = NO_POINTER
 var _active_screen_wants_dpad: bool = false
 # Sticky: uma vez reconhecido como touch (por detecção OU por um toque real), permanece true
 # pela sessão. Evita que uma leitura instável de _is_touch_device() (JavaScriptBridge.eval pode
@@ -100,10 +90,43 @@ func _input(event: InputEvent) -> void:
 		_refresh()
 
 
+# Gestos do pad flutuante. _unhandled_input (e não _input) para que toques consumidos
+# pela GUI (diálogo, painéis) não invoquem o pad. Dois caminhos de ponteiro:
+#   - ScreenTouch/ScreenDrag: o caminho real no mobile (multi-touch por índice).
+#   - Mouse físico: só para testar no desktop com modo "always"; eventos de mouse
+#     EMULADOS a partir de toque (DEVICE_ID_EMULATION) são ignorados para não
+#     processar o mesmo dedo duas vezes.
+func _unhandled_input(event: InputEvent) -> void:
+	if _root == null or not _root.visible or _pad == null:
+		return
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_try_begin(event.index, event.position)
+		elif event.index == _pointer_index:
+			_end_gesture()
+	elif event is InputEventScreenDrag:
+		if event.index == _pointer_index:
+			_pad.drag_to(event.position)
+	elif event is InputEventMouseButton and event.device != InputEvent.DEVICE_ID_EMULATION:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_try_begin(MOUSE_POINTER_INDEX, event.position)
+			elif _pointer_index == MOUSE_POINTER_INDEX:
+				_end_gesture()
+	elif event is InputEventMouseMotion and event.device != InputEvent.DEVICE_ID_EMULATION:
+		if _pointer_index == MOUSE_POINTER_INDEX:
+			_pad.drag_to(event.position)
+
+
 # ─── Public API ────────────────────────────────────
 func get_dpad_screen_rect() -> Rect2:
-	# Vazio quando não há D-pad (desktop / sem touch) -> sem exclusão.
-	return _dpad_rect if _root != null else Rect2()
+	# Vazio quando não há D-pad (desktop / sem touch) -> sem exclusão. Com o pad
+	# flutuante o retângulo é DINÂMICO: a pose de repouso reserva o canto inferior
+	# direito (bolhas de timing não nascem atrás do fantasma) e durante um gesto ele
+	# acompanha o pad onde quer que o dedo esteja.
+	if _root == null or _pad == null or not _root.visible:
+		return Rect2()
+	return _pad.get_screen_rect()
 
 
 # ─── Private helpers ───────────────────────────────
@@ -132,12 +155,14 @@ func _refresh() -> void:
 
 
 func _show() -> void:
-	# Fade-in já ocorre uma única vez em _init_controls(); aqui só reexpomos sem reanimar.
 	if _root != null:
 		_root.visible = true
 
 
 func _hide() -> void:
+	# Solta qualquer gesto em andamento ANTES de ocultar: uma troca de tela no meio de
+	# um arrasto não pode deixar a action presa (Caipora andando sozinha na tela nova).
+	_end_gesture()
 	if _root != null:
 		_root.visible = false
 
@@ -177,85 +202,72 @@ func _init_controls() -> void:
 	_root = Control.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.modulate.a = 0.0
 	add_child(_root)
 
-	_build_buttons()
-	_rebuild()
-	get_viewport().size_changed.connect(_rebuild)
+	_pad = FloatingDpad.new()
+	_pad.direction_pressed.connect(_on_pressed)
+	_pad.direction_released.connect(_on_released)
+	_root.add_child(_pad)
 
-	# Fade-in suave.
-	var tween := create_tween()
-	tween.tween_property(_root, "modulate:a", OPACITY_IDLE, FADE_IN_DURATION)
-
-
-func _build_buttons() -> void:
-	for entry in _ENTRIES:
-		var btn := TextureButton.new()
-		btn.focus_mode = Control.FOCUS_NONE
-		btn.mouse_filter = Control.MOUSE_FILTER_STOP
-		btn.texture_normal = load(entry[1]) as Texture2D
-		btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		btn.button_down.connect(_on_pressed.bind(entry[0]))
-		btn.button_up.connect(_on_released.bind(entry[0]))
-		_root.add_child(btn)
-		_keys.append(btn)
+	_layout_pad()
+	get_viewport().size_changed.connect(_layout_pad)
 
 
-func _rebuild() -> void:
-	if _root == null or _keys.is_empty():
+func _layout_pad() -> void:
+	if _pad == null:
 		return
 
 	var vp := get_viewport().get_visible_rect().size
-	var key: float = clampf(minf(vp.x, vp.y) * KEY_FRACTION, KEY_MIN, KEY_MAX)
+	var radius: float = clampf(minf(vp.x, vp.y) * PAD_RADIUS_FRACTION, PAD_RADIUS_MIN, PAD_RADIUS_MAX)
+	if _touch_detected and Constants.is_portrait(vp):
+		radius *= PAD_PORTRAIT_SCALE
 
-	# Mobile: retrato → 1.5x (−25% vs 2.0 original); paisagem → 1.3x.
-	if _touch_detected:
-		key *= 1.5 if Constants.is_portrait(vp) else 1.3
-
-	var gap: float = key * 0.12
-	var margin: float = key * 0.4
-
-	# Safe area margins.
 	var safe: Vector2 = _get_safe_margins()
-	margin = maxf(margin, safe.x)
+	var margin: float = radius * REST_MARGIN_FRACTION
 
-	# Cluster em cruz: 3 colunas x 2 linhas, com dead zone no centro.
-	var cluster_w: float = key * 3.0 + gap * 2.0
-	var cluster_h: float = key * 2.0 + gap
+	# Fantasma de repouso no canto inferior DIREITO (polegar direito = direcional),
+	# respeitando safe area (home bar / notch lateral).
+	var rest := Vector2(
+		vp.x - safe.x - margin - radius,
+		vp.y - safe.y - margin - radius
+	)
 
-	# Trava de largura (retrato): impede que o cluster + margem estoure ou domine a tela
-	# estreita. Encolhe a tecla na mesma proporção, preservando o desenho da cruz.
-	var max_cluster_w: float = vp.x * DPAD_MAX_WIDTH_FRACTION - margin
-	if cluster_w > max_cluster_w and max_cluster_w > 0.0:
-		var shrink: float = max_cluster_w / cluster_w
-		key *= shrink
-		gap *= shrink
-		cluster_w = key * 3.0 + gap * 2.0
-		cluster_h = key * 2.0 + gap
+	# Onde o CENTRO do pad pode ficar quando recentrado sob o dedo: nunca vaza da
+	# tela nas laterais e nunca entra na faixa do HUD nem na safe area de baixo.
+	var clamp_min := Vector2(radius, vp.y * TOP_EXCLUSION_FRACTION)
+	var clamp_max := Vector2(vp.x - radius, vp.y - safe.y - radius)
+	var clamp_rect := Rect2(clamp_min, (clamp_max - clamp_min).max(Vector2.ZERO))
 
-	# Ancorado ao canto inferior DIREITO (polegar direito = direcional).
-	var origin := Vector2(vp.x - margin - cluster_w, vp.y - margin - cluster_h - safe.y)
+	_pad.configure(radius, rest, clamp_rect)
 
-	# Retângulo em coordenadas de tela ocupado pelo cluster — consultado pela arena
-	# para impedir que bolhas de timing nasçam atrás do D-pad.
-	_dpad_rect = Rect2(origin, Vector2(cluster_w, cluster_h))
 
-	var cx: float = origin.x + key + gap          # coluna central
-	var y_top: float = origin.y                    # linha de cima (↑)
-	var y_bot: float = origin.y + key + gap        # linha de baixo (← ↓ →)
+func _try_begin(index: int, point: Vector2) -> void:
+	if _pointer_index != NO_POINTER:
+		return
+	if GameState.is_paused:
+		return
+	# Overlay "gire o dispositivo" cobre a tela sem pausar: nada de mover a Caipora
+	# por trás dele.
+	if PortraitGuard.visible:
+		return
+	if not _is_in_activation_zone(point):
+		return
+	_pointer_index = index
+	_pad.begin_touch(point)
+	get_viewport().set_input_as_handled()
 
-	var positions: Array[Vector2] = [
-		Vector2(cx, y_top),
-		Vector2(origin.x, y_bot),
-		Vector2(cx, y_bot),
-		Vector2(origin.x + key * 2.0 + gap * 2.0, y_bot),
-	]
 
-	for i in _keys.size():
-		var btn := _keys[i]
-		btn.position = positions[i]
-		btn.size = Vector2(key, key)
+func _end_gesture() -> void:
+	if _pointer_index == NO_POINTER:
+		return
+	_pointer_index = NO_POINTER
+	if _pad != null:
+		_pad.end_touch()
+
+
+func _is_in_activation_zone(point: Vector2) -> bool:
+	var vp := get_viewport().get_visible_rect().size
+	return point.y >= vp.y * TOP_EXCLUSION_FRACTION
 
 
 func _get_safe_margins() -> Vector2:
@@ -302,48 +314,13 @@ func _get_safe_margins() -> Vector2:
 
 
 func _on_pressed(action: String) -> void:
-	_pressed_count += 1
-	_update_opacity()
-
-	var btn := _get_button_for_action(action)
-	if btn != null:
-		var tween := create_tween()
-		tween.tween_property(btn, "scale", Vector2(PRESS_SCALE, PRESS_SCALE), 0.05)
-
 	Input.action_press(action)
 	_feed_event(action, true)
 
 
 func _on_released(action: String) -> void:
-	_pressed_count = maxi(_pressed_count - 1, 0)
-	_update_opacity()
-
-	var btn := _get_button_for_action(action)
-	if btn != null:
-		var tween := create_tween()
-		tween.tween_property(btn, "scale", Vector2(1.0, 1.0), 0.05)
-
 	Input.action_release(action)
 	_feed_event(action, false)
-
-
-func _get_button_for_action(action: String) -> TextureButton:
-	if _keys.is_empty():
-		return null
-	for i in _ENTRIES.size():
-		if _ENTRIES[i][0] == action:
-			if i < _keys.size():
-				return _keys[i]
-			break
-	return null
-
-
-func _update_opacity() -> void:
-	if _root == null:
-		return
-	var target: float = OPACITY_ACTIVE if _pressed_count > 0 else OPACITY_IDLE
-	var tween := create_tween()
-	tween.tween_property(_root, "modulate:a", target, 0.15)
 
 
 func _feed_event(action: String, pressed: bool) -> void:
