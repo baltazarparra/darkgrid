@@ -145,11 +145,11 @@ func _update_camera_fit() -> void:
 	z = PixelScale.snap_contain(z, PixelScale.device_scale(get_viewport()), minf(raw, 2.0))
 	_camera.zoom = Vector2(z, z)
 
-	# Levanta a ação para o centro do espaço acima do D-pad (só quando há D-pad). Move a
-	# câmera para baixo no mundo (vp.y - topo_do_dpad é a faixa do D-pad) → ação sobe na tela.
+	# Em retrato o D-pad ocupa a base: levanta a ação para o espaço acima dele. Em
+	# paisagem o D-pad fica na lateral direita, então a arena permanece centrada.
 	var dpad_rect := _controls_hud.get_dpad_screen_rect()
 	var y_offset: float = 0.0
-	if dpad_rect.size.y > 0.0:
+	if dpad_rect.size.y > 0.0 and Constants.is_portrait(vp):
 		y_offset = (vp.y - dpad_rect.position.y) * 0.5 * ACTION_LIFT_FRACTION / z
 	_camera.position = STAGE_CENTER + Vector2(0.0, y_offset)
 

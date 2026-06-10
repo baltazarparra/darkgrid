@@ -59,9 +59,26 @@ func test_arena_dpad_sits_in_right_thumb_zone() -> void:
 	var center: Vector2 = rect.position + rect.size * 0.5
 
 	assert_gt(center.x, vp.x * 0.5, "D-pad de combate fica no lado direito")
-	assert_gt(rect.position.y, vp.y * 0.5, "D-pad de combate fica na metade inferior")
+	assert_gt(center.y, vp.y * 0.5, "D-pad de combate fica na metade inferior")
+	assert_lt(center.y, vp.y * 0.78, "D-pad de combate não afunda no rodapé em paisagem")
 	assert_lte(rect.end.x, vp.x, "D-pad de combate respeita a borda direita")
 	assert_lte(rect.end.y, vp.y, "D-pad de combate respeita a borda inferior")
+
+func test_landscape_arena_dpad_anchors_to_right_thumb_band() -> void:
+	var vp: Vector2 = Vector2(852.0, 393.0)
+	var key: float = 64.0
+	var gap: float = key * _hud.COMBAT_GAP_FRACTION
+	var cluster: Vector2 = Vector2(key * 3.0 + gap * 2.0, key * 2.0 + gap)
+	var rect: Rect2 = Rect2(
+		_hud._combat_origin_for_metrics(vp, Vector2(28.0, 28.0), cluster, key),
+		cluster
+	)
+	var center: Vector2 = rect.position + rect.size * 0.5
+
+	assert_gt(center.x, vp.x * 0.80, "paisagem ancora o D-pad na faixa do polegar direito")
+	assert_gt(center.y, vp.y * 0.50, "paisagem mantém o D-pad abaixo do centro")
+	assert_lt(center.y, vp.y * 0.72, "paisagem mantém o D-pad fora do canto inferior")
+	assert_gt(vp.y - rect.end.y, key * 0.15, "paisagem mantém folga inferior para segurar o aparelho")
 
 func test_arena_dpad_keeps_thumb_sized_targets() -> void:
 	_hud._on_screen_changed(SignalBus.Screen.ARENA)
