@@ -3,8 +3,10 @@ extends CanvasLayer
 # Sem class_name: conflita com o nome do autoload em Godot 4.
 #
 # Mascara toda troca de cena com fade preto curto. Avancos de fase exibem flavor
-# tematico; a entrada em arena fica com fade limpo, porque a chamada de luta
-# pertence ao loader interno do ArenaManager.
+# tematico com a assinatura da marca — dois olhos brancos abrem no breu, piscam
+# e fecham (o mesmo gesto do loader HTML e do "O" do wordmark). A entrada em
+# arena fica com fade limpo, porque a chamada de luta pertence ao loader
+# interno do ArenaManager.
 
 const LAYER := 100
 const FADE_OUT := 0.22
@@ -13,9 +15,15 @@ const TEXT_FADE := 0.18
 const TEXT_HOLD := 0.5
 const THEMED_TEXT := "a mata se reorganiza..."
 const CAMP_TEXT := "o acampamento respira..."
+# Assinatura dos olhos: iguais, duros, sem halo (docs/CONCEITO-protagonista.md).
+const EYE_SIZE := Vector2(12, 14)
+const EYE_GAP := 18.0
+const EYE_OFFSET_Y := -52.0
+const EYE_BLINK := 0.07
 
 var _fade: ColorRect
 var _label: Label
+var _eyes: Control
 var _tween: Tween
 var _last_exploration: int = -1
 
@@ -42,6 +50,21 @@ func _build() -> void:
 	_label.modulate.a = 0.0
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fade.add_child(_label)
+
+	_eyes = Control.new()
+	_eyes.set_anchors_preset(Control.PRESET_CENTER)
+	_eyes.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_eyes.visible = false
+	for side: float in [-1.0, 1.0]:
+		var eye := ColorRect.new()
+		eye.color = Color.WHITE
+		eye.size = EYE_SIZE
+		eye.position = Vector2(
+			side * EYE_GAP / 2.0 - (EYE_SIZE.x if side < 0.0 else 0.0),
+			EYE_OFFSET_Y - EYE_SIZE.y / 2.0)
+		eye.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_eyes.add_child(eye)
+	_fade.add_child(_eyes)
 
 
 func transition_to(path: String, new_screen: int) -> void:
@@ -82,13 +105,24 @@ func _run(path: String, flavor: String) -> void:
 	var themed := not flavor.is_empty()
 	if themed:
 		_label.text = flavor
+	_eyes.modulate.a = 0.0
+	_eyes.visible = themed
 
 	_tween = create_tween()
 	_tween.tween_property(_fade, "color:a", 1.0, FADE_OUT)
 	_tween.tween_callback(func() -> void: get_tree().change_scene_to_file(path))
 	if themed:
+		# Olhos abrem no breu, piscam uma vez e se fecham antes da luz voltar.
+		_tween.tween_callback(func() -> void: _eyes.modulate.a = 1.0)
 		_tween.tween_property(_label, "modulate:a", 1.0, TEXT_FADE)
-		_tween.tween_interval(TEXT_HOLD)
+		_tween.tween_interval(TEXT_HOLD * 0.45)
+		_tween.tween_callback(func() -> void: _eyes.modulate.a = 0.0)
+		_tween.tween_interval(EYE_BLINK)
+		_tween.tween_callback(func() -> void: _eyes.modulate.a = 1.0)
+		_tween.tween_interval(TEXT_HOLD * 0.55)
+		_tween.tween_callback(func() -> void: _eyes.modulate.a = 0.0)
 		_tween.tween_property(_label, "modulate:a", 0.0, TEXT_FADE)
 	_tween.tween_property(_fade, "color:a", 0.0, FADE_IN)
-	_tween.tween_callback(func() -> void: _fade.mouse_filter = Control.MOUSE_FILTER_IGNORE)
+	_tween.tween_callback(func() -> void:
+		_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_eyes.visible = false)

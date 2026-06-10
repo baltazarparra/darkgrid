@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<!--
+	Loader inicial do caipora — shell HTML custom do export Web.
+	Base: misc/dist/html/full-size.html do Godot 4.6.3-stable (manter a lógica
+	de boot/erro do engine intacta ao atualizar a versão do Godot).
+
+	A composição replica assets/sprites/boot_splash.png num palco 16:9 contido
+	(mesmas posições relativas), então o handoff loader -> boot splash -> menu
+	acontece sem costura. Os PNGs da marca são embutidos em base64 pelos blocos
+	GEN_BRAND — regenerados por scripts/tools/gen_brand.py, NUNCA à mão.
+-->
+<html lang="pt-BR">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<title>$GODOT_PROJECT_NAME</title>
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+body {
+	color: #c9d1d9;
+	background-color: #0d1117;
+	overflow: hidden;
+	touch-action: none;
+}
+
+#canvas {
+	display: block;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+#status {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background-color: $GODOT_SPLASH_COLOR;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	visibility: hidden;
+}
+
+/* Palco 16:9 contido — espelho do boot_splash.png (1280x720). */
+#brand-stage {
+	position: relative;
+	aspect-ratio: 16 / 9;
+	width: 100vw;
+	max-height: 100vh;
+	max-width: calc(100vh * 16 / 9);
+}
+
+/* Safari iOS: barra de URL come o vh — dvh mantém o palco centrado de fato */
+@supports (height: 100dvh) {
+	#brand-stage {
+		max-height: 100dvh;
+		max-width: calc(100dvh * 16 / 9);
+	}
+}
+
+#brand-stage img {
+	position: absolute;
+	image-rendering: pixelated;
+	-webkit-user-select: none;
+	user-select: none;
+	pointer-events: none;
+}
+
+/* rosto-marca: 256/1280 de largura, topo em 150/720 (= boot_splash.py) */
+#brand-mark-open, #brand-mark-blink {
+	left: 40%;
+	top: 20.833%;
+	width: 20%;
+}
+
+/* a mata olha de volta: piscadas irregulares enquanto carrega */
+#brand-mark-blink {
+	opacity: 0;
+	animation: caipora-blink 4.7s linear infinite;
+}
+
+@keyframes caipora-blink {
+	0%, 38.9% { opacity: 0; }
+	39%, 41.7% { opacity: 1; }
+	41.8%, 80.9% { opacity: 0; }
+	81%, 83.5% { opacity: 1; }
+	83.6%, 100% { opacity: 0; }
+}
+
+/* wordmark: 512/1280 de largura, topo em 430/720 */
+#brand-wordmark {
+	left: 30%;
+	top: 59.722%;
+	width: 40%;
+}
+
+/* barra brutal: cantos duros, trilho no breu, brasa preenchendo */
+#status-progress {
+	display: none;
+	position: absolute;
+	left: 35%;
+	top: 87%;
+	width: 30%;
+	height: 1.6%;
+	-webkit-appearance: none;
+	appearance: none;
+	background-color: #000000;
+	border: 1px solid #1a120a;
+	border-radius: 0;
+}
+
+#status-progress::-webkit-progress-bar {
+	background-color: #000000;
+	border-radius: 0;
+}
+
+#status-progress::-webkit-progress-value {
+	background-color: #ff4500;
+	border-radius: 0;
+}
+
+#status-progress::-moz-progress-bar {
+	background-color: #ff4500;
+	border-radius: 0;
+}
+
+#status-text {
+	display: none;
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 90.5%;
+	text-align: center;
+	font-family: 'Courier New', monospace;
+	font-size: clamp(10px, 1.6vmin, 16px);
+	letter-spacing: 0.35em;
+	color: #c9d1d9;
+	opacity: 0.75;
+	animation: respira 2.6s ease-in-out infinite;
+}
+
+@keyframes respira {
+	0%, 100% { opacity: 0.45; }
+	50% { opacity: 0.85; }
+}
+
+/* erro: a mata rejeitou o carregamento — sem enfeite, sem canto redondo */
+#status-notice {
+	display: none;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	max-width: min(80vw, 560px);
+	background-color: #0d1117;
+	border: 1px solid #8b0000;
+	border-radius: 0;
+	color: #c9d1d9;
+	font-family: 'Courier New', monospace;
+	line-height: 1.4;
+	overflow: hidden;
+	padding: 1rem 1.25rem;
+	text-align: center;
+	z-index: 1;
+}
+
+#status-notice .notice-title {
+	color: #8b0000;
+	display: block;
+	letter-spacing: 0.2em;
+	margin-bottom: 0.6rem;
+	text-transform: lowercase;
+}
+		</style>
+		$GODOT_HEAD_INCLUDE
+	</head>
+	<body>
+		<canvas id="canvas">
+			Seu navegador não suporta a tag canvas.
+		</canvas>
+
+		<noscript>
+			Seu navegador não suporta JavaScript.
+		</noscript>
+
+		<div id="status">
+			<div id="brand-stage">
+				<!-- GEN_BRAND: src injetado por scripts/tools/gen_brand.py -->
+				<img id="brand-mark-open" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADO0lEQVR4nO2aQW7jMAxFvwezyjKrQXyDbnuGHmiAzCkaoAeaM2TbG8ToyktvPYsMG4K1JVIi4wbQAwK0geyIXyRFygYajUbDkcN+N289Bws/tp7A1rgK8Gir784jCuDmAZHGR9578xxw2O9mjYFRIrgIQJMbxqmzXnd5nrLjrPe14OYBwzh9rqZ2RTXGy2uKJ7iCawgM44TL8/WTmqw0Pjee399bBBcBhnHqDvsdAOB0uX63ZpR15cmjfv+yeYsW9yT45/32txTBYjwZTh4VhWtyOex38zBOeH0Cjv3t+/589Y6cITRuaWz39/M3XJNiiAAAML/43fd0uXmWtwCmELAkIMoFHvCw8uan9QIpwtpq0KR5KJSQEnJtQSweUl24yLilWCVqQ4Hfj3JLKqf0Z1uImGMpl8l5vAL4khAtyHvlxLQaDwRsg9LYmviVQkZgFmAYp467/RJysiUJ0TOJpijaTjQFTW0usF5f4v7AHdthy4rKsVHuDxgE4J2epjSNnLQnSZfh+2xJPU5ZvGQnKLm2JAyyAng3Ity9Kctzb6ktnHiC1oiRHeAlgtzTU9TUDhwSIyWEyl1qRLAYLvEQIhcW6ngpEaHGeKJUBM3qAwXNkBYP44GypsqSDENOcYGFQma+bihdl/7JtXGWQsoiQEghJAsZMkr+LUmNiyqNQ3IAX/01g7+ssGJchBeoPCCiHohGe9SeFaDW+KWYr/nOgkaEpABeK88NSRmlHedJchv83/vPQFkvwNEa5Gm4Jg9kQ2AYp05zCMKJ6ASt99QmQXMdAOi8QdYBtSztAKfLcoFkqQNMlSDdtD/nc8Prk995Pq2+phawtsTmQognxtSEjr1PKEQaDzhUgpEi3ONUyfxojLs+xV9OhPnFboxmvMeZgToH5AqKtYREHPvrZ+lEiNjiHLHoyRD/X764YFmV2gaHPyYjXM8ENSy9vXEvEd4+6h+Vb/6aXCkexgMOAgzj1L193NzQIzHdEzcPoCRXct2WuL0lZukVvhOuh6JLIni00zzEvAlvurUNlNwNuNGRr8qGHYsTsoGSXiKFob090mhOuAAEHa5Iw+jABfAJl4dG+6J1o9FoNBoNF/4B+nTS76yIQJEAAAAASUVORK5CYII=" alt="">
+				<img id="brand-mark-blink" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADE0lEQVR4nO2aQW7jMAxF6cGsssxqEN+g256hByqQnqIBeqCeIdu5gY2uvPTWXaRsCNWWSOnTHg/0gABtYCviF0mRsokqlUoFyOl4mLaeg4VfW09ga6AC7G314exRAJgHeBrvOfbmOeB0PEwaA71EgAjAk+uHsbHe1z2Oyeus41qAeUA/jN+rqV1RjfHhPdkTXAAaAv0wUvd4+8QmGxqful6OjxYBIkA/jM3peCAiokt3+27JKOvKs0c9/7F5ixZ4Enz5e/87FMFiPBvOHuUFNLmcjoepH0Z6fSA6t/fv2+vNO1KG8HVz1zbv378BTYouAhARTU+4cS/d3bPQAphCwJKAOBcgkGGF5rf1hlCEpdXgSctQyCEm5NKCWDykuHAJ45ZjlSkNBTke55ZYTmmvthAxx1Iqk8t4JaIfCdFCOFZKTKvxRA7bYGhsSfyGQnpgFqAfxka6/RzhZHMSIjKJxsjaTjQFTWkusN6f4/5EK7bDlhUNr/VyfyKDALLT05SmnpNGEnUZuc/m1OOcxXN2gpx7c8IgKQC6EZHuzVleektp4SQTtEaM5AUoEcI9PUZJ7SBhMWJCqNylRASL4SEIIVJhoY6XHBFKjGdyRdCsPlFGM6QFYTxRXlNlSYYup7hEPwuZUiyFlEUAl0LIo4z1Ko1dcgB69RkPL1B5gEc94I32qD0pwB6NZzQiRAXYs/FaogJw75/q//9VNHkgGQL9MDaaQxCJRydoHVObBM11AJGuM1yjDrh08wWSpQ4wVYI8aHtN54bXB9x5Pq++phawtsTmQkgmxtiEzi0mFDyNJwJUgp4irHGqZH40Jl2f4y8lwvRkN0ZzPeLMQJ0DUgXFUkJizu3tM3cixGxxjpj1ZEj+H764YFmV0gZHPiZjoGeCGube3lhLhLeP8kflm78mlwvCeCKAAP0wNm8fdzdEJKY1gXkAJ7mc+7YE9pbYXhsm6KHonAiIdlqGGBq3V1AZbQMV7gbSaM9XZd2OxZmwgQq9JBSG93ZPoyXuAjBfeWIKDWuvZQ9g/yu0L1pXKpVKpVKB8AkVf7jAl1QecAAAAABJRU5ErkJggg==" alt="">
+				<img id="brand-wordmark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAABgCAYAAADy8ayIAAAEJUlEQVR4nO3dO27jOBgAYHqxlUtXQXKDbXOGucFeJMDsKTKAL7I32H6BLdLuDRKkcqnWU8zIUTS29aJIWvq+KglA/uJDv0SJdkIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAi2OQ+gKb73fZY//x2qJIcm5hp4t5aO1MfdzNmyrjFNO5+tz2+Plan3x9etlE64dpAzhEzVjtjToYcMdtxb6mdfY57zLH1jRkzbpff5w5QN7zVuOPFAq2yU7N4YyB7x2z+PiT+mUEcFTOEy/3VdTzn6poSM+YkHNLOWsyE3DdmTGPm/8PL9lR27iQwa+XtE2KMKZkwdfwY8aYczxzx197/t9T+MWa/A4Cpcj2/WAMJoAcTcLiYV+P27XPKMXh9rJLHTCl6Aui7Bh1b55A18BImYAnG9v+S9H0rkHv+DxW1sj5Zv37AcUmf8lPWwHPGr49hav3XdMUuuf83/1yt+uT4ZZ74dflrbn3+DZVlCXCtA289/pTk0KeOGHL3f2652587ftNvKYOlercJ9JM0Abw+Vqu5ysAtKOotwNuh2nRtknAHAfEUlQBCcIJDSkmXAEBZirsDSGHtzyG0P2/7c8dvWl0CmHuvfumGtr/93nrqEu14/Jj7m83m4t/mkrv9pc2/1SUAhlv7c5klt98zAFgxdwAkde4Wf+7b/tq3xlbkr1e2G6eU+5iSJoASdgI+vGx/WYc113mlrdFi69qLHsJy++Drlx8nXM6T/5f+34XwdKjCfrcN+5f0fZ80AZTy0cpLD3ZKejo7p67+H/INRLcod8I/06fHt0O1yTH/VrkEWOKkjmnp/bO2hH9NcQmga1CWPjkpz5K/EKaoBNDz89TZlxAsy7UlwZnnRdHn338xKxvIa0BWpXmy/fzwWXg7VJu1XlQkAFathBP/74z/oCfLEmDJD19itO1SHSVM1lv3724bwmGZrznHiJ4Avr2GsH//WFM93X3u7Pbv58o3NesKofskaJcfakr5+932OLR9bdfK70P3+nNq+6e6Nv7Pf/Svo3ZL419C+aGiJoC3Q7VpTtJYV3pXvh+e7qpeSSCX2OO/f8+/cWzpoj8DMGDrFnP8n+58hdzcinoNWJT/Gz/3vHUlkmbf77IdxSrMfrXuk8Gf7qpPg77ffaz7hl5Rpm4kapav92iPLX+qp14H/2xju84uzXV0123xuecQzXV06ju03uPfsH/fnvo+5/jHKj90/KaUH6qI2/W60WMHfS7PIRz/itBH7aQytM6hO9Gm/IfjHM4db6y+L8HUnYRL3on4yXMIRa33/pzheEprY6n0UxpFbQTKuSUS1qioBFCaOXZoSXKUpKgEkHNLJKxRUQlgDSQ5SiIBwIpJABTJs5I0JAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGOk75iXlSsjzFukAAAAASUVORK5CYII=" alt="CAIPORA">
+				<progress id="status-progress"></progress>
+				<div id="status-text">a mata desperta</div>
+			</div>
+			<div id="status-notice"></div>
+		</div>
+
+		<script src="$GODOT_URL"></script>
+		<script>
+const GODOT_CONFIG = $GODOT_CONFIG;
+const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	const statusOverlay = document.getElementById('status');
+	const statusProgress = document.getElementById('status-progress');
+	const statusText = document.getElementById('status-text');
+	const statusNotice = document.getElementById('status-notice');
+
+	let initializing = true;
+	let statusMode = '';
+
+	function setStatusMode(mode) {
+		if (statusMode === mode || !initializing) {
+			return;
+		}
+		if (mode === 'hidden') {
+			statusOverlay.remove();
+			initializing = false;
+			return;
+		}
+		statusOverlay.style.visibility = 'visible';
+		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
+		statusText.style.display = mode === 'progress' ? 'block' : 'none';
+		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
+		statusMode = mode;
+	}
+
+	function setStatusNotice(text) {
+		while (statusNotice.lastChild) {
+			statusNotice.removeChild(statusNotice.lastChild);
+		}
+		const title = document.createElement('span');
+		title.className = 'notice-title';
+		title.textContent = 'a mata rejeitou o carregamento';
+		statusNotice.appendChild(title);
+		const lines = text.split('\n');
+		lines.forEach((line) => {
+			statusNotice.appendChild(document.createTextNode(line));
+			statusNotice.appendChild(document.createElement('br'));
+		});
+	}
+
+	function displayFailureNotice(err) {
+		console.error(err);
+		if (err instanceof Error) {
+			setStatusNotice(err.message);
+		} else if (typeof err === 'string') {
+			setStatusNotice(err);
+		} else {
+			setStatusNotice('Erro desconhecido.');
+		}
+		setStatusMode('notice');
+		initializing = false;
+	}
+
+	const missing = Engine.getMissingFeatures({
+		threads: GODOT_THREADS_ENABLED,
+	});
+
+	if (missing.length !== 0) {
+		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
+			let serviceWorkerRegistrationPromise;
+			try {
+				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
+			} catch (err) {
+				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
+			}
+			// There's a chance that installing the service worker would fix the issue
+			Promise.race([
+				serviceWorkerRegistrationPromise.then((registration) => {
+					if (registration != null) {
+						return Promise.reject(new Error('Service worker already exists.'));
+					}
+					return registration;
+				}).then(() => engine.installServiceWorker()),
+				// For some reason, `getRegistration()` can stall
+				new Promise((resolve) => {
+					setTimeout(() => resolve(), 2000);
+				}),
+			]).then(() => {
+				// Reload if there was no error.
+				window.location.reload();
+			}).catch((err) => {
+				console.error('Error while registering service worker:', err);
+			});
+		} else {
+			// Display the message as usual
+			const missingMsg = 'Recursos necessários para rodar na Web estão ausentes:\n';
+			displayFailureNotice(missingMsg + missing.join('\n'));
+		}
+	} else {
+		setStatusMode('progress');
+		engine.startGame({
+			'onProgress': function (current, total) {
+				if (current > 0 && total > 0) {
+					statusProgress.value = current;
+					statusProgress.max = total;
+				} else {
+					statusProgress.removeAttribute('value');
+					statusProgress.removeAttribute('max');
+				}
+			},
+		}).then(() => {
+			setStatusMode('hidden');
+		}, displayFailureNotice);
+	}
+}());
+		</script>
+	</body>
+</html>
