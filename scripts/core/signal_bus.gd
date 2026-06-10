@@ -25,6 +25,8 @@ signal boss_intro_finished
 signal dialogue_finished
 ## Wind-up de especial de chefe com cue de áudio próprio (Fase 5: água benta).
 signal boss_special_telegraph(boss_type: String)
+## Boss derrotado (fase identifica o chefe: 1=mula..5=jesuíta). Cicatriz sonora própria.
+signal boss_died(phase: int)
 
 # ─── Bolsa de fragmentos (corpse run) ──────────────
 # Emitidos pelo MetaProgression; o AudioDirector (persistente) toca os one-shots —

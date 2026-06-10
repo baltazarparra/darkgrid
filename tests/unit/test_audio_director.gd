@@ -247,6 +247,26 @@ func test_bag_signals_play_oneshots_when_assets_exist():
 	assert_eq(_count_transient_players(), expected,
 		"cada sinal da bolsa toca um one-shot (graceful se o asset faltar)")
 
+func test_boss_name_resolves_each_phase():
+	# Fonte única: tema (mus_boss_*) e cicatriz (boss_death_*) usam o mesmo nome.
+	var names := {1: "mula", 2: "boitata", 3: "curupira", 4: "saci", 5: "jesuita"}
+	for phase: int in names:
+		assert_eq(AudioDirector._boss_name(phase), names[phase])
+		assert_eq(AudioDirector._boss_track(phase), "mus_boss_" + names[phase])
+
+func test_boss_died_plays_death_scar_stinger():
+	AudioDirector.unlock_audio()
+	for phase: int in [1, 2, 3, 4, 5]:
+		SignalBus.boss_died.emit(phase)
+		var expected := "boss_death_" + AudioDirector._boss_name(phase) + ".wav"
+		assert_true(_stinger_path().ends_with(expected),
+			"chefe da fase %d morre com %s" % [phase, expected])
+
+func test_boss_died_missing_asset_does_not_crash():
+	AudioDirector.unlock_audio()
+	AudioDirector._play_stinger("boss_death_inexistente")
+	assert_true(true, "stinger ausente é no-op (o death_sound comum é o fallback)")
+
 func test_force_loop_handles_8_and_16_bit():
 	# A música é gravada em PCM 8-bit (1 byte por frame mono); SFX seguem 16-bit.
 	var wav8 := AudioStreamWAV.new()

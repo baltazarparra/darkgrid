@@ -155,6 +155,7 @@ func _ready() -> void:
 	SignalBus.caipora_health_changed.connect(_on_caipora_health_changed)
 	SignalBus.fragment_bag_dropped.connect(_on_fragment_bag_dropped)
 	SignalBus.fragment_bag_recovered.connect(_on_fragment_bag_recovered)
+	SignalBus.boss_died.connect(_on_boss_died)
 
 # ─── Public API: volume ────────────────────────────
 ## Define o volume linear (0..1) de um bus, aplica e persiste.
@@ -263,6 +264,15 @@ func _on_boss_intro() -> void:
 func _on_chama() -> void:
 	if _audio_unlocked:
 		_play_stinger(STING_CHAMA)
+
+## Cicatriz sonora do chefe: stinger próprio acima da música, com duck no mix.
+## O som seco de morte comum (death_sound, no SfxSystem da arena) segue tocando —
+## se o asset boss_death_* faltar, ele É o fallback (_play_stinger no-opa).
+func _on_boss_died(phase: int) -> void:
+	if not _audio_unlocked:
+		return
+	duck()
+	_play_stinger("boss_death_" + _boss_name(phase))
 
 ## Cue de leitura do especial do Jesuíta: sibilo de água benta no wind-up.
 func _on_boss_special_telegraph(boss_type: String) -> void:
@@ -425,12 +435,17 @@ func _mus(track: String) -> String:
 
 ## Nome do tema do boss por fase (1=Mula, 2=Boitatá, 3=Curupira, 4=Saci).
 func _boss_track(phase: int) -> String:
+	return "mus_boss_" + _boss_name(phase)
+
+## Nome canônico do chefe pela fase — fonte única para tema (mus_boss_*) e
+## cicatriz de morte (boss_death_*).
+func _boss_name(phase: int) -> String:
 	match phase:
-		2: return "mus_boss_boitata"
-		3: return "mus_boss_curupira"
-		4: return "mus_boss_saci"
-		5: return "mus_boss_jesuita"
-		_: return "mus_boss_mula"
+		2: return "boitata"
+		3: return "curupira"
+		4: return "saci"
+		5: return "jesuita"
+		_: return "mula"
 
 ## Fase 1..4 a partir do enum da tela (explore/arena codificam a fase no nome).
 func _phase_from_screen(screen: int) -> int:

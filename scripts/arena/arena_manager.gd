@@ -457,6 +457,10 @@ func _on_actor_died(actor: CombatActor) -> void:
 	# liberado pelo tween de morte) e restaura os sprites congelados pelo hit-stop.
 	_teardown_combat()
 	if caipora_won:
+		# Cicatriz sonora: cada chefe morre com stinger próprio (AudioDirector resolve
+		# pela fase). Antes dos awaits — a emissão não pode se perder no teardown.
+		if GameState.active_combat_is_boss:
+			SignalBus.boss_died.emit(GameState.active_phase)
 		# Snowball pela metade (PRD-economia-v2): boss é marco (+1 HP máx., cura 2);
 		# comum dá meio HP máx. (acumulado em caipora_max_hp, materializa +1 a cada 2) e
 		# cura 1. GameState.caipora_max_hp (float) é a verdade; a componente usa floori.

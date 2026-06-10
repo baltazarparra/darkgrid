@@ -347,6 +347,14 @@ Tipo: assets + runtime.
 
 Objetivo: cada boss ter memoria sonora propria.
 
+Status: implementado. `SignalBus.boss_died(phase)` emitido no branch de vitoria
+(antes dos awaits); `AudioDirector._boss_name()` e fonte unica de tema e cicatriz;
+`_on_boss_died` ducka o mix e toca `boss_death_<nome>` acima da musica. O
+`death_sound` comum continua tocando — se o asset faltar, ele e o fallback.
+Timbres: mula = galope tropecando + fogo morrendo; boitata = silvo afundando em
+agua; curupira = batidas de madeira revertidas; saci = redemoinho desenrolando +
+assovio roubado; jesuita = sino rachado + ultimo acorde + agua benta fervendo.
+
 Sons:
 
 - `boss_death_mula`

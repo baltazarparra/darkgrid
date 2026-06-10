@@ -1468,6 +1468,91 @@ def fragment_bag_recover():
     ), mix=0.15, decay=0.6, tail=0.4), 0.75)
 
 
+# ─── Cicatrizes de chefe (S6) — cada um morre com a própria voz ─────────────
+def boss_death_mula():
+    # Mula sem Cabeça: o galope tropeça (alfaias desacelerando) e o jato de fogo
+    # do pescoço morre num sopro — a brasa apaga relinchando grave.
+    return _normalize(schroeder(bitcrush(_seq(
+        (alfaia(0.16, 70.0, punch=1.0), 0.0, 0.8),
+        (alfaia(0.16, 66.0, punch=0.9), 0.16, 0.75),
+        (alfaia(0.20, 60.0, punch=0.8), 0.38, 0.7),
+        (alfaia(0.28, 52.0, punch=0.6), 0.68, 0.65),
+        (nes_noise(1.0, decay=2.5, lp=0.7, gain=0.4), 0.25, 0.6),
+        (gongue(0.5, 170.0), 0.95, 0.6),
+    ), bits=7), mix=0.2, decay=0.7, tail=0.6), 0.85)
+
+
+def boss_death_boitata():
+    # Boitatá: o silvo da serpente de fogo colapsa e afunda na água do igarapé —
+    # vapor, depois pingos esparsos no silêncio.
+    n = int(SAMPLE_RATE * 0.7)
+    hiss = [_noise() * _env(i, n, 0.02, 0.7) for i in range(n)]
+    hiss = biquad(hiss, "hp", 2800.0)
+    return _normalize(schroeder(bitcrush(_seq(
+        (hiss, 0.0, 0.7),
+        (nes_noise(0.8, decay=3.0, lp=0.8, gain=0.4), 0.35, 0.6),
+        (gongue(0.4, 140.0), 0.5, 0.6),
+        (agogo(0.08, 2093.0), 1.05, 0.3),
+        (agogo(0.08, 1760.0), 1.30, 0.25),
+        (agogo(0.10, 2349.0), 1.55, 0.2),
+    ), bits=7), mix=0.3, decay=0.75, tail=0.7), 0.85)
+
+
+def boss_death_curupira():
+    # Curupira: as batidas de madeira da mata tocam REVERTIDAS — os pés ao
+    # contrário desandam o ritmo; a floresta desaprende o protetor que perdeu.
+    knocks = _seq(
+        (caixa(0.10, bright=0.5), 0.0, 0.8),
+        (caixa(0.10, bright=0.5), 0.22, 0.7),
+        (caixa(0.12, bright=0.45), 0.40, 0.75),
+        (alfaia(0.25, 56.0, punch=0.8), 0.62, 0.9),
+    )
+    reverse = list(reversed(knocks))  # ataques viram sucções: madeira ao contrário
+    return _normalize(schroeder(bitcrush(_seq(
+        (reverse, 0.0, 0.8),
+        (gongue(0.5, 220.0), 0.85, 0.6),
+        (nes_noise(0.5, decay=4.0, lp=0.5, gain=0.3), 0.9, 0.5),
+    ), bits=7), mix=0.22, decay=0.7, tail=0.6), 0.85)
+
+
+def boss_death_saci():
+    # Saci: o redemoinho desenrola — vento que gira cada vez mais devagar (pulso
+    # com vibrato caindo) até soltar o assovio que ele roubou da mata.
+    n = int(SAMPLE_RATE * 1.1)
+    wind = []
+    phase = 0.0
+    for i in range(n):
+        t = i / SAMPLE_RATE
+        spin = 6.0 * (1.0 - 0.8 * (i / n))  # rotação desacelerando
+        f = 320.0 * (1.0 - 0.45 * (i / n)) * (1.0 + 0.05 * math.sin(2 * math.pi * spin * t))
+        phase += f / SAMPLE_RATE
+        e = _env(i, n, 0.05, 0.5)
+        wind.append((0.5 * math.sin(2 * math.pi * phase) + 0.5 * _noise()) * e * 0.6)
+    wind = biquad(wind, "lp", 1600.0, q=0.9)
+    return _normalize(schroeder(bitcrush(_seq(
+        (wind, 0.0, 0.8),
+        (ganza(0.4, rising=False), 0.1, 0.5),
+        (echo(assovio(0.5, 990.0, freq_end=740.0, breath=0.12),
+              time_s=0.2, feedback=0.25, mix=0.2, taps=2), 0.75, 0.45),
+    ), bits=7), mix=0.2, decay=0.7, tail=0.6), 0.85)
+
+
+def boss_death_jesuita():
+    # Jesuíta: o sino racha (duas parciais desafinadas batendo), o órgão solta o
+    # último acorde torto e a água benta ferve no chão profano.
+    cracked = _mix(_sino_igreja(1.4, 130.0), [s * 0.6 for s in _sino_igreja(1.4, 136.5)])
+    last_chord = _mix(
+        pulse(0.9, note(C2, 11), duty=0.5, attack=0.2, release=0.6),
+        pulse(0.9, note(C2, 17), duty=0.5, attack=0.2, release=0.6),
+    )
+    return _normalize(schroeder(bitcrush(_seq(
+        (cracked, 0.0, 0.9),
+        (alfaia(0.35, 44.0), 0.0, 0.6),
+        (last_chord, 0.5, 0.4),
+        (nes_noise(0.7, decay=5.0, lp=0.3, gain=0.4), 1.0, 0.5),
+    ), bits=6), mix=0.3, decay=0.8, predelay=0.04, tail=1.0), 0.86)
+
+
 STINGERS = {
     "sting_arena_enter": sting_arena_enter,
     "sting_victory": sting_victory,
@@ -1480,6 +1565,11 @@ STINGERS = {
     "sting_agua_benta": sting_agua_benta,
     "fragment_bag_drop": fragment_bag_drop,
     "fragment_bag_recover": fragment_bag_recover,
+    "boss_death_mula": boss_death_mula,
+    "boss_death_boitata": boss_death_boitata,
+    "boss_death_curupira": boss_death_curupira,
+    "boss_death_saci": boss_death_saci,
+    "boss_death_jesuita": boss_death_jesuita,
 }
 
 
