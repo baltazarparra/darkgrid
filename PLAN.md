@@ -823,25 +823,28 @@ Base já é enxuta (gl_compatibility, CPUParticles2D, pixel art, sem threads na
 web). Os suspeitos de stutter são **picos de alocação** e overdraw, não custo
 médio. Medir antes de mexer.
 
-- [ ] Overlay de debug de frame-time/FPS atrás de flag (query string `?perf` ou
-  setting), via `Performance.get_monitor` — testar num Android classe Moto G
-  em Chrome, cenário pior: arena com crítico (hoje ~150 partículas + shake +
-  hit-stop num frame).
-- [ ] **Pool de partículas no `FeedbackSystem`**: pré-instanciar os
-  CPUParticles2D one-shot (sangue/spark/dodge/burst) e reusar via `restart()`
-  em vez de `instantiate()`+`queue_free()` a cada golpe — elimina o pico de
-  alocação exatamente no momento crítico do timing.
-- [ ] Fator de qualidade em telefone: escalar `amount` das partículas (~0.5 em
-  web com viewport pequena). O gore não recua — decals de sangue ficam, são
-  baratos e permanentes.
-- [ ] `BloodDecals`: garantir desenho acumulado barato (canvas/multimesh ou cap
-  de nós) — sangue infinito sim, nós infinitos não.
-- [ ] Auditar `_process` quentes (`ambient_life`, `atmosphere`, HUD) por
-  alocações por frame (arrays/strings novos, `Tween` por frame).
-- [ ] `application/run/max_fps=60`: telas de 120Hz queimam bateria e induzem
+- [x] Overlay de debug de frame-time/FPS atrás de flag: autoload `PerfHud`
+  (layer 127), liga com `?perf` na URL (web) ou `CAIPORA_PERF=1` (nativo);
+  desligado não cria nó nem processa. Medir num Android classe Moto G em
+  Chrome, cenário pior: arena com crítico.
+- [x] **Pool de partículas no `FeedbackSystem`**: todos os efeitos
+  (sangue/crítico/morte/spark/dodge/bolha/fail) reusam CPUParticles2D via
+  `restart()` — zero `instantiate()`/`queue_free()`/timer por golpe.
+  Round-robin de 2 nós por efeito: golpe duplo não mata o burst anterior em
+  voo. Testes: `test_feedback_pool.gd`.
+- [x] Fator de qualidade em telefone: `Constants.particle_amount_scale` corta
+  `amount` pela metade quando o lado curto < 640. O gore não recua — decals
+  de sangue ficam, são baratos e permanentes.
+- [x] `BloodDecals`: auditado — já é barato (cap de 250 splats, um nó só,
+  redraw apenas em splat novo ou secagem a cada 2s). Sem mudança.
+- [x] Auditar `_process` quentes: `ambient_life` (poucos insetos, sem alocação
+  por frame), `atmosphere` (constrói uma vez, grading off na web), HUD ok.
+- [x] `application/run/max_fps=60`: telas de 120Hz queimam bateria e induzem
   throttle térmico — o vilão real de "60fps em device modesto".
-- [ ] Registrar a medição (antes/depois, device, cenário) nesta seção.
-- [ ] `make gate` + `make export` + teste de carga da página (gotcha #5).
+- [ ] Registrar a medição no device real (antes/depois, device, cenário) nesta
+  seção — pendente de hardware (usar o `?perf`).
+- [x] `make gate` ✅ 321/321 + `make export` no fechamento da Fase 10; teste de
+  carga da página (gotcha #5) junto da validação no device.
 
 ---
 
