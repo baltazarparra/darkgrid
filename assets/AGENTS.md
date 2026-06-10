@@ -49,6 +49,11 @@ assets/
    paleta → selout → rim light duplo, quente da juba + frio do cristal). NUNCA
    editar esses PNGs à mão nem recriá-los pelo `gen_chars.py`. O design é lei:
    `docs/CONCEITO-protagonista.md`.
+2d. **Inimigos comuns idem:** `enemy_*.png` e `bruxo_*.png` saem SOMENTE de
+   `scripts/tools/gen_inimigos.py` (mesma receita premium, 48×48, paleta
+   fechada por personagem; travas de marca cobradas por
+   `tests/unit/test_inimigos_sprite_assets.gd`). O design é lei:
+   `docs/CONCEITO-inimigos.md`.
 3. **Audio:** Generate with [jsfxr](https://sfxr.me/) or [sfxr](https://www.drpetter.se/project_sfxr.html). Export as `.wav`. Short, punchy, under 100KB each.
 4. **No music in MVP.** SFX only. Music adds complexity and file size we don't need for the first Web build.
 5. **UI:** Use Godot's native UI nodes (`Button`, `Panel`, `Label`, `ProgressBar`). Do not create custom UI sprite sheets.

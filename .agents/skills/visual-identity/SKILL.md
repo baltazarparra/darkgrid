@@ -16,6 +16,12 @@ Fonte canonica:
 - `scripts/tools/gen_caipora.py`
 - `tests/unit/test_caipora_sprite_assets.gd`
 
+Inimigos comuns (cacador & bruxo) derivam desta identidade:
+- `docs/CONCEITO-inimigos.md` (lei visual dos invasores)
+- `assets/sprites/inimigos_contact_sheet.png`
+- `scripts/tools/gen_inimigos.py`
+- `tests/unit/test_inimigos_sprite_assets.gd`
+
 ## 1. Principio-marca
 
 A Caipora aprovada define a marca do jogo. Ela deve ser reconhecivel como:
@@ -75,6 +81,9 @@ Personagens e inimigos:
 - Evite excesso de roupa, acessorios ou render brilhante.
 - Prefira olhos, dentes, chifres, ossos, manchas, fogo, lama e sangue como
   sinais graficos fortes.
+- Travas de marca (assert no GUT): nenhum inimigo usa olhos brancos redondos,
+  o laranja da juba (`#ff4500`/`#8b2a00`) ou o verde do cristal. Cacador e
+  bruxo saem SOMENTE de `gen_inimigos.py` (ver `docs/CONCEITO-inimigos.md`).
 
 Cenarios:
 - A floresta e personagem hostil. Use dentes de folha, troncos como garras,
