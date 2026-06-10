@@ -81,9 +81,10 @@ func _setup_fade() -> void:
 	add_child(fade_layer)
 	create_tween().tween_property(_fade, "color:a", 0.0, FADE_IN_DURATION)
 
-## Troca o título em fonte pelo logotipo de madeira/sangue (gen_logo.py), com
-## os olhos do "O" piscando. Montado por código no lugar do Title (sem editar
-## a cena); se o asset faltar, o título em fonte continua como fallback.
+## Troca o título em fonte pelo wordmark da marca (gen_brand.py: letras na rampa
+## da juba, "O" como rosto-vazio), com os olhos do "O" piscando. Montado por
+## código no lugar do Title (sem editar a cena); se o asset faltar, o título em
+## fonte continua como fallback.
 func _setup_logo() -> void:
 	var title := $Center/VBox/Title as RichTextLabel
 	if not ResourceLoader.exists(LOGO_PATH):

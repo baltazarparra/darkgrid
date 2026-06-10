@@ -177,7 +177,7 @@ Critério de aceite: nenhuma troca de cena com curva/cor diferente das demais;
 
 | Sessão | Entrega | Gate |
 |---|---|---|
-| S1 | Etapa 0 — `gen_brand.py` + todos os assets regenerados | `make gate` + teste novo de assets |
+| S1 ✅ | Etapa 0 — `gen_brand.py` + todos os assets regenerados | `make gate` + teste novo de assets |
 | S2 | Etapa 1 — shell HTML custom + export_presets | `make export` + teste de load nos 3 alvos |
 | S3 | Etapa 2 — menu com novo logo + theme | `make gate` + `/validate-platforms` |
 | S4 | Etapa 3 — transição padronizada | `make gate` + `/validate-platforms` |
