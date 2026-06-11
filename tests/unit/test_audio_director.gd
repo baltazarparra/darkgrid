@@ -126,11 +126,26 @@ func test_boss_intro_defers_stinger_into_the_silence():
 	assert_true(AudioDirector._stinger_player.playing, "o stinger nasce do vazio")
 	GameState.active_combat_is_boss = false
 
-func test_ending_plays_organ_death_rattle():
+func test_final_choice_plays_organ_death_rattle():
 	AudioDirector.unlock_audio()
-	AudioDirector._apply_screen_audio(SignalBus.Screen.ENDING)
+	AudioDirector._apply_screen_audio(SignalBus.Screen.FINAL_CHOICE)
 	assert_true(_stinger_path().ends_with("sting_orgao_estertor.wav"),
-		"vitória sobre o Jesuíta = estertor de órgão")
+		"o Jesuíta caído no altar = estertor de órgão sob a pergunta final")
+
+func test_sacrifice_ending_tolls_church_bell():
+	AudioDirector.unlock_audio()
+	AudioDirector._apply_screen_audio(SignalBus.Screen.ENDING_SACRIFICE)
+	assert_true(_stinger_path().ends_with("sting_sino_igreja.wav"),
+		"a floresta convertida dobra o sino da igreja")
+
+func test_final_choice_keeps_church_ambience_and_space():
+	# A escolha acontece no MESMO altar: cama sonora e reverb de igreja seguem.
+	AudioDirector._refresh_ambience(SignalBus.Screen.FINAL_CHOICE)
+	assert_eq(AudioDirector._current_ambience, AudioDirector.AMB_CHURCH,
+		"a pergunta final é feita dentro da igreja")
+	AudioDirector._apply_space_profile(SignalBus.Screen.FINAL_CHOICE)
+	assert_almost_eq(_reverb_fx().room_size, 0.9, 0.01,
+		"o reverb da nave não troca na hora da escolha")
 
 func test_jesuita_special_telegraph_plays_agua_benta():
 	AudioDirector.unlock_audio()

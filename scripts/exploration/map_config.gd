@@ -48,7 +48,7 @@ enum TopologyMode {
 @export var has_chest: bool = false
 @export var has_key: bool = false
 @export var has_fog: bool = false
-@export var has_exit: bool = true           # false → sem tile 'E' (só a fase FINAL: boss → ENDING)
+@export var has_exit: bool = true           # false → sem tile 'E' (só a fase FINAL: boss → FINAL_CHOICE)
 @export var decoration_count: int = 0       # ambientação visual espalhada no chão
 
 # ─── Factory por fase ──────────────────────────────
@@ -111,7 +111,7 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.hazard_chars = PackedStringArray(["R"])  # fogo votivo / círios
 			c.hazard_density = 0.05
 			c.pillar_density = 0.06
-			c.has_exit = false  # progride ao derrotar o Jesuíta → ENDING
+			c.has_exit = false  # progride ao derrotar o Jesuíta → FINAL_CHOICE
 			c.decoration_count = 44
 	c.common_types = _common_mix(target_phase)
 	return c
