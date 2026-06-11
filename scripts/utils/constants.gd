@@ -47,6 +47,25 @@ const TIMING_DOUBLE_INTERVAL := 0.5
 const TIMING_DOUBLE_BUBBLE_SPREAD_MIN := 60.0
 const TIMING_DOUBLE_BUBBLE_SPREAD_MAX := 80.0
 const TIMING_DOUBLE_BLOCK_DURATION := 0.55  # TIMING_WINDOW_ATTACK (0.8) - 0.25
+const TIMING_WINDOW_MIN := 0.2
+const TOUCH_TIMING_WINDOW_BONUS := 0.2
+
+## Janela de acao real depois do tuning por fase. Em device touch, soma folga
+## absoluta para compensar latencia/ergonomia sem facilitar desktop.
+static func timing_window_for_phase(base: float, phase: int, touch_device: bool = false) -> float:
+	var window: float = base
+	match phase:
+		5:
+			window = maxf(base - PHASE5_TIMING_REDUCTION, TIMING_WINDOW_MIN)
+		4:
+			window = maxf(base - PHASE4_TIMING_REDUCTION, TIMING_WINDOW_MIN)
+		3:
+			window = maxf(base - PHASE3_TIMING_REDUCTION, TIMING_WINDOW_MIN)
+		2:
+			window = maxf(base - PHASE2_TIMING_REDUCTION, TIMING_WINDOW_MIN)
+	if touch_device:
+		window += TOUCH_TIMING_WINDOW_BONUS
+	return window
 
 # ─── Audio ─────────────────────────────────────────
 # Passo bem abaixo dos SFX de combate: presença tátil, nunca spam. O asset é
