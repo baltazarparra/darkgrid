@@ -588,7 +588,7 @@ func _build_profile() -> Dictionary:
 				"phase_reached_on_enter": 0,
 				"has_fog": true,
 				"enhance_fire": false,
-				"exit_marker": ExitMarker.NONE,
+				"exit_marker": ExitMarker.PULSING,
 				"deco_palette": DECO_FOREST,
 			}
 		4:
@@ -600,7 +600,7 @@ func _build_profile() -> Dictionary:
 				"boss_color": Constants.COLOR_DIALOGUE_SACI,
 				"boss_frames": SACI_FRAMES,
 				"boss_aura": Constants.COLOR_AURA_SACI,
-				"next_screen_on_exit": SignalBus.Screen.ENDING,
+				"next_screen_on_exit": SignalBus.Screen.EXPLORATION_PHASE5,
 				"hazard_damage": Constants.FIRE_TILE_DAMAGE,
 				"step_sfx": "step_grass",
 				"aura": Aura.FIRE,
@@ -609,7 +609,7 @@ func _build_profile() -> Dictionary:
 				"phase_reached_on_enter": 0,
 				"has_fog": false,
 				"enhance_fire": false,
-				"exit_marker": ExitMarker.NONE,
+				"exit_marker": ExitMarker.PULSING,
 				"deco_palette": DECO_FIRE,
 			}
 		5:

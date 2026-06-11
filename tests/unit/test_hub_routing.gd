@@ -1,24 +1,28 @@
 extends GutTest
 
-# Roteamento do avanço de fase pelo acampamento (HUB) — Fase 9, Etapa 0.
-# A regra central: SÓ avanços de fase (exploração de fase POSTERIOR) passam pelo hub;
-# volta para a mesma fase, ENDING e GAME_OVER seguem diretos. Lógica pura, roda headless.
+# Roteamento pós-combate e avanço de fase pelo acampamento (HUB).
+# A regra central: vitória na arena NUNCA avança a fase — boss ou comum, volta à
+# exploração da MESMA fase; avançar é pisar no tile de saída (que passa pelo hub).
+# Exceção única: o boss FINAL (P5) → ENDING. Lógica pura, roda headless.
 
 const ArenaManagerScript := preload("res://scripts/arena/arena_manager.gd")
 
 var _saved_phase: int
+var _saved_is_boss: bool
 var _saved_pending: int
 var _saved_player_pos: Vector2i
 var _saved_enemy_pos: Dictionary
 
 func before_each() -> void:
 	_saved_phase = GameState.active_phase
+	_saved_is_boss = GameState.active_combat_is_boss
 	_saved_pending = GameState.pending_exploration
 	_saved_player_pos = GameState.player_map_pos
 	_saved_enemy_pos = GameState.map_enemy_positions.duplicate()
 
 func after_each() -> void:
 	GameState.active_phase = _saved_phase
+	GameState.active_combat_is_boss = _saved_is_boss
 	GameState.pending_exploration = _saved_pending
 	GameState.player_map_pos = _saved_player_pos
 	GameState.map_enemy_positions = _saved_enemy_pos

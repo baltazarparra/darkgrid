@@ -1,6 +1,8 @@
 class_name MapEnemy
 extends Node2D
 
+const ForestLight := preload("res://scripts/exploration/forest_light.gd")
+
 # ─── Constants ─────────────────────────────────────
 const ENEMY_TEXTURE    = preload("res://assets/sprites/enemy_map.png")
 const BRUXO_TEXTURE    = preload("res://assets/sprites/bruxo_map.png")
@@ -70,6 +72,10 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 	sprite.offset = Vector2(0, -13) if (not boss and not miniboss) else Vector2(0, -8)
 	add_child(sprite)
 
+	# Sombra + luz frontal: ancora visual contra o chão escuro (mesmo sistema da arena).
+	_spawn_shadow(not boss and not miniboss)
+	_spawn_front_light(not boss and not miniboss)
+
 	if boss:
 		_spawn_aura(boss_type)
 	elif miniboss:
@@ -106,6 +112,24 @@ func take_turn(player_pos: Vector2i, walkable_fn: Callable, occupied_fn: Callabl
 	return false
 
 # ─── Private ───────────────────────────────────────
+func _spawn_shadow(is_common: bool) -> void:
+	var shadow := Sprite2D.new()
+	shadow.texture = load(Constants.SHADOW_OVAL_PATH)
+	shadow.z_index = -1
+	shadow.modulate = Constants.COLOR_ENEMY_SHADOW
+	shadow.position = Vector2(0.0, 2.0)
+	shadow.scale = Vector2(1.0, 0.35) if is_common else Vector2(0.85, 0.30)
+	add_child(shadow)
+
+func _spawn_front_light(is_common: bool) -> void:
+	var light := ForestLight.make(
+		Constants.COLOR_ENEMY_FRONT_LIGHT,
+		Constants.ENEMY_FRONT_LIGHT_ENERGY,
+		Constants.ENEMY_FRONT_LIGHT_SCALE
+	)
+	light.position = Vector2(-10, -10) if is_common else Vector2(-8, -8)
+	add_child(light)
+
 func _spawn_aura(aura_type: String) -> void:
 	var aura := CPUParticles2D.new()
 	aura.z_index = -1

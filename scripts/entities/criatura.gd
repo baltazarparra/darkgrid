@@ -44,6 +44,7 @@ func _ready() -> void:
 
 	_spawn_shadow()
 	_spawn_front_light()
+	_apply_outline_shader()
 
 # ─── Telegraph ─────────────────────────────────────
 func _on_state_changed(new_state: EnemyStateMachine.State) -> void:
@@ -111,10 +112,11 @@ func _spawn_shadow() -> void:
 	# Posiciona nos pés do ator (origem do CharacterBody2D).
 	shadow.position = Vector2(0.0, 2.0)
 	# Escala proporcional à massa do sprite, achatada para ler como pool no chão.
-	shadow.scale = Vector2(sprite_scale * 0.9, sprite_scale * 0.35)
+	shadow.scale = Vector2(sprite_scale * 1.2, sprite_scale * 0.5)
 	add_child(shadow)
 
-## Luz frontal sutil que destaca o contorno do inimigo sobre o CanvasModulate escuro.
+## Luz frontal que destaca o contorno do inimigo sobre o CanvasModulate escuro.
+## Pode ser sobrescrita por subclasses (ex: Boss reduz energy para não competir com aura).
 func _spawn_front_light() -> void:
 	var light := ForestLight.make(
 		Constants.COLOR_ENEMY_FRONT_LIGHT,
@@ -124,3 +126,11 @@ func _spawn_front_light() -> void:
 	# O inimigo encara a Caipora pela esquerda; a luz vem da frente (esquerda).
 	light.position = Vector2(-18.0 * sprite_scale, -22.0)
 	add_child(light)
+
+## Outline brilhante ao redor do sprite — separação de silhueta em fundo escuro.
+func _apply_outline_shader() -> void:
+	if animated_sprite == null:
+		return
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/enemy_outline.gdshader")
+	animated_sprite.material = mat

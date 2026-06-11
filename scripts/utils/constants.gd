@@ -100,9 +100,9 @@ const ADDITIVE_MATERIAL: CanvasItemMaterial = preload("res://resources/materials
 # ─── Arena actor contrast (shadow + front-light) ───
 const SHADOW_OVAL_PATH := "res://assets/sprites/shadow_oval.png"
 const COLOR_ENEMY_FRONT_LIGHT := Color(0.85, 0.80, 0.75)  # branco-quente sutil
-const COLOR_ENEMY_SHADOW := Color(0.0, 0.0, 0.0, 0.45)
-const ENEMY_FRONT_LIGHT_ENERGY := 0.35
-const ENEMY_FRONT_LIGHT_SCALE := 1.2
+const COLOR_ENEMY_SHADOW := Color(0.0, 0.0, 0.0, 0.75)
+const ENEMY_FRONT_LIGHT_ENERGY := 1.0
+const ENEMY_FRONT_LIGHT_SCALE := 2.0
 
 # ─── Colors (Horror Folk Palette) ──────────────────
 # Fonte ÚNICA de cor do jogo. Qualquer Color() novo deve referenciar/derivar daqui —

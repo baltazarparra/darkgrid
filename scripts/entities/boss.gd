@@ -45,6 +45,16 @@ func _play_windup_telegraph() -> void:
 	_telegraph_tween.tween_property(animated_sprite, "modulate", _base_modulate, 0.22)
 	_telegraph_tween.parallel().tween_property(animated_sprite, "scale", _base_scale, 0.22)
 
+## Luz frontal reduzida para não competir com a aura de partículas do boss.
+func _spawn_front_light() -> void:
+	var light := ForestLight.make(
+		Constants.COLOR_ENEMY_FRONT_LIGHT,
+		0.7,
+		Constants.ENEMY_FRONT_LIGHT_SCALE
+	)
+	light.position = Vector2(-18.0 * sprite_scale, -22.0)
+	add_child(light)
+
 # ─── Private helpers ───────────────────────────────
 func _spawn_shadow_aura() -> void:
 	var aura := CPUParticles2D.new()

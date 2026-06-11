@@ -87,14 +87,17 @@ func _attempt(config: MapConfig, rng: RandomNumberGenerator, drop_pillars: bool)
 	# mais distante no CORRIDOR). É também o alvo do boss quando não há saída.
 	var goal := exit_pos
 	if config.topology_mode == MapConfig.TopologyMode.CORRIDOR:
-		goal = _farthest(dist)
+		# Com saída, a meta é o BECO mais fundo (um único vizinho de chão): o boss
+		# posta na única aproximação e o combate é inevitável — paridade com a
+		# porta única da sala do boss no OPEN.
+		goal = _farthest_dead_end(tiles, dist) if config.has_exit else _farthest(dist)
 		boss_cell = _near_exit_cell(dist, goal) if config.has_exit else goal
 
 	# Validação: a célula-alvo precisa ser alcançável. Senão, esta tentativa falhou.
 	if goal == Vector2i(-1, -1) or not dist.has(goal):
 		return null
 
-	# Fases sem saída (ex.: Fase 3) progridem ao derrotar o boss — sem tile 'E'.
+	# Fases sem saída (só a fase FINAL) progridem ao derrotar o boss — sem tile 'E'.
 	if config.has_exit:
 		_set_tile(tiles, goal, GeneratedMap.EXIT)
 		m.exit_pos = goal
@@ -426,6 +429,26 @@ func _farthest(dist: Dictionary) -> Vector2i:
 			bd = int(dist[p])
 			best = p
 	return best
+
+func _farthest_dead_end(tiles: Array, dist: Dictionary) -> Vector2i:
+	# Beco-sem-saída mais distante do spawn: célula alcançável com exatamente UM
+	# vizinho de chão. Fallback: a célula mais distante (mapa sem becos).
+	var best := Vector2i(-1, -1)
+	var bd := -1
+	for p: Vector2i in dist.keys():
+		if _floor_neighbors(tiles, p) != 1:
+			continue
+		if int(dist[p]) > bd:
+			bd = int(dist[p])
+			best = p
+	return best if best != Vector2i(-1, -1) else _farthest(dist)
+
+func _floor_neighbors(tiles: Array, p: Vector2i) -> int:
+	var n := 0
+	for d: Vector2i in CARDINALS:
+		if not _is_wall(tiles, p + d):
+			n += 1
+	return n
 
 func _near_exit_cell(dist: Dictionary, exit_pos: Vector2i) -> Vector2i:
 	for d: Vector2i in CARDINALS:

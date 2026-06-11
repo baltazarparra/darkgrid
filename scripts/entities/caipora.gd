@@ -36,6 +36,7 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_update_camera_zoom)
 	CaiporaSkin.apply(_animated_sprite)
 	_apply_furia_visual()
+	_spawn_shadow()
 
 func _process(_delta: float) -> void:
 	if _is_moving:
@@ -51,6 +52,15 @@ func try_move(direction: Vector2) -> void:
 # ─── Private helpers ───────────────────────────────
 func _apply_furia_visual() -> void:
 	FuriaVisual.attach_to(_animated_sprite)
+
+func _spawn_shadow() -> void:
+	var shadow := Sprite2D.new()
+	shadow.texture = load(Constants.SHADOW_OVAL_PATH)
+	shadow.z_index = -1
+	shadow.modulate = Constants.COLOR_ENEMY_SHADOW
+	shadow.position = Vector2(0.0, 2.0)
+	shadow.scale = Vector2(0.5, 0.18)
+	add_child(shadow)
 
 func _get_cardinal_input() -> Vector2:
 	var x := int(Input.is_action_pressed("ui_right")) - int(Input.is_action_pressed("ui_left"))
