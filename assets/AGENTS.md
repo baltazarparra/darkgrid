@@ -42,6 +42,7 @@ assets/
    | Bosses/minibosses legados | 48×48 (até a sessão de redesign de cada um — KI-012) |
    | Curupira (boss redesenhado) | 128×128 arena (corpo ~82px ≈ a Caipora, escala de nó 1.2) + mapa 48×48 |
    | Boitatá premium | 160×128 arena (`gen_boitata.py`; escala 1.2) |
+   | Saci premium | 128×128 arena (`gen_saci.py`; escala 1.2) |
    | Caipora | 96×96 (corpo ~75px; a imponência é da silhueta, não do tamanho) |
    | Invasores comuns (caçador/bruxo) | 112×112 arena (~1.3× ela) + variante de mapa 56×56 |
    Sprites maiores que o tile transbordam pra cima (pés na base, offset.y
@@ -49,14 +50,15 @@ assets/
    nó (1.2) — texels uniformes; a hierarquia vem do canvas/desenho, nunca de
    escala fracionária diferente por ator. Background transparente.
    **Exceção interina (KI-012):** os bosses legados 48×48 usam `sprite_scale`
-   por cena para ler na proporção da lore (Saci 1.8 < Caipora ≈ Curupira <
+   por cena para ler na proporção da lore (Saci premium < Caipora ≈ Curupira <
    Jesuíta 2.7 / caçador-de-machados 2.8 ≈ caçador comum < Boitatá <
    Mula sem Cabeça), com offset de pés na mesma linha de chão dela —
    contrato travado em `tests/unit/test_boss_scale_proportions.gd`. O redesign
    premium de cada chefe (canvas ≥128) deve herdar essas ALTURAS VISUAIS e
    voltar a escala de nó para 1.2 — o **Curupira** (`gen_bosses.py`,
-   `docs/CONCEITO-curupira.md`) e o **Boitatá** (`gen_boitata.py`) já
-   migraram; os demais seguem na exceção.
+   `docs/CONCEITO-curupira.md`), o **Boitatá** (`gen_boitata.py`) e o
+   **Saci** (`gen_saci.py`, `docs/CONCEITO-saci.md`) já migraram; os demais
+   seguem na exceção.
 2b. **Pipeline de limpeza para IA (obrigatório):** quantizar para a paleta
    (`constants.gd`), alinhar ao grid, garantir alpha limpo (sem halos), ≤ 64×64.
    Sprite que não passar por isso não entra.
@@ -76,6 +78,10 @@ assets/
    48×48 mapa re-renderizados dos mesmos vetores; travas de marca e contrato
    cobrados por `tests/unit/test_curupira_sprite_assets.gd`). O design é lei:
    `docs/CONCEITO-curupira.md`. Demais chefes entram aqui a cada redesign.
+2f. **Saci idem:** `saci_*.png` saem SOMENTE de `scripts/tools/gen_saci.py`
+   (128×128 arena, idle/windup, escala de nó 1.2; travas de marca e contrato
+   cobrados por `tests/unit/test_saci_sprite_assets.gd`). O design é lei:
+   `docs/CONCEITO-saci.md`.
 3. **Audio:** Generate with [jsfxr](https://sfxr.me/) or [sfxr](https://www.drpetter.se/project_sfxr.html). Export as `.wav`. Short, punchy, under 100KB each.
 4. **No music in MVP.** SFX only. Music adds complexity and file size we don't need for the first Web build.
 5. **UI:** Use Godot's native UI nodes (`Button`, `Panel`, `Label`, `ProgressBar`). Do not create custom UI sprite sheets.
