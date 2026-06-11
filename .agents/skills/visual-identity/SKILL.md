@@ -22,6 +22,12 @@ Inimigos comuns (cacador & bruxo) derivam desta identidade:
 - `scripts/tools/gen_inimigos.py`
 - `tests/unit/test_inimigos_sprite_assets.gd`
 
+Curupira (boss P3, o parente mais antigo) deriva desta identidade:
+- `docs/CONCEITO-curupira.md` (lei visual do chefe)
+- `assets/sprites/curupira_contact_sheet.png`
+- `scripts/tools/gen_bosses.py`
+- `tests/unit/test_curupira_sprite_assets.gd`
+
 ## 1. Principio-marca
 
 A Caipora aprovada define a marca do jogo. Ela deve ser reconhecivel como:
