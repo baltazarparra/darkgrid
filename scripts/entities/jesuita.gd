@@ -5,9 +5,10 @@ extends Saci
 ## "converti todos eles com espelhos e água benta. a floresta pertence ao vaticano."
 ##
 ## Moveset = a UNIÃO de TODOS os padrões de TODOS os chefes, com a MESMA chance
-## (1/7 cada). O endurecimento da fase (janela −0.2s ALÉM da Fase 4, +1 hit de
-## dano) NÃO vive aqui — é da Fase 5 (Constants.PHASE5_*), aplicado igualmente a
-## ele e aos 4 chefes-monstro convertidos. Por isso "o mesmo comportamento".
+## (1/7 cada). O tuning da fase (janela igual à Fase 4, −1 de dano por golpe com
+## piso de 1) NÃO vive aqui — é da Fase 5 (Constants.PHASE5_*), aplicado
+## igualmente a ele e aos 4 chefes-monstro convertidos. Por isso "o mesmo
+## comportamento".
 ##
 ## Herda de Saci toda a cadeia de telegraphs (rastro/assobio/salto-duplo +
 ## especial roxo do Boss). O único padrão fora dessa cadeia é o branco do

@@ -238,12 +238,14 @@ const PHASE4_TIMING_REDUCTION := 0.30
 const PHASE4_ENEMY_DAMAGE_BONUS := 1.0
 
 # ─── Fase 5 (A Igreja na Mata) ─────────────────────
-# A fase FINAL: a mais impiedosa. A janela de ação encurta 0.2s ALÉM da Fase 4
-# (0.30 + 0.20 = 0.50 "mais rápido", travado no piso de 0.2s em _phase_window) e
-# cada golpe de inimigo bate +1 (PHASE5_ENEMY_DAMAGE_BONUS). Vale igualmente para
-# os 4 chefes-monstro convertidos e para o Jesuíta — "o mesmo comportamento".
-const PHASE5_TIMING_REDUCTION := 0.50
-const PHASE5_ENEMY_DAMAGE_BONUS := 1.0
+# A fase FINAL. Rebalanceada em 2026-06: a janela de ação encurta o MESMO que a
+# Fase 4 (0.30, travado no piso de 0.2s em _phase_window) e cada golpe de inimigo
+# bate -1 (PHASE5_ENEMY_DAMAGE_BONUS negativo: -2 por golpe vs o +1 anterior,
+# com piso de 1 no dano final em arena_manager — golpe que acerta sempre sangra).
+# Vale igualmente para os 4 chefes-monstro convertidos e para o Jesuíta —
+# "o mesmo comportamento".
+const PHASE5_TIMING_REDUCTION := 0.30
+const PHASE5_ENEMY_DAMAGE_BONUS := -1.0
 
 # ─── Physics Layers ────────────────────────────────
 const LAYER_PLAYER := 1
