@@ -25,7 +25,6 @@ from gen_inimigos import (
     OUTLINE,
     Painter,
     _outline,
-    _shift_down,
 )
 from PIL import Image, ImageDraw
 
@@ -64,25 +63,48 @@ def _curupira_pegadas(p: Painter) -> None:
     p.ellipse(17.2, 45.3, 1.2, 0.5, BLOOD)
 
 
-def _curupira_pes(p: Painter) -> None:
+def _curupira_pes(p: Painter, windup: bool = False) -> None:
     # PÉS AO CONTRÁRIO — A assinatura. Encara a esquerda; os dedos apontam
     # para TRÁS (direita), calcanhar na frente, garras de osso na ponta.
     # Pé distante primeiro (sombra), pé próximo por cima: duas lâminas
-    # horizontais paralelas que rompem a silhueta para trás.
+    # horizontais paralelas que rompem a silhueta para trás. No windup os
+    # joelhos dobram (mola comprimida) mas os pés CRAVAM na mesma linha de chão.
+    if windup:
+        p.limb((26.8, 39.0), (28.8, 41.6), 2.5, 2.0, SKIN_DK)  # coxa distante
+        p.limb((28.8, 41.6), (27.8, 44.2), 2.0, 1.6, SKIN_DK)  # canela
+        p.ellipse(26.1, 45.3, 1.0, 0.8, SKIN_DK)               # calcanhar
+        p.limb((26.8, 45.2), (33.2, 45.1), 2.0, 1.5, SKIN_DK)  # pé distante
+        p.limb((33.2, 44.8), (35.4, 44.5), 0.8, 0.3, BONE_DK)  # garras
+        p.limb((33.3, 45.4), (35.5, 45.6), 0.8, 0.3, BONE_DK)
+        p.limb((20.4, 39.2), (18.6, 41.4), 2.5, 2.0, SKIN)     # coxa próxima
+        p.limb((18.6, 41.4), (19.4, 43.6), 2.0, 1.6, SKIN)     # canela
+        p.ellipse(17.4, 43.8, 1.1, 0.85, SKIN)                 # calcanhar
+        p.limb((18.2, 43.8), (25.8, 43.7), 1.8, 1.4, SKIN)     # pé próximo
+        p.limb((25.8, 43.1), (28.2, 42.7), 0.8, 0.3, BONE_DK)  # garras abertas
+        p.limb((26.0, 43.8), (28.5, 43.8), 0.85, 0.35, BONE_DK)
+        p.limb((25.8, 44.4), (28.0, 44.8), 0.8, 0.3, BONE_DK)
+        return
     p.limb((26.4, 37.2), (27.2, 44.0), 2.4, 1.6, SKIN_DK)     # perna distante
     p.ellipse(25.3, 45.3, 1.0, 0.8, SKIN_DK)                  # calcanhar distante
     p.limb((26.0, 45.2), (32.4, 45.1), 2.0, 1.5, SKIN_DK)     # pé distante
-    p.limb((32.4, 44.9), (34.6, 44.6), 0.8, 0.3, BONE_DK)        # garras
+    p.limb((32.4, 44.9), (34.6, 44.6), 0.8, 0.3, BONE_DK)     # garras
     p.limb((32.5, 45.5), (34.7, 45.7), 0.8, 0.3, BONE_DK)
     p.limb((21.0, 37.2), (20.4, 42.8), 2.4, 1.6, SKIN)        # perna próxima
     p.ellipse(18.6, 43.6, 1.1, 0.85, SKIN)                    # calcanhar próximo
     p.limb((19.4, 43.6), (26.6, 43.5), 1.8, 1.4, SKIN)        # pé próximo
-    p.limb((26.6, 42.9), (28.9, 42.5), 0.8, 0.3, BONE_DK)        # garras abertas
+    p.limb((26.6, 42.9), (28.9, 42.5), 0.8, 0.3, BONE_DK)     # garras abertas
     p.limb((26.8, 43.6), (29.2, 43.6), 0.85, 0.35, BONE_DK)
     p.limb((26.6, 44.2), (28.7, 44.6), 0.8, 0.3, BONE_DK)
 
 
-def _curupira_corpo(p: Painter) -> None:
+def _curupira_corpo(p: Painter, windup: bool = False) -> None:
+    if windup:
+        # Mola comprimida: tronco agachado, inclinado sobre a Caipora
+        p.poly([(18.4, 32.2), (26.6, 31.6), (27.8, 39.2), (18.0, 39.4)], SKIN)
+        p.poly([(24.6, 32.0), (27.8, 39.2), (24.8, 39.2), (23.6, 32.4)], SKIN_DK)
+        p.limb((19.8, 33.8), (22.4, 36.4), 0.9, 0.7, BLOOD)
+        p.limb((22.2, 33.4), (20.2, 35.8), 0.7, 0.6, BLOOD)
+        return
     # Tronco curto, peso assentado — a indiferença de quem é mais antigo
     p.poly([(19.6, 29.5), (27.4, 29.5), (28.2, 37.6), (19.0, 37.6)], SKIN)
     p.poly([(25.8, 29.8), (28.2, 37.6), (25.2, 37.6), (24.6, 30.2)], SKIN_DK)
@@ -91,7 +113,16 @@ def _curupira_corpo(p: Painter) -> None:
     p.limb((23.0, 31.2), (21.2, 33.8), 0.7, 0.6, BLOOD)
 
 
-def _curupira_bracos(p: Painter) -> None:
+def _curupira_bracos(p: Painter, windup: bool = False) -> None:
+    if windup:
+        # A indiferença quebrou: braços abertos, garras em leque
+        p.limb((27.6, 33.0), (31.2, 35.2), 2.3, 1.6, SKIN_DK)
+        for tip in ((33.4, 33.8), (33.9, 35.8), (33.0, 37.4)):
+            p.limb((31.4, 35.5), tip, 0.75, 0.35, BONE_DK)
+        p.limb((18.6, 33.4), (14.8, 35.8), 2.3, 1.6, SKIN_DK)
+        for tip in ((12.6, 34.4), (12.4, 36.6), (13.4, 38.4)):
+            p.limb((14.6, 36.0), tip, 0.75, 0.35, BONE_DK)
+        return
     # Braços longos caídos FORA da silhueta do tronco, parados — nem guarda,
     # nem bote. Escuros contra o tronco claro; garras de osso penduradas.
     p.limb((28.0, 30.6), (30.6, 38.6), 2.3, 1.6, SKIN_DK)     # distante
@@ -102,12 +133,20 @@ def _curupira_bracos(p: Painter) -> None:
         p.limb((16.4, 39.2), tip, 0.75, 0.35, BONE_DK)
 
 
-def _curupira_crista(p: Painter) -> None:
+def _curupira_crista(p: Painter, hx: float = 0.0, hy: float = 0.0,
+                     ericada: bool = False) -> None:
     # Crista serrilhada vermelho-sangue: eco da juba da Caipora na LINGUAGEM
     # (massa serrilhada envolvendo a cabeça), nunca na cor. Fogo que já apagou.
-    p.ellipse(23.5, 24.8, 8.4, 6.0, CRISTA)
+    # No windup ela ERIÇA: picos esticados e abertos (telegraph de silhueta).
+    kx = 1.4 if ericada else 1.0
+    ky = 1.5 if ericada else 1.0
+
+    def at(x: float, y: float) -> tuple[float, float]:
+        return (x + hx, y + hy)
+
+    p.ellipse(23.5 + hx, 24.8 + hy, 8.4, 6.0, CRISTA)
     # raiz escura (lado de trás, direita — ele encara a esquerda)
-    p.poly([(26.0, 19.6), (31.6, 22.0), (32.0, 28.4), (27.0, 30.0), (25.4, 24.0)], CRISTA_DK)
+    p.poly([at(26.0, 19.6), at(31.6, 22.0), at(32.0, 28.4), at(27.0, 30.0), at(25.4, 24.0)], CRISTA_DK)
     # picos serrilhados varridos para TRÁS (direita) — sobem mortos, sem chama
     spikes = [
         ((16.2, 24.0), (13.8, 21.2)),
@@ -118,44 +157,53 @@ def _curupira_crista(p: Painter) -> None:
         ((29.8, 22.0), (33.2, 19.2)),
         ((31.4, 25.0), (35.0, 23.2)),
     ]
-    for (bx, by), tip in spikes:
-        p.poly([(bx - 1.9, by + 1.4), (bx + 1.9, by + 1.4), tip], CRISTA)
+    for (bx, by), (tx, ty) in spikes:
+        tip = at(bx + (tx - bx) * kx, by + (ty - by) * ky)
+        p.poly([at(bx - 1.9, by + 1.4), at(bx + 1.9, by + 1.4), tip], CRISTA)
     # picos mortos entre os vivos (profundidade da serrilha)
-    for (bx, by), tip in (
+    for (bx, by), (tx, ty) in (
         ((19.6, 20.0), (18.4, 17.4)),
         ((25.8, 19.2), (27.4, 16.2)),
         ((30.6, 23.4), (33.8, 21.4)),
     ):
-        p.poly([(bx - 1.2, by + 1.2), (bx + 1.2, by + 1.2), tip], CRISTA_DK)
+        tip = at(bx + (tx - bx) * kx, by + (ty - by) * ky)
+        p.poly([at(bx - 1.2, by + 1.2), at(bx + 1.2, by + 1.2), tip], CRISTA_DK)
     # mechas caindo nos ombros (moldura serrilhada do rosto, dos dois lados)
-    p.poly([(15.0, 24.6), (18.2, 24.0), (17.0, 31.8), (14.6, 28.6)], CRISTA)
-    p.poly([(17.6, 28.0), (19.2, 27.2), (18.8, 32.6)], CRISTA_DK)
-    p.poly([(31.8, 25.2), (29.0, 25.0), (31.6, 32.0), (32.6, 28.6)], CRISTA_DK)
-    p.poly([(29.0, 27.6), (27.6, 27.6), (28.6, 32.2)], CRISTA_DK)
+    p.poly([at(15.0, 24.6), at(18.2, 24.0), at(17.0, 31.8), at(14.6, 28.6)], CRISTA)
+    p.poly([at(17.6, 28.0), at(19.2, 27.2), at(18.8, 32.6)], CRISTA_DK)
+    p.poly([at(31.8, 25.2), at(29.0, 25.0), at(31.6, 32.0), at(32.6, 28.6)], CRISTA_DK)
+    p.poly([at(29.0, 27.6), at(27.6, 27.6), at(28.6, 32.2)], CRISTA_DK)
 
 
-def _curupira_rosto(p: Painter, windup: bool = False) -> None:
+def _curupira_rosto(p: Painter, hx: float = 0.0, hy: float = 0.0,
+                    windup: bool = False) -> None:
     # Vazio de breu emoldurado pela crista — parente da Caipora: sem boca,
     # sem dente, sem expressão humana. O horror é a ausência.
-    p.ellipse(22.6, 26.8, 4.9, 4.1, VOID)
+    p.ellipse(22.6 + hx, 26.8 + hy, 4.9, 4.1, VOID)
     # Fendas verde-folha semicerradas: a indiferença de quem é mais antigo
     # que o medo. NUNCA redondas, NUNCA brancas (assinatura da Caipora).
     # O ponto vivo pende pra esquerda — o olhar já está na Caipora.
-    p.ellipse(20.1, 26.7, 1.85, 0.6, EYE)
-    p.ellipse(25.1, 26.7, 1.85, 0.6, EYE)
-    p.ellipse(19.6, 26.7, 0.95, 0.38, EYE_HOT)
-    p.ellipse(24.6, 26.7, 0.95, 0.38, EYE_HOT)
+    # No windup as fendas ESCANCARAM (mas seguem fendas, nunca círculos).
+    ry = 1.0 if windup else 0.6
+    ry_hot = 0.62 if windup else 0.38
+    p.ellipse(20.1 + hx, 26.7 + hy, 1.85, ry, EYE)
+    p.ellipse(25.1 + hx, 26.7 + hy, 1.85, ry, EYE)
+    p.ellipse(19.6 + hx, 26.7 + hy, 0.95, ry_hot, EYE_HOT)
+    p.ellipse(24.6 + hx, 26.7 + hy, 0.95, ry_hot, EYE_HOT)
 
 
 def curupira(pose: str = "idle", size: int = ARENA_SIZE, grid: float = 48.0,
              shift: tuple[float, float] = (0.0, 0.0)) -> Image.Image:
     p = Painter(size, grid, shift)
+    windup = pose == "windup"
+    # Cabeça no windup: desce (agachamento) e avança sobre a Caipora
+    hx, hy = (-1.2, 2.6) if windup else (0.0, 0.0)
     _curupira_pegadas(p)
-    _curupira_pes(p)
-    _curupira_bracos(p)
-    _curupira_corpo(p)
-    _curupira_crista(p)
-    _curupira_rosto(p)
+    _curupira_pes(p, windup)
+    _curupira_bracos(p, windup)
+    _curupira_corpo(p, windup)
+    _curupira_crista(p, hx, hy, ericada=windup)
+    _curupira_rosto(p, hx, hy, windup=windup)
     img = p.render(CURUPIRA_PALETTE)
     _outline(img)
     return img
@@ -204,10 +252,12 @@ def _contact_sheet(frames: list[tuple[str, Image.Image]]) -> None:
 def generate_all() -> None:
     os.makedirs(OUT, exist_ok=True)
     idle = curupira("idle")
+    windup = curupira("windup")
     idle.save(os.path.join(OUT, "curupira_idle.png"))
+    windup.save(os.path.join(OUT, "curupira_windup.png"))
     curupira_map().save(os.path.join(OUT, "curupira_map.png"))
-    _contact_sheet([("curupira idle", idle)])
-    print("[gen_bosses] curupira idle (128x128) + variante de mapa (48x48) + prancha gerados")
+    _contact_sheet([("curupira idle", idle), ("curupira windup", windup)])
+    print("[gen_bosses] curupira idle/windup (128x128) + variante de mapa (48x48) + prancha gerados")
 
 
 if __name__ == "__main__":
