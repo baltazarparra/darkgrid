@@ -11,8 +11,9 @@ extends Node2D
 # Contrato: add_child() ANTES de setup() — a aura e a respiração usam a árvore.
 
 # ─── Constants ─────────────────────────────────────
-# Repouso: leitura abatida e levemente fria (mais escuro que em combate) e idle lento.
-const REST_MODULATE := Color(0.78, 0.78, 0.84)
+# Repouso: leitura levemente abatida/fria (a dominância da Caipora vem dela estar no
+# centro, iluminada — não de apagar os espíritos na mata escura) e idle lento.
+const REST_MODULATE := Color(0.92, 0.92, 0.96)
 const REST_SPEED: float = 0.6
 # Respiração: pulso sutil de escala em loop — vivo, não estátua.
 const BREATH_SCALE: float = 1.02
@@ -22,6 +23,11 @@ const AURA_AMOUNT: int = 6
 const AURA_LIFETIME: float = 2.2
 const AURA_RADIUS: float = 22.0
 const AURA_RISE: float = -14.0
+# Luz própria: poça baixa na cor da aura — o espírito LÊ na mata escura sem perder o
+# repouso abatido (a leitura vem da luz, não de clarear o sprite).
+const GLOW_ENERGY: float = 0.95
+const GLOW_SCALE: float = 1.1
+const GLOW_WHITEN: float = 0.5
 
 # Identidade visual de cada espírito: os MESMOS frames premium da arena, em escala de
 # set piece (2–4 tiles), com a cor de aura canônica da fase. `flip` vira o encantado
@@ -30,11 +36,11 @@ const DEFS := {
 	1: { "frames": "res://assets/sprites/mula_sprite_frames.tres",
 		"scale": 0.55, "flip": true, "aura": Constants.COLOR_AURA_MULA },
 	2: { "frames": "res://assets/sprites/boitata_sprite_frames.tres",
-		"scale": 0.6, "flip": true, "aura": Constants.COLOR_AURA_BOITATA },
+		"scale": 0.7, "flip": true, "aura": Constants.COLOR_AURA_BOITATA },
 	3: { "frames": "res://assets/sprites/curupira_sprite_frames.tres",
-		"scale": 0.65, "flip": false, "aura": Constants.COLOR_AURA_CURUPIRA },
+		"scale": 0.8, "flip": false, "aura": Constants.COLOR_AURA_CURUPIRA },
 	4: { "frames": "res://assets/sprites/saci_sprite_frames.tres",
-		"scale": 0.65, "flip": true, "aura": Constants.COLOR_AURA_SACI },
+		"scale": 0.8, "flip": true, "aura": Constants.COLOR_AURA_SACI },
 }
 
 # ─── State ─────────────────────────────────────────
@@ -60,6 +66,7 @@ func setup(spirit_phase: int) -> bool:
 	add_child(_sprite)
 	_sprite.play()
 	_spawn_calm_aura(def["aura"])
+	_spawn_glow(def["aura"])
 	_start_breathing()
 	return true
 
@@ -78,6 +85,9 @@ func _spawn_calm_aura(color: Color) -> void:
 	aura.scale_amount_max = 2.0
 	aura.color = color
 	add_child(aura)
+
+func _spawn_glow(color: Color) -> void:
+	add_child(ForestLight.make(color.lerp(Color.WHITE, GLOW_WHITEN), GLOW_ENERGY, GLOW_SCALE))
 
 func _start_breathing() -> void:
 	var tween := create_tween().set_loops()

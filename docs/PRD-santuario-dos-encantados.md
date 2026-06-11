@@ -233,7 +233,21 @@ construção (cada uma roda no máximo uma vez por `_ready`). A pira da Mula **m
 a fogueira existente (escala da chama + energia/raio da `ForestLight` + emissor de
 brasas extra) em vez de duplicá-la.
 
-### 4.5 O rito de chegada (reveal, uma vez por encantado)
+### 4.5 Câmera-diorama do acampamento (descoberta da Etapa 3)
+
+A câmera da exploração faz *cover* do grid (close na Caipora): em retrato mostra ~8
+tiles — o santuário NUNCA leria inteiro. No hub a câmera passa a fazer **contain da
+clareira + moldura** (`CAMP_VIEW_TILES`, snap de texel por *floor* — o `snap_contain`
+arredonda pra cima e estoura o contain em retrato), com os `limit_*` pinando o quadro
+no coração do acampamento (diorama estável; reage a `size_changed`, gotcha #10). A
+mata é pintada `FOREST_APRON` tiles além do grid para o respiro do contain nunca
+mostrar void. Restrições de leitura encontradas no preview: em retrato os cards do
+`HubShop` cobrem a metade norte, em paisagem a borda sul corta, e a vinheta da
+`Atmosphere` come os cantos (gotcha #13) — por isso os espíritos vivem nos **flancos
+leste/oeste da banda sul-central**, cada um com **luz própria** baixa na cor da aura
+(a leitura vem da luz, não de clarear o sprite).
+
+### 4.6 O rito de chegada (reveal, uma vez por encantado)
 
 Na entrada do hub, para cada libertado **sem** `spirits_seen`:
 
@@ -295,7 +309,7 @@ subiu (gotcha #12 — GUT mente verde em arquivo que não parseia).
   câmera/safe-area).
 
 ### Etapa 4 — O rito de chegada + narrativa + áudio
-- Reveal por encantado (§4.5) com fila, skip e trava de input; falas na `SPIRIT_DEFS`;
+- Reveal por encantado (§4.6) com fila, skip e trava de input; falas na `SPIRIT_DEFS`;
   stinger novo no `gen_sfx.py` (regen determinístico — conferir que faixas vizinhas
   ficam byte-idênticas); `spirits_seen` persistido.
 - Lore P5: nota canônica das "cascas batizadas" nos docs (+ linha de flavor opcional no

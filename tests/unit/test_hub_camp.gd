@@ -107,6 +107,73 @@ func _count_spirits() -> int:
 			n += 1
 	return n
 
+# ── Transformações do santuário: cada libertação muda a cena, cumulativo ──
+func test_sanctuary_layers_transform_camp() -> void:
+	MetaProgression.freed_bosses = [1, 2, 3, 4] as Array[int]
+	await _instantiate()
+	# Mula: a fogueira virou pira (maior) + luz e brasas de clareira.
+	assert_gt(_hub._fire.scale.x, 1.0, "pira da Mula: fogueira cresce")
+	assert_not_null(_hub.find_child("LayerMulaPyre", true, false), "camada da pira")
+	# Boitatá: perímetro de fogos-fátuos.
+	var wisps: Node = _hub.find_child("LayerBoitataWisps", true, false)
+	assert_not_null(wisps, "camada de fátuos")
+	assert_gte(wisps.get_child_count(), 6, "aro de fátuos circunda a clareira")
+	# Curupira: a mata viva brota na clareira.
+	var flora: Node = _hub.find_child("LayerCurupiraFlora", true, false)
+	assert_not_null(flora, "camada de flora")
+	assert_eq(flora.get_child_count(), HubManagerScript.FLORA_COUNT, "flora completa")
+	# Saci: o vento entra.
+	assert_not_null(_hub.find_child("LayerSaciWind", true, false), "camada de vento")
+
+func test_sanctuary_layers_absent_without_freed() -> void:
+	MetaProgression.freed_bosses = []
+	await _instantiate()
+	assert_eq(_hub._fire.scale, Vector2.ONE, "fogueira baixa sem a Mula")
+	for layer_name: String in ["LayerMulaPyre", "LayerBoitataWisps",
+			"LayerCurupiraFlora", "LayerSaciWind"]:
+		assert_null(_hub.find_child(layer_name, true, false),
+			"%s só existe com o encantado libertado" % layer_name)
+
+func test_sanctuary_partial_applies_only_freed_layers() -> void:
+	MetaProgression.freed_bosses = [3] as Array[int]
+	await _instantiate()
+	assert_not_null(_hub.find_child("LayerCurupiraFlora", true, false),
+		"Curupira libertado → mata viva")
+	assert_null(_hub.find_child("LayerMulaPyre", true, false), "sem pira sem a Mula")
+	assert_eq(_hub._fire.scale, Vector2.ONE, "fogueira baixa sem a Mula")
+
+func test_curupira_flora_is_deterministic_per_visit() -> void:
+	MetaProgression.freed_bosses = [3] as Array[int]
+	await _instantiate()
+	var first := _flora_positions()
+	_hub.queue_free()
+	await _instantiate()
+	assert_eq(_flora_positions(), first, "flora não re-sorteia por visita")
+
+func _flora_positions() -> Array:
+	var flora: Node = _hub.find_child("LayerCurupiraFlora", true, false)
+	var out: Array = []
+	for deco: Node2D in flora.get_children():
+		out.append(deco.position)
+	return out
+
+# ── Câmera-diorama: o santuário lê INTEIRO (contain da clareira, quadro pinado) ──
+func test_camp_camera_frames_whole_clearing() -> void:
+	await _instantiate()
+	var cam: Camera2D = _hub._caipora.get_node("Camera2D")
+	var vp: Vector2 = _hub.get_viewport().get_visible_rect().size
+	var visible := vp / cam.zoom.x
+	var t := float(Constants.TILE_SIZE)
+	assert_gte(visible.x + 0.01, _hub._clearing.size.x * t,
+		"clareira inteira no quadro (largura)")
+	assert_gte(visible.y + 0.01, _hub._clearing.size.y * t,
+		"clareira inteira no quadro (altura)")
+	# Quadro pinado no coração do acampamento: a janela dos limites == área visível.
+	assert_almost_eq(float(cam.limit_right - cam.limit_left), visible.x, 2.0,
+		"limites pinam a largura visível")
+	assert_almost_eq(float(cam.limit_bottom - cam.limit_top), visible.y, 2.0,
+		"limites pinam a altura visível")
+
 # ── O D-pad de toque trata o HUB como gameplay (a Caipora anda no acampamento) ──
 func test_hub_is_gameplay_for_dpad() -> void:
 	var touch_controls = preload("res://scripts/ui/controls_hud.gd").new()

@@ -916,9 +916,14 @@ Decisões travadas com o autor em 2026-06-11. Spec completa:
   calma na cor canônica (`COLOR_AURA_*`), modulate abatido. `hub_manager._spawn_spirits()`
   posiciona um por boss libertado na moldura de mata (`_spirit_anchor` derivado de
   `_clearing`; walkability intocada). `test_camp_spirit.gd` (3) + `test_hub_camp` (3).
-- [ ] **Etapa 3 — Transformação da cena:** 4 camadas cumulativas data-driven no
-  `hub_manager`; `preview_camp_spirits.gd` (capturas Xvfb dos 5 estados, retrato +
-  paisagem) como gate visual de leitura; `/validate-platforms`.
+- [x] **Etapa 3 — Transformação da cena:** 4 camadas cumulativas data-driven no
+  `hub_manager` (pira da Mula modifica a fogueira + brasas de clareira; aro de
+  fogos-fátuos do Boitatá em pulso dessincronizado; flora determinística do Curupira;
+  folhas em deriva do Saci) + **câmera-diorama** no hub (contain da clareira com snap
+  por floor, quadro pinado, mata pintada além do grid — sem void; o santuário lê
+  inteiro em retrato E paisagem) e luz própria nos espíritos. `preview_camp_spirits.gd`
+  (capturas Xvfb validadas em 393×852 e 844×390, estados 0/1/4). `/validate-platforms`
+  passos manuais pendentes no device.
 - [ ] **Etapa 4 — Rito de chegada + narrativa + áudio:** reveal único por encantado
   (fila/skip/trava), falas secas, stinger novo no `gen_sfx.py`, nota de lore das
   cascas batizadas na P5. `make gate` + playtest do loop.
