@@ -26,10 +26,12 @@ static func particle_amount_scale(vp: Vector2) -> float:
 
 # ─── Color grading (gradient map) ──────────────────
 # Lê SCREEN_TEXTURE (custo real em gl_compatibility) — por isso a chave dupla:
-# GRADING_ENABLED liga o sistema; GRADING_ON_WEB libera no export web SÓ depois
-# de validar FPS em dispositivo real (Safari iPhone é o piso).
+# GRADING_ENABLED liga o sistema; GRADING_ON_WEB libera o grade no export web.
+# Sem ele o web ficava chapado/sem contraste vs. o desktop (era a única
+# diferença visual entre as plataformas). Validar FPS no iPhone com `?perf`;
+# se cair abaixo de 60, desligar aqui de novo.
 const GRADING_ENABLED := true
-const GRADING_ON_WEB := false
+const GRADING_ON_WEB := true
 const GRADING_MIX := 0.55
 
 # ─── Combat ────────────────────────────────────────

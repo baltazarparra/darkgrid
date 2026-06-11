@@ -836,7 +836,9 @@ médio. Medir antes de mexer.
 - [x] `BloodDecals`: auditado — já é barato (cap de 250 splats, um nó só,
   redraw apenas em splat novo ou secagem a cada 2s). Sem mudança.
 - [x] Auditar `_process` quentes: `ambient_life` (poucos insetos, sem alocação
-  por frame), `atmosphere` (constrói uma vez, grading off na web), HUD ok.
+  por frame), `atmosphere` (constrói uma vez), HUD ok. 2026-06-11: grading
+  LIGADO na web (`GRADING_ON_WEB=true`) — sem ele o mobile ficava chapado/sem
+  contraste vs. desktop; validar FPS no iPhone com `?perf` e reverter se <60.
 - [x] `application/run/max_fps=60`: telas de 120Hz queimam bateria e induzem
   throttle térmico — o vilão real de "60fps em device modesto".
 - [ ] Registrar a medição no device real (antes/depois, device, cenário) nesta
