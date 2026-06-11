@@ -10,12 +10,13 @@ que tornam cada personagem identificável:
              premium 112px arena + 56px mapa, ver docs/CONCEITO-inimigos.md). Delega.
   Curupira — BOSS P3: gerado por gen_bosses.py (pipeline premium 128px arena +
              48px mapa, ver docs/CONCEITO-curupira.md). Delega.
+  Boitatá — BOSS P2: gerado por gen_boitata.py (pipeline premium 160x128). Delega.
   Caçador c/ machados — 48x48: capuz, manto, dois machados, olhos brilhando (boss base)
   Mula sem Cabeça     — 48x48: sem cabeça, jato de fogo no toco do pescoço,
                         ferraduras de ferro, arreio amaldiçoado (boss da Fase 1)
 
 Saída: player_* via gen_caipora, enemy/bruxo_* via gen_inimigos, curupira_*
-       via gen_bosses, boss/boitata/saci/mula/jesuita_idle.png (48x48)
+       via gen_bosses, boitata_* via gen_boitata, boss/saci/mula/jesuita_idle.png (48x48)
 """
 import os
 from PIL import Image
@@ -23,6 +24,7 @@ from PIL import Image
 import gen_caipora
 import gen_inimigos
 import gen_bosses
+import gen_boitata
 
 S = 48
 OUT = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sprites")
@@ -175,74 +177,6 @@ def axe_hunter(pose="idle"):
     c.line(17, 29, 28, 39, AXE_HAFT_DK)
     if pose == "windup":
         c.shift(0, 1)   # afunda na base antes de descer os machados
-    return c
-
-
-def boitata():
-    """Boitatá — serpente de fogo, 48x48. Corpo em arco, cabeça triangular, olhos que cegam."""
-    c = C()
-    # ── Cores ──
-    CORE  = (255, 240, 200)
-    HOT   = (255, 200, 80)
-    MID   = (255, 107, 0)
-    DEEP  = (188, 42, 0)
-    SCALE = (40, 20, 20)
-    EYE_W = (255, 255, 255)
-    EYE_B = (160, 220, 255)
-    TONGUE = (180, 0, 0)
-
-    # ── Cauda (parte baixa-esquerda) ──
-    c.rect(4, 38, 10, 42, DEEP)
-    c.rect(5, 36, 9, 40, MID)
-    c.rect(6, 34, 8, 37, HOT)
-
-    # ── Corpo principal (arco descendente da esquerda pra direita) ──
-    # segmento esquerdo (subindo)
-    c.rect(6, 20, 14, 34, DEEP)
-    c.rect(7, 19, 13, 33, MID)
-    c.rect(8, 18, 12, 32, HOT)
-    c.rect(9, 18, 11, 30, CORE)
-    # segmento topo (horizontal)
-    c.rect(12, 12, 26, 22, DEEP)
-    c.rect(13, 11, 25, 21, MID)
-    c.rect(14, 10, 24, 20, HOT)
-    c.rect(15, 10, 23, 18, CORE)
-    # segmento direito (descendo)
-    c.rect(26, 18, 36, 32, DEEP)
-    c.rect(27, 17, 35, 31, MID)
-    c.rect(28, 17, 34, 30, HOT)
-    c.rect(29, 17, 33, 28, CORE)
-
-    # ── Escamas (linhas diagonais sobre o corpo) ──
-    for i in range(0, 12, 3):
-        c.px(14 + i, 12 + (i // 3), SCALE)
-        c.px(15 + i, 13 + (i // 3), SCALE)
-    for i in range(0, 6, 3):
-        c.px(28 + i, 20 + i, SCALE)
-
-    # ── Cabeça triangular (topo-direito) ──
-    c.rect(33, 8, 45, 20, DEEP)
-    c.rect(34, 7, 44, 19, MID)
-    c.rect(35, 7, 43, 10, HOT)   # frente da cabeça
-    # afunila em cima (forma triangular)
-    c.rect(33, 8, 33, 12, (0,0,0,0))
-    c.rect(45, 8, 45, 12, (0,0,0,0))
-    for off in range(4):
-        for xx in range(off):
-            c.px(33 + xx, 8 + off, (0, 0, 0, 0))
-            c.px(45 - xx, 8 + off, (0, 0, 0, 0))
-
-    # ── Olhos que cegam ──
-    c.rect(36, 11, 38, 13, EYE_W)
-    c.rect(41, 11, 43, 13, EYE_W)
-    c.px(37, 12, EYE_B)
-    c.px(42, 12, EYE_B)
-
-    # ── Língua bífida ──
-    c.rect(43, 19, 46, 19, TONGUE)
-    c.px(44, 20, TONGUE)
-    c.px(46, 20, TONGUE)
-
     return c
 
 
@@ -524,10 +458,10 @@ if __name__ == "__main__":
     gen_caipora.generate_all()   # protagonista (pipeline premium próprio)
     gen_inimigos.generate_all()  # caçador/bruxo (pipeline premium 112px+56px)
     gen_bosses.generate_all()    # curupira (pipeline premium 128px+48px)
+    gen_boitata.generate_all()   # boitatá (pipeline premium 160x128)
     axe_hunter().save("boss_idle.png")
     axe_hunter("windup").save("boss_windup.png")
-    boitata().save("boitata_idle.png")
     saci().save("saci_idle.png")
     mula().save("mula_idle.png")
     jesuita().save("jesuita_idle.png")
-    print("[gen_chars] caipora (via gen_caipora) + caçador/bruxo (via gen_inimigos) + curupira (via gen_bosses) + caçador-de-machados + boitatá + saci + mula-sem-cabeça + jesuíta-bandeirante (48x48) gerados")
+    print("[gen_chars] caipora (via gen_caipora) + caçador/bruxo (via gen_inimigos) + curupira (via gen_bosses) + boitatá (via gen_boitata) + caçador-de-machados + saci + mula-sem-cabeça + jesuíta-bandeirante (48x48) gerados")
