@@ -7,10 +7,13 @@ extends SceneTree
 ##     -s scripts/tools/preview_camp_spirits.gd -- --freed=4 --out=/tmp/santuario.png
 ##   --freed=N  liberta os encantados das fases 1..N (0 = acampamento original)
 ##   --frames=M frames antes da captura (default 90 — partículas/pulsos assentam)
+##   --rite     NÃO marca spirits_seen: captura o rito de chegada em andamento
+##              (sem a flag, os ritos contam como vistos e o santuário sai assentado)
 
 var _out: String = "/tmp/santuario.png"
 var _freed: int = 0
 var _wait: int = 90
+var _rite: bool = false
 var _frames: int = 0
 
 func _initialize() -> void:
@@ -21,6 +24,8 @@ func _initialize() -> void:
 			_freed = clampi(int(arg.substr("--freed=".length())), 0, 4)
 		elif arg.begins_with("--frames="):
 			_wait = int(arg.substr("--frames=".length()))
+		elif arg == "--rite":
+			_rite = true
 
 func _process(_delta: float) -> bool:
 	_frames += 1
@@ -30,10 +35,16 @@ func _process(_delta: float) -> bool:
 	# savegame do dev).
 	if _frames == 1:
 		var meta: Node = root.get_node("MetaProgression")
+		# Sandbox de save: o fim do rito persiste spirits_seen — nunca no save do dev.
+		meta.SAVE_PATH = "user://preview_savegame.json"
 		var freed: Array[int] = []
 		for phase: int in range(1, _freed + 1):
 			freed.append(phase)
 		meta.freed_bosses = freed
+		var seen: Array[int] = []
+		if not _rite:
+			seen.assign(freed)
+		meta.spirits_seen = seen
 		var hub: Node = (load("res://scenes/hub/hub.tscn") as PackedScene).instantiate()
 		root.add_child(hub)
 	if _frames >= _wait:

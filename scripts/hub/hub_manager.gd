@@ -57,6 +57,7 @@ func _ready() -> void:
 	_spawn_camp_identity()
 	_spawn_spirits()
 	_apply_sanctuary_layers()
+	_start_arrival_rites()
 	# O HubShop (filho) já está montado no seu _ready; aqui só ligamos o SFX da compra.
 	_shop.purchased.connect(_on_purchased)
 	_shop.denied.connect(_on_denied)
@@ -233,6 +234,9 @@ func _spawn_spirits() -> void:
 			spirit.queue_free()
 			continue
 		spirit.position = Vector2(_spirit_anchor(spirit_phase)) * Constants.TILE_SIZE + half
+		# Espírito recém-chegado nasce invisível: o rito de chegada o revela (uma vez).
+		if not MetaProgression.has_seen_spirit(spirit_phase):
+			spirit.modulate.a = 0.0
 
 # Cela de cada espírito na moldura de mata, nos FLANCOS leste/oeste: Mula e Curupira
 # a oeste (atrás do spawn), Boitatá e Saci a leste (atrás do rastro). A banda y
@@ -393,6 +397,148 @@ func _perimeter_tiles(spacing: int) -> Array[Vector2i]:
 func _scaled_amount(base: int) -> int:
 	var vp := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2.ZERO
 	return maxi(4, int(base * Constants.particle_amount_scale(vp)))
+
+# ─── O rito de chegada (reveal único por encantado) ─────────
+# Primeira visita ao acampamento após cada libertação: a clareira escurece um
+# instante, o espírito surge (fade-in + brasas na cor da aura) com uma fala seca, e a
+# cicatriz sonora do chefe volta EM PAZ (a mesma assinatura da morte, mais baixa).
+# Uma vez por encantado (spirits_seen, persistido); 2+ pendentes enfileiram. Skip por
+# toque/tecla com carência anti-acidente. Movimento e saída travam durante o rito.
+const RITE_DIM_ALPHA: float = 0.5
+const RITE_DIM_TIME: float = 0.4
+const RITE_FADE_TIME: float = 0.7
+const RITE_HOLD_TIME: float = 1.6
+const RITE_SKIP_GRACE_MS: int = 400
+const RITE_BURST_AMOUNT: int = 14
+const RITE_LINES := {
+	1: "a mula descansa. o fogo dela é teu agora.",
+	2: "a luz do boitatá ronda a clareira. nada atravessa.",
+	3: "o parente mais antigo vigia. a mata volta a crescer.",
+	4: "o vento entrou no acampamento. o saci fuma em silêncio.",
+}
+
+var _rite_queue: Array[int] = []
+var _rite_phase: int = 0
+var _rite_overlay: CanvasLayer
+var _rite_dim: ColorRect
+var _rite_label: Label
+var _rite_tween: Tween
+var _rite_skip_unlock_ms: int = 0
+
+func _start_arrival_rites() -> void:
+	for spirit_phase: int in MetaProgression.freed_bosses:
+		if not MetaProgression.has_seen_spirit(spirit_phase):
+			_rite_queue.append(spirit_phase)
+	if _rite_queue.is_empty():
+		return
+	_locked = true
+	_caipora.set_process(false)
+	_build_rite_overlay()
+	_next_rite()
+
+# Overlay acima do HubShop (10) e abaixo de OptionsPanel (60)/SceneTransition (100):
+# o rito é um beat cinematográfico — cobre os cards, engole toques (skip).
+func _build_rite_overlay() -> void:
+	_rite_overlay = CanvasLayer.new()
+	_rite_overlay.layer = 12
+	add_child(_rite_overlay)
+	_rite_dim = ColorRect.new()
+	_rite_dim.color = Color(0, 0, 0, 0)
+	_rite_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_rite_dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_rite_dim.gui_input.connect(_on_rite_gui_input)
+	_rite_overlay.add_child(_rite_dim)
+	_rite_label = Label.new()
+	_rite_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_rite_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_rite_label.modulate.a = 0.0
+	_rite_label.anchor_left = 0.08
+	_rite_label.anchor_right = 0.92
+	_rite_label.anchor_top = 0.62
+	_rite_label.anchor_bottom = 0.74
+	_rite_overlay.add_child(_rite_label)
+
+func _next_rite() -> void:
+	if _rite_queue.is_empty():
+		_end_rites()
+		return
+	_rite_phase = _rite_queue.pop_front()
+	_rite_skip_unlock_ms = Time.get_ticks_msec() + RITE_SKIP_GRACE_MS
+	AudioDirector.play_spirit_rite(_rite_phase)
+	_rite_label.text = String(RITE_LINES.get(_rite_phase, ""))
+	_rite_label.modulate.a = 0.0
+	var spirit := _find_spirit(_rite_phase)
+	_rite_tween = create_tween()
+	_rite_tween.tween_property(_rite_dim, "color:a", RITE_DIM_ALPHA, RITE_DIM_TIME)
+	if spirit != null:
+		_rite_tween.tween_callback(_burst_embers.bind(
+			spirit.global_position, CampSpirit.DEFS[_rite_phase]["aura"]))
+		_rite_tween.tween_property(spirit, "modulate:a", 1.0, RITE_FADE_TIME)
+	_rite_tween.parallel().tween_property(_rite_label, "modulate:a", 1.0, RITE_FADE_TIME)
+	_rite_tween.tween_interval(RITE_HOLD_TIME)
+	_rite_tween.tween_property(_rite_dim, "color:a", 0.0, RITE_DIM_TIME)
+	_rite_tween.parallel().tween_property(_rite_label, "modulate:a", 0.0, RITE_DIM_TIME)
+	_rite_tween.tween_callback(_complete_current_rite)
+
+## Fecha o rito atual (fim natural OU skip): estado final aplicado, rito gravado como
+## visto (persiste) e fila segue. Idempotente via _rite_phase == 0.
+func _complete_current_rite() -> void:
+	if _rite_phase == 0:
+		return
+	if _rite_tween != null:
+		_rite_tween.kill()
+	var spirit := _find_spirit(_rite_phase)
+	if spirit != null:
+		spirit.modulate.a = 1.0
+	_rite_dim.color.a = 0.0
+	_rite_label.modulate.a = 0.0
+	MetaProgression.mark_spirit_seen(_rite_phase)
+	_rite_phase = 0
+	_next_rite()
+
+func _end_rites() -> void:
+	_locked = false
+	_caipora.set_process(true)
+	if _rite_overlay != null:
+		_rite_overlay.queue_free()
+		_rite_overlay = null
+
+func _on_rite_gui_input(event: InputEvent) -> void:
+	if (event is InputEventScreenTouch and event.pressed) \
+			or (event is InputEventMouseButton and event.pressed):
+		_try_skip_rite()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _rite_phase != 0 and event is InputEventKey and event.pressed and not event.echo:
+		_try_skip_rite()
+
+func _try_skip_rite() -> void:
+	if _rite_phase == 0 or Time.get_ticks_msec() < _rite_skip_unlock_ms:
+		return
+	_complete_current_rite()
+
+func _burst_embers(at: Vector2, color: Color) -> void:
+	var burst := CPUParticles2D.new()
+	burst.one_shot = true
+	burst.explosiveness = 1.0
+	burst.amount = RITE_BURST_AMOUNT
+	burst.lifetime = 0.9
+	burst.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	burst.emission_sphere_radius = 14.0
+	burst.initial_velocity_min = 30.0
+	burst.initial_velocity_max = 70.0
+	burst.gravity = Vector2(0, -30)
+	burst.color = color.lerp(Color.WHITE, 0.3)
+	burst.position = at
+	burst.finished.connect(burst.queue_free)
+	_objects.add_child(burst)
+	burst.emitting = true
+
+func _find_spirit(spirit_phase: int) -> CampSpirit:
+	for child: Node in _objects.get_children():
+		if child is CampSpirit and child.phase == spirit_phase:
+			return child
+	return null
 
 # ─── TileMap (mesmo tileset/atlas da exploração) ───
 func _setup_tilemap() -> void:

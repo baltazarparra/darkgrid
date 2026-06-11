@@ -10,10 +10,14 @@ const HubManagerScript := preload("res://scripts/hub/hub_manager.gd")
 var _hub: Node2D
 var _saved_run_active: bool
 var _saved_pending: int
+var _saved_save_path: String
 
 func before_each() -> void:
 	_saved_run_active = GameState.run_active
 	_saved_pending = GameState.pending_exploration
+	# O rito de chegada persiste spirits_seen: redireciona o save (não toca o do dev).
+	_saved_save_path = MetaProgression.SAVE_PATH
+	MetaProgression.SAVE_PATH = "user://test_hub_savegame.json"
 
 func after_each() -> void:
 	if is_instance_valid(_hub):
@@ -21,6 +25,10 @@ func after_each() -> void:
 	GameState.run_active = _saved_run_active
 	GameState.pending_exploration = _saved_pending
 	MetaProgression.freed_bosses = []
+	MetaProgression.spirits_seen = []
+	if FileAccess.file_exists(MetaProgression.SAVE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(MetaProgression.SAVE_PATH))
+	MetaProgression.SAVE_PATH = _saved_save_path
 
 func _instantiate() -> void:
 	_hub = load("res://scenes/hub/hub.tscn").instantiate()
@@ -156,6 +164,41 @@ func _flora_positions() -> Array:
 	for deco: Node2D in flora.get_children():
 		out.append(deco.position)
 	return out
+
+# ── O rito de chegada: revela o espírito UMA vez, trava o acampamento, enfileira ──
+func test_arrival_rite_reveals_and_marks_seen() -> void:
+	MetaProgression.freed_bosses = [1] as Array[int]
+	MetaProgression.spirits_seen = []
+	await _instantiate()
+	assert_true(_hub._locked, "rito trava a saída")
+	assert_not_null(_hub._rite_overlay, "overlay do rito presente")
+	var spirit: CampSpirit = _hub._find_spirit(1)
+	assert_eq(spirit.modulate.a, 0.0, "espírito pendente nasce invisível")
+	_hub._complete_current_rite()
+	await wait_frames(1)
+	assert_eq(spirit.modulate.a, 1.0, "rito revela o espírito")
+	assert_true(MetaProgression.has_seen_spirit(1), "rito gravado como visto (persiste)")
+	assert_false(_hub._locked, "fim dos ritos devolve o acampamento")
+
+func test_no_rite_when_spirit_already_seen() -> void:
+	MetaProgression.freed_bosses = [1] as Array[int]
+	MetaProgression.spirits_seen = [1] as Array[int]
+	await _instantiate()
+	assert_null(_hub._rite_overlay, "sem rito pendente, sem overlay")
+	assert_false(_hub._locked, "acampamento livre")
+	assert_eq(_hub._find_spirit(1).modulate.a, 1.0, "espírito já visto nasce visível")
+
+func test_rites_queue_for_multiple_pending() -> void:
+	MetaProgression.freed_bosses = [1, 2] as Array[int]
+	MetaProgression.spirits_seen = []
+	await _instantiate()
+	_hub._complete_current_rite()
+	assert_true(_hub._locked, "segundo rito segue na fila")
+	_hub._complete_current_rite()
+	await wait_frames(1)
+	assert_true(MetaProgression.has_seen_spirit(1), "primeiro rito visto")
+	assert_true(MetaProgression.has_seen_spirit(2), "segundo rito visto")
+	assert_false(_hub._locked, "fila esvaziada devolve o acampamento")
 
 # ── Câmera-diorama: o santuário lê INTEIRO (contain da clareira, quadro pinado) ──
 func test_camp_camera_frames_whole_clearing() -> void:

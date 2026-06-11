@@ -255,14 +255,17 @@ Na entrada do hub, para cada libertado **sem** `spirits_seen`:
    instante (tween no `CanvasModulate`/modulate da cena, **não** mexe na `Atmosphere`),
    o espírito surge com fade-in + explosão curta de brasas, a camada de cena dele liga
    junto.
-2. **Uma linha de flavor** no padrão das transições ("a mula descansa. o fogo dela é
-   teu agora."), tom seco, sem suavizar.
-3. Stinger SFX novo via `gen_sfx.py` (parente do `sting_arena_enter`, resolvido para
-   baixo — chegada, não ameaça).
-4. `spirits_seen[phase] = true` + save. Com 2+ libertações pendentes (caso raro:
-   save migrado fora da janela, debug), os ritos enfileiram.
+2. **Uma linha de flavor** (`RITE_LINES` no `hub_manager`, tom seco, sem suavizar):
+   "a mula descansa. o fogo dela é teu agora."
+3. **A cicatriz sonora do chefe volta EM PAZ**: o mesmo `boss_death_*` da morte, a
+   −8 dB (`AudioDirector.play_spirit_rite`) — memória, não ameaça. Zero asset novo,
+   identidade musical preservada (descartado o stinger novo no `gen_sfx.py`: o reuso
+   é mais forte narrativamente e determinístico por construção).
+4. `mark_spirit_seen(phase)` + save. Com 2+ libertações pendentes (save migrado fora
+   da janela, debug), os ritos enfileiram.
 
-Durante o beat o input de movimento fica travado (`_locked`, mecanismo já existente).
+Durante o beat o movimento trava (`Caipora.set_process(false)`) e a saída tranca
+(`_locked`); o overlay (CanvasLayer 12, acima dos cards) engole toques para o skip.
 
 ---
 
@@ -309,9 +312,9 @@ subiu (gotcha #12 — GUT mente verde em arquivo que não parseia).
   câmera/safe-area).
 
 ### Etapa 4 — O rito de chegada + narrativa + áudio
-- Reveal por encantado (§4.6) com fila, skip e trava de input; falas na `SPIRIT_DEFS`;
-  stinger novo no `gen_sfx.py` (regen determinístico — conferir que faixas vizinhas
-  ficam byte-idênticas); `spirits_seen` persistido.
+- Reveal por encantado (§4.6) com fila, skip (carência 0.4s) e trava de
+  movimento/saída; falas em `RITE_LINES`; cicatriz sonora do chefe em paz
+  (`AudioDirector.play_spirit_rite`, −8 dB); `spirits_seen` persistido.
 - Lore P5: nota canônica das "cascas batizadas" nos docs (+ linha de flavor opcional no
   diálogo da P5, decisão do autor).
 - Atualizar `PLAN.md` (seção + Known Issues se surgir algo) e `AGENTS.md` se houver
@@ -333,7 +336,7 @@ subiu (gotcha #12 — GUT mente verde em arquivo que não parseia).
 | `scripts/exploration/exploration_manager.gd` | injeta `boss_freed` na config; marca de paz (`TOTEM`) em `peace_pos` |
 | `scripts/hub/camp_spirit.gd` **(novo)** | presença do encantado em repouso (`CampSpirit`) |
 | `scripts/hub/hub_manager.gd` | `SPIRIT_DEFS`, `_spawn_spirits()`, camadas de santuário, rito de chegada |
-| `scripts/tools/gen_sfx.py` | stinger de chegada do espírito |
+| `scripts/core/audio_director.gd` | `play_spirit_rite()` — `boss_death_*` em paz (−8 dB) |
 | `scripts/tools/preview_camp_spirits.gd` **(novo)** | capturas Xvfb dos 5 estados do santuário |
 | `docs/PRD-fase-final-igreja.md` (ou doc de lore) | nota canônica das cascas batizadas |
 | `tests/unit/test_map_generator.gd`, `test_exploration_phase1.gd`, `test_meta_progression.gd`, `test_hub_builds.gd`, `test_camp_spirit.gd` **(novo)** | cobertura das etapas |

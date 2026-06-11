@@ -924,9 +924,14 @@ Decisões travadas com o autor em 2026-06-11. Spec completa:
   inteiro em retrato E paisagem) e luz própria nos espíritos. `preview_camp_spirits.gd`
   (capturas Xvfb validadas em 393×852 e 844×390, estados 0/1/4). `/validate-platforms`
   passos manuais pendentes no device.
-- [ ] **Etapa 4 — Rito de chegada + narrativa + áudio:** reveal único por encantado
-  (fila/skip/trava), falas secas, stinger novo no `gen_sfx.py`, nota de lore das
-  cascas batizadas na P5. `make gate` + playtest do loop.
+- [x] **Etapa 4 — Rito de chegada + narrativa + áudio:** reveal único por encantado
+  no hub (espírito pendente nasce invisível; a clareira escurece, fade-in + brasas na
+  cor da aura + fala seca de `RITE_LINES`; fila para 2+ pendentes; skip por
+  toque/tecla com carência 0.4s; movimento trava via `set_process(false)` e saída via
+  `_locked`; `spirits_seen` persiste). Áudio: a cicatriz sonora do chefe volta EM PAZ
+  (`AudioDirector.play_spirit_rite` reusa `boss_death_*` a −8 dB — memória, não
+  ameaça; zero asset novo). Nota canônica das cascas batizadas no
+  `PRD-fase-final-igreja.md`. Preview com `--rite` captura o beat. 3 testes novos.
 
 ---
 
