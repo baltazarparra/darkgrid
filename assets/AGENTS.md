@@ -46,6 +46,13 @@ assets/
    negativo no sprite). Na arena, Caipora e invasores usam a MESMA escala de
    nó (1.2) — texels uniformes; a hierarquia vem do canvas/desenho, nunca de
    escala fracionária diferente por ator. Background transparente.
+   **Exceção interina (KI-012):** os bosses legados 48×48 usam `sprite_scale`
+   por cena para ler na proporção da lore (Saci 1.8 < Caipora ≈ Curupira 2.0 <
+   Jesuíta 2.7 / caçador-de-machados 2.8 ≈ caçador comum < Boitatá 3.0 <
+   Mula sem Cabeça 3.5), com offset de pés na mesma linha de chão dela —
+   contrato travado em `tests/unit/test_boss_scale_proportions.gd`. O redesign
+   premium de cada chefe (canvas ≥128) deve herdar essas ALTURAS VISUAIS e
+   voltar a escala de nó para 1.2.
 2b. **Pipeline de limpeza para IA (obrigatório):** quantizar para a paleta
    (`constants.gd`), alinhar ao grid, garantir alpha limpo (sem halos), ≤ 64×64.
    Sprite que não passar por isso não entra.

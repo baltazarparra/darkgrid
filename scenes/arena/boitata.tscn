@@ -13,12 +13,12 @@ size = Vector2(96, 96)
 [node name="Boitata" type="CharacterBody2D"]
 script = ExtResource("1_script")
 base_attack_damage = 1
-sprite_scale = 1.5
+sprite_scale = 3.0
 attack_pattern = ExtResource("5_pattern")
 double_block_pattern = ExtResource("6_double")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-offset = Vector2(0, -8)
+offset = Vector2(0, -14)
 sprite_frames = ExtResource("2_frames")
 animation = &"idle"
 autoplay = "idle"
