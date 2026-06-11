@@ -48,10 +48,7 @@ FIRE = (255, 104, 8)
 FIRE_HOT = (255, 176, 50)
 BLOOD_DARK = (66, 0, 0)
 BLOOD = (139, 0, 0)
-BONE_DARK = (48, 42, 34)
-BONE = (120, 112, 92)
 WATER = (6, 10, 13)
-WATER_LIGHT = (22, 33, 38)
 
 STONE_DARK = (11, 11, 15)
 STONE = (23, 22, 27)
@@ -67,13 +64,6 @@ SHADE_DEEP_ALPHA = (153, 102, 51)      # deeper corridor lip
 
 def _new_tile(base: tuple[int, int, int]) -> Image.Image:
     return Image.new("RGBA", (SIZE, SIZE), base + (255,))
-
-
-def _noise(px, rng: random.Random, colors: list[tuple[int, int, int]], chance: float) -> None:
-    for y in range(SIZE):
-        for x in range(SIZE):
-            if rng.random() < chance:
-                px[x, y] = rng.choice(colors) + (255,)
 
 
 def _poly(draw: ImageDraw.ImageDraw, pts: list[tuple[int, int]], color: tuple[int, int, int]) -> None:
@@ -135,70 +125,106 @@ def _blood_smear(draw: ImageDraw.ImageDraw, rng: random.Random, cx: int, cy: int
         _ellipse(draw, (x - rx, y - ry, x + rx, y + ry), BLOOD_DARK)
 
 
-def _bone_chip(draw: ImageDraw.ImageDraw, x: int, y: int, angle: int = 0) -> None:
-    if angle == 0:
-        _line(draw, [(x - 4, y), (x + 4, y)], BONE, 2)
-        _ellipse(draw, (x - 6, y - 2, x - 2, y + 2), BONE)
-        _ellipse(draw, (x + 2, y - 2, x + 6, y + 2), BONE)
-    else:
-        _line(draw, [(x - 3, y + 3), (x + 4, y - 4)], BONE, 2)
-        _ellipse(draw, (x - 5, y + 1, x - 1, y + 5), BONE)
-        _ellipse(draw, (x + 2, y - 6, x + 6, y - 2), BONE)
+# ─── Forest floor (fase 1–4 + acampamento) ──────────────────────────────────
+# Redesign 2026-06 seguindo o padrão de tiles top-down (SLYNYRD Pixelblog 20/43):
+#   1. O piso é a camada de MENOR contraste da cena — faixa de valor estreita,
+#      sem branco de osso, laranja puro, teal ou highlights de água no chão.
+#   2. Textura por CLUSTERS orgânicos com espaço negativo, nunca ruído
+#      sal-e-pimenta de pixels isolados e saturados.
+#   3. O grid fica escondido: nenhum motivo repetido por tile (a antiga
+#      "cicatriz laranja por tile" virava papel de parede no acampamento);
+#      os clusters dão a volta no tile (wrap), então toda borda emenda.
+#   4. Identidade Caipora segue presente, mas afundada no solo: sangue seco
+#      e pouquíssimas brasas ORANGE_DK — acento, nunca confete.
+
+SOIL_BASE = EARTH_DARK     # leito de serrapilheira
+SOIL_LOW = EARTH_DEEP      # depressão úmida
+SOIL_HIGH = EARTH          # torrão seco (topo da faixa de valor do piso)
+LITTER = (19, 18, 10)      # folha morta dessaturada
+LITTER_DARK = (11, 12, 7)  # folha morta na sombra
+
+FLOOR_CLUSTERS_LOW = 7     # manchas escuras largas por tile
+FLOOR_CLUSTERS_HIGH = 7    # torrões claros por tile
+FLOOR_LITTER_PATCHES = 9   # aglomerados de folha morta por tile
 
 
-def _deep_soil_blob(draw: ImageDraw.ImageDraw, rng: random.Random) -> None:
-    cx = rng.randint(5, 26)
-    cy = rng.randint(5, 26)
-    rx = rng.randint(4, 9)
-    ry = rng.randint(3, 7)
-    _ellipse(draw, (cx - rx, cy - ry, cx + rx, cy + ry), EARTH_DEEP)
-    if rng.random() < 0.55:
-        _ellipse(draw, (cx - rx + 2, cy - ry + 1, cx + rx - 2, cy + ry - 1), VOID_BROWN)
+def _wrap_px(px, x: int, y: int, color: tuple[int, int, int]) -> None:
+    px[x % SIZE, y % SIZE] = color + (255,)
+
+
+def _wrap_blob(px, rng: random.Random, cx: int, cy: int, r: int,
+               color: tuple[int, int, int], density: float) -> None:
+    """Mancha orgânica que dá a volta no tile — mantém o atlas seamless."""
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            if dx * dx + dy * dy <= r * r and rng.random() < density:
+                _wrap_px(px, cx + dx, cy + dy, color)
+
+
+def _soil_bed(rng: random.Random) -> Image.Image:
+    """Leito comum de solo: mesma densidade em todo variant, seed diferente —
+    o campo fica uniforme e o padrão do grid desaparece."""
+    img = _new_tile(SOIL_BASE)
+    px = img.load()
+    for _ in range(FLOOR_CLUSTERS_LOW):
+        _wrap_blob(px, rng, rng.randrange(SIZE), rng.randrange(SIZE),
+                   rng.randint(3, 6), rng.choice([SOIL_LOW, VOID_BROWN, EARTH_WET]), 0.8)
+    for _ in range(FLOOR_CLUSTERS_HIGH):
+        _wrap_blob(px, rng, rng.randrange(SIZE), rng.randrange(SIZE),
+                   rng.randint(2, 4), SOIL_HIGH, 0.65)
+    for _ in range(FLOOR_LITTER_PATCHES):
+        x = rng.randrange(SIZE)
+        y = rng.randrange(SIZE)
+        color = LITTER if rng.random() < 0.45 else LITTER_DARK
+        for _ in range(rng.randint(2, 4)):
+            _wrap_px(px, x + rng.randint(-1, 1), y + rng.randint(-1, 1), color)
+    return img
+
+
+def _ember_pair(px, x: int, y: int) -> None:
+    """Brasa mínima da Caipora: 2px ORANGE_DK afundados no solo."""
+    _wrap_px(px, x, y, ORANGE_DK)
+    _wrap_px(px, x + 1, y, ORANGE_DK)
 
 
 def _forest_floor_variant(v: int) -> Image.Image:
     rng = random.Random(3026 + v * 101)
-    img = _new_tile(EARTH_DEEP)
+    img = _soil_bed(rng)
     px = img.load()
     draw = ImageDraw.Draw(img)
-    _noise(px, rng, [EARTH_DEEP, EARTH_DARK, EARTH_WET, VOID_BROWN, BLACK], 0.10)
-    for _ in range(rng.randint(1, 2)):
-        _deep_soil_blob(draw, rng)
 
     if v == 0:
-        # Wet soil crossed by living roots.
-        for start in [(0, 7), (2, 26), (31, 14)]:
-            _root(draw, rng, start, BARK_DARK, 3)
-            _root(draw, rng, (start[0], max(0, start[1] - 1)), BARK, 1)
-        _jagged_leaf(draw, 20, 7, 1, LEAF_DARK)
+        # Raiz morta pressionada no solo — só silhueta escura, sem highlight.
+        _root(draw, rng, (6, 9), BARK_DARK, 2)
+        _root(draw, rng, (18, 22), BARK_DARK, 2)
     elif v == 1:
-        # Serrated leaf litter, echoing the Caipora cloak edge, but kept below
-        # actor value so it does not fight silhouettes in the exploration zoom.
-        for _ in range(5):
-            _jagged_leaf(draw, rng.randint(1, 28), rng.randint(5, 28),
-                         rng.choice([-1, 1]), rng.choice([MOSS_DARK, LEAF_DARK]))
-        _line(draw, [(3, 28), (12, 23), (25, 25)], BARK_DARK, 3)
+        # Serrapilheira mais densa: a mancha de folha morta cresce, sem teal.
+        for _ in range(6):
+            x = rng.randint(4, 27)
+            y = rng.randint(4, 27)
+            _wrap_blob(px, rng, x, y, 2, LITTER_DARK, 0.7)
+            _wrap_px(px, x, y, LITTER)
+        _ember_pair(px, rng.randint(6, 24), rng.randint(6, 24))
     elif v == 2:
-        # Dry blood and clawed roots.
-        _blood_smear(draw, rng, 17, 16, 7)
-        _root(draw, rng, (0, 18), BARK_DARK, 3)
-        _root(draw, rng, (31, 4), BARK_DARK, 3)
+        # Sangue seco encharcado na terra: rastro de arrasto BLOOD_DARK,
+        # descentralizado e irregular, com pouquíssimos pixels BLOOD vivos —
+        # assinatura hostil sem virar bolinha repetida no grid.
+        trail_x, trail_y = 9, 21
+        for step in range(5):
+            _wrap_blob(px, rng, trail_x, trail_y, rng.randint(1, 3), BLOOD_DARK, 0.8)
+            if step % 2 == 0:
+                _wrap_blob(px, rng, trail_x, trail_y, 1, BLOOD, 0.85)
+            trail_x += rng.randint(2, 5)
+            trail_y -= rng.randint(1, 4)
     else:
-        # Dark puddle with bone and orange rot; it stays readable as floor by
-        # keeping a brown rim and a small water highlight.
-        _ellipse(draw, (2, 6, 29, 26), EARTH_DARK)
-        _ellipse(draw, (4, 8, 27, 24), WATER)
-        _ellipse(draw, (10, 12, 21, 18), NIGHT)
-        _line(draw, [(8, 13), (21, 12)], WATER_LIGHT, 1)
-        _line(draw, [(7, 20), (18, 21)], EARTH_WET, 1)
-        _bone_chip(draw, 22, 22, 1)
-        _jagged_leaf(draw, 3, 7, 1, ORANGE_DK)
-
-    # A single restrained orange scar keeps the Caipora mark in the ground.
-    for _ in range(1):
-        x = rng.randint(2, 29)
-        y = rng.randint(2, 29)
-        _line(draw, [(x, y), (x + rng.randint(-2, 3), y + rng.randint(2, 5))], ORANGE_DK, 1)
+        # Solo encharcado: manchas úmidas irregulares afundando no leito —
+        # lêem como chão fundo, sem highlight de água, osso ou elipse perfeita.
+        for _ in range(3):
+            cx = rng.randint(6, 26)
+            cy = rng.randint(6, 26)
+            _wrap_blob(px, rng, cx, cy, rng.randint(3, 5), EARTH_WET, 0.8)
+            _wrap_blob(px, rng, cx, cy, rng.randint(1, 3), WATER, 0.85)
+        _ember_pair(px, rng.randint(4, 8), rng.randint(24, 28))
     return img
 
 
@@ -459,7 +485,7 @@ if __name__ == "__main__":
     church_wall = gen_wall_church()
     gen_tile_shade()
     gen_contact_sheet([
-        ("forest floor: living soil / roots / blood / black water", floor),
+        ("forest floor: serrapilheira / raiz / sangue seco / solo encharcado", floor),
         ("forest wall: dense hostile silhouette", wall),
         ("church floor: stone infected by forest and blood", church_floor),
         ("church wall: altar shadow, roots, corrupted lime", church_wall),
