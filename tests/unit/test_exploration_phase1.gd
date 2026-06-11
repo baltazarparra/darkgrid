@@ -6,6 +6,7 @@ extends GutTest
 func after_each() -> void:
 	GameState.player_map_pos = Vector2i(-1, -1)
 	GameState.defeated_enemy_ids.clear()
+	MetaProgression.freed_bosses = []
 
 func test_phase1_loads_and_spawns_generated_map() -> void:
 	GameState.start_run()
@@ -59,3 +60,31 @@ func test_phase1_skips_defeated_enemies() -> void:
 	var enemies := scene.get_node("Enemies")
 	assert_eq(enemies.get_child_count(), MapConfig.for_phase(1).enemy_count - 1,
 		"inimigo derrotado não renasce ao voltar da arena")
+
+# Santuário dos Encantados: com a Mula libertada, a fase nasce sem guardião e com a
+# marca de paz (TOTEM) na cela onde ela postaria — a toca virou passagem.
+func test_phase1_freed_mula_leaves_map_with_peace_totem() -> void:
+	GameState.start_run()
+	GameState.player_map_pos = Vector2i(-1, -1)
+	MetaProgression.freed_bosses = [1] as Array[int]
+	var cfg := MapConfig.for_phase(1)
+	cfg.boss_freed = true
+	var expected := MapGenerator.new().generate(cfg, GameState.map_seed_for_phase(1))
+
+	var scene := preload("res://scenes/exploration/exploration.tscn").instantiate()
+	add_child_autofree(scene)
+	await get_tree().process_frame
+
+	var enemies := scene.get_node("Enemies")
+	assert_eq(enemies.get_child_count(), MapConfig.for_phase(1).enemy_count - 1,
+		"guardiã libertada não spawna; só os comuns")
+	for enemy: MapEnemy in enemies.get_children():
+		assert_false(enemy.is_boss, "nenhum boss no mapa com a Mula libertada")
+
+	var peace_world := Vector2(expected.peace_pos) * Constants.TILE_SIZE
+	var totem_found := false
+	for obj: Node in scene.get_node("Objects").get_children():
+		if obj is MapObject and obj.position == peace_world \
+				and obj._type == MapObject.Type.TOTEM:
+			totem_found = true
+	assert_true(totem_found, "marca de paz (TOTEM) na cela do guardião libertado")

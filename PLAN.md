@@ -879,6 +879,60 @@ médio. Medir antes de mexer.
 - [x] `make gate` ✅ 321/321 + `make export` no fechamento da Fase 10; teste de
   carga da página (gotcha #5) junto da validação no device.
 
+### Santuário dos Encantados — Bosses Pacíficos no Acampamento ✅
+
+Mudança core no significado da vitória: a Caipora não mata os encantados — ela os
+**liberta**. Ao derrotar um boss (P1–P4), o espírito dele se recolhe ao Acampamento e
+passa a viver lá em paz; cada libertação aplica uma **grande transformação visual
+cumulativa** na clareira (Mula → pira ritual + brasas; Boitatá → perímetro de
+fogos-fátuos; Curupira → mata viva + vaga-lumes; Saci → vento + redemoinhos de folhas),
+até o estado final de santuário. Meta-persistente (save v4), com rito de chegada único
+por encantado. **A libertação é definitiva:** o boss sai da fase para sempre — em runs
+novas a toca dele vira passagem (tile de saída na cela do boss nas fases P3/P4, que não
+têm saída) — e só volta se o jogador resetar o progresso. O Jesuíta NUNCA entra (não é
+encantado) e os mini-bosses da P5 viram canonicamente "cascas batizadas" — simulacros,
+não os espíritos verdadeiros — então a fase final mantém a dificuldade cheia. Encantados
+em repouso são presenças antigas e perigosas, não mascotes — o horror não suaviza.
+Decisões travadas com o autor em 2026-06-11. Spec completa:
+[docs/PRD-santuario-dos-encantados.md](docs/PRD-santuario-dos-encantados.md).
+
+- [x] **Etapa 0 — Memória dos encantados:** `freed_bosses`/`spirits_seen` no
+  `MetaProgression` (chamada direta no `arena_manager._on_actor_died` junto do
+  bounty/`phase_reached` — NÃO listener de `boss_died`: testes emitem o sinal cru e um
+  listener persistiria save como efeito colateral; ignora P5), save v4 + migração
+  v3→v4 derivada de `phase_reached` (generosa com quem pulou Mula/Boitatá pela saída —
+  trade-off documentado), `reset_save()` devolve os guardiões. 10 testes novos
+  (free/idempotência/P5 fora/round-trip/migração/sanitização/reset).
+- [x] **Etapa 1 — A fase sem guardião:** `MapConfig.boss_freed` (injetado pelo
+  `exploration_manager` a partir do `MetaProgression`; gerador segue puro) — boss não
+  spawna, cela dele segue RESERVADA na geração (guardas/baú/chave/decorações
+  byte-idênticos com ou sem boss, classe KI-007) e vira `peace_pos`, renderizada como
+  marca de paz (`TOTEM`). Descoberta que simplificou o plano: toda fase P1–P4 já tinha
+  tile de saída (o boss só a guardava; só a P5 progride por morte de boss) — zero
+  mudança de roteamento. Invariantes por `boss_freed`×fase×seed + integração da Fase 1
+  com Mula libertada. `/validate-controls` passo 1 OK (passos manuais no device).
+- [x] **Etapa 2 — Presenças:** `scripts/hub/camp_spirit.gd` (`CampSpirit`, data-driven
+  via `DEFS` com os frames premium da arena) — idle 0.6×, respiração em tween, aura
+  calma na cor canônica (`COLOR_AURA_*`), modulate abatido. `hub_manager._spawn_spirits()`
+  posiciona um por boss libertado na moldura de mata (`_spirit_anchor` derivado de
+  `_clearing`; walkability intocada). `test_camp_spirit.gd` (3) + `test_hub_camp` (3).
+- [x] **Etapa 3 — Transformação da cena:** 4 camadas cumulativas data-driven no
+  `hub_manager` (pira da Mula modifica a fogueira + brasas de clareira; aro de
+  fogos-fátuos do Boitatá em pulso dessincronizado; flora determinística do Curupira;
+  folhas em deriva do Saci) + **câmera-diorama** no hub (contain da clareira com snap
+  por floor, quadro pinado, mata pintada além do grid — sem void; o santuário lê
+  inteiro em retrato E paisagem) e luz própria nos espíritos. `preview_camp_spirits.gd`
+  (capturas Xvfb validadas em 393×852 e 844×390, estados 0/1/4). `/validate-platforms`
+  passos manuais pendentes no device.
+- [x] **Etapa 4 — Rito de chegada + narrativa + áudio:** reveal único por encantado
+  no hub (espírito pendente nasce invisível; a clareira escurece, fade-in + brasas na
+  cor da aura + fala seca de `RITE_LINES`; fila para 2+ pendentes; skip por
+  toque/tecla com carência 0.4s; movimento trava via `set_process(false)` e saída via
+  `_locked`; `spirits_seen` persiste). Áudio: a cicatriz sonora do chefe volta EM PAZ
+  (`AudioDirector.play_spirit_rite` reusa `boss_death_*` a −8 dB — memória, não
+  ameaça; zero asset novo). Nota canônica das cascas batizadas no
+  `PRD-fase-final-igreja.md`. Preview com `--rite` captura o beat. 3 testes novos.
+
 ---
 
 ## 11.1 Known Issues

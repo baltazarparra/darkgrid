@@ -44,6 +44,13 @@ enum TopologyMode {
 @export var corridor_openness: float = 0.4 # fração do interior escavada em corredores
 @export var corridor_width: int = 1
 
+# ─── Santuário dos Encantados ──────────────────────
+## Guardião da fase já libertado (vive em paz no acampamento): o gerador NÃO o coloca no
+## mapa e grava `peace_pos` na cela onde ele postaria — a toca vira passagem. Preenchido
+## pelo CALLER (exploration_manager lê MetaProgression.is_boss_freed); a factory
+## for_phase() e o MapGenerator seguem puros/determinísticos.
+@export var boss_freed: bool = false
+
 # ─── Conteúdo opcional ─────────────────────────────
 @export var has_chest: bool = false
 @export var has_key: bool = false

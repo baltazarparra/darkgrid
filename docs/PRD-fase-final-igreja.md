@@ -53,6 +53,15 @@ já foi dita na abertura) — `boss_dialogue` vazio, indo direto da intro à are
 estagnada virando lodo, espelhos rachados que refletim olhos no escuro, sangue
 seco no altar. O sagrado colonial aqui é o invasor; a mata é a vítima e a vingança.
 
+> **Retcon canônico (Santuário dos Encantados, 2026-06):** com a libertação
+> definitiva dos encantados — o golpe final da Caipora liberta o espírito, que passa
+> a viver em paz no acampamento ([PRD-santuario-dos-encantados.md](PRD-santuario-dos-encantados.md))
+> — os "convertidos" da nave passam a ser, canonicamente, **cascas batizadas**:
+> simulacros ocos que o Jesuíta moldou com espelhos e água benta sobre a FORMA dos
+> encantados, não os espíritos verdadeiros. Isso fortalece o horror dele (profanou
+> até a forma deles) e mantém a Fase 5 com dificuldade cheia mesmo com o santuário
+> completo. A fala de abertura segue literal — o Jesuíta acredita que os converteu.
+
 ---
 
 ## 3. Mapeamento na arquitetura (o que muda, e onde)

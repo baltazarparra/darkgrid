@@ -137,6 +137,10 @@ func _ready() -> void:
 	_sfx = SfxSystem.new()
 	add_child(_sfx)
 	_config = MapConfig.for_phase(phase)
+	# Santuário dos Encantados: guardião libertado saiu da fase para sempre — o gerador
+	# não o coloca. O estado meta entra AQUI (factory e gerador seguem puros); o avanço
+	# da fase segue pelo tile de saída, que já existe em toda fase exceto a FINAL.
+	_config.boss_freed = MetaProgression.is_boss_freed(phase)
 	var reached: int = _profile["phase_reached_on_enter"]
 	if reached > 0 and MetaProgression.phase_reached < reached:
 		MetaProgression.phase_reached = reached
@@ -201,6 +205,11 @@ func _spawn_objects() -> void:
 	for pos: Vector2i in _map.decorations:
 		var type: MapObject.Type = palette[deco_rng.randi_range(0, palette.size() - 1)]
 		_make_object(type, pos)
+
+	# Marca de paz: um totem na cela onde o guardião libertado postaria — a mata
+	# reconhece quem a libertou (a toca virou passagem).
+	if _map.peace_pos != Vector2i(-1, -1):
+		_make_object(MapObject.Type.TOTEM, _map.peace_pos)
 
 	if _config.has_chest and not GameState.chest_opened and _map.chest_pos != Vector2i(-1, -1):
 		_chest_node = _make_object(MapObject.Type.CHEST, _map.chest_pos)

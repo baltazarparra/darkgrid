@@ -391,6 +391,16 @@ func _on_boss_special_telegraph(boss_type: String) -> void:
 	if _audio_unlocked and boss_type == "jesuita":
 		_play_stinger(STING_AGUA_BENTA)
 
+## Cicatriz sonora em paz (Santuário dos Encantados): a MESMA assinatura musical da
+## morte do chefe, mais baixa — memória, não ameaça. Toca no rito de chegada do
+## espírito ao acampamento.
+const SPIRIT_RITE_VOLUME_DB: float = -8.0
+
+func play_spirit_rite(phase: int) -> void:
+	if not _audio_unlocked:
+		return
+	_play_stinger("boss_death_" + _boss_name(phase), SPIRIT_RITE_VOLUME_DB)
+
 # ─── Bolsa de fragmentos (corpse run) ──────────────
 func _on_fragment_bag_dropped(_amount: float) -> void:
 	if _audio_unlocked:
@@ -732,12 +742,12 @@ func _stem_target_db(layer: String) -> float:
 			return 0.0
 
 # ─── Stingers ──────────────────────────────────────
-func _play_stinger(name: String) -> void:
+func _play_stinger(name: String, volume_db: float = 0.0) -> void:
 	var path := STING_DIR + name + ".wav"
 	if not ResourceLoader.exists(path):
 		return
 	_stinger_player.stream = load(path)
-	_stinger_player.volume_db = 0.0
+	_stinger_player.volume_db = volume_db
 	_stinger_player.play()
 
 ## Garante loop contínuo no asset. O .import é gitignored (regenera sem loop), então
