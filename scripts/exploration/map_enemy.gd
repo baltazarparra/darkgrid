@@ -9,7 +9,7 @@ const BRUXO_TEXTURE    = preload("res://assets/sprites/bruxo_map.png")
 const BOSS_TEXTURE     = preload("res://assets/sprites/boss_idle.png")
 const MULA_TEXTURE     = preload("res://assets/sprites/mula_idle.png")
 const BOITATA_TEXTURE  = preload("res://assets/sprites/boitata_idle.png")
-const CURUPIRA_TEXTURE = preload("res://assets/sprites/curupira_idle.png")
+const CURUPIRA_TEXTURE = preload("res://assets/sprites/curupira_map.png")
 const SACI_TEXTURE     = preload("res://assets/sprites/saci_idle.png")
 const CHASE_RANGE := 5          # comuns: alcance de aggro
 const BOSS_CHASE_RANGE := 7     # boss: defende a porta com alcance maior
@@ -67,8 +67,9 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 			"bruxo":    sprite.texture = BRUXO_TEXTURE
 			_:          sprite.texture = ENEMY_TEXTURE
 	# Invasores comuns usam a variante de mapa 56px (maiores que a Caipora, que
-	# anda o mapa a ~51px); bosses/minibosses seguem 48px até seus redesigns.
-	# Sempre transborda pra cima: pés na base do tile.
+	# anda o mapa a ~51px); bosses/minibosses usam variantes 48px (curupira já
+	# re-renderizado do pipeline premium; demais seguem a arte legada até seus
+	# redesigns). Sempre transborda pra cima: pés na base do tile.
 	sprite.offset = Vector2(0, -13) if (not boss and not miniboss) else Vector2(0, -8)
 	add_child(sprite)
 	ActorContrast.apply_outline(sprite)
