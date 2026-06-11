@@ -29,13 +29,15 @@ func before_each():
 
 func test_move_right_increases_x():
 	_caipora._try_move(Vector2.RIGHT)
-	await get_tree().create_timer(0.2).timeout
+	await get_tree().create_timer(0.35).timeout
+	await get_tree().process_frame
 	assert_eq(_caipora.position.x, 64.0)
 	assert_eq(_caipora.position.y, 32.0)
 
 func test_move_up_decreases_y():
 	_caipora._try_move(Vector2.UP)
-	await get_tree().create_timer(0.2).timeout
+	await get_tree().create_timer(0.35).timeout
+	await get_tree().process_frame
 	assert_eq(_caipora.position.x, 32.0)
 	assert_eq(_caipora.position.y, 0.0)
 
@@ -51,6 +53,7 @@ func test_wall_blocks_move():
 
 	_caipora.position = Vector2(64, 32)
 	_caipora._try_move(Vector2.RIGHT)
-	await get_tree().create_timer(0.2).timeout
+	await get_tree().create_timer(0.35).timeout
+	await get_tree().process_frame
 	assert_eq(_caipora.position.x, 64.0)  # não moveu
 	assert_eq(_caipora.position.y, 32.0)
