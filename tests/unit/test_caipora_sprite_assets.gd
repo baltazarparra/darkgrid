@@ -7,13 +7,20 @@ const SPRITE_PATHS: Array[String] = [
 	"res://assets/sprites/player_windup.png",
 	"res://assets/sprites/player_strike.png",
 	"res://assets/sprites/player_recover.png",
+	"res://assets/sprites/player_back.png",
+	"res://assets/sprites/player_dead.png",
 	"res://assets/sprites/player_idle_chama.png",
 	"res://assets/sprites/player_walk_1_chama.png",
 	"res://assets/sprites/player_walk_2_chama.png",
 	"res://assets/sprites/player_windup_chama.png",
 	"res://assets/sprites/player_strike_chama.png",
 	"res://assets/sprites/player_recover_chama.png",
+	"res://assets/sprites/player_back_chama.png",
+	"res://assets/sprites/player_dead_chama.png",
 ]
+
+const PLAYER_BACK := "res://assets/sprites/player_back.png"
+const PLAYER_DEAD := "res://assets/sprites/player_dead.png"
 
 const PLAYER_IDLE := "res://assets/sprites/player_idle.png"
 const PLAYER_IDLE_CHAMA := "res://assets/sprites/player_idle_chama.png"
@@ -69,6 +76,27 @@ func test_caipora_chama_idle_keeps_fire_variant_color() -> void:
 	assert_true(_has_color(image, COLOR_CHAMA), "CHAMA preserva juba incendiada")
 	assert_true(_has_color(image, COLOR_VOID), "CHAMA preserva rosto-vazio preto")
 	assert_true(_has_color(image, COLOR_EYES), "CHAMA preserva olhos brancos puros")
+
+func test_caipora_back_view_has_no_eyes_and_keeps_orange_first() -> void:
+	# De costas (cena da escolha final) ela olha para DENTRO da cena: os olhos
+	# brancos não podem existir — e a juba-capa laranja segue dominando.
+	var image := Image.load_from_file(ProjectSettings.globalize_path(PLAYER_BACK))
+	assert_false(image.is_empty(), "back carrega como Image")
+	if image.is_empty():
+		return
+	assert_false(_has_color(image, COLOR_EYES), "de costas não há olhos brancos")
+	var orange_pixels := _count_color(image, COLOR_MANE) + _count_color(image, Color8(139, 42, 0))
+	var black_pixels := _count_color(image, COLOR_VOID)
+	assert_gt(orange_pixels, black_pixels, "a capa serrilhada domina a vista de costas")
+
+func test_caipora_dead_pose_has_no_eyes() -> void:
+	# Tombada (final do sacrifício) o vazio se fechou: nenhum olho branco aberto.
+	var image := Image.load_from_file(ProjectSettings.globalize_path(PLAYER_DEAD))
+	assert_false(image.is_empty(), "dead carrega como Image")
+	if image.is_empty():
+		return
+	assert_false(_has_color(image, COLOR_EYES), "morta, os olhos brancos apagaram")
+	assert_true(_has_color(image, COLOR_MANE), "a mortalha ainda é a juba laranja")
 
 func _count_opaque_pixels(image: Image) -> int:
 	var count := 0

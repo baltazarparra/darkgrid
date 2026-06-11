@@ -3,7 +3,8 @@ extends GutTest
 # Roteamento pós-combate e avanço de fase pelo acampamento (HUB).
 # A regra central: vitória na arena NUNCA avança a fase — boss ou comum, volta à
 # exploração da MESMA fase; avançar é pisar no tile de saída (que passa pelo hub).
-# Exceção única: o boss FINAL (P5) → ENDING. Lógica pura, roda headless.
+# Exceção única: o boss FINAL (P5) → FINAL_CHOICE ("Poupar ele?"). Lógica pura,
+# roda headless.
 
 const ArenaManagerScript := preload("res://scripts/arena/arena_manager.gd")
 
@@ -73,13 +74,13 @@ func test_resolve_boss_win_never_advances_phase() -> void:
 		assert_eq(am._resolve_next_screen(true), SAME_PHASE_SCREEN[phase],
 			"boss da P%d morto → volta à exploração da P%d (sem avanço)" % [phase, phase])
 
-# ── Boss FINAL (Jesuíta, P5) → ENDING direto ──
-func test_resolve_final_boss_win_goes_to_ending() -> void:
+# ── Boss FINAL (Jesuíta, P5) → FINAL_CHOICE (a pergunta antes de qualquer final) ──
+func test_resolve_final_boss_win_goes_to_final_choice() -> void:
 	var am := _make_arena()
 	GameState.active_combat_is_boss = true
 	GameState.active_phase = 5
-	assert_eq(am._resolve_next_screen(true), SignalBus.Screen.ENDING,
-		"Jesuíta morto encerra o jogo")
+	assert_eq(am._resolve_next_screen(true), SignalBus.Screen.FINAL_CHOICE,
+		"Jesuíta caído abre a escolha final, não um final direto")
 
 # ── advance_phase_via_hub: guarda o destino, zera a continuidade e cai no HUB ──
 func test_advance_phase_via_hub() -> void:

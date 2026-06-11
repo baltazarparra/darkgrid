@@ -583,6 +583,39 @@ chefe** (12/22/30/36); assets **AAA via pipeline procedural** (gen_chars/tiles/s
   `mus_boss_jesuita` com sino de igreja) wiradas no `AudioDirector`, `CanvasModulate`
   frio. `test_church_props.gd` + `test_audio_director` (P5).
 
+### Dois Finais: a Escolha Final — "Poupar ele?" ✅
+
+Derrotar o Jesuíta não encerra mais o jogo direto: abre a **cena da escolha
+final** (`FINAL_CHOICE`), uma cinemática AAA montada por código — a Caipora **de
+costas** (pose `back` nova no `gen_caipora.py`), o Jesuíta **caído e respirando**
+sob o facho do vitral, poça de sangue crescendo, letterbox, push-in lento, órgão
+estertorando — e UMA pergunta com duas respostas:
+
+- **NÃO (executar)** → `ENDING` (final canônico, intocado) + mensagem nova no
+  céu do por do sol: **"a floresta segue respirando"**.
+- **SIM (poupar)** → `ENDING_SACRIFICE` (final novo): a misericórdia é paga com
+  água benta — **a Caipora morre e a floresta vira cristã**. Amanhecer alvejado,
+  sol pálido de hóstia, treelines PARADAS (sway 0 — a mata não respira), cemitério
+  de cruzes, o corpo dela (pose `dead`, sem olhos) ao pé de uma cruz com poça de
+  sangue, sino da igreja dobrando, sem música.
+
+- [x] Telas `FINAL_CHOICE`/`ENDING_SACRIFICE` no enum + `_scene_path_for`;
+  `ArenaManager._resolve_next_screen` (P5 boss → FINAL_CHOICE) e
+  `_do_screen_change` (caminho terminal não registra defeated_id).
+- [x] `final_choice_screen.gd` (+ roteador puro `screen_for_choice`), com os dois
+  beats de saída: execução (golpe seco, flash, shake, sangue) e poupar (a água
+  benta branca engole a nave).
+- [x] `ending_sacrifice_screen.gd` + mensagem no céu do `ending_screen.gd`.
+- [x] Poses novas `back`/`dead` (+_chama) SOMENTE via `gen_caipora.py` (de costas:
+  sem olhos, lâmina desponta da capa; morta: mortalha de juba, vazio fechado,
+  cajado caído) + travas de marca em `test_caipora_sprite_assets.gd`.
+- [x] Áudio: órgão estertor movido do ENDING para a FINAL_CHOICE (o momento da
+  queda), ambiência/reverb de igreja na escolha, sino no sacrifício, silêncio
+  musical nos dois (`test_audio_director`).
+- [x] `test_final_choice.gd` (roteamento, contrato de cena, idempotência da
+  escolha, end_run só nos finais) + `preview_final_scenes.gd` (capturas Xvfb,
+  inclusive e2e dos dois desfechos com `--choose=sim|nao`).
+
 ### Economia & Aprimoramentos v2 ✅
 
 Redefinição coerente da economia e da escala dos aprimoramentos para um roguelike
