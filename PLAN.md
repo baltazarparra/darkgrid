@@ -879,7 +879,7 @@ médio. Medir antes de mexer.
 - [x] `make gate` ✅ 321/321 + `make export` no fechamento da Fase 10; teste de
   carga da página (gotcha #5) junto da validação no device.
 
-### Santuário dos Encantados — Bosses Pacíficos no Acampamento 📋
+### Santuário dos Encantados — Bosses Pacíficos no Acampamento ✅
 
 Mudança core no significado da vitória: a Caipora não mata os encantados — ela os
 **liberta**. Ao derrotar um boss (P1–P4), o espírito dele se recolhe ao Acampamento e

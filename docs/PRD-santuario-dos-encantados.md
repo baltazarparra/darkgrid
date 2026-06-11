@@ -1,8 +1,9 @@
 # PRD — Santuário dos Encantados: Bosses Pacíficos no Acampamento
 
 > **caipora** — Brazilian Folk Horror Roguelike
-> **Status:** 📋 Planejado (este documento)
-> **Document Version:** 1.0
+> **Status:** ✅ Implementado (Etapas 0–4; pendente validação manual no device —
+> `/validate-controls` passos 2–5 e `/validate-platforms` no aparelho real)
+> **Document Version:** 1.1
 > **Depende de:** Fase 9 (Hub Jogável — concluída), redesigns premium dos bosses (KI-012)
 > **Lei visual:** `.agents/skills/visual-identity/SKILL.md` + `docs/CONCEITO-{mula,curupira,saci,jesuita}.md`
 
