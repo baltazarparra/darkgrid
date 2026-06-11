@@ -77,6 +77,12 @@ const SFX_DIR: String = "res://assets/audio/sfx/"
 const UI_HOVER_VOLUME_DB: float = -14.0
 ## Foco+mouse disparam juntos no mesmo controle; o cooldown colapsa o par num som só.
 const UI_HOVER_COOLDOWN_MSEC: int = 80
+## Tick do D-pad de combate: presença tátil baixa, nunca compete com os SFX de
+## timing da arena. Variantes em round-robin + jitter de pitch (anti-metralhadora).
+const DPAD_TAP_VOLUME_DB: float = -12.0
+const DPAD_TAP_COOLDOWN_MSEC: int = 30
+const DPAD_TAP_VARIANTS: int = 3
+const DPAD_TAP_PITCH_JITTER: float = 0.05
 
 # Stingers de estado (one-shot).
 const STING_DIR: String = "res://assets/audio/stingers/"
@@ -136,6 +142,8 @@ var _music_intensity: int = 0
 var _heart_mode: bool = false
 var _stinger_player: AudioStreamPlayer
 var _last_hover_msec: int = -UI_HOVER_COOLDOWN_MSEC
+var _last_dpad_tap_msec: int = -DPAD_TAP_COOLDOWN_MSEC
+var _dpad_tap_variant: int = 0
 ## Scheduler dos eventos raros da mata. Filho do autoload; morto em toda troca de
 ## tela por _apply_screen_audio — nenhum timer sobrevive fora da exploração.
 var _mata_timer: Timer
@@ -397,6 +405,31 @@ func play_ui_hover() -> void:
 		return
 	_last_hover_msec = now
 	_play_oneshot_sfx(SFX_DIR + "ui_hover.wav", UI_HOVER_VOLUME_DB)
+
+## Tick percussivo do toque nas setas do D-pad de combate (ControlsHud). Vive aqui
+## (e não no SfxSystem da arena) porque o HUD de controles é persistente entre telas.
+func play_dpad_tap() -> void:
+	if not _audio_unlocked:
+		return
+	var now := Time.get_ticks_msec()
+	if now - _last_dpad_tap_msec < DPAD_TAP_COOLDOWN_MSEC:
+		return
+	_last_dpad_tap_msec = now
+	_dpad_tap_variant = (_dpad_tap_variant + 1) % DPAD_TAP_VARIANTS
+	var suffix := "" if _dpad_tap_variant == 0 else "_%d" % (_dpad_tap_variant + 1)
+	var path := SFX_DIR + "dpad_tap" + suffix + ".wav"
+	if not ResourceLoader.exists(path):
+		path = SFX_DIR + "dpad_tap.wav"
+	if not ResourceLoader.exists(path):
+		return
+	var player := AudioStreamPlayer.new()
+	player.stream = load(path)
+	player.bus = BUS_SFX
+	player.volume_db = DPAD_TAP_VOLUME_DB
+	player.pitch_scale = 1.0 + randf_range(-DPAD_TAP_PITCH_JITTER, DPAD_TAP_PITCH_JITTER)
+	player.finished.connect(player.queue_free)
+	add_child(player)
+	player.play()
 
 ## Player transiente (default bus SFX — audível mesmo com música desligada;
 ## eventos da mata usam o bus Ambience). Asset ausente é no-op (graceful).
