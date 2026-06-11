@@ -69,6 +69,23 @@ func test_forest_floor_keeps_caipora_accent_without_becoming_orange() -> void:
 	assert_lt(_count_color(image, COLOR_BLACK), image.get_width() * image.get_height() / 2,
 		"chao usa preto como breu, mas ainda preserva textura caminhavel")
 
+func test_forest_floor_caps_peak_value_for_ground_read() -> void:
+	# Boas práticas de tiles top-down: o piso é a camada de menor contraste.
+	# Nenhum pixel do chão pode passar de osso/laranja vivo/branco — acentos
+	# ficam abaixo de lum 80 (BLOOD=29.6, ORANGE_DK=59.6 passam; BONE=112 não).
+	var image := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/tile_floor.png"))
+	assert_false(image.is_empty(), "chao de mata carrega como Image")
+	if image.is_empty():
+		return
+	var peak := 0.0
+	for y: int in range(image.get_height()):
+		for x: int in range(image.get_width()):
+			var c := image.get_pixel(x, y)
+			if c.a <= 0.0:
+				continue
+			peak = maxf(peak, (c.r * 0.2126 + c.g * 0.7152 + c.b * 0.0722) * 255.0)
+	assert_lt(peak, 80.0, "piso da mata nao tem pixel-confete acima da faixa de chao")
+
 func test_church_tiles_are_corrupted_not_clean_stone() -> void:
 	var floor := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/tile_floor_church.png"))
 	var wall := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/tile_wall_church.png"))
