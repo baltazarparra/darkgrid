@@ -57,9 +57,10 @@ func _setup_version_label() -> void:
 	label.position -= Vector2(12, 10)
 	add_child(label)
 
-## Versão a exibir: o carimbo automático do build (scripts/core/build_info.gd, derivado da
-## contagem de commits do git em `make export` — gitignored) quando presente; senão o
-## config/version do projeto (rodando do editor, onde o carimbo ainda não foi gerado).
+## Versão a exibir: o carimbo automático do build (scripts/core/build_info.gd, alpha-X.Y.Z
+## com Z = contagem de commits do git, gerado em `make export` — gitignored) quando
+## presente; senão o config/version do projeto ("alpha-X.Y (dev)", rodando do editor,
+## onde o carimbo ainda não foi gerado).
 func _resolve_version() -> String:
 	var path := "res://scripts/core/build_info.gd"
 	if ResourceLoader.exists(path):
