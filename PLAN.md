@@ -911,9 +911,11 @@ Decisões travadas com o autor em 2026-06-11. Spec completa:
   tile de saída (o boss só a guardava; só a P5 progride por morte de boss) — zero
   mudança de roteamento. Invariantes por `boss_freed`×fase×seed + integração da Fase 1
   com Mula libertada. `/validate-controls` passo 1 OK (passos manuais no device).
-- [ ] **Etapa 2 — Presenças:** `scripts/hub/camp_spirit.gd` (`CampSpirit`) + tabela
-  `SPIRIT_DEFS`; idle lento + respiração + aura calma + modulate de repouso nas bordas
-  da clareira (walkability intocada). `test_camp_spirit.gd` + `test_hub_builds`.
+- [x] **Etapa 2 — Presenças:** `scripts/hub/camp_spirit.gd` (`CampSpirit`, data-driven
+  via `DEFS` com os frames premium da arena) — idle 0.6×, respiração em tween, aura
+  calma na cor canônica (`COLOR_AURA_*`), modulate abatido. `hub_manager._spawn_spirits()`
+  posiciona um por boss libertado na moldura de mata (`_spirit_anchor` derivado de
+  `_clearing`; walkability intocada). `test_camp_spirit.gd` (3) + `test_hub_camp` (3).
 - [ ] **Etapa 3 — Transformação da cena:** 4 camadas cumulativas data-driven no
   `hub_manager`; `preview_camp_spirits.gd` (capturas Xvfb dos 5 estados, retrato +
   paisagem) como gate visual de leitura; `/validate-platforms`.

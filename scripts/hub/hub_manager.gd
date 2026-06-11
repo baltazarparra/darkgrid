@@ -52,6 +52,7 @@ func _ready() -> void:
 	_spawn_exit_marker()
 	_spawn_exit_beacon()
 	_spawn_camp_identity()
+	_spawn_spirits()
 	# O HubShop (filho) já está montado no seu _ready; aqui só ligamos o SFX da compra.
 	_shop.purchased.connect(_on_purchased)
 	_shop.denied.connect(_on_denied)
@@ -174,6 +175,32 @@ func _spawn_camp_identity() -> void:
 
 	# Vinheta/grão/color-grade: costura o acampamento ao mesmo mundo das fases.
 	add_child(Atmosphere.new())
+
+# ─── Santuário dos Encantados ──────────────────────
+# Os encantados libertados (MetaProgression.freed_bosses) vivem aqui: presenças em
+# repouso (CampSpirit) na moldura de mata ao redor da clareira — celas não-caminháveis,
+# walkability intocada. O visual de cada espírito é data-driven em CampSpirit.DEFS;
+# aqui mora só o layout (a cela de cada um no acampamento).
+func _spawn_spirits() -> void:
+	var half := Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
+	for spirit_phase: int in MetaProgression.freed_bosses:
+		var spirit := CampSpirit.new()
+		_objects.add_child(spirit)
+		if not spirit.setup(spirit_phase):
+			spirit.queue_free()
+			continue
+		spirit.position = Vector2(_spirit_anchor(spirit_phase)) * Constants.TILE_SIZE + half
+
+# Cela de cada espírito na moldura de mata: Mula ao norte (perto do fogo), Boitatá
+# enrodilhado a leste, Curupira de sentinela a sudoeste, Saci fumando a sudeste.
+# Derivado de _clearing — acompanha qualquer mudança de layout da clareira.
+func _spirit_anchor(spirit_phase: int) -> Vector2i:
+	match spirit_phase:
+		1: return Vector2i(_clearing.position.x + 7, _clearing.position.y - 1)
+		2: return Vector2i(_clearing.end.x, _clearing.position.y + 2)
+		3: return Vector2i(_clearing.position.x + 2, _clearing.end.y)
+		4: return Vector2i(_clearing.end.x - 3, _clearing.end.y)
+	return _clearing.position
 
 # ─── TileMap (mesmo tileset/atlas da exploração) ───
 func _setup_tilemap() -> void:

@@ -20,6 +20,7 @@ func after_each() -> void:
 		_hub.queue_free()
 	GameState.run_active = _saved_run_active
 	GameState.pending_exploration = _saved_pending
+	MetaProgression.freed_bosses = []
 
 func _instantiate() -> void:
 	_hub = load("res://scenes/hub/hub.tscn").instantiate()
@@ -73,6 +74,38 @@ func test_exit_starts_fresh_when_no_run() -> void:
 	GameState.pending_exploration = SignalBus.Screen.EXPLORATION_PHASE4
 	assert_eq(_hub._exit_destination(), SignalBus.Screen.EXPLORATION,
 		"santuário: rastro recomeça a caçada na Fase 1")
+
+# ── Santuário dos Encantados: espíritos dos bosses libertados vivem no acampamento ──
+func test_no_spirits_when_none_freed() -> void:
+	MetaProgression.freed_bosses = []
+	await _instantiate()
+	assert_eq(_count_spirits(), 0, "sem libertação, sem espírito no acampamento")
+
+func test_one_spirit_per_freed_boss_on_forest_frame() -> void:
+	MetaProgression.freed_bosses = [1, 2, 3, 4] as Array[int]
+	await _instantiate()
+	assert_eq(_count_spirits(), 4, "um espírito por encantado libertado")
+	var seen := {}
+	for spirit: Node in _hub._objects.get_children():
+		if not (spirit is CampSpirit):
+			continue
+		var tile := Vector2i((spirit.position / Constants.TILE_SIZE).floor())
+		assert_false(_hub._is_floor(tile),
+			"espírito na moldura de mata (fase %d) — walkability intocada" % spirit.phase)
+		assert_false(seen.has(tile), "celas distintas por espírito")
+		seen[tile] = true
+
+func test_partial_sanctuary_spawns_only_freed() -> void:
+	MetaProgression.freed_bosses = [2] as Array[int]
+	await _instantiate()
+	assert_eq(_count_spirits(), 1, "só o Boitatá libertado tem presença")
+
+func _count_spirits() -> int:
+	var n := 0
+	for child: Node in _hub._objects.get_children():
+		if child is CampSpirit:
+			n += 1
+	return n
 
 # ── O D-pad de toque trata o HUB como gameplay (a Caipora anda no acampamento) ──
 func test_hub_is_gameplay_for_dpad() -> void:
