@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caipora - Roguelike de Horror Folclórico Brasileiro</title>
+  <meta name="description" content="A guardia da mata acordou. Combate por turnos com timing preciso, roguelike procedural e horror folclórico brasileiro. Jogue no navegador.">
+  <meta property="og:title" content="Caipora">
+  <meta property="og:description" content="Roguelike de horror folclórico brasileiro. A guardia da mata acordou.">
+  <meta property="og:image" content="https://baltazarparra.github.io/caipora/assets/sprites/boot_splash.png">
+  <meta property="og:url" content="https://baltazarparra.github.io/caipora/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0a0a0f">
+  <link rel="icon" type="image/png" href="assets/sprites/brand_mark.png">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+  <!-- Nav -->
+  <header class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <img src="assets/sprites/brand_mark.png" alt="Caipora" class="nav-brand-icon" width="32" height="32">
+        <span class="nav-brand-text">CAIPORA</span>
+      </a>
+      <nav class="nav-links">
+        <a href="play/" class="btn btn-primary">Jogar</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero" id="hero">
+      <div class="hero-inner">
+        <div class="phone-mockup" aria-hidden="true">
+          <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <img src="assets/screenshots/shot_menu.png" alt="Tela do jogo Caipora em modo retrato" loading="eager">
+            </div>
+          </div>
+          <svg class="phone-hand" viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M85 180 Q70 200 60 220 Q55 235 65 245 Q75 252 90 245 Q105 235 115 220 Q125 200 120 180" fill="#1a1a1a" stroke="#2a2a2a" stroke-width="1.5"/>
+            <path d="M95 185 Q85 205 80 225 Q78 238 88 242" fill="none" stroke="#2a2a2a" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M105 182 Q100 200 98 220" fill="none" stroke="#2a2a2a" stroke-width="1.5" stroke-linecap="round"/>
+            <ellipse cx="110" cy="205" rx="6" ry="8" fill="#1a1a1a" stroke="#2a2a2a" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <h1 class="hero-title">CAIPORA</h1>
+        <p class="hero-subtitle">A guardia da mata acordou.</p>
+        <div class="hero-ctas">
+          <a href="play/" class="btn btn-primary btn-lg">Jogar agora</a>
+          <a href="https://github.com/baltazarparra/caipora" class="btn btn-ghost" target="_blank" rel="noopener">GitHub</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Manifesto -->
+    <section class="manifesto section-reveal" id="manifesto">
+      <div class="manifesto-inner">
+        <div class="manifesto-sprite" aria-hidden="true">
+          <img src="assets/sprites/player_idle.png" alt="" width="96" height="96" loading="lazy">
+        </div>
+        <h2 class="manifesto-title">O que dormia na mata nao dormia so.</h2>
+        <p class="manifesto-body">
+          Entre trilhas tortas, rios escuros e capelas abandonadas, os pactos antigos entre humanos, bichos, mortos e encantados se romperam. A Caipora despertou. E a floresta cobra em sangue.
+        </p>
+      </div>
+    </section>
+
+    <!-- Galeria -->
+    <section class="gallery section-reveal" id="galeria">
+      <div class="gallery-inner">
+        <div class="bento">
+          <div class="bento-cell bento-cell-large bento-cell-screenshot">
+            <img src="assets/screenshots/shot_arena.png" alt="Combate na arena de Caipora" loading="lazy">
+          </div>
+          <div class="bento-cell bento-cell-screenshot">
+            <img src="assets/screenshots/shot_menu.png" alt="Menu principal de Caipora" loading="lazy">
+          </div>
+          <div class="bento-cell bento-cell-sprite">
+            <img src="assets/sprites/caipora_pop_dark_contact_sheet.png" alt="Sprites da protagonista Caipora" loading="lazy">
+          </div>
+          <div class="bento-cell bento-cell-wide bento-cell-screenshot">
+            <img src="assets/screenshots/shot_ending.png" alt="Ending cinematografico de Caipora" loading="lazy">
+          </div>
+          <div class="bento-cell bento-cell-screenshot">
+            <img src="assets/screenshots/shot_explore.png" alt="Exploracao na floresta" loading="lazy">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mecanicas -->
+    <section class="mechanics section-reveal" id="mecanicas">
+      <div class="mechanics-inner">
+        <div class="mechanics-visual">
+          <img src="assets/sprites/caipora_pop_dark_contact_sheet.png" alt="Animacoes da Caipora" loading="lazy">
+        </div>
+        <div class="mechanics-content">
+          <h2 class="mechanics-title">Timing eh tudo.</h2>
+          <p class="mechanics-body">
+            Aperte Espaco no frame exato. Acerte o critico. Esquive perfeito e contra-ataque. Cada erro custa sangue. Cada acerto, uma chance de sobreviver a mata.
+          </p>
+          <ul class="mechanics-list">
+            <li>Combate por turnos + action command</li>
+            <li>Roguelike procedural</li>
+            <li>Horror folclórico brasileiro</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Final -->
+    <section class="final-cta" id="jogar">
+      <div class="final-cta-inner">
+        <h2 class="final-cta-title">A floresta nao espera.</h2>
+        <div class="final-cta-buttons">
+          <a href="play/" class="btn btn-primary btn-xl">Jogar agora</a>
+          <a href="play/" class="btn btn-ghost btn-lg">Jogar no celular</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-tagline">a floresta vive... por enquanto</p>
+      <div class="footer-links">
+        <a href="https://github.com/baltazarparra/caipora" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://baltazarparra.itch.io/caipora" target="_blank" rel="noopener">itch.io</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

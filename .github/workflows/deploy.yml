@@ -81,18 +81,23 @@ jobs:
       - name: Export HTML5
         run: make export
 
+      # Landing page na raiz + jogo em /play/
+      - name: Assemble deploy directory
+        run: |
+          mkdir -p deploy/play
+          cp -r site/* deploy/
+          cp -r export/* deploy/play/
+          touch deploy/.nojekyll
+
       # Nota: o PWA nativo do Godot (progressive_web_app/enabled) gera o próprio
       # service worker (index.service.worker.js), que cacheia o jogo (offline) e
       # injeta os headers de cross-origin isolation. Por isso NÃO injetamos mais o
       # coi-serviceworker.js: dois service workers no mesmo escopo conflitam.
 
-      - name: Add .nojekyll
-        run: touch export/.nojekyll
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: export/
+          path: deploy/
 
   deploy:
     needs: build
