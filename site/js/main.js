@@ -1,10 +1,43 @@
 /**
- * Caipora Landing Page - Interactions
+ * Caipora Landing Page — Interactions
  * Native JS. Zero frameworks.
  */
-
 (function () {
   'use strict';
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ----------------------------------------------------------
+  // Embers
+  // ----------------------------------------------------------
+  const embersContainer = document.querySelector('.embers');
+
+  function spawnEmber() {
+    if (!embersContainer || prefersReducedMotion) return;
+    const ember = document.createElement('span');
+    ember.className = 'ember';
+    ember.style.left = Math.random() * 100 + 'vw';
+    ember.style.animationDuration = (4 + Math.random() * 6) + 's';
+    ember.style.setProperty('--drift', (Math.random() * 40 - 20) + 'px');
+    const size = 2 + Math.random() * 3;
+    ember.style.width = size + 'px';
+    ember.style.height = size + 'px';
+    ember.style.opacity = 0.5 + Math.random() * 0.5;
+    embersContainer.appendChild(ember);
+
+    ember.addEventListener('animationend', function () {
+      ember.remove();
+    });
+  }
+
+  if (embersContainer && !prefersReducedMotion) {
+    // Spawn initial batch
+    for (let i = 0; i < 18; i++) {
+      setTimeout(spawnEmber, Math.random() * 3000);
+    }
+    // Keep spawning
+    setInterval(spawnEmber, 350);
+  }
 
   // ----------------------------------------------------------
   // Nav glassmorphism on scroll
@@ -20,7 +53,6 @@
     }
   }
 
-  // Use requestAnimationFrame for scroll handling (not on every event)
   let ticking = false;
   window.addEventListener('scroll', function () {
     if (!ticking) {
@@ -32,7 +64,6 @@
     }
   }, { passive: true });
 
-  // Initial check
   updateNav();
 
   // ----------------------------------------------------------
@@ -61,14 +92,13 @@
       revealObserver.observe(el);
     });
   } else {
-    // Fallback: show all immediately
     revealElements.forEach(function (el) {
       el.classList.add('is-visible');
     });
   }
 
   // ----------------------------------------------------------
-  // Smooth scroll for anchor links (polyfill for older browsers)
+  // Smooth scroll for anchor links
   // ----------------------------------------------------------
   document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
     anchor.addEventListener('click', function (e) {
@@ -81,4 +111,60 @@
       }
     });
   });
+
+  // ----------------------------------------------------------
+  // Boss cards: swap idle -> windup on hover/focus
+  // ----------------------------------------------------------
+  const bossCards = document.querySelectorAll('.boss-card');
+
+  bossCards.forEach(function (card) {
+    const frame = card.querySelector('.boss-card-frame');
+    const idle = card.querySelector('.boss-idle');
+    const windup = card.querySelector('.boss-windup');
+
+    if (!idle || !windup) return;
+
+    function showWindup() {
+      idle.style.opacity = '0';
+      idle.style.transform = 'scale(0.95)';
+      windup.style.opacity = '1';
+      windup.style.transform = 'scale(1)';
+    }
+
+    function showIdle() {
+      idle.style.opacity = '1';
+      idle.style.transform = 'scale(1)';
+      windup.style.opacity = '0';
+      windup.style.transform = 'scale(1.05)';
+    }
+
+    frame.addEventListener('mouseenter', showWindup);
+    frame.addEventListener('mouseleave', showIdle);
+    frame.addEventListener('focusin', showWindup);
+    frame.addEventListener('focusout', showIdle);
+    frame.setAttribute('tabindex', '0');
+  });
+
+  // ----------------------------------------------------------
+  // Hero parallax (mouse)
+  // ----------------------------------------------------------
+  const heroBackdrop = document.querySelector('.hero-backdrop');
+
+  if (heroBackdrop && !prefersReducedMotion && !window.matchMedia('(pointer: coarse)').matches) {
+    const layers = heroBackdrop.querySelectorAll('.hero-boss');
+
+    document.querySelector('.hero').addEventListener('mousemove', function (e) {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      const dx = (e.clientX - cx) / cx;
+      const dy = (e.clientY - cy) / cy;
+
+      layers.forEach(function (layer) {
+        const factor = parseFloat(layer.dataset.parallax) || 0.05;
+        const x = dx * factor * -40;
+        const y = dy * factor * -30;
+        layer.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+      });
+    });
+  }
 })();
