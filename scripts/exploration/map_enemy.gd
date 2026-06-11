@@ -11,6 +11,7 @@ const MULA_TEXTURE     = preload("res://assets/sprites/mula_idle.png")
 const BOITATA_TEXTURE  = preload("res://assets/sprites/boitata_idle.png")
 const CURUPIRA_TEXTURE = preload("res://assets/sprites/curupira_map.png")
 const SACI_TEXTURE     = preload("res://assets/sprites/saci_idle.png")
+const JESUITA_TEXTURE  = preload("res://assets/sprites/jesuita_map.png")
 const CHASE_RANGE := 5          # comuns: alcance de aggro
 const BOSS_CHASE_RANGE := 7     # boss: defende a porta com alcance maior
 const DRIFT_IDLE_CHANCE := 0.4  # chance de ficar parado ao voltar pra origem
@@ -57,6 +58,9 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 			"boitata":  sprite.texture = BOITATA_TEXTURE
 			"curupira": sprite.texture = CURUPIRA_TEXTURE
 			"saci":     sprite.texture = SACI_TEXTURE
+			# Antes o Jesuíta caía no `_` e o boss final aparecia no mapa da
+			# Fase 5 com o sprite do caçador-de-machados (boss_idle.png).
+			"jesuita":  sprite.texture = JESUITA_TEXTURE
 			_:          sprite.texture = BOSS_TEXTURE
 	else:
 		match p_enemy_type:
@@ -67,10 +71,18 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 			"bruxo":    sprite.texture = BRUXO_TEXTURE
 			_:          sprite.texture = ENEMY_TEXTURE
 	# Invasores comuns usam a variante de mapa 56px (maiores que a Caipora, que
-	# anda o mapa a ~51px); bosses/minibosses usam variantes 48px (curupira já
-	# re-renderizado do pipeline premium; demais seguem a arte legada até seus
-	# redesigns). Sempre transborda pra cima: pés na base do tile.
+	# anda o mapa a ~51px); bosses/minibosses usam variantes 48px (Curupira e
+	# Jesuíta já re-renderizados do pipeline premium; demais seguem a arte
+	# legada até seus redesigns). Sempre transborda pra cima: pés na base do tile.
 	sprite.offset = Vector2(0, -13) if (not boss and not miniboss) else Vector2(0, -8)
+	# Clamp interino (KI-016): bosses premium ainda SEM variante de mapa
+	# (Saci 128, Boitatá 160×128, Mula 192) estourariam o tile de 32px —
+	# reduz para ~48px visuais e mantém a base do desenho na linha do legado
+	# (16px abaixo do nó). Sai quando cada um ganhar variante re-renderizada.
+	if sprite.texture != null and sprite.texture.get_height() > 64:
+		var clamp_scale := 48.0 / float(sprite.texture.get_height())
+		sprite.scale = Vector2(clamp_scale, clamp_scale)
+		sprite.offset.y = 16.0 / clamp_scale - sprite.texture.get_height() * 0.5
 	add_child(sprite)
 	ActorContrast.apply_outline(sprite)
 

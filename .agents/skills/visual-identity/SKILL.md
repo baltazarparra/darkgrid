@@ -34,6 +34,13 @@ Curupira (boss P3, o parente mais antigo) deriva desta identidade:
 - `scripts/tools/gen_bosses.py`
 - `tests/unit/test_curupira_sprite_assets.gd`
 
+Jesuita (boss final P5, o padre-guerreiro) deriva desta identidade:
+- `docs/CONCEITO-jesuita.md` (lei visual do chefe final; design autoral —
+  nunca trade dress de personagem alheio)
+- `assets/sprites/jesuita_contact_sheet.png`
+- `scripts/tools/gen_bosses.py`
+- `tests/unit/test_jesuita_sprite_assets.gd`
+
 ## 1. Principio-marca
 
 A Caipora aprovada define a marca do jogo. Ela deve ser reconhecivel como:

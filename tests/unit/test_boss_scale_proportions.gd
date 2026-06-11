@@ -10,8 +10,9 @@ extends GutTest
 #
 # Enquanto a arte legada é 48×48, a hierarquia vem do sprite_scale por cena.
 # Bosses redesenhados em canvas ≥128 (KI-012) herdam ESTAS alturas visuais
-# (corpo desenhado × escala) e voltam à escala premium 1.2 — Curupira via
-# gen_bosses.py, Boitatá via gen_boitata.py, Saci via gen_saci.py.
+# (corpo desenhado × escala) e voltam à escala premium 1.2 — Curupira e
+# Jesuíta via gen_bosses.py, Boitatá via gen_boitata.py, Saci via gen_saci.py,
+# Mula via gen_mula.py (192×192 a escala 0.9 para a altura da lore).
 
 const CAIPORA_PNG := "res://assets/sprites/player_idle.png"
 const CACADOR_PNG := "res://assets/sprites/enemy_idle.png"
@@ -26,7 +27,7 @@ const BOSSES: Dictionary = {
 	"res://scenes/arena/boitata.tscn": ["res://assets/sprites/boitata_idle.png", 1.2, -38.0],
 	"res://scenes/arena/curupira.tscn": ["res://assets/sprites/curupira_idle.png", 1.2, -47.0],
 	"res://scenes/arena/saci.tscn": ["res://assets/sprites/saci_idle.png", 1.2, -26.0],
-	"res://scenes/arena/jesuita.tscn": ["res://assets/sprites/jesuita_idle.png", 2.7, -18.0],
+	"res://scenes/arena/jesuita.tscn": ["res://assets/sprites/jesuita_idle.png", 1.2, -45.0],
 	"res://scenes/arena/boss.tscn": ["res://assets/sprites/boss_idle.png", 2.8, -18.0],
 }
 
