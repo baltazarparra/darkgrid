@@ -9,17 +9,19 @@ que tornam cada personagem identificável:
   Caçador & Bruxo — INIMIGOS COMUNS: gerados por gen_inimigos.py (pipeline
              premium 112px arena + 56px mapa, ver docs/CONCEITO-inimigos.md). Delega.
   Caçador c/ machados — 48x48: capuz, manto, dois machados, olhos brilhando (boss base)
-  Mula sem Cabeça     — 48x48: sem cabeça, jato de fogo no toco do pescoço,
+  Mula sem Cabeça     — 192x192 via gen_mula.py: sem cabeça, jato de fogo no toco,
                         ferraduras de ferro, arreio amaldiçoado (boss da Fase 1)
 
-Saída: player_* via gen_caipora (64x64), enemy_idle.png, boss/boitata/
-       curupira/saci/mula_idle.png (48x48)
+Saída: player_* via gen_caipora (96x96), enemy_* / bruxo_* via gen_inimigos
+       (112x112 + 56x56 map variants), boss/boitata/curupira/saci/jesuita_idle.png
+       (48x48 legado), mula_idle/windup.png (192x192).
 """
 import os
 from PIL import Image
 
 import gen_caipora
 import gen_inimigos
+import gen_mula
 
 S = 48
 OUT = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sprites")
@@ -585,6 +587,6 @@ if __name__ == "__main__":
     boitata().save("boitata_idle.png")
     curupira().save("curupira_idle.png")
     saci().save("saci_idle.png")
-    mula().save("mula_idle.png")
+    gen_mula.generate_all()
     jesuita().save("jesuita_idle.png")
-    print("[gen_chars] caipora (via gen_caipora) + caçador/bruxo (via gen_inimigos) + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça + jesuíta-bandeirante (48x48) gerados")
+    print("[gen_chars] caipora (via gen_caipora) + caçador/bruxo (via gen_inimigos) + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça (via gen_mula) + jesuíta-bandeirante gerados")

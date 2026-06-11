@@ -22,6 +22,12 @@ Inimigos comuns (cacador & bruxo) derivam desta identidade:
 - `scripts/tools/gen_inimigos.py`
 - `tests/unit/test_inimigos_sprite_assets.gd`
 
+Bosses derivam desta identidade (um por sessao de redesign):
+- `docs/CONCEITO-mula.md` (primeiro boss — Mula sem Cabeça)
+- `assets/sprites/mula_contact_sheet.png`
+- `scripts/tools/gen_mula.py`
+- `tests/unit/test_mula_sprite_assets.gd`
+
 ## 1. Principio-marca
 
 A Caipora aprovada define a marca do jogo. Ela deve ser reconhecivel como:
