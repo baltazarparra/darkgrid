@@ -124,9 +124,19 @@ func _attempt(config: MapConfig, rng: RandomNumberGenerator, drop_pillars: bool)
 
 	m.enemies = _place_enemies(config, rng, dist, place_pool, boss_cell, in_boss_room)
 
+	# Santuário dos Encantados: guardião libertado não está no mapa — a cela dele vira
+	# a marca de paz (a toca virou passagem).
+	if config.boss_freed:
+		m.peace_pos = _resolve_boss_cell(dist, boss_cell)
+
 	var taken := {player_start: true, exit_pos: true}
 	for e: Dictionary in m.enemies:
 		taken[Vector2i(e["x"], e["y"])] = true
+	# Santuário: a cela do guardião libertado segue reservada também para baú/chave/
+	# decorações — sem isso o candidato extra desloca TODOS os sorteios seguintes e o
+	# mapa deixa de ser idêntico ao gerado com boss (classe de bug do KI-007).
+	if config.boss_freed:
+		taken[m.peace_pos] = true
 	# Baú e chave: aleatórios, mas sempre longe do jogador e longe um do outro.
 	var others: Array[Vector2i] = []
 	if config.has_chest:
@@ -266,10 +276,11 @@ func _place_enemies(config: MapConfig, rng: RandomNumberGenerator, dist: Diction
 	var taken := {}
 
 	# Boss: posição reservada — sempre distante do jogador (alcova no canto oposto
-	# no OPEN, célula mais distante no CORRIDOR).
-	var bcell := boss_cell
-	if bcell == Vector2i(-1, -1) or not dist.has(bcell):
-		bcell = _farthest(dist)
+	# no OPEN, célula mais distante no CORRIDOR). Com o guardião libertado
+	# (boss_freed) a cela CONTINUA reservada: guardas, baú, chave e decorações saem
+	# idênticos com ou sem boss — a volta do combate regenera o mapa e nada pode
+	# mudar de lugar (mesma classe de bug do KI-007).
+	var bcell := _resolve_boss_cell(dist, boss_cell)
 	taken[bcell] = true
 
 	# Guardas: 1 ou 2 monstros sempre perto do boss. Sorteia entre as células mais
@@ -340,9 +351,19 @@ func _place_enemies(config: MapConfig, rng: RandomNumberGenerator, dist: Diction
 			"boss": false, "enemy_type": etype})
 		idx += 1
 	# O boss carrega o boss_type → sprite/aura corretos no mapa (curupira/boitata/saci).
-	result.append({"id": "p%d_e%d" % [config.phase, idx], "x": bcell.x, "y": bcell.y,
-		"boss": true, "boss_type": config.boss_type})
+	# Guardião libertado (Santuário) não spawna — os guardas seguem postados na
+	# aproximação, agora guardando a passagem.
+	if not config.boss_freed:
+		result.append({"id": "p%d_e%d" % [config.phase, idx], "x": bcell.x, "y": bcell.y,
+			"boss": true, "boss_type": config.boss_type})
 	return result
+
+# Cela do boss com fallback determinístico (célula mais distante) quando a candidata
+# original não é alcançável. Fonte única para o placement e para a marca de paz.
+func _resolve_boss_cell(dist: Dictionary, boss_cell: Vector2i) -> Vector2i:
+	if boss_cell == Vector2i(-1, -1) or not dist.has(boss_cell):
+		return _farthest(dist)
+	return boss_cell
 
 func _place_decorations(config: MapConfig, rng: RandomNumberGenerator,
 		pool: Array[Vector2i], taken: Dictionary) -> Array[Vector2i]:

@@ -174,21 +174,25 @@ Quando o boss da fase está libertado (`MetaProgression.freed_bosses`):
 
 - **Geração:** `MapConfig` ganha `boss_freed: bool`, preenchido na **construção** do
   config a partir do `MetaProgression` (o `MapGenerator` segue puro e determinístico —
-  a flag é dado de entrada, não consulta de autoload). Com a flag ligada: o boss não é
-  colocado; nas fases **sem tile de saída** (P3/P4, `has_exit=false`), a **cela do boss
-  vira o tile de saída** — mesma posição mais profunda, mesma garantia de rota limpa
-  (`_ensure_clean_path` passa a proteger a rota até a saída, como protegia a rota até o
-  boss). Os guardas do boss viram **guardas da passagem** (`BOSS_GUARD_MIN` mantido,
-  ancorado na saída). P1/P2 já têm saída — o boss simplesmente não spawna.
-- **Roteamento:** o avanço por tile de saída já passa pelo hub
-  (`advance_phase_via_hub`). P3 e P4 ganham `next_screen_on_exit` no `_build_profile()`
-  (P3→`EXPLORATION_PHASE4`, P4→`EXPLORATION_PHASE5`), consumido apenas quando a saída
-  existe. `BossIntro`/diálogo pré-boss não disparam — não há encontro de boss. O marco
+  a flag é dado de entrada, não consulta de autoload). Com a flag ligada o boss não é
+  colocado e a cela dele vira `GeneratedMap.peace_pos`. **Descoberta na implementação
+  (simplificou o plano):** toda fase P1–P4 **já tem tile de saída** — o boss apenas a
+  guarda (alcova no OPEN, beco no CORRIDOR); só a P5 progride exclusivamente por morte
+  de boss. Logo nenhum tile novo é criado: sem o guardião, a saída de sempre fica
+  desguardada. A cela do boss segue **reservada** em toda a geração (guardas, baú,
+  chave e decorações saem **byte-idênticos** com ou sem boss — a volta do combate
+  regenera o mapa e nada pode mudar de lugar, classe de bug do KI-007). Os guardas
+  continuam postados na aproximação — agora **guardas da passagem** — e a rota limpa
+  de fogo até a cela é preservada.
+- **Roteamento:** **nenhuma mudança** — o tile de saída de cada fase já roteia o
+  avanço via hub (`next_screen_on_exit` existente no `_build_profile()`).
+  `BossIntro`/diálogo pré-boss não disparam — não há encontro de boss. O marco
   `phase_reached` já está gravado de runs anteriores (não há como ter boss libertado
   sem ele), então nenhum unlock depende do encontro que deixou de existir.
-- **Lore no mapa:** onde o guardião vivia, fica a passagem — o `exit_marker` pulsante
-  na alcova mais funda, opcionalmente com uma marca ritual de paz (decoração
-  `MapObject`) ao lado. A mata reconhece quem a libertou.
+- **Lore no mapa:** onde o guardião postava, fica a **marca de paz** — um `TOTEM`
+  (`MapObject` existente, decoração não-bloqueante) em `peace_pos`. A mata reconhece
+  quem a libertou. Na P1, libertar a Mula e voltar do combate já mostra a marca no
+  lugar onde ela caiu.
 - **Economia:** o bounty do boss some das runs seguintes — **aceito**: a rota encurta,
   as fases fundas pagam mais por kill comum, e a meta passa a ser libertar os quatro e
   encarar a Igreja direto. Conferir o feel no playtest da Etapa 1.
@@ -264,14 +268,13 @@ subiu (gotcha #12 — GUT mente verde em arquivo que não parseia).
 
 ### Etapa 1 — A fase sem guardião (o boss sai do mapa)
 - `MapConfig.boss_freed` (entrada de dado; gerador segue puro) + `MapGenerator`: sem
-  boss; em P3/P4 a cela do boss vira tile de saída com rota limpa garantida; guardas
-  ancorados na passagem. `next_screen_on_exit` de P3/P4 no `_build_profile()`; marca
-  ritual de paz opcional na alcova.
+  boss, cela reservada (mapa byte-idêntico), `peace_pos` + marca de paz (`TOTEM`) no
+  `exploration_manager`, guardas seguem na passagem. Roteamento intacto (toda fase
+  P1–P4 já tinha saída — ver §4.2).
 - **Gate:** invariantes do gerador parametrizados por `boss_freed` × fase × seed (sem
-  boss no grid, saída válida/única/alcançável do spawn, contagem de inimigos, rota
-  limpa); roteamento P3→P4 e P4→P5 por saída via hub; run ponta-a-ponta com 0 e com 4
-  libertados (P5 sempre com Jesuíta e cascas batizadas). `/validate-controls` (mexe em
-  exploração).
+  boss, contagem −1, mapa idêntico exceto boss, marca de paz na cela, saída alcançável,
+  rota limpa, guarda na passagem) + integração da Fase 1 com Mula libertada (sem boss,
+  TOTEM na cela). `/validate-controls` passo 1 (`make test`); passos manuais no device.
 
 ### Etapa 2 — Os encantados no acampamento (presenças)
 - `camp_spirit.gd` + `SPIRIT_DEFS` (frames, escala, âncora, flip, aura, fala);
@@ -311,14 +314,15 @@ subiu (gotcha #12 — GUT mente verde em arquivo que não parseia).
 | `scripts/core/meta_progression.gd` | `freed_bosses`/`spirits_seen`, `free_boss()`/`mark_spirit_seen()`, save v4 + migração |
 | `scripts/arena/arena_manager.gd` | `free_boss(active_phase)` na morte de boss (junto do bounty/`phase_reached`) |
 | `scripts/exploration/map_config.gd` | `boss_freed: bool` (preenchido do `MetaProgression` na construção) |
-| `scripts/exploration/map_generator.gd` | sem boss quando libertado; saída na cela do boss (P3/P4); guardas na passagem; rota limpa até a saída |
-| `scripts/exploration/exploration_manager.gd` | `next_screen_on_exit` para P3/P4 (usado só quando a saída existe) |
+| `scripts/exploration/map_generator.gd` | sem boss quando libertado; cela reservada (mapa byte-idêntico); `peace_pos` |
+| `scripts/exploration/generated_map.gd` | campo `peace_pos` (cela do guardião libertado) |
+| `scripts/exploration/exploration_manager.gd` | injeta `boss_freed` na config; marca de paz (`TOTEM`) em `peace_pos` |
 | `scripts/hub/camp_spirit.gd` **(novo)** | presença do encantado em repouso (`CampSpirit`) |
 | `scripts/hub/hub_manager.gd` | `SPIRIT_DEFS`, `_spawn_spirits()`, camadas de santuário, rito de chegada |
 | `scripts/tools/gen_sfx.py` | stinger de chegada do espírito |
 | `scripts/tools/preview_camp_spirits.gd` **(novo)** | capturas Xvfb dos 5 estados do santuário |
 | `docs/PRD-fase-final-igreja.md` (ou doc de lore) | nota canônica das cascas batizadas |
-| `tests/unit/test_map_generator.gd`, `test_exploration_phase{3,4}.gd`, `test_meta_progression.gd`, `test_hub_builds.gd`, `test_camp_spirit.gd` **(novo)** | cobertura das etapas |
+| `tests/unit/test_map_generator.gd`, `test_exploration_phase1.gd`, `test_meta_progression.gd`, `test_hub_builds.gd`, `test_camp_spirit.gd` **(novo)** | cobertura das etapas |
 
 Sem mudança em: economia/ervas (`purchase_upgrade`), arena/timing, Fase 5 (Jesuíta +
 cascas batizadas intactos), `boss_intro_screen` (só deixa de ser chamado em fase sem

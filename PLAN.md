@@ -903,10 +903,14 @@ Decisões travadas com o autor em 2026-06-11. Spec completa:
   v3→v4 derivada de `phase_reached` (generosa com quem pulou Mula/Boitatá pela saída —
   trade-off documentado), `reset_save()` devolve os guardiões. 10 testes novos
   (free/idempotência/P5 fora/round-trip/migração/sanitização/reset).
-- [ ] **Etapa 1 — A fase sem guardião:** `MapConfig.boss_freed` + `MapGenerator` sem
-  boss e com saída na cela dele (P3/P4, rota limpa garantida; guardas na passagem);
-  `next_screen_on_exit` de P3/P4. Invariantes por `boss_freed`×fase×seed; run
-  ponta-a-ponta com 0 e 4 libertados; `/validate-controls`.
+- [x] **Etapa 1 — A fase sem guardião:** `MapConfig.boss_freed` (injetado pelo
+  `exploration_manager` a partir do `MetaProgression`; gerador segue puro) — boss não
+  spawna, cela dele segue RESERVADA na geração (guardas/baú/chave/decorações
+  byte-idênticos com ou sem boss, classe KI-007) e vira `peace_pos`, renderizada como
+  marca de paz (`TOTEM`). Descoberta que simplificou o plano: toda fase P1–P4 já tinha
+  tile de saída (o boss só a guardava; só a P5 progride por morte de boss) — zero
+  mudança de roteamento. Invariantes por `boss_freed`×fase×seed + integração da Fase 1
+  com Mula libertada. `/validate-controls` passo 1 OK (passos manuais no device).
 - [ ] **Etapa 2 — Presenças:** `scripts/hub/camp_spirit.gd` (`CampSpirit`) + tabela
   `SPIRIT_DEFS`; idle lento + respiração + aura calma + modulate de repouso nas bordas
   da clareira (walkability intocada). `test_camp_spirit.gd` + `test_hub_builds`.

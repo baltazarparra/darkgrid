@@ -23,6 +23,9 @@ var enemies: Array = []                      # [{id, x, y, boss}]
 var chest_pos: Vector2i = Vector2i(-1, -1)
 var key_pos: Vector2i = Vector2i(-1, -1)
 var decorations: Array[Vector2i] = []        # ambientação visual (não afeta walkability)
+# Santuário dos Encantados: cela onde o guardião libertado postaria (vira marca de paz).
+# (-1,-1) = boss presente no mapa (boss_freed=false).
+var peace_pos: Vector2i = Vector2i(-1, -1)
 
 # ─── Public API ────────────────────────────────────
 func char_at(pos: Vector2i) -> String:

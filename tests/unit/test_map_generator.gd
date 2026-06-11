@@ -335,6 +335,79 @@ func test_phase5_invariants() -> void:
 	assert_eq(_enemy_sig(_gen(5, 42)), _enemy_sig(_gen(5, 42)),
 		"fase 5 determinística p/ mesmo seed")
 
+# ══ Santuário dos Encantados — fase sem guardião (boss_freed) ══
+# Guardião libertado sai do mapa, a cela dele vira marca de paz e o RESTO da geração
+# permanece BYTE-IDÊNTICO ao mapa com boss: a volta do combate regenera o mapa e nada
+# pode mudar de lugar (mesma classe de bug do KI-007).
+
+func _gen_freed(phase: int, seed_val: int) -> GeneratedMap:
+	var cfg := MapConfig.for_phase(phase)
+	cfg.boss_freed = true
+	return MapGenerator.new().generate(cfg, seed_val)
+
+func test_freed_phase_has_no_boss() -> void:
+	for phase: int in PHASES:
+		for s: int in SEEDS:
+			var m := _gen_freed(phase, s)
+			assert_eq(m.boss(), {}, "sem boss no mapa (fase %d seed %d)" % [phase, s])
+			assert_eq(m.enemies.size(), MapConfig.for_phase(phase).enemy_count - 1,
+				"só os comuns (fase %d seed %d)" % [phase, s])
+
+func test_freed_map_identical_except_boss() -> void:
+	for phase: int in PHASES:
+		for s: int in [1, 42, 31337]:
+			var a := _gen(phase, s)
+			var b := _gen_freed(phase, s)
+			assert_eq(a.rows(), b.rows(), "grid idêntico (fase %d seed %d)" % [phase, s])
+			assert_eq(a.exit_pos, b.exit_pos, "saída idêntica (fase %d seed %d)" % [phase, s])
+			assert_eq(a.player_start, b.player_start, "spawn idêntico (fase %d)" % phase)
+			assert_eq(a.chest_pos, b.chest_pos, "baú idêntico (fase %d)" % phase)
+			assert_eq(a.key_pos, b.key_pos, "chave idêntica (fase %d)" % phase)
+			assert_eq(a.decorations, b.decorations, "decorações idênticas (fase %d)" % phase)
+			assert_eq(_common_sig(a), _common_sig(b),
+				"comuns idênticos com/sem guardião (fase %d seed %d)" % [phase, s])
+		assert_eq(_enemy_sig(_gen_freed(phase, 42)), _enemy_sig(_gen_freed(phase, 42)),
+			"fase libertada determinística (fase %d)" % phase)
+
+func test_freed_peace_mark_at_boss_cell() -> void:
+	for phase: int in PHASES:
+		for s: int in SEEDS:
+			var a := _gen(phase, s)
+			var m := _gen_freed(phase, s)
+			var b := a.boss()
+			assert_eq(m.peace_pos, Vector2i(b["x"], b["y"]),
+				"marca de paz na cela do guardião (fase %d seed %d)" % [phase, s])
+			assert_true(m.is_walkable(m.peace_pos), "marca de paz em chão caminhável")
+			assert_eq(a.peace_pos, Vector2i(-1, -1),
+				"mapa com boss não tem marca de paz (fase %d)" % phase)
+
+func test_freed_exit_reachable_and_passage_guarded() -> void:
+	# Sem o guardião a saída segue alcançável (sem softlock), com rota limpa de fogo
+	# até a cela dele (a mesma garantia que protegia a rota ao boss) e com ao menos
+	# 1 guarda postado na passagem.
+	for phase: int in PHASES:
+		for s: int in SEEDS:
+			var m := _gen_freed(phase, s)
+			var dist := m.reachable_from(m.player_start)
+			assert_true(dist.has(m.exit_pos),
+				"saída alcançável sem o guardião (fase %d seed %d)" % [phase, s])
+			assert_true(_reachable_avoiding_hazards(m, m.player_start, m.peace_pos),
+				"rota limpa até a passagem (fase %d seed %d)" % [phase, s])
+			var near := 0
+			for e: Dictionary in m.enemies:
+				if _manhattan(Vector2i(e["x"], e["y"]), m.peace_pos) <= MapGenerator.BOSS_GUARD_RADIUS:
+					near += 1
+			assert_gte(near, 1,
+				"ao menos 1 guarda na passagem (fase %d seed %d)" % [phase, s])
+
+func _common_sig(m: GeneratedMap) -> String:
+	var parts: Array = []
+	for e: Dictionary in m.enemies:
+		if e["boss"]:
+			continue
+		parts.append("%s:%d,%d,%s" % [e["id"], e["x"], e["y"], e.get("enemy_type", "")])
+	return ",".join(parts)
+
 func _reachable_avoiding_hazards(m: GeneratedMap, start: Vector2i, goal: Vector2i) -> bool:
 	# BFS sobre células caminháveis que NÃO são hazard (R/S).
 	var seen := {start: true}
