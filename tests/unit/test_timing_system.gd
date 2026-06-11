@@ -28,3 +28,27 @@ func test_miss_on_timeout():
     _timing.open_window(0.1)
     await get_tree().create_timer(0.15).timeout
     assert_eq(result[0], TimingSystem.TimingResult.MISS)
+
+func test_desktop_phase_timing_keeps_current_windows():
+    assert_almost_eq(
+        Constants.timing_window_for_phase(Constants.TIMING_WINDOW_ATTACK, 1, false),
+        0.8,
+        0.001
+    )
+    assert_almost_eq(
+        Constants.timing_window_for_phase(Constants.TIMING_WINDOW_ATTACK, 4, false),
+        0.5,
+        0.001
+    )
+
+func test_touch_phase_timing_gets_point_two_second_bonus():
+    assert_almost_eq(
+        Constants.timing_window_for_phase(Constants.TIMING_WINDOW_ATTACK, 1, true),
+        1.0,
+        0.001
+    )
+    assert_almost_eq(
+        Constants.timing_window_for_phase(Constants.TIMING_WINDOW_ATTACK, 4, true),
+        0.7,
+        0.001
+    )

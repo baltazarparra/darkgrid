@@ -141,6 +141,10 @@ func get_dpad_screen_rect() -> Rect2:
 	return _pad.get_screen_rect()
 
 
+func is_touch_device_available() -> bool:
+	return _is_touch_device()
+
+
 # ─── Private helpers ───────────────────────────────
 func _resolve_should_show() -> bool:
 	if not _active_screen_wants_dpad:
