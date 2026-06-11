@@ -6,6 +6,17 @@ extends Boss
 ## no lugar da cabeça, um jato de fogo; aura de brasas no chão e telegraph de
 ## fogo no especial (em vez do roxo do Boss base).
 
+# ─── Animation override ─────────────────────────────
+func _on_state_changed(new_state: EnemyStateMachine.State) -> void:
+	super._on_state_changed(new_state)
+	if animated_sprite == null:
+		return
+	match new_state:
+		EnemyStateMachine.State.WIND_UP:
+			animated_sprite.play(&"windup")
+		EnemyStateMachine.State.ATTACK, EnemyStateMachine.State.IDLE, EnemyStateMachine.State.COOLDOWN:
+			animated_sprite.play(&"idle")
+
 # ─── Telegraph override ─────────────────────────────
 func _play_windup_telegraph() -> void:
 	if animated_sprite == null:

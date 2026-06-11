@@ -21,9 +21,8 @@ const CACADOR_ARENA_SCALE := 1.2
 
 # Cena da arena → [png idle, sprite_scale esperado, offset.y esperado]
 const BOSSES: Dictionary = {
-	# Mula segue legada (48×48, scale 3.5): a cena e o sprite reais — a entry
-	# 0.9/-77 que entrou junto do redesign do Boitatá não correspondia a nada.
-	"res://scenes/arena/mula.tscn": ["res://assets/sprites/mula_idle.png", 3.5, -18.0],
+	# Mula redesign premium 192×192: scale 0.9 mantém altura visual ~168 px.
+	"res://scenes/arena/mula.tscn": ["res://assets/sprites/mula_idle.png", 0.9, -77.0],
 	"res://scenes/arena/boitata.tscn": ["res://assets/sprites/boitata_idle.png", 1.2, -38.0],
 	"res://scenes/arena/curupira.tscn": ["res://assets/sprites/curupira_idle.png", 1.2, -47.0],
 	"res://scenes/arena/saci.tscn": ["res://assets/sprites/saci_idle.png", 1.2, -26.0],
