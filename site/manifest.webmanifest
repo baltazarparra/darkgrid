@@ -1,0 +1,16 @@
+{
+  "name": "caipora",
+  "short_name": "caipora",
+  "description": "Roguelike de horror folclórico brasileiro. A guardia da mata acordou.",
+  "start_url": "play/index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d1117",
+  "theme_color": "#0a0a0f",
+  "icons": [
+    { "src": "play/index.144x144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "play/index.180x180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "play/index.512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
