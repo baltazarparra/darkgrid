@@ -978,6 +978,24 @@ def _bass():
     return lambda d, f: triangle(d, f, release=0.15)
 
 
+def _music_air(buf, root, gain=0.04, pulse_hz=0.11):
+    """Cama organica discreta para loops musicais: ar lowpass + sub muito baixo.
+    Entra antes do bitcrush para colar os eventos sem virar ruido constante."""
+    lp = 0.0
+    for i in range(len(buf)):
+        t = i / SAMPLE_RATE
+        raw = _noise()
+        lp = lp * 0.985 + raw * 0.015
+        breath = lp * (0.55 + 0.45 * math.sin(2 * math.pi * pulse_hz * t + 0.7))
+        earth = math.sin(2 * math.pi * root * 0.5 * t) * 0.18
+        buf[i] += (breath + earth) * gain
+
+
+def _bone_clicks(buf, step, events):
+    """Madeira/osso seco no arranjo: ocupa o medio sem soar como beep melodico."""
+    _drums(buf, step, lambda: caixa(0.045, bright=0.42), events, humanize=True)
+
+
 def _arena_layers(bpm, root, scale, density):
     """Baque virado de combate em 3 STEMS verticais sincronizados (mesmo grid,
     mesmo tamanho): base = chão (alfaia + gonguê no 1 + baixo, sempre toca),
@@ -1086,63 +1104,105 @@ def mus_hub():
 
 
 def mus_explore_p1():
-    """Fase 1 — mata noturna: misterioso, médio, espaçoso. Batida-coração de alfaia,
-    ganzá leve, lead de pulso esparso deixando o ar respirar."""
-    buf, step = _new_buf(92, 2)
-    _drums(buf, step, lambda: alfaia(0.2, base=E2 * 0.5, punch=0.8),
-           [(0, 0.8), (10, 0.5), (16, 0.8), (26, 0.5)])
-    _drums(buf, step, lambda: ganza(0.05, rising=False), _shaker_run(2, sub=2))
-    _melody(buf, step, E2, MINOR_HARM, _bass(),
-            [(0, 0, 8, 0.7), (16, 3, 8, 0.7)])
-    _melody(buf, step, E2, MINOR_HARM, _lead(duty=0.25),
-            [(4, 7, 2, 0.36), (8, 9, 2, 0.34), (14, 11, 3, 0.4),
-             (20, 9, 2, 0.34), (28, 7, 3, 0.36)])
-    return _normalize(bitcrush(buf, bits=7), 0.8)
+    """Fase 1 — mata noturna: 3 compassos assimetricos. Baque de pele, resposta
+    de assovio distante e baixo em passos curtos; menos sirene, mais bicho na mata."""
+    buf, step = _new_buf(92, 3)
+    root = E2
+    _music_air(buf, root, gain=0.035, pulse_hz=0.10)
+    _drums(buf, step, lambda: alfaia(0.2, base=root * 0.5, punch=0.75),
+           [(0, 0.78), (10, 0.46), (16, 0.72), (22, 0.38), (27, 0.5),
+            (32, 0.7), (42, 0.46), (46, 0.34)], humanize=True)
+    _drums(buf, step, lambda: ganza(0.05, rising=False), _samba_shaker(3))
+    _bone_clicks(buf, step, [(7, 0.18), (15, 0.22), (25, 0.18), (31, 0.16),
+                             (39, 0.22), (45, 0.18)])
+    _melody(buf, step, root, MINOR_HARM, _bass(),
+            [(0, 0, 5, 0.62), (6, 4, 2, 0.38), (10, 3, 4, 0.48),
+             (16, 3, 6, 0.58), (24, 4, 3, 0.42), (28, 2, 2, 0.34),
+             (32, 0, 4, 0.56), (38, 2, 3, 0.42), (43, 3, 3, 0.5)])
+    _melody(buf, step, root, MINOR_HARM, _lead(duty=0.25, vib=0.006),
+            [(4, 7, 2, 0.30), (8, 9, 1, 0.26), (14, 11, 2, 0.30),
+             (21, 9, 2, 0.28), (29, 7, 2, 0.28), (36, 11, 1, 0.26),
+             (40, 12, 2, 0.28), (46, 9, 1, 0.24)])
+    _put(buf, echo(assovio(1.1, freq=note(root, 19), breath=0.08),
+                   time_s=0.22, feedback=0.22, mix=0.18, taps=2), 18, step, 0.20)
+    return _normalize(bitcrush(buf, bits=7), 0.78)
 
 
 def mus_explore_p2():
-    """Fase 2 — floresta em chamas: urgente, mais rápido, frígio. Pulso de baixo em
-    colcheias, hats de ruído (brasas), lead nervoso."""
-    buf, step = _new_buf(108, 2)
-    _drums(buf, step, lambda: alfaia(0.16, base=F2 * 0.5, punch=0.9),
-           [(0, 0.9), (6, 0.5), (8, 0.8), (14, 0.5), (16, 0.9), (22, 0.5), (24, 0.8), (30, 0.6)])
-    _drums(buf, step, lambda: nes_noise(0.04, decay=70.0, lp=0.3, gain=0.4),
-           [(st, 0.4) for st in range(32) if st % 2 == 1])
-    _drums(buf, step, lambda: ganza(0.05, rising=False), _shaker_run(2))
-    _melody(buf, step, F2, PHRYGIAN, _bass(),
-            [(st, 0 if (st // 8) % 2 == 0 else 1, 2, 0.75) for st in range(0, 32, 4)])
-    _melody(buf, step, F2, PHRYGIAN, _lead(duty=0.25),
-            [(0, 7, 1, 0.4), (2, 8, 1, 0.38), (4, 10, 2, 0.42), (8, 7, 1, 0.4),
-             (10, 11, 1, 0.4), (12, 8, 2, 0.4), (16, 7, 1, 0.4), (20, 10, 2, 0.42),
-             (24, 8, 1, 0.38), (28, 7, 3, 0.42)])
-    return _normalize(bitcrush(buf, bits=7), 0.82)
+    """Fase 2 — floresta em chamas: urgente, frígio, com brasas irregulares. O
+    baixo corre, mas a frase respira em 3 compassos para nao virar alarme."""
+    buf, step = _new_buf(108, 3)
+    root = F2
+    _music_air(buf, root, gain=0.026, pulse_hz=0.16)
+    _drums(buf, step, lambda: alfaia(0.16, base=root * 0.5, punch=0.9),
+           [(0, 0.88), (6, 0.48), (8, 0.72), (14, 0.5),
+            (16, 0.84), (21, 0.42), (24, 0.78), (30, 0.58),
+            (32, 0.9), (38, 0.52), (40, 0.7), (44, 0.36), (46, 0.62)],
+           humanize=True)
+    _drums(buf, step, lambda: nes_noise(0.045, decay=68.0, lp=0.32, gain=0.36),
+           [(st + random.uniform(-0.08, 0.08), 0.28 + 0.12 * ((st + 1) % 4 == 0))
+            for st in range(48) if st % 2 == 1])
+    _drums(buf, step, lambda: ganza(0.05, rising=False), _shaker_run(3))
+    _bone_clicks(buf, step, [(5, 0.16), (13, 0.18), (23, 0.18), (31, 0.16),
+                             (37, 0.18), (43, 0.16), (47, 0.20)])
+    _melody(buf, step, root, PHRYGIAN, _bass(),
+            [(0, 0, 2, 0.68), (4, 1, 2, 0.6), (8, 0, 2, 0.64), (12, 2, 2, 0.56),
+             (16, 1, 2, 0.62), (20, 0, 2, 0.62), (24, 3, 2, 0.58), (28, 1, 2, 0.56),
+             (32, 0, 2, 0.68), (36, 2, 2, 0.58), (40, 1, 2, 0.62), (44, 0, 2, 0.64)])
+    _melody(buf, step, root, PHRYGIAN, _lead(duty=0.25, vib=0.012),
+            [(0, 7, 1, 0.34), (2, 8, 1, 0.30), (4, 10, 1, 0.34), (7, 11, 1, 0.28),
+             (10, 8, 1, 0.30), (14, 7, 2, 0.34), (19, 10, 1, 0.30), (22, 12, 1, 0.32),
+             (26, 8, 2, 0.32), (33, 7, 1, 0.32), (36, 11, 1, 0.34),
+             (41, 10, 1, 0.32), (45, 8, 2, 0.34)])
+    return _normalize(bitcrush(buf, bits=7), 0.8)
 
 
 def mus_explore_p3():
-    """Fase 3 — névoa: lento, dissonante, detuneado. Lead de pulso com vibrato e ♭2
-    (frígio), percussão mínima. Desorienta."""
-    buf, step = _new_buf(72, 2)
-    _drums(buf, step, lambda: alfaia(0.26, base=DS2 * 0.25, punch=0.6), [(0, 0.6), (16, 0.55)])
-    _melody(buf, step, DS2, PHRYGIAN, _bass(),
-            [(0, 0, 10, 0.7), (12, 1, 4, 0.5), (16, 0, 10, 0.7), (28, 1, 4, 0.45)])
-    _melody(buf, step, DS2, PHRYGIAN, _lead(duty=0.5, vib=0.03),
-            [(2, 8, 4, 0.36), (8, 7, 3, 0.34), (14, 9, 4, 0.36),
-             (18, 8, 4, 0.34), (26, 7, 5, 0.36)])
-    return _normalize(bitcrush(buf, bits=6), 0.78)
+    """Fase 3 — névoa: dissonante sem sirene. Tons longos viram sopros quebrados,
+    o b2 aparece em lampejos, e o assovio some na lama."""
+    buf, step = _new_buf(72, 3)
+    root = DS2
+    _music_air(buf, root, gain=0.052, pulse_hz=0.07)
+    _drums(buf, step, lambda: alfaia(0.28, base=root * 0.25, punch=0.55),
+           [(0, 0.56), (17, 0.38), (32, 0.5), (43, 0.32)], humanize=True)
+    _drums(buf, step, lambda: ganza(0.08, rising=False),
+           [(3, 0.16), (11, 0.13), (20, 0.15), (29, 0.12), (37, 0.14), (46, 0.16)],
+           humanize=True)
+    _melody(buf, step, root, PHRYGIAN, _bass(),
+            [(0, 0, 7, 0.58), (10, 1, 3, 0.34), (16, 0, 5, 0.52),
+             (24, 2, 3, 0.34), (32, 0, 6, 0.56), (41, 1, 3, 0.34)])
+    fog_voice = lambda d, f: pulse(d, f, duty=0.5, vib=0.018, attack=0.05, release=0.45)
+    _melody(buf, step, root, PHRYGIAN, fog_voice,
+            [(4, 8, 2, 0.26), (9, 7, 2, 0.22), (15, 9, 2, 0.24),
+             (22, 8, 2, 0.22), (30, 7, 2, 0.22), (36, 10, 2, 0.24),
+             (44, 8, 2, 0.24)])
+    _put(buf, echo(assovio(1.0, freq=note(root, 18), freq_end=note(root, 17), breath=0.16),
+                   time_s=0.31, feedback=0.26, mix=0.18, taps=2), 25, step, 0.18)
+    return _normalize(bitcrush(buf, bits=6), 0.76)
 
 
 def mus_explore_p4():
-    """Fase 4 — ossos e ruína: frio e mínimo. Drone grave de triângulo, sino esparso
-    (agogô) como ossos batendo, alfaia sub rara."""
-    buf, step = _new_buf(66, 2)
-    _drums(buf, step, lambda: alfaia(0.3, base=C2 * 0.5, punch=0.6), [(0, 0.6), (20, 0.4)])
-    _drums(buf, step, lambda: agogo(0.16, freq=880.0, bend=0.0),
-           [(6, 0.3), (14, 0.25), (24, 0.3)])
-    _melody(buf, step, C2, MINOR_HARM, _bass(),
-            [(0, 0, 16, 0.75), (16, 5, 16, 0.6)])
-    _melody(buf, step, C2, MINOR_HARM, _lead(duty=0.125),
-            [(8, 7, 3, 0.3), (18, 10, 2, 0.28), (28, 7, 4, 0.3)])
-    return _normalize(bitcrush(buf, bits=6), 0.78)
+    """Fase 4 — ossos e ruína: frio e minimo, mas nao vazio. O drone sustentado
+    virou passos graves e sinos quebrados para evitar batimento de sirene."""
+    buf, step = _new_buf(66, 3)
+    root = C2
+    _music_air(buf, root, gain=0.05, pulse_hz=0.06)
+    _drums(buf, step, lambda: alfaia(0.30, base=root * 0.5, punch=0.58),
+           [(0, 0.58), (19, 0.34), (32, 0.52), (45, 0.28)], humanize=True)
+    _drums(buf, step, lambda: agogo(0.15, freq=820.0, bend=0.0),
+           [(6, 0.22), (14, 0.18), (25, 0.24), (38, 0.2), (47, 0.16)],
+           humanize=True)
+    _drums(buf, step, lambda: gongue(0.18, 360.0),
+           [(11, 0.18), (29, 0.16), (41, 0.18)], humanize=True)
+    _bone_clicks(buf, step, [(5, 0.14), (13, 0.16), (21, 0.13), (34, 0.16), (44, 0.14)])
+    _melody(buf, step, root, MINOR_HARM, _bass(),
+            [(0, 0, 7, 0.56), (9, 5, 3, 0.34), (16, 3, 5, 0.46),
+             (24, 5, 4, 0.38), (32, 0, 6, 0.52), (42, 3, 3, 0.36)])
+    bone_lead = lambda d, f: pulse(d, f, duty=0.125, vib=0.006, attack=0.008, release=0.22)
+    _melody(buf, step, root, MINOR_HARM, bone_lead,
+            [(8, 7, 1, 0.22), (18, 10, 1, 0.2), (27, 8, 1, 0.18),
+             (36, 11, 1, 0.22), (46, 7, 1, 0.18)])
+    return _normalize(bitcrush(buf, bits=6), 0.76)
 
 
 # ─── Faixas: arenas (stems; intensidade crescente por fase) ───
@@ -1276,21 +1336,32 @@ def mus_ending():
 
 
 def mus_explore_p5():
-    """Fase 5 — A Igreja na Mata: solene e profana. Drone de órgão (triângulo
-    sustentado) sob o frígio (♭2 = liturgia corrompida), sino de igreja (gonguê
-    grave + agogô) dobrando lento, alfaia fria como passos na nave e um canto
-    distante (pulso com vibrato). A ruína da Fase 4 consumada pelo sagrado."""
-    buf, step = _new_buf(58, 2)
+    """Fase 5 — A Igreja na Mata: orgao quebrado, pedra, agua e reza. O sagrado
+    corrompido pulsa em blocos curtos; nada fica sustentado tempo suficiente para
+    virar sirene."""
+    buf, step = _new_buf(58, 3)
     root = C2
-    _drums(buf, step, lambda: alfaia(0.3, base=root * 0.5, punch=0.6), [(0, 0.6), (16, 0.5)])
-    _drums(buf, step, lambda: gongue(0.22, 300.0), [(0, 0.5), (16, 0.45)])  # sino grave
-    _drums(buf, step, lambda: agogo(0.18, freq=760.0, bend=0.0), [(8, 0.3), (24, 0.28)])
-    _melody(buf, step, root, PHRYGIAN, _bass(),  # drone de órgão (tônica + quinta)
-            [(0, 0, 16, 0.78), (16, 4, 16, 0.62)])
-    _melody(buf, step, root, PHRYGIAN, _lead(duty=0.5, vib=0.02),  # canto distante
-            [(4, 7, 3, 0.32), (10, 8, 2, 0.3), (14, 11, 4, 0.34),
-             (20, 8, 3, 0.3), (28, 7, 4, 0.32)])
-    return _normalize(bitcrush(buf, bits=6), 0.78)
+    _music_air(buf, root, gain=0.045, pulse_hz=0.05)
+    _drums(buf, step, lambda: alfaia(0.32, base=root * 0.5, punch=0.55),
+           [(0, 0.56), (16, 0.42), (31, 0.34), (32, 0.5), (45, 0.32)],
+           humanize=True)
+    _drums(buf, step, lambda: gongue(0.24, 300.0),
+           [(0, 0.44), (17, 0.34), (33, 0.38)], humanize=True)
+    _drums(buf, step, lambda: agogo(0.16, freq=740.0, bend=0.0),
+           [(8, 0.22), (23, 0.18), (37, 0.22), (46, 0.16)], humanize=True)
+    _bone_clicks(buf, step, [(6, 0.12), (13, 0.10), (27, 0.12), (41, 0.12)])
+    organ = lambda d, f: triangle(d, f, attack=0.06, release=0.55)
+    _melody(buf, step, root, PHRYGIAN, organ,
+            [(0, 0, 5, 0.5), (7, 4, 3, 0.34), (12, 1, 3, 0.34),
+             (16, 0, 4, 0.46), (24, 5, 4, 0.34), (32, 1, 5, 0.48),
+             (40, 4, 3, 0.32), (44, 0, 3, 0.38)])
+    chant = lambda d, f: pulse(d, f, duty=0.5, vib=0.018, attack=0.08, release=0.45)
+    _melody(buf, step, root, PHRYGIAN, chant,
+            [(4, 7, 2, 0.24), (10, 8, 1, 0.22), (18, 11, 2, 0.24),
+             (28, 8, 2, 0.22), (36, 7, 2, 0.22), (46, 10, 1, 0.20)])
+    _put(buf, echo(assovio(1.2, freq=note(root, 19), freq_end=note(root, 18), breath=0.12),
+                   time_s=0.34, feedback=0.22, mix=0.16, taps=2), 20, step, 0.16)
+    return _normalize(bitcrush(buf, bits=6), 0.76)
 
 
 def mus_arena_p5():
