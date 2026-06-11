@@ -1,13 +1,13 @@
 extends GutTest
 
 # Integração da Fase 4 procedural (manager único, phase=4): a Casa em chamas,
-# boss Saci, sem tile de saída (progride ao derrotar o Saci → ENDING).
+# boss Saci guardando a saída — pisar no tile 'E' leva à Fase 5 (a igreja).
 
 func after_each() -> void:
 	GameState.player_map_pos = Vector2i(-1, -1)
 	GameState.defeated_enemy_ids.clear()
 
-func test_phase4_loads_with_saci_and_no_exit() -> void:
+func test_phase4_loads_with_saci_and_exit() -> void:
 	GameState.start_run()
 	GameState.player_map_pos = Vector2i(-1, -1)
 	var expected := MapGenerator.new().generate(MapConfig.for_phase(4), GameState.map_seed_for_phase(4))
@@ -19,5 +19,9 @@ func test_phase4_loads_with_saci_and_no_exit() -> void:
 	assert_eq(scene.get_node("Enemies").get_child_count(), MapConfig.for_phase(4).enemy_count,
 		"spawna os inimigos do mapa gerado (6)")
 	assert_eq(expected.boss().get("boss_type", ""), "saci", "boss da Fase 4 é o Saci")
-	assert_false(MapConfig.for_phase(4).has_exit, "Fase 4 não tem saída (derrota o Saci)")
-	assert_eq(expected.exit_pos, Vector2i(-1, -1), "Fase 4 não expõe exit_pos")
+	assert_true(MapConfig.for_phase(4).has_exit, "Fase 4 tem saída (matar o Saci não encerra a fase)")
+	assert_ne(expected.exit_pos, Vector2i(-1, -1), "Fase 4 expõe exit_pos")
+	assert_eq(int(scene._profile["next_screen_on_exit"]), int(SignalBus.Screen.EXPLORATION_PHASE5),
+		"saída da Fase 4 leva à Fase 5 (a igreja), não ao ENDING")
+	assert_eq(int(scene._profile["exit_marker"]), int(scene.ExitMarker.PULSING),
+		"saída marcada com luz pulsante")

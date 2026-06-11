@@ -244,7 +244,7 @@ func test_boss_carries_boss_type() -> void:
 			assert_eq(m.boss().get("boss_type", ""), expected,
 				"boss_type da fase %d" % phase)
 
-# ── has_exit: Fase 3 não tem tile 'E'; demais têm exatamente um ──
+# ── has_exit: fases 1–4 têm exatamente um tile 'E' (só a fase 5 não tem) ──
 func test_exit_tile_matches_has_exit() -> void:
 	for phase: int in PHASES:
 		var cfg := MapConfig.for_phase(phase)
@@ -260,6 +260,25 @@ func test_exit_tile_matches_has_exit() -> void:
 				assert_eq(exits, 1, "uma saída (fase %d seed %d)" % [phase, s])
 			else:
 				assert_eq(exits, 0, "sem tile de saída (fase %d seed %d)" % [phase, s])
+
+# ── Fase 3 (CORRIDOR): o Curupira posta adjacente à saída ──
+func test_phase3_boss_guards_exit() -> void:
+	for s: int in SEEDS:
+		var m := _gen(3, s)
+		var b := m.boss()
+		assert_eq(_manhattan(Vector2i(b["x"], b["y"]), m.exit_pos), 1,
+			"Curupira adjacente à saída (seed %d)" % s)
+
+# ── Fase 3: a saída fica num beco-sem-saída — sem como contornar o Curupira ──
+func test_phase3_exit_is_dead_end() -> void:
+	for s: int in SEEDS:
+		var m := _gen(3, s)
+		var floors := 0
+		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			if m.char_at(m.exit_pos + d) != "W":
+				floors += 1
+		assert_eq(floors, 1,
+			"saída com um único vizinho de chão, o tile do boss (seed %d)" % s)
 
 # ── Garantia: sempre existe rota até o boss SEM pisar em fogo ──
 func test_clean_path_to_boss_exists() -> void:

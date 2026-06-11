@@ -31,44 +31,55 @@ func after_each() -> void:
 		SceneTransition._tween.kill()
 
 # Instância DESTACADA (fora da árvore): _ready() não roda, então os $nós-filhos da
-# arena não são exigidos. _screen_phase/_is_phase_advance são puros (sem @onready).
+# arena não são exigidos. _resolve_next_screen é puro (só lê GameState).
 func _make_arena() -> ArenaManager:
 	var am: ArenaManager = ArenaManagerScript.new()
 	autofree(am)
 	return am
 
-# ── _screen_phase mapeia as 4 explorações; 0 para o resto ──
-func test_screen_phase_mapping() -> void:
-	var am := _make_arena()
-	assert_eq(am._screen_phase(SignalBus.Screen.EXPLORATION), 1, "fase 1")
-	assert_eq(am._screen_phase(SignalBus.Screen.EXPLORATION_PHASE2), 2, "fase 2")
-	assert_eq(am._screen_phase(SignalBus.Screen.EXPLORATION_PHASE3), 3, "fase 3")
-	assert_eq(am._screen_phase(SignalBus.Screen.EXPLORATION_PHASE4), 4, "fase 4")
-	assert_eq(am._screen_phase(SignalBus.Screen.EXPLORATION_PHASE5), 5, "fase 5")
-	for s: int in [SignalBus.Screen.HUB, SignalBus.Screen.ARENA, SignalBus.Screen.ENDING,
-			SignalBus.Screen.GAME_OVER, SignalBus.Screen.MAIN_MENU]:
-		assert_eq(am._screen_phase(s), 0, "tela %d não é exploração" % s)
+const SAME_PHASE_SCREEN := {
+	1: SignalBus.Screen.EXPLORATION,
+	2: SignalBus.Screen.EXPLORATION_PHASE2,
+	3: SignalBus.Screen.EXPLORATION_PHASE3,
+	4: SignalBus.Screen.EXPLORATION_PHASE4,
+	5: SignalBus.Screen.EXPLORATION_PHASE5,
+}
 
-# ── _is_phase_advance: só telas de fase POSTERIOR à atual ──
-func test_is_phase_advance() -> void:
+# ── Derrota → GAME_OVER, boss ou comum ──
+func test_resolve_defeat_goes_to_game_over() -> void:
 	var am := _make_arena()
-	# Boss da P2 → P3 e boss da P3 → P4 avançam.
-	GameState.active_phase = 2
-	assert_true(am._is_phase_advance(SignalBus.Screen.EXPLORATION_PHASE3), "P2→P3 avança")
-	GameState.active_phase = 3
-	assert_true(am._is_phase_advance(SignalBus.Screen.EXPLORATION_PHASE4), "P3→P4 avança")
-	# Boss da P4 → P5 (a igreja) avança pelo acampamento.
-	GameState.active_phase = 4
-	assert_true(am._is_phase_advance(SignalBus.Screen.EXPLORATION_PHASE5), "P4→P5 avança")
-	# Volta para a MESMA fase (boss da P1 / vitória comum) NÃO avança.
-	GameState.active_phase = 1
-	assert_false(am._is_phase_advance(SignalBus.Screen.EXPLORATION), "P1→P1 não avança")
-	GameState.active_phase = 2
-	assert_false(am._is_phase_advance(SignalBus.Screen.EXPLORATION_PHASE2), "P2→P2 não avança")
-	# ENDING (boss da P5) e GAME_OVER nunca avançam (screen_phase = 0).
+	for phase: int in SAME_PHASE_SCREEN.keys():
+		GameState.active_phase = phase
+		for is_boss: bool in [false, true]:
+			GameState.active_combat_is_boss = is_boss
+			assert_eq(am._resolve_next_screen(false), SignalBus.Screen.GAME_OVER,
+				"derrota na P%d (boss=%s) → GAME_OVER" % [phase, is_boss])
+
+# ── Vitória comum → exploração da MESMA fase ──
+func test_resolve_common_win_returns_to_same_phase() -> void:
+	var am := _make_arena()
+	GameState.active_combat_is_boss = false
+	for phase: int in SAME_PHASE_SCREEN.keys():
+		GameState.active_phase = phase
+		assert_eq(am._resolve_next_screen(true), SAME_PHASE_SCREEN[phase],
+			"vitória comum na P%d volta à mesma fase" % phase)
+
+# ── Vitória de BOSS (P1–P4) → MESMA fase: o avanço é só pelo tile de saída ──
+func test_resolve_boss_win_never_advances_phase() -> void:
+	var am := _make_arena()
+	GameState.active_combat_is_boss = true
+	for phase: int in [1, 2, 3, 4]:
+		GameState.active_phase = phase
+		assert_eq(am._resolve_next_screen(true), SAME_PHASE_SCREEN[phase],
+			"boss da P%d morto → volta à exploração da P%d (sem avanço)" % [phase, phase])
+
+# ── Boss FINAL (Jesuíta, P5) → ENDING direto ──
+func test_resolve_final_boss_win_goes_to_ending() -> void:
+	var am := _make_arena()
+	GameState.active_combat_is_boss = true
 	GameState.active_phase = 5
-	assert_false(am._is_phase_advance(SignalBus.Screen.ENDING), "P5→ENDING direto")
-	assert_false(am._is_phase_advance(SignalBus.Screen.GAME_OVER), "GAME_OVER direto")
+	assert_eq(am._resolve_next_screen(true), SignalBus.Screen.ENDING,
+		"Jesuíta morto encerra o jogo")
 
 # ── advance_phase_via_hub: guarda o destino, zera a continuidade e cai no HUB ──
 func test_advance_phase_via_hub() -> void:

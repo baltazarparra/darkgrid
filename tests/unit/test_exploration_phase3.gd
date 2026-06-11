@@ -1,7 +1,8 @@
 extends GutTest
 
 # Integração da Fase 3 procedural: a cena "Ventre da Mata" consome o GeneratedMap
-# (corredores via CORRIDOR), com fog of war, boss Curupira e progressão por derrota.
+# (corredores via CORRIDOR), com fog of war e o Curupira guardando o beco da saída —
+# pisar no tile 'E' leva à Fase 4 (matar o boss não encerra a fase).
 
 func after_each() -> void:
 	GameState.player_map_pos = Vector2i(-1, -1)
@@ -26,6 +27,15 @@ func test_phase3_loads_corridor_map_with_fog_and_curupira() -> void:
 		if c is FogOfWar:
 			has_fog = true
 	assert_true(has_fog, "fog of war presente na Fase 3")
+
+	assert_true(MapConfig.for_phase(3).has_exit, "Fase 3 tem saída (matar o Curupira não encerra a fase)")
+	assert_ne(expected.exit_pos, Vector2i(-1, -1), "Fase 3 expõe exit_pos")
+	assert_true(expected.reachable_from(expected.player_start).has(expected.exit_pos),
+		"a saída é alcançável a partir do spawn")
+	assert_eq(int(scene._profile["next_screen_on_exit"]), int(SignalBus.Screen.EXPLORATION_PHASE4),
+		"saída da Fase 3 leva à Fase 4")
+	assert_eq(int(scene._profile["exit_marker"]), int(scene.ExitMarker.PULSING),
+		"saída marcada com luz pulsante (legível na névoa)")
 
 func test_phase3_skips_defeated_enemies() -> void:
 	GameState.start_run()
