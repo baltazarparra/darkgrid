@@ -38,6 +38,7 @@ func _ready() -> void:
 	ActorContrast.apply_outline(_animated_sprite)
 	_apply_furia_visual()
 	_spawn_shadow()
+	ActorContrast.add_front_light(self, Vector2(0.0, -8.0), 0.7, 1.4)
 
 func _process(_delta: float) -> void:
 	if _is_moving:
