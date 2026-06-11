@@ -45,11 +45,12 @@ func test_exploration_keeps_floating_dpad() -> void:
 	assert_not_null(_hud._pad, "exploração usa o pad flutuante")
 	assert_true(_hud._keys.is_empty(), "exploração não usa botões fixos")
 
-func test_arena_uses_legacy_arrow_dpad() -> void:
+func test_arena_uses_claw_arrow_dpad() -> void:
 	_hud._on_screen_changed(SignalBus.Screen.ARENA)
-	assert_eq(_hud._button_mode, _hud.MODE_COMBAT, "arena usa o D-pad antigo")
-	assert_true(_hud._keys[0] is Button, "combate usa botões de texto com setas")
-	assert_eq((_hud._keys[0] as Button).text, "↑", "primeiro botão é a seta para cima")
+	assert_eq(_hud._button_mode, _hud.MODE_COMBAT, "arena usa o D-pad fixo de combate")
+	assert_eq(_hud._keys.size(), 4, "combate tem 4 direções")
+	assert_true(_hud._keys[0] is CombatArrowButton, "combate usa garras-chevron desenhadas")
+	assert_eq((_hud._keys[0] as CombatArrowButton).action, "ui_up", "primeiro botão é a direção para cima")
 	assert_gt(_hud.get_dpad_screen_rect().size.x, 0.0, "arena informa retângulo ocupado")
 
 func test_arena_dpad_sits_in_right_thumb_zone() -> void:
@@ -68,7 +69,8 @@ func test_landscape_arena_dpad_anchors_to_right_thumb_band() -> void:
 	var vp: Vector2 = Vector2(852.0, 393.0)
 	var key: float = 64.0
 	var gap: float = key * _hud.COMBAT_GAP_FRACTION
-	var cluster: Vector2 = Vector2(key * 3.0 + gap * 2.0, key * 2.0 + gap)
+	var side: float = key * 3.0 + gap * 2.0
+	var cluster: Vector2 = Vector2(side, side)
 	var rect: Rect2 = Rect2(
 		_hud._combat_origin_for_metrics(vp, Vector2(28.0, 28.0), cluster, key),
 		cluster
@@ -82,9 +84,36 @@ func test_landscape_arena_dpad_anchors_to_right_thumb_band() -> void:
 
 func test_arena_dpad_keeps_thumb_sized_targets() -> void:
 	_hud._on_screen_changed(SignalBus.Screen.ARENA)
+	var cluster: Rect2 = _hud.get_dpad_screen_rect()
 	for key in _hud._keys:
-		assert_gte(key.size.x, _hud.COMBAT_KEY_MIN, "alvo de toque mantém largura confortável")
-		assert_gte(key.size.y, _hud.COMBAT_KEY_MIN, "alvo de toque mantém altura confortável")
+		var btn := key as CombatArrowButton
+		assert_gte(btn._plate_rect.size.x, _hud.COMBAT_KEY_MIN, "plate visível mantém largura confortável")
+		assert_gte(btn._plate_rect.size.y, _hud.COMBAT_KEY_MIN, "plate visível mantém altura confortável")
+		assert_gt(btn.size.x, cluster.size.x, "área de toque excede o cluster visível (margem extra)")
+		assert_gt(btn.size.y, cluster.size.y, "área de toque excede o cluster visível (margem extra)")
+
+func test_arena_dpad_routes_whole_cluster_by_wedge() -> void:
+	# Toda a área do pad é clicável: cada quadrante (gajo) pertence à sua direção,
+	# mesmo FORA da plate desenhada — área efetiva de toque muito maior que o visual.
+	_hud._on_screen_changed(SignalBus.Screen.ARENA)
+	var actions_hit: Dictionary = {}
+	for key in _hud._keys:
+		var btn := key as CombatArrowButton
+		var center: Vector2 = btn._wedge_center
+		var arm: Vector2 = Vector2.ZERO
+		match btn.action:
+			"ui_up": arm = Vector2(0.0, -1.0)
+			"ui_down": arm = Vector2(0.0, 1.0)
+			"ui_left": arm = Vector2(-1.0, 0.0)
+			"ui_right": arm = Vector2(1.0, 0.0)
+		var probe: Vector2 = center + arm * (btn.size.x * 0.42)
+		assert_true(btn._has_point(probe), "%s aceita o próprio gajo" % btn.action)
+		assert_false(btn._has_point(center), "%s rejeita a zona morta central" % btn.action)
+		for other in _hud._keys:
+			if other != key and (other as CombatArrowButton)._has_point(probe):
+				fail_test("gajo de %s também aceito por %s" % [btn.action, (other as CombatArrowButton).action])
+		actions_hit[btn.action] = true
+	assert_eq(actions_hit.size(), 4, "as 4 direções têm gajo próprio")
 
 func test_all_arena_phase_screens_use_legacy_arrow_dpad() -> void:
 	_hud._on_screen_changed(SignalBus.Screen.ARENA_PHASE5)

@@ -125,6 +125,8 @@ encarando a esquerda; tom GORE/TERROR.
 poses extras (walk/strike/death — exigem mexer nos `.tres`), agressividade das
 faíscas do fetiche — desde que derive das assinaturas de silhueta.
 
-**Fora deste documento:** boss (Caçador-de-Machados) e minibosses (mula,
-boitatá, curupira, saci, jesuíta) seguem com a arte legada de `gen_chars.py`
-até suas próprias sessões de redesign neste mesmo pipeline.
+**Fora deste documento:** o Curupira já tem lei própria no mesmo pipeline
+(`docs/CONCEITO-curupira.md`, gerador `gen_bosses.py`); boss
+(Caçador-de-Machados) e demais minibosses (mula, boitatá, saci, jesuíta)
+seguem com a arte legada de `gen_chars.py` até suas próprias sessões de
+redesign neste mesmo pipeline.

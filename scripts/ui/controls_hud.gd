@@ -2,9 +2,10 @@ class_name ControlsHud
 extends CanvasLayer
 
 # D-pad de toque que espelha as setas do teclado. Na exploração/HUB usa o pad
-# flutuante padrão MOBA/AAA mobile; na arena volta para a cruz antiga de setas
-# explícitas, mais legível para comandos de timing. Cada press/release dirige os
-# DOIS consumidores de input do jogo:
+# flutuante padrão MOBA/AAA mobile; na arena usa um D-pad fixo em losango com
+# garras-chevron na identidade da protagonista (CombatArrowButton): área de toque
+# em gajos de 90° cobrindo o cluster inteiro, mais legível e ergonômico para
+# comandos de timing. Cada press/release dirige os DOIS consumidores de input do jogo:
 #   - Input.action_press/release  -> estado polado por caipora.gd (movimento)
 #   - Input.parse_input_event     -> evento recebido por timing_system._input (combate)
 
@@ -19,7 +20,9 @@ const REST_MARGIN_FRACTION: float = 0.55
 # Faixa do topo excluída da ativação do pad flutuante: ali vivem HUD e áudio.
 const TOP_EXCLUSION_FRACTION: float = 0.18
 
-# Visual antigo do combate: cruz fixa de setas, responsiva e fora das bolhas.
+# D-pad do combate: losango fixo de garras-chevron, responsivo e fora das bolhas.
+# `key` é o lado da plate visível; a área clicável é o cluster inteiro dividido em
+# gajos de 90° (CombatArrowButton._has_point) + margem extra ao redor.
 const COMBAT_KEY_FRACTION: float = 0.13
 const COMBAT_KEY_MIN: float = 56.0
 const COMBAT_KEY_MAX: float = 96.0
@@ -30,9 +33,10 @@ const COMBAT_SIDE_MARGIN_FRACTION: float = 0.45
 const COMBAT_BOTTOM_MARGIN_FRACTION: float = 0.55
 const COMBAT_LANDSCAPE_CENTER_Y_FRACTION: float = 0.62
 const COMBAT_LANDSCAPE_BOTTOM_MARGIN_FRACTION: float = 0.18
-const COMBAT_PRESS_SCALE: float = 0.92
-const COMBAT_PRESS_TWEEN_SECONDS: float = 0.045
-const COMBAT_HAPTIC_MS: int = 10
+# Margem de toque além do cluster visível e zona morta central (frações de `key`).
+const COMBAT_HIT_MARGIN_FRACTION: float = 0.35
+const COMBAT_DEAD_ZONE_FRACTION: float = 0.18
+const COMBAT_HAPTIC_MS: int = 12
 const TOUCH_SAFE_MARGIN: float = 28.0
 
 const MODE_EXPLORATION: int = 0
@@ -42,15 +46,11 @@ const MODE_COMBAT: int = 1
 const NO_POINTER: int = -1
 const MOUSE_POINTER_INDEX: int = -1000
 
-const _BUILD_TAG: String = "dpad-float-combat-arrows-1"
+const _BUILD_TAG: String = "dpad-float-combat-claw-2"
 const _GAMEPLAY_SCREEN_PREFIXES: Array = ["EXPLORATION", "ARENA", "HUB"]
 const FloatingDpadScript := preload("res://scripts/ui/floating_dpad.gd")
-const _ENTRIES: Array = [
-	["ui_up", "↑"],
-	["ui_left", "←"],
-	["ui_down", "↓"],
-	["ui_right", "→"],
-]
+const CombatArrowButtonScript := preload("res://scripts/ui/combat_arrow_button.gd")
+const _ACTIONS: Array = ["ui_up", "ui_left", "ui_down", "ui_right"]
 
 # ─── State ─────────────────────────────────────────
 var _root: Control = null
@@ -64,9 +64,14 @@ var _button_mode: int = -1
 var _touch_detected: bool = false
 
 
+# Acima da Atmosphere (50): a vinheta escurecia ~65% o canto onde o D-pad vive,
+# matando a leitura das garras. Input crítico de timing fica limpo; o pause
+# (OptionsPanel, 60) e o SceneTransition (100) seguem cobrindo o pad.
+const HUD_LAYER: int = 55
+
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
-	layer = 20
+	layer = HUD_LAYER
 	print("[caipora] build ", _BUILD_TAG)
 	SignalBus.screen_changed.connect(_on_screen_changed)
 
@@ -243,37 +248,15 @@ func _build_floating_pad() -> void:
 
 
 func _build_combat_buttons() -> void:
-	for entry in _ENTRIES:
-		var action: String = entry[0]
-		var btn := _make_combat_button(entry[1])
+	for action: String in _ACTIONS:
+		var btn: BaseButton = CombatArrowButtonScript.new()
+		btn.action = action
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
 		btn.button_down.connect(_on_pressed.bind(action))
 		btn.button_up.connect(_on_released.bind(action))
 		_root.add_child(btn)
 		_keys.append(btn)
-
-
-func _make_combat_button(label: String) -> Button:
-	var btn := Button.new()
-	btn.text = label
-	btn.add_theme_font_size_override("font_size", Constants.FONT_MD)
-	btn.add_theme_color_override("font_color", Constants.COLOR_TEXT)
-	btn.add_theme_color_override("font_pressed_color", Constants.COLOR_AMBER)
-	btn.add_theme_stylebox_override("normal", _combat_style(false))
-	btn.add_theme_stylebox_override("hover", _combat_style(false))
-	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	btn.add_theme_stylebox_override("pressed", _combat_style(true))
-	return btn
-
-
-func _combat_style(pressed: bool) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.06, 0.04, 0.10, 0.98 if pressed else 0.90)
-	style.border_color = Constants.COLOR_AMBER if pressed else Color(0.50, 0.44, 0.62, 1.0)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(4)
-	return style
 
 
 func _layout_controls() -> void:
@@ -319,35 +302,41 @@ func _layout_combat_buttons() -> void:
 	var gap: float = key * COMBAT_GAP_FRACTION
 	var safe: Vector2 = _get_safe_margins()
 	var side_margin: float = maxf(key * COMBAT_SIDE_MARGIN_FRACTION, safe.x)
-	var cluster_w: float = key * 3.0 + gap * 2.0
-	var cluster_h: float = key * 2.0 + gap
+	# Cluster quadrado: losango N/O/S/L numa grade 3×3 de plates.
+	var cluster_side: float = key * 3.0 + gap * 2.0
 	var max_cluster_w: float = vp.x * COMBAT_MAX_WIDTH_FRACTION - side_margin
-	if cluster_w > max_cluster_w and max_cluster_w > 0.0:
-		var shrink: float = max_cluster_w / cluster_w
+	if cluster_side > max_cluster_w and max_cluster_w > 0.0:
+		var shrink: float = max_cluster_w / cluster_side
 		key *= shrink
 		gap *= shrink
-		cluster_w = key * 3.0 + gap * 2.0
-		cluster_h = key * 2.0 + gap
+		cluster_side = key * 3.0 + gap * 2.0
 
-	var cluster: Vector2 = Vector2(cluster_w, cluster_h)
+	var cluster: Vector2 = Vector2(cluster_side, cluster_side)
 	var origin: Vector2 = _combat_origin_for_metrics(vp, safe, cluster, key)
 	_dpad_rect = Rect2(origin, cluster)
 
-	var cx: float = origin.x + key + gap
-	var y_top: float = origin.y
-	var y_bot: float = origin.y + key + gap
-	var positions: Array[Vector2] = [
-		Vector2(cx, y_top),
-		Vector2(origin.x, y_bot),
-		Vector2(cx, y_bot),
-		Vector2(origin.x + key * 2.0 + gap * 2.0, y_bot),
+	# Plates no losango (ordem de _ACTIONS: up, left, down, right).
+	var arm: float = key + gap
+	var plate_offsets: Array[Vector2] = [
+		Vector2(arm, 0.0),
+		Vector2(0.0, arm),
+		Vector2(arm, arm * 2.0),
+		Vector2(arm * 2.0, arm),
 	]
 
+	# Cada botão cobre o cluster INTEIRO + margem de toque; o _has_point do
+	# CombatArrowButton restringe ao gajo de 90° da própria direção.
+	var hit_margin: float = key * COMBAT_HIT_MARGIN_FRACTION
+	var margin_vec: Vector2 = Vector2.ONE * hit_margin
 	for i in _keys.size():
 		var btn := _keys[i]
-		btn.position = positions[i]
-		btn.size = Vector2(key, key)
-		btn.pivot_offset = btn.size * 0.5
+		btn.position = origin - margin_vec
+		btn.size = cluster + margin_vec * 2.0
+		(btn as CombatArrowButton).configure(
+			Rect2(plate_offsets[i] + margin_vec, Vector2(key, key)),
+			margin_vec + cluster * 0.5,
+			key * COMBAT_DEAD_ZONE_FRACTION
+		)
 
 
 func _combat_origin_for_metrics(vp: Vector2, safe: Vector2, cluster: Vector2, key: float) -> Vector2:
@@ -433,23 +422,22 @@ func _get_safe_margins() -> Vector2:
 
 
 func _on_pressed(action: String) -> void:
-	_apply_combat_button_feedback(action, true)
 	_pulse_combat_haptic()
+	_play_combat_tap_sfx()
 	Input.action_press(action)
 	_feed_event(action, true)
 
 
 func _on_released(action: String) -> void:
-	_apply_combat_button_feedback(action, false)
 	Input.action_release(action)
 	_feed_event(action, false)
 
 
 func _release_all_actions() -> void:
-	for entry in _ENTRIES:
-		Input.action_release(entry[0])
+	for action: String in _ACTIONS:
+		Input.action_release(action)
 	for btn in _keys:
-		btn.scale = Vector2.ONE
+		(btn as CombatArrowButton).clear_feedback()
 
 
 func _feed_event(action: String, pressed: bool) -> void:
@@ -460,33 +448,22 @@ func _feed_event(action: String, pressed: bool) -> void:
 	Input.parse_input_event(ev)
 
 
-func _apply_combat_button_feedback(action: String, pressed: bool) -> void:
-	if _button_mode != MODE_COMBAT:
-		return
-	var index := _action_index(action)
-	if index < 0 or index >= _keys.size():
-		return
-	var btn := _keys[index]
-	var target := Vector2.ONE * (COMBAT_PRESS_SCALE if pressed else 1.0)
-	var tween := btn.create_tween()
-	tween.set_trans(Tween.TRANS_SINE)
-	tween.set_ease(Tween.EASE_OUT)
-	tween.tween_property(btn, "scale", target, COMBAT_PRESS_TWEEN_SECONDS)
-
-
 func _pulse_combat_haptic() -> void:
 	if _button_mode != MODE_COMBAT:
 		return
-	if not OS.has_feature("web"):
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval(
+			"if (navigator.vibrate) navigator.vibrate(%d);" % COMBAT_HAPTIC_MS,
+			false
+		)
+	else:
+		# Mobile nativo (fora do browser): mesma pulsação curta de confirmação.
+		Input.vibrate_handheld(COMBAT_HAPTIC_MS)
+
+
+## Tick sonoro do toque no D-pad de combate (o visual fica no CombatArrowButton;
+## o som, como o háptico e a injeção, é contrato do HUD).
+func _play_combat_tap_sfx() -> void:
+	if _button_mode != MODE_COMBAT:
 		return
-	JavaScriptBridge.eval(
-		"if (navigator.vibrate) navigator.vibrate(%d);" % COMBAT_HAPTIC_MS,
-		false
-	)
-
-
-func _action_index(action: String) -> int:
-	for i in _ENTRIES.size():
-		if _ENTRIES[i][0] == action:
-			return i
-	return -1
+	AudioDirector.play_dpad_tap()

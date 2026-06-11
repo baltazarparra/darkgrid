@@ -669,6 +669,16 @@ def mata_event_wav():
     return _normalize(_mix(out, bed), 0.5)
 
 
+def dpad_tap_wav():
+    # Toque nas garras do D-pad de combate: tock surdo de madeira (caixa abafada +
+    # nó grave curtíssimo). Mais escuro, mais curto e menos brilhante que o ui_click
+    # — é feedback tátil de dedo, não clique de menu. O nível baixo vem do play
+    # (AudioDirector.DPAD_TAP_VOLUME_DB), não do asset (o fiscal normaliza).
+    knock = pulse(0.028, 220.0 * _jit(0.1), duty=0.5, attack=0.001, release=0.5)
+    body = biquad(caixa(0.035, bright=0.5), "lp", 1500.0, q=0.9)
+    return _normalize(_mix(body, [s * 0.6 for s in knock]), 0.5)
+
+
 GENERATORS = {
     "attack": attack_wav,
     "hit": hit_wav,
@@ -684,6 +694,10 @@ GENERATORS = {
     "herb_pickup": herb_pickup_wav,
     "pipe_smoke": pipe_smoke_wav,
     "mata_event": mata_event_wav,
+    # NOVOS geradores entram sempre no FIM do dicionário: a seed da variante é
+    # única por passada e cada gerador consome o stream — inserir no meio mudaria
+    # os bytes de todos os SFX seguintes.
+    "dpad_tap": dpad_tap_wav,
 }
 
 

@@ -583,6 +583,39 @@ chefe** (12/22/30/36); assets **AAA via pipeline procedural** (gen_chars/tiles/s
   `mus_boss_jesuita` com sino de igreja) wiradas no `AudioDirector`, `CanvasModulate`
   frio. `test_church_props.gd` + `test_audio_director` (P5).
 
+### Dois Finais: a Escolha Final — "Poupar ele?" ✅
+
+Derrotar o Jesuíta não encerra mais o jogo direto: abre a **cena da escolha
+final** (`FINAL_CHOICE`), uma cinemática AAA montada por código — a Caipora **de
+costas** (pose `back` nova no `gen_caipora.py`), o Jesuíta **caído e respirando**
+sob o facho do vitral, poça de sangue crescendo, letterbox, push-in lento, órgão
+estertorando — e UMA pergunta com duas respostas:
+
+- **NÃO (executar)** → `ENDING` (final canônico, intocado) + mensagem nova no
+  céu do por do sol: **"a floresta segue respirando"**.
+- **SIM (poupar)** → `ENDING_SACRIFICE` (final novo): a misericórdia é paga com
+  água benta — **a Caipora morre e a floresta vira cristã**. Amanhecer alvejado,
+  sol pálido de hóstia, treelines PARADAS (sway 0 — a mata não respira), cemitério
+  de cruzes, o corpo dela (pose `dead`, sem olhos) ao pé de uma cruz com poça de
+  sangue, sino da igreja dobrando, sem música.
+
+- [x] Telas `FINAL_CHOICE`/`ENDING_SACRIFICE` no enum + `_scene_path_for`;
+  `ArenaManager._resolve_next_screen` (P5 boss → FINAL_CHOICE) e
+  `_do_screen_change` (caminho terminal não registra defeated_id).
+- [x] `final_choice_screen.gd` (+ roteador puro `screen_for_choice`), com os dois
+  beats de saída: execução (golpe seco, flash, shake, sangue) e poupar (a água
+  benta branca engole a nave).
+- [x] `ending_sacrifice_screen.gd` + mensagem no céu do `ending_screen.gd`.
+- [x] Poses novas `back`/`dead` (+_chama) SOMENTE via `gen_caipora.py` (de costas:
+  sem olhos, lâmina desponta da capa; morta: mortalha de juba, vazio fechado,
+  cajado caído) + travas de marca em `test_caipora_sprite_assets.gd`.
+- [x] Áudio: órgão estertor movido do ENDING para a FINAL_CHOICE (o momento da
+  queda), ambiência/reverb de igreja na escolha, sino no sacrifício, silêncio
+  musical nos dois (`test_audio_director`).
+- [x] `test_final_choice.gd` (roteamento, contrato de cena, idempotência da
+  escolha, end_run só nos finais) + `preview_final_scenes.gd` (capturas Xvfb,
+  inclusive e2e dos dois desfechos com `--choose=sim|nao`).
+
 ### Economia & Aprimoramentos v2 ✅
 
 Redefinição coerente da economia e da escala dos aprimoramentos para um roguelike
@@ -864,9 +897,10 @@ aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no fo
 | KI-009 | Média | ✅ Resolvida | `Constants.caipora_base_damage_for_phase()` voltou a ser base fixa (`1`) em toda fase; a arena soma apenas Fúria/CHAMA por cima, então o texto das ervas volta a ser o teto real comunicado ao jogador. |
 | KI-010 | Média | ✅ Resolvida | A vitória terminal libera `phase_reached = 6`: matar o Jesuíta marca o marco no `ArenaManager`, e `GameState.end_run(true)` também garante o unlock pós-clear antes de salvar a vitória. |
 | KI-011 | Baixa | ✅ Resolvida | O loop de hover do menu tipava `Button` num array que inclui o `GithubLink` (`LinkButton`, irmão de `Button`): o array tipado rejeitava o item (vira `null`) e o som de hover do link morria em silêncio com SCRIPT ERROR no console. Corrigido tipando `BaseButton`. |
-| KI-012 | Baixa | Parcial | Hierarquia de escala dos bosses: a PROPORÇÃO na arena foi corrigida fiel à lore via `sprite_scale`/offset de pés por cena (Saci 1.8 < Caipora ≈ Curupira 2.0 < Jesuíta 2.7/machados 2.8 ≈ caçador < Boitatá premium 1.2 < Mula 3.5; contrato em `test_boss_scale_proportions.gd`). Boitatá foi redesenhado em pipeline premium (`gen_boitata.py`, arena 160×128, idle/windup, escala 1.2). Segue pendente para os demais: arte legada 48×48 upscalada gera texels maiores que os dos comuns (112×112) — resolver nas sessões de redesign de cada chefe em canvas ≥128, herdando as alturas visuais do contrato, um por sessão; no MAPA os bosses seguem 48×48. |
+| KI-012 | Baixa | Parcial | Hierarquia de escala dos bosses: a PROPORÇÃO na arena foi corrigida fiel à lore via `sprite_scale`/offset de pés por cena (Saci 1.8 < Caipora ≈ Curupira < Jesuíta 2.7/machados 2.8 ≈ caçador < Boitatá < Mula; contrato em `test_boss_scale_proportions.gd`). **Curupira e Boitatá já migraram** (2026-06): Curupira no pipeline premium `gen_bosses.py` (canvas 128 arena a escala de nó 1.2 + variante de mapa 48 — lei em `docs/CONCEITO-curupira.md`, contrato em `test_curupira_sprite_assets.gd`); Boitatá em `gen_boitata.py` (arena 160×128, idle/windup, escala 1.2). Segue pendente para os demais (Mula, Saci, Jesuíta, Machados): arte legada 48×48 upscalada gera texels maiores que os dos comuns (112×112) — resolve nas sessões de redesign de cada um (canvas ≥128, herdando as alturas visuais do contrato), um por sessão; no MAPA os bosses seguem 48×48. |
 | KI-013 | Baixa | Aberta | `shaders/enemy_outline.gdshader` usa comentários `##`; no renderer dummy/headless do GUT isso emite `SHADER ERROR: Unknown character #35` ao instanciar criaturas, embora a suíte siga verde. Corrigir antes/de junto da Etapa 3 do `PRD-visual-exploracao.md`, que vai reutilizar esse outline nos inimigos do mapa. |
-| KI-014 | Baixa | Aberta | Há assets/pipeline de Mula premium no workspace (`gen_mula.py`, `mula_idle.png`, `mula_windup.png`) sem a cena/contrato de escala correspondentes: `test_boss_scale_proportions.gd` lê os pés da Mula em ~262px abaixo da origem e quebra o gate. Resolver na sessão própria da Mula ajustando cena, offset, escala 1.2 e contrato visual; não misturar com redesign do Boitatá. |
+| KI-014 | Baixa | ✅ Resolvida | `test_caipora_movement` flakava sob carga da suíte: o timer do teste (0.2s) e o tween de movimento (0.15s) avançam no mesmo relógio e, num hitch de frame, cruzavam o limiar no MESMO frame — o timer resumia o teste antes do passo final do tween (`63.67 != 64`). Margem ampliada para 0.35s + um `process_frame` de folga após o timer. |
+| KI-015 | Média | ✅ Resolvida | O redesign do Boitatá (PR #58) criou `gen_boitata.py` mas esqueceu a delegação no entrypoint: `gen_chars.py` seguia chamando o `boitata()` legado, então qualquer regeneração (`python3 gen_chars.py`) sobrescreveria o `boitata_idle.png` premium 160×128 com o desenho 48×48 antigo (o gate pegaria via `test_boitata_sprite_assets`, mas só depois do estrago no working tree). Junto veio uma entry da Mula no teste de escala (0.9/-77) que não correspondia nem à cena (3.5/-18) nem ao sprite legado — `test_boss_scenes_keep_scale_and_offset` vermelho na main. Corrigidos no merge da PR #59: delegação `gen_boitata.generate_all()` + remoção do legado morto (regeneração completa confere zero diff de assets) e entry da Mula restaurada aos valores reais. |
 
 ---
 

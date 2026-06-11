@@ -143,6 +143,14 @@ const COLOR_FIRE_HOT := Color(1.00, 0.55, 0.05)
 const COLOR_FIRE_MID := Color(0.85, 0.30, 0.0)
 const COLOR_FIRE_LOW := Color(0.75, 0.20, 0.0)
 
+# Juba/CHAMA da protagonista (= gen_caipora.py / docs/CONCEITO-protagonista.md).
+# Identidade do D-pad de combate: garra laranja serrilhada sobre vazio preto;
+# o press flasheia nos tons de CHAMA.
+const COLOR_JUBA := Color("#ff4500")
+const COLOR_JUBA_DARK := Color("#8b2a00")
+const COLOR_CHAMA_HOT := Color("#ffb032")
+const COLOR_CHAMA_CORE := Color("#ffefb2")
+
 # Cristal do cajado da Caipora (acento frio da protagonista).
 const COLOR_CRYSTAL := Color("#1da75c")                  # esmeralda (= CR do gen_caipora.py)
 const COLOR_CRYSTAL_GLOW := Color(0.55, 1.7, 0.9, 1.0)   # overbright p/ glow aditivo
