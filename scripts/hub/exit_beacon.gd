@@ -7,12 +7,12 @@ extends Control
 # voltar à mata. A seta repousa na borda da tela na direção do rastro e some quando ele entra no
 # quadro (a luz âmbar pulsante do mundo já o marca de perto). Não rouba o toque (mouse ignorado).
 
-const EDGE_MARGIN := 56.0      # afastamento da seta em relação à borda da tela
-const ARROW_LEN := 18.0        # meio-comprimento do triângulo (ponta ↔ base)
-const ARROW_HALF_W := 13.0     # meia-largura da base do triângulo
+const EDGE_MARGIN := 72.0      # afastamento da seta em relação à borda da tela
+const ARROW_LEN := 24.0        # meio-comprimento do triângulo (ponta ↔ base)
+const ARROW_HALF_W := 18.0     # meia-largura da base do triângulo
 const ON_SCREEN_INSET := 28.0  # folga: trata como "na tela" um pouco antes da borda real
 const LABEL := "rastro"
-const LABEL_FONT_SIZE := 14
+const LABEL_FONT_SIZE := 16
 
 var _target_world: Vector2
 var _pulse: float = 0.0
@@ -39,7 +39,7 @@ func _draw() -> void:
 		return
 	dir = dir.normalized()
 	var pos := _edge_point(vp, center, dir)
-	var alpha := 0.55 + 0.45 * (0.5 + 0.5 * sin(_pulse * 3.0))  # respiro âmbar
+	var alpha := 0.70 + 0.30 * (0.5 + 0.5 * sin(_pulse * 3.0))  # respiro âmbar
 	_draw_arrow(pos, dir, alpha)
 
 # Ponto na borda interna (com EDGE_MARGIN) na direção dir a partir do centro da tela.

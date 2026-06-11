@@ -97,6 +97,13 @@ const BOSS_FRAGMENT_BOUNTY := { 1: 3, 2: 5, 3: 8, 4: 12, 5: 20 }
 # jogo referencia ESTE recurso (PLANO-performance-60fps G9).
 const ADDITIVE_MATERIAL: CanvasItemMaterial = preload("res://resources/materials/additive_glow.tres")
 
+# ─── Arena actor contrast (shadow + front-light) ───
+const SHADOW_OVAL_PATH := "res://assets/sprites/shadow_oval.png"
+const COLOR_ENEMY_FRONT_LIGHT := Color(0.85, 0.80, 0.75)  # branco-quente sutil
+const COLOR_ENEMY_SHADOW := Color(0.0, 0.0, 0.0, 0.45)
+const ENEMY_FRONT_LIGHT_ENERGY := 0.35
+const ENEMY_FRONT_LIGHT_SCALE := 1.2
+
 # ─── Colors (Horror Folk Palette) ──────────────────
 # Fonte ÚNICA de cor do jogo. Qualquer Color() novo deve referenciar/derivar daqui —
 # não inventar tons soltos nos scripts. (doom_fire.gd é a única exceção: gradiente próprio.)

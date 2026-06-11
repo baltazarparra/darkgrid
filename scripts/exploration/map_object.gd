@@ -354,8 +354,12 @@ func _draw_burrow(cx: float, cy: float) -> void:
 	var leaf := Constants.COLOR_MOSS_DECO
 	var leaf_dark := Constants.COLOR_MOSS_DECO_DARK
 	var twig := Constants.COLOR_BARK
-	# aro de terra revolvida em volta da boca
-	draw_colored_polygon(_ellipse(Vector2(cx, cy + 2), 13.0, 9.5), earth)
+	# halo âmbar de portal ativo: brilho que marca a saída contra o chão escuro
+	var amber_glow := Constants.COLOR_AMBER
+	amber_glow.a = 0.45
+	draw_colored_polygon(_ellipse(Vector2(cx, cy + 2), 16.0, 12.0), amber_glow)
+	# aro de terra revolvida em volta da boca (maior para ler melhor)
+	draw_colored_polygon(_ellipse(Vector2(cx, cy + 2), 15.0, 11.0), earth)
 	# parede interna em sombra (dá profundidade ao mergulho)
 	draw_colored_polygon(_ellipse(Vector2(cx, cy + 2.5), 10.5, 7.5), bark_dark)
 	# o buraco em si: escuridão total
@@ -364,10 +368,11 @@ func _draw_burrow(cx: float, cy: float) -> void:
 	draw_line(Vector2(cx - 12, cy - 4), Vector2(cx - 3, cy - 8), twig, 1.5)
 	draw_line(Vector2(cx + 4, cy - 9), Vector2(cx + 12, cy - 3), twig, 1.5)
 	# folhas amontoadas na beirada de cima (monte mais denso atrás da boca)
+	# folhas claras predominam para contraste contra o chão
 	var pile: Array = [
-		[Vector2(cx - 8, cy - 6), 3.5, leaf], [Vector2(cx - 2, cy - 8), 4.0, leaf_dark],
-		[Vector2(cx + 5, cy - 7), 3.5, leaf], [Vector2(cx + 10, cy - 4), 2.8, leaf_dark],
-		[Vector2(cx - 12, cy - 2), 2.6, leaf_dark], [Vector2(cx + 1, cy - 5), 3.0, leaf],
+		[Vector2(cx - 8, cy - 6), 3.5, leaf], [Vector2(cx - 2, cy - 8), 4.0, leaf],
+		[Vector2(cx + 5, cy - 7), 3.5, leaf], [Vector2(cx + 10, cy - 4), 2.8, leaf],
+		[Vector2(cx - 12, cy - 2), 2.6, leaf], [Vector2(cx + 1, cy - 5), 3.0, leaf],
 	]
 	for p: Array in pile:
 		draw_circle(p[0], p[1], p[2])

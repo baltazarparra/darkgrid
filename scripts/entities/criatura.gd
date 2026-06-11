@@ -42,6 +42,9 @@ func _ready() -> void:
 		state_machine.state_changed.connect(_on_state_changed)
 	health.died.connect(_kill_telegraph)
 
+	_spawn_shadow()
+	_spawn_front_light()
+
 # ─── Telegraph ─────────────────────────────────────
 func _on_state_changed(new_state: EnemyStateMachine.State) -> void:
 	match new_state:
@@ -98,3 +101,26 @@ func _kill_telegraph() -> void:
 	if animated_sprite != null:
 		animated_sprite.modulate = _base_modulate
 		animated_sprite.scale = _base_scale
+
+## Sombra oval no chão, atrás do sprite — ancora visual contra o fundo escuro.
+func _spawn_shadow() -> void:
+	var shadow := Sprite2D.new()
+	shadow.texture = load(Constants.SHADOW_OVAL_PATH)
+	shadow.z_index = -1
+	shadow.modulate = Constants.COLOR_ENEMY_SHADOW
+	# Posiciona nos pés do ator (origem do CharacterBody2D).
+	shadow.position = Vector2(0.0, 2.0)
+	# Escala proporcional à massa do sprite, achatada para ler como pool no chão.
+	shadow.scale = Vector2(sprite_scale * 0.9, sprite_scale * 0.35)
+	add_child(shadow)
+
+## Luz frontal sutil que destaca o contorno do inimigo sobre o CanvasModulate escuro.
+func _spawn_front_light() -> void:
+	var light := ForestLight.make(
+		Constants.COLOR_ENEMY_FRONT_LIGHT,
+		Constants.ENEMY_FRONT_LIGHT_ENERGY,
+		Constants.ENEMY_FRONT_LIGHT_SCALE
+	)
+	# O inimigo encara a Caipora pela esquerda; a luz vem da frente (esquerda).
+	light.position = Vector2(-18.0 * sprite_scale, -22.0)
+	add_child(light)

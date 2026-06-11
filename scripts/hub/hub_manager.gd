@@ -25,8 +25,8 @@ const WALL_VARIANTS := 2
 # Clareira do acampamento: retângulo de chão centrado no grid, cercado de parede. O grid
 # mantém GRID_WIDTH×GRID_HEIGHT (a câmera da Caipora usa essas dimensões), então a mata em
 # volta da clareira emoldura o respiro sem barras pretas.
-const CLEARING_WIDTH := 14
-const CLEARING_HEIGHT := 10
+const CLEARING_WIDTH := 16
+const CLEARING_HEIGHT := 12
 
 # ─── Onready ───────────────────────────────────────
 @onready var _tilemap: TileMap = $TileMap
@@ -124,12 +124,12 @@ func _spawn_exit_marker() -> void:
 	_objects.add_child(burrow)
 	burrow.setup(MapObject.Type.BURROW, _exit_pos)
 	# Luz âmbar pulsante: marca a saída na penumbra sem texto (mesma leitura da exploração).
-	var light := ForestLight.make(Constants.COLOR_AMBER, 1.0, 1.0)
+	var light := ForestLight.make(Constants.COLOR_AMBER, 1.0, 1.8)
 	light.position = center
 	_objects.add_child(light)
 	var tween := create_tween().set_loops()
-	tween.tween_property(light, "energy", 1.4, 1.1).set_trans(Tween.TRANS_SINE)
-	tween.tween_property(light, "energy", 0.7, 1.1).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(light, "energy", 2.0, 1.3).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(light, "energy", 0.9, 1.3).set_trans(Tween.TRANS_SINE)
 
 # Seta de borda que aponta pro rastro enquanto ele está fora do quadro (em retrato a saída
 # nasce fora da tela, à direita). Numa CanvasLayer acima do mundo e abaixo do HubShop (layer 10),

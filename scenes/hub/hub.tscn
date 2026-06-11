@@ -18,7 +18,7 @@ format = 2
 [node name="Objects" type="Node2D" parent="."]
 
 [node name="CanvasModulate" type="CanvasModulate" parent="."]
-color = Color(0.46, 0.39, 0.32, 1)
+color = Color(0.60, 0.50, 0.38, 1)
 
 [node name="HubShop" type="CanvasLayer" parent="."]
 script = ExtResource("3_shop")
