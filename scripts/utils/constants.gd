@@ -101,10 +101,10 @@ const ADDITIVE_MATERIAL: CanvasItemMaterial = preload("res://resources/materials
 const SHADOW_OVAL_PATH := "res://assets/sprites/shadow_oval.png"
 const COLOR_ACTOR_FRONT_LIGHT := Color(0.92, 0.84, 0.68) # osso quente contra breu
 const COLOR_ACTOR_SHADOW := Color(0.0, 0.0, 0.0, 0.86)
-const COLOR_ACTOR_OUTLINE := Color(0.92, 0.78, 0.52, 0.82)
+const COLOR_ACTOR_OUTLINE := Color(0.92, 0.78, 0.52, 0.5)
 const ACTOR_FRONT_LIGHT_ENERGY := 1.0
 const ACTOR_FRONT_LIGHT_SCALE := 2.0
-const ACTOR_OUTLINE_THICKNESS := 2.0
+const ACTOR_OUTLINE_THICKNESS := 1.0
 # Compatibilidade temporária para scripts antigos enquanto o contraste migra
 # para ActorContrast.
 const COLOR_ENEMY_FRONT_LIGHT := COLOR_ACTOR_FRONT_LIGHT
