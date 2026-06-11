@@ -8,10 +8,10 @@ extends GutTest
 #   < Boitatá (serpente gigante — massa horizontal enrolada)
 #   < Mula sem Cabeça (montaria + coluna de fogo, agiganta sobre todos).
 #
-# Enquanto a arte legada é 48×48, a hierarquia vem do sprite_scale por cena;
-# o redesign premium em canvas ≥128 (KI-012) deve herdar ESTAS alturas visuais
-# (corpo desenhado × escala), não os multiplicadores. O Curupira já migrou:
-# canvas 128 via gen_bosses.py, escala de nó 1.2, altura desenhada calibrada.
+# Enquanto a arte legada é 48×48, a hierarquia vem do sprite_scale por cena.
+# Bosses redesenhados em canvas ≥128 (KI-012) herdam ESTAS alturas visuais
+# (corpo desenhado × escala) e voltam à escala premium 1.2 — Curupira via
+# gen_bosses.py, Boitatá via gen_boitata.py.
 
 const CAIPORA_PNG := "res://assets/sprites/player_idle.png"
 const CACADOR_PNG := "res://assets/sprites/enemy_idle.png"
@@ -21,8 +21,10 @@ const CACADOR_ARENA_SCALE := 1.2
 
 # Cena da arena → [png idle, sprite_scale esperado, offset.y esperado]
 const BOSSES: Dictionary = {
+	# Mula segue legada (48×48, scale 3.5): a cena e o sprite reais — a entry
+	# 0.9/-77 que entrou junto do redesign do Boitatá não correspondia a nada.
 	"res://scenes/arena/mula.tscn": ["res://assets/sprites/mula_idle.png", 3.5, -18.0],
-	"res://scenes/arena/boitata.tscn": ["res://assets/sprites/boitata_idle.png", 3.0, -14.0],
+	"res://scenes/arena/boitata.tscn": ["res://assets/sprites/boitata_idle.png", 1.2, -38.0],
 	"res://scenes/arena/curupira.tscn": ["res://assets/sprites/curupira_idle.png", 1.2, -47.0],
 	"res://scenes/arena/saci.tscn": ["res://assets/sprites/saci_idle.png", 1.8, -16.0],
 	"res://scenes/arena/jesuita.tscn": ["res://assets/sprites/jesuita_idle.png", 2.7, -18.0],

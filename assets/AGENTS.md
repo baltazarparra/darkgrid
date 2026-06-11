@@ -41,6 +41,7 @@ assets/
    | Tiles/itens | 32×32 (grid lógico = 32) |
    | Bosses/minibosses legados | 48×48 (até a sessão de redesign de cada um — KI-012) |
    | Curupira (boss redesenhado) | 128×128 arena (corpo ~82px ≈ a Caipora, escala de nó 1.2) + mapa 48×48 |
+   | Boitatá premium | 160×128 arena (`gen_boitata.py`; escala 1.2) |
    | Caipora | 96×96 (corpo ~75px; a imponência é da silhueta, não do tamanho) |
    | Invasores comuns (caçador/bruxo) | 112×112 arena (~1.3× ela) + variante de mapa 56×56 |
    Sprites maiores que o tile transbordam pra cima (pés na base, offset.y
@@ -49,12 +50,13 @@ assets/
    escala fracionária diferente por ator. Background transparente.
    **Exceção interina (KI-012):** os bosses legados 48×48 usam `sprite_scale`
    por cena para ler na proporção da lore (Saci 1.8 < Caipora ≈ Curupira <
-   Jesuíta 2.7 / caçador-de-machados 2.8 ≈ caçador comum < Boitatá 3.0 <
-   Mula sem Cabeça 3.5), com offset de pés na mesma linha de chão dela —
+   Jesuíta 2.7 / caçador-de-machados 2.8 ≈ caçador comum < Boitatá <
+   Mula sem Cabeça), com offset de pés na mesma linha de chão dela —
    contrato travado em `tests/unit/test_boss_scale_proportions.gd`. O redesign
    premium de cada chefe (canvas ≥128) deve herdar essas ALTURAS VISUAIS e
-   voltar a escala de nó para 1.2 — o **Curupira já migrou** (gen_bosses.py,
-   `docs/CONCEITO-curupira.md`); os demais seguem na exceção.
+   voltar a escala de nó para 1.2 — o **Curupira** (`gen_bosses.py`,
+   `docs/CONCEITO-curupira.md`) e o **Boitatá** (`gen_boitata.py`) já
+   migraram; os demais seguem na exceção.
 2b. **Pipeline de limpeza para IA (obrigatório):** quantizar para a paleta
    (`constants.gd`), alinhar ao grid, garantir alpha limpo (sem halos), ≤ 64×64.
    Sprite que não passar por isso não entra.
