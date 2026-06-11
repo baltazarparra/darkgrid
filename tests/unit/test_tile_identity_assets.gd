@@ -7,6 +7,7 @@ const ATLAS_CONTRACTS := {
 	"res://assets/sprites/tile_wall.png": Vector2i(64, 32),
 	"res://assets/sprites/tile_floor_church.png": Vector2i(128, 32),
 	"res://assets/sprites/tile_wall_church.png": Vector2i(64, 32),
+	"res://assets/sprites/tile_shade.png": Vector2i(96, 32),
 	"res://assets/sprites/tile_identity_contact_sheet.png": Vector2i(528, 608),
 	"res://assets/sprites/tile_identity_value_sheet.png": Vector2i(528, 608),
 }
@@ -87,6 +88,17 @@ func test_tiles_do_not_steal_crystal_green_identity() -> void:
 		assert_eq(_count_color(image, COLOR_CRYSTAL), 0,
 			"%s nao usa verde-cristal da Caipora como cor de mapa" % path)
 
+func test_floor_shade_atlas_uses_pixel_art_alpha_steps() -> void:
+	var image := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/tile_shade.png"))
+	assert_false(image.is_empty(), "atlas de sombra do chao carrega")
+	if image.is_empty():
+		return
+	assert_gt(_count_alpha_over(image, 0.0), 200, "tile_shade tem pixels de oclusao")
+	assert_eq(_count_alpha_over(image, 0.75), 0, "tile_shade nunca vira preto solido")
+	assert_gt(_count_alpha_in_tile(image, 0, 0.40), 120, "edge tem degrau forte")
+	assert_gt(_count_alpha_in_tile(image, 1, 0.25), 100, "corner tem oclusao em L")
+	assert_gt(_count_alpha_in_tile(image, 2, 0.50), 150, "edge_deep aprofunda corredores")
+
 func _count_color(image: Image, expected: Color) -> int:
 	var count := 0
 	for y: int in range(image.get_height()):
@@ -108,3 +120,20 @@ func _mean_luminance(image: Image) -> float:
 	if count == 0:
 		return 0.0
 	return total / float(count) * 255.0
+
+func _count_alpha_over(image: Image, threshold: float) -> int:
+	var count := 0
+	for y: int in range(image.get_height()):
+		for x: int in range(image.get_width()):
+			if image.get_pixel(x, y).a > threshold:
+				count += 1
+	return count
+
+func _count_alpha_in_tile(image: Image, tile_index: int, threshold: float) -> int:
+	var count := 0
+	var start_x := tile_index * TILE_SIZE
+	for y: int in range(TILE_SIZE):
+		for x: int in range(start_x, start_x + TILE_SIZE):
+			if image.get_pixel(x, y).a > threshold:
+				count += 1
+	return count

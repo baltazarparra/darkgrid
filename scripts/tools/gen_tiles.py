@@ -10,6 +10,7 @@ Outputs:
   assets/sprites/tile_wall.png            64x32, 2 dense forest wall variants
   assets/sprites/tile_floor_church.png   128x32, 4 corrupted church floor variants
   assets/sprites/tile_wall_church.png     64x32, 2 corrupted church wall variants
+  assets/sprites/tile_shade.png           96x32, 3 floor AO shade tiles
   assets/sprites/tile_identity_contact_sheet.png  preview sheet for art review
   assets/sprites/tile_identity_value_sheet.png    grayscale value review sheet
   assets/sprites/light_radial.png
@@ -32,9 +33,10 @@ OUT = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sprites")
 BLACK = (0, 0, 0)
 NIGHT = (13, 17, 23)
 VOID_BROWN = (38, 20, 17)
-EARTH_DARK = (54, 29, 24)
-EARTH = (88, 52, 45)
-EARTH_WET = (70, 39, 35)
+EARTH_DEEP = (30, 16, 13)
+EARTH_DARK = (42, 23, 19)
+EARTH = (72, 42, 36)
+EARTH_WET = (54, 30, 27)
 BARK = (70, 42, 20)
 BARK_DARK = (34, 20, 10)
 MOSS_DARK = (21, 45, 18)
@@ -58,6 +60,10 @@ LIME_DARK = (86, 78, 68)
 LIME = (160, 150, 128)
 WAX = (190, 170, 128)
 
+SHADE = (0, 0, 0)
+SHADE_EDGE_ALPHA = (115, 77, 38)       # 0.45 / 0.30 / 0.15
+SHADE_DEEP_ALPHA = (153, 102, 51)      # deeper corridor lip
+
 
 def _new_tile(base: tuple[int, int, int]) -> Image.Image:
     return Image.new("RGBA", (SIZE, SIZE), base + (255,))
@@ -80,6 +86,11 @@ def _line(draw: ImageDraw.ImageDraw, pts: list[tuple[int, int]], color: tuple[in
 
 def _ellipse(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], color: tuple[int, int, int]) -> None:
     draw.ellipse(box, fill=color + (255,))
+
+
+def _ellipse_rgba(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int],
+                  color: tuple[int, int, int], alpha: int) -> None:
+    draw.ellipse(box, fill=color + (alpha,))
 
 
 def _jagged_leaf(draw: ImageDraw.ImageDraw, x: int, y: int, flip: int, color: tuple[int, int, int]) -> None:
@@ -135,17 +146,29 @@ def _bone_chip(draw: ImageDraw.ImageDraw, x: int, y: int, angle: int = 0) -> Non
         _ellipse(draw, (x + 2, y - 6, x + 6, y - 2), BONE)
 
 
+def _deep_soil_blob(draw: ImageDraw.ImageDraw, rng: random.Random) -> None:
+    cx = rng.randint(5, 26)
+    cy = rng.randint(5, 26)
+    rx = rng.randint(4, 9)
+    ry = rng.randint(3, 7)
+    _ellipse(draw, (cx - rx, cy - ry, cx + rx, cy + ry), EARTH_DEEP)
+    if rng.random() < 0.55:
+        _ellipse(draw, (cx - rx + 2, cy - ry + 1, cx + rx - 2, cy + ry - 1), VOID_BROWN)
+
+
 def _forest_floor_variant(v: int) -> Image.Image:
     rng = random.Random(3026 + v * 101)
     img = _new_tile(EARTH_DARK)
     px = img.load()
     draw = ImageDraw.Draw(img)
-    _noise(px, rng, [EARTH_DARK, EARTH, EARTH_WET, VOID_BROWN], 0.15)
+    _noise(px, rng, [EARTH_DEEP, EARTH_DARK, EARTH_DARK, EARTH, EARTH_WET, VOID_BROWN], 0.22)
+    for _ in range(rng.randint(1, 2)):
+        _deep_soil_blob(draw, rng)
 
     if v == 0:
         # Wet soil crossed by living roots.
         for start in [(0, 7), (2, 26), (31, 14)]:
-            _root(draw, rng, start, BARK_DARK, 2)
+            _root(draw, rng, start, BARK_DARK, 3)
             _root(draw, rng, (start[0], max(0, start[1] - 1)), BARK, 1)
         _jagged_leaf(draw, 20, 7, 1, LEAF_DARK)
     elif v == 1:
@@ -153,12 +176,12 @@ def _forest_floor_variant(v: int) -> Image.Image:
         for _ in range(7):
             _jagged_leaf(draw, rng.randint(1, 28), rng.randint(5, 28),
                          rng.choice([-1, 1]), rng.choice([MOSS_DARK, LEAF_DARK, MOSS]))
-        _line(draw, [(3, 28), (12, 23), (25, 25)], BARK_DARK, 2)
+        _line(draw, [(3, 28), (12, 23), (25, 25)], BARK_DARK, 3)
     elif v == 2:
         # Dry blood and clawed roots.
         _blood_smear(draw, rng, 17, 16, 7)
-        _root(draw, rng, (0, 18), BARK_DARK, 2)
-        _root(draw, rng, (31, 4), BARK_DARK, 2)
+        _root(draw, rng, (0, 18), BARK_DARK, 3)
+        _root(draw, rng, (31, 4), BARK_DARK, 3)
     else:
         # Dark puddle with bone and orange rot; it stays readable as floor by
         # keeping a brown rim and a small water highlight.
@@ -185,14 +208,14 @@ def _forest_wall_variant(v: int) -> Image.Image:
     draw = ImageDraw.Draw(img)
     for y in range(SIZE):
         for x in range(SIZE):
-            if rng.random() < 0.18 + y * 0.004:
-                px[x, y] = rng.choice([NIGHT, MOSS_DARK, VOID_BROWN]) + (255,)
+            if rng.random() < 0.22 + y * 0.005:
+                px[x, y] = rng.choice([BLACK, BLACK, BLACK, NIGHT, VOID_BROWN]) + (255,)
 
     trunks = [(6, -3, 12, 35), (20, -2, 27, 34)] if v == 0 else [(1, -2, 8, 34), (14, -4, 22, 35), (26, 0, 32, 33)]
     for box in trunks:
-        draw.rectangle(box, fill=BARK_DARK + (255,))
+        draw.rectangle(box, fill=BLACK + (255,))
         x0, y0, x1, y1 = box
-        _line(draw, [(x0 + 2, y0 + 2), (x0 + 1, y1 - 2)], BARK, 1)
+        _line(draw, [(x0 + 2, y0 + 2), (x0 + 1, y1 - 2)], BARK_DARK, 1)
         _line(draw, [(x1 - 2, y0), (x1 - 3, y1)], BLACK, 1)
         # A dark base lip helps the wall read as blocking depth against the
         # lighter playable floor.
@@ -202,7 +225,7 @@ def _forest_wall_variant(v: int) -> Image.Image:
     for _ in range(12 if v == 0 else 16):
         x = rng.randint(0, 31)
         y = rng.randint(0, 31)
-        _jagged_leaf(draw, x, y, rng.choice([-1, 1]), rng.choice([MOSS_DARK, LEAF_DARK, BLACK]))
+        _jagged_leaf(draw, x, y, rng.choice([-1, 1]), rng.choice([BLACK, BLACK, MOSS_DARK, LEAF_DARK]))
     for _ in range(4):
         x = rng.randint(2, 29)
         y = rng.randint(4, 26)
@@ -226,9 +249,21 @@ def _church_floor_variant(v: int) -> Image.Image:
         for x in range(SIZE):
             joint = x % 16 == 0 or y % 16 == 0
             if joint:
-                px[x, y] = STONE_DARK + (255,)
+                px[x, y] = BLACK + (255,) if rng.random() < 0.65 else STONE_DARK + (255,)
             else:
-                px[x, y] = rng.choice([STONE, STONE, STONE_LIGHT, LIME_DARK]) + (255,)
+                px[x, y] = rng.choice([STONE_DARK, STONE, STONE, STONE_LIGHT, LIME_DARK]) + (255,)
+
+    # Fuligem em degraus duros nos cantos: a igreja continua caminhavel, mas
+    # parece consumida pela mata e pelo sangue.
+    soot_corners = [(0, 0), (SIZE - 1, 0), (0, SIZE - 1), (SIZE - 1, SIZE - 1)]
+    for cx, cy in soot_corners:
+        for y in range(SIZE):
+            for x in range(SIZE):
+                d = abs(x - cx) + abs(y - cy)
+                if d < 6:
+                    px[x, y] = BLACK + (255,)
+                elif d < 10 and rng.random() < 0.55:
+                    px[x, y] = STONE_DARK + (255,)
 
     if v == 0:
         _line(draw, [(4, 0), (7, 9), (5, 18), (12, 31)], STONE_DARK, 2)
@@ -261,10 +296,10 @@ def _church_wall_variant(v: int) -> Image.Image:
     draw = ImageDraw.Draw(img)
     for y in range(SIZE):
         t = y / (SIZE - 1)
-        base = STONE_DARK if t > 0.35 else NIGHT
+        base = STONE_DARK if t > 0.45 else BLACK
         for x in range(SIZE):
-            if rng.random() < 0.18:
-                px[x, y] = rng.choice([BLACK, STONE_DARK, LIME_DARK, VOID_BROWN]) + (255,)
+            if rng.random() < 0.24:
+                px[x, y] = rng.choice([BLACK, BLACK, STONE_DARK, LIME_DARK, VOID_BROWN]) + (255,)
             else:
                 px[x, y] = base + (255,)
 
@@ -311,6 +346,36 @@ def gen_floor_church() -> Image.Image:
 
 def gen_wall_church() -> Image.Image:
     return _make_atlas("tile_wall_church.png", [_church_wall_variant(v) for v in range(WALL_VARIANTS)])
+
+
+def gen_tile_shade() -> Image.Image:
+    atlas = Image.new("RGBA", (SIZE * 3, SIZE), (0, 0, 0, 0))
+
+    edge = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(edge)
+    draw.rectangle((0, 0, 31, 4), fill=SHADE + (SHADE_EDGE_ALPHA[0],))
+    draw.rectangle((0, 5, 31, 8), fill=SHADE + (SHADE_EDGE_ALPHA[1],))
+    draw.rectangle((0, 9, 31, 11), fill=SHADE + (SHADE_EDGE_ALPHA[2],))
+    atlas.paste(edge, (0, 0))
+
+    corner = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(corner)
+    draw.rectangle((0, 0, 31, 3), fill=SHADE + (SHADE_EDGE_ALPHA[1],))
+    draw.rectangle((0, 0, 3, 31), fill=SHADE + (SHADE_EDGE_ALPHA[1],))
+    draw.rectangle((0, 0, 15, 7), fill=SHADE + (SHADE_EDGE_ALPHA[0],))
+    draw.rectangle((0, 0, 7, 15), fill=SHADE + (SHADE_EDGE_ALPHA[0],))
+    _ellipse_rgba(draw, (2, 2, 21, 21), SHADE, SHADE_EDGE_ALPHA[2])
+    atlas.paste(corner, (SIZE, 0))
+
+    edge_deep = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(edge_deep)
+    draw.rectangle((0, 0, 31, 6), fill=SHADE + (SHADE_DEEP_ALPHA[0],))
+    draw.rectangle((0, 7, 31, 11), fill=SHADE + (SHADE_DEEP_ALPHA[1],))
+    draw.rectangle((0, 12, 31, 15), fill=SHADE + (SHADE_DEEP_ALPHA[2],))
+    atlas.paste(edge_deep, (SIZE * 2, 0))
+
+    atlas.save(os.path.join(OUT, "tile_shade.png"))
+    return atlas
 
 
 def gen_contact_sheet(atlases: list[tuple[str, Image.Image]]) -> None:
@@ -389,6 +454,7 @@ if __name__ == "__main__":
     wall = gen_wall()
     church_floor = gen_floor_church()
     church_wall = gen_wall_church()
+    gen_tile_shade()
     gen_contact_sheet([
         ("forest floor: living soil / roots / blood / black water", floor),
         ("forest wall: dense hostile silhouette", wall),
