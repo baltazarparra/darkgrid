@@ -6,7 +6,7 @@ extends Node
 var SAVE_PATH := "user://savegame.json"
 
 # Versão do formato de save. Incrementar ao mudar o schema; migrar em load_progress().
-const SAVE_VERSION: int = 3
+const SAVE_VERSION: int = 4
 
 # True se user:// é persistente (no Web = IndexedDB disponível; false em aba anônima/quota).
 var is_persistent: bool = true
@@ -79,6 +79,16 @@ var frag_bag_phase: int = 0
 var frag_bag_pos: Vector2i = Vector2i.ZERO
 var frag_bag_amount: float = 0.0
 
+# ─── Santuário dos Encantados (PRD-santuario-dos-encantados) ───────────────────
+# A Caipora não mata os encantados — ela os LIBERTA. O boss libertado sai da fase para
+# sempre (a toca vira passagem) e passa a viver em paz no acampamento. Meta-persistente
+# e definitivo: só volta no reset_save(). Apenas P1–P4 — o Jesuíta (P5) não é encantado
+# e nunca entra no santuário. `spirits_seen` marca os ritos de chegada já exibidos no
+# acampamento (o reveal acontece UMA vez por encantado).
+const FREEABLE_BOSS_PHASES: Array[int] = [1, 2, 3, 4]
+var freed_bosses: Array[int] = []
+var spirits_seen: Array[int] = []
+
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	# No Web, a engine sincroniza IndexedDB→memfs antes do main loop, então user://
@@ -131,6 +141,33 @@ func recover_fragment_bag() -> float:
 	SignalBus.fragment_gained.emit(fragments, amount)
 	SignalBus.fragment_bag_recovered.emit(amount)
 	return amount
+
+# ─── Santuário dos Encantados ──────────────────────
+## Liberta o encantado da fase: registra e persiste. Idempotente. O Jesuíta (P5) e fases
+## inválidas são ignorados. Chamado pelo ArenaManager na morte de boss (junto do bounty e
+## do phase_reached — chamada direta, NÃO listener de SignalBus.boss_died: testes emitem
+## esse sinal cru e um listener persistiria save como efeito colateral).
+func free_boss(phase: int) -> void:
+	if phase not in FREEABLE_BOSS_PHASES or is_boss_freed(phase):
+		return
+	freed_bosses.append(phase)
+	freed_bosses.sort()
+	save_progress()
+
+func is_boss_freed(phase: int) -> bool:
+	return phase in freed_bosses
+
+## O rito de chegada do encantado desta fase já foi exibido no acampamento?
+func has_seen_spirit(phase: int) -> bool:
+	return phase in spirits_seen
+
+## Marca o rito como exibido (exige o encantado libertado). Idempotente; persiste.
+func mark_spirit_seen(phase: int) -> void:
+	if not is_boss_freed(phase) or has_seen_spirit(phase):
+		return
+	spirits_seen.append(phase)
+	spirits_seen.sort()
+	save_progress()
 
 # ─── Upgrades ──────────────────────────────────────
 func get_upgrade_level(key: String) -> int:
@@ -278,7 +315,9 @@ func save_progress() -> void:
 		"frag_bag_phase": frag_bag_phase,
 		"frag_bag_x": frag_bag_pos.x,
 		"frag_bag_y": frag_bag_pos.y,
-		"frag_bag_amount": frag_bag_amount
+		"frag_bag_amount": frag_bag_amount,
+		"freed_bosses": freed_bosses,
+		"spirits_seen": spirits_seen
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -326,6 +365,19 @@ func load_progress() -> void:
 	frag_bag_phase = int(data.get("frag_bag_phase", 0))
 	frag_bag_pos = Vector2i(int(data.get("frag_bag_x", 0)), int(data.get("frag_bag_y", 0)))
 	frag_bag_amount = float(data.get("frag_bag_amount", 0.0))
+	freed_bosses = _to_phase_array(data.get("freed_bosses", []))
+	spirits_seen = _to_phase_array(data.get("spirits_seen", []))
+	if _version < 4:
+		# v3→v4 (Santuário dos Encantados): saves veteranos derivam os libertados de
+		# phase_reached (derrotar o boss da fase N grava phase_reached = N+1) e já entram
+		# com o rito visto — sem 4 ritos de chegada em fila na primeira visita pós-update.
+		# Trade-off aceito (PRD §7): P1/P2 têm tile de saída, então phase_reached pode ter
+		# avançado SEM derrotar Mula/Boitatá — a derivação é generosa com quem pulou o boss.
+		for phase: int in FREEABLE_BOSS_PHASES:
+			if phase_reached >= phase + 1 and phase not in freed_bosses:
+				freed_bosses.append(phase)
+		freed_bosses.sort()
+		spirits_seen = freed_bosses.duplicate()
 
 ## Zera todo o progresso e apaga o arquivo de save. Não toca em user://settings.cfg (áudio).
 func reset_save() -> void:
@@ -343,6 +395,9 @@ func reset_save() -> void:
 	frag_bag_phase = 0
 	frag_bag_pos = Vector2i.ZERO
 	frag_bag_amount = 0.0
+	# Resetar devolve os guardiões às fases: o santuário se desfaz junto do progresso.
+	freed_bosses = []
+	spirits_seen = []
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 
@@ -352,6 +407,17 @@ func _to_int_dict(value: Variant) -> Dictionary:
 		for key in value:
 			if key is String and UPGRADE_DEFS.has(key):
 				result[key] = int(value[key])
+	return result
+
+# Saneia uma lista de fases vinda do JSON (floats → int, só P1–P4, sem duplicata, ordenada).
+func _to_phase_array(value: Variant) -> Array[int]:
+	var result: Array[int] = []
+	if value is Array:
+		for item in value:
+			var phase := int(item)
+			if phase in FREEABLE_BOSS_PHASES and phase not in result:
+				result.append(phase)
+	result.sort()
 	return result
 
 func _to_string_array(value: Variant) -> Array[String]:

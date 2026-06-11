@@ -566,6 +566,10 @@ func _on_actor_died(actor: CombatActor) -> void:
 			_caipora.health.heal(Constants.BOSS_KILL_HEAL)
 			# Boss bounty: bolada de fragmentos que financia as ervas caras (antes boss = 0).
 			MetaProgression.add_fragments(float(Constants.BOSS_FRAGMENT_BOUNTY.get(GameState.active_phase, 0)))
+			# Santuário dos Encantados: o golpe final LIBERTA o espírito do guardião (P1–P4).
+			# Ele sai da fase para sempre e passa a viver em paz no acampamento; o Jesuíta
+			# (P5) não é encantado — free_boss o ignora.
+			MetaProgression.free_boss(GameState.active_phase)
 		else:
 			GameState.caipora_max_hp += Constants.COMMON_KILL_HP_GROWTH
 			_caipora.health.max_health = int(floor(GameState.caipora_max_hp))

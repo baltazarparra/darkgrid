@@ -145,24 +145,28 @@ escuro, vazio) é o "grande impacto" pedido.
 
 ```gdscript
 # MetaProgression
-var freed_bosses: Dictionary = {}   # phase:int → true (P1–P4)
-var spirits_seen: Dictionary = {}   # phase:int → true (rito de chegada já exibido)
+var freed_bosses: Array[int] = []   # fases dos encantados libertados (P1–P4), ordenadas
+var spirits_seen: Array[int] = []   # ritos de chegada já exibidos no acampamento
 
-func free_boss(phase: int) -> void:
-    if phase < 1 or phase > 4 or freed_bosses.has(phase):
-        return
-    freed_bosses[phase] = true
-    save_progress()
+func free_boss(phase: int) -> void:   # idempotente; ignora P5/inválidas; persiste
+func is_boss_freed(phase: int) -> bool:
+func has_seen_spirit(phase: int) -> bool:
+func mark_spirit_seen(phase: int) -> void:   # exige libertado; idempotente; persiste
 ```
 
-- **Gravação:** `MetaProgression` conecta `SignalBus.boss_died(phase)` no `_ready()`
-  (o sinal já existe e já é emitido no ponto certo de `arena_manager._on_actor_died`).
-  Fase 5 (Jesuíta) é ignorada por design. Os mini-bosses da P5 spawnam como comuns
-  (`active_combat_is_boss == false`), então não disparam `boss_died` — sem falso positivo.
-- **Migração v3→v4:** derivar de `phase_reached` — todo boss de fase `< phase_reached`
-  (limitado a P1–P4) entra como libertado E como já visto (`spirits_seen`), para saves
-  veteranos não tomarem 4 ritos de chegada em sequência. Migração coberta por teste.
-- **Reset:** `reset_progress()` limpa ambos os dicts (junto do resto).
+- **Gravação:** chamada direta `MetaProgression.free_boss(GameState.active_phase)` em
+  `arena_manager._on_actor_died`, junto do bounty e do `phase_reached` (que já mutam o
+  `MetaProgression` ali). **Não** é listener de `SignalBus.boss_died`: testes emitem
+  esse sinal cru (`test_audio_director`) e um listener persistiria save como efeito
+  colateral de qualquer emissão. Fase 5 (Jesuíta) é ignorada por design. Os mini-bosses
+  da P5 spawnam como comuns (`active_combat_is_boss == false`) — sem falso positivo.
+- **Migração v3→v4:** derivar de `phase_reached` — boss da fase N libertado se
+  `phase_reached ≥ N+1` (limitado a P1–P4), entrando como libertado E como já visto
+  (`spirits_seen`), para saves veteranos não tomarem 4 ritos de chegada em sequência.
+  Trade-off documentado: P1/P2 têm tile de saída, então a derivação é generosa com quem
+  avançou sem derrotar Mula/Boitatá. Migração coberta por teste.
+- **Reset:** `reset_save()` limpa ambas as listas (junto do resto) — os guardiões voltam
+  às fases.
 
 ### 4.2 A fase sem guardião — o boss sai do mapa
 
@@ -252,9 +256,9 @@ ponta-a-ponta. **Lembrete obrigatório:** `class_name` novo (`CampSpirit`) exige
 subiu (gotcha #12 — GUT mente verde em arquivo que não parseia).
 
 ### Etapa 0 — Memória dos encantados (persistência, sem visual)
-- `freed_bosses`/`spirits_seen` + `free_boss()` no `MetaProgression`; listener de
-  `SignalBus.boss_died` (ignora fase 5); save v4 + migração v3→v4 derivada de
-  `phase_reached`; `reset_progress()` limpa.
+- `freed_bosses`/`spirits_seen` + `free_boss()` no `MetaProgression`; chamada direta no
+  `arena_manager._on_actor_died` (ignora fase 5); save v4 + migração v3→v4 derivada de
+  `phase_reached`; `reset_save()` limpa.
 - **Gate:** `test_meta_progression` estendido (free/idempotência/clamp P1–P4/round-trip
   do save/migração/reset); P5 e mini-bosses não registram.
 
@@ -304,7 +308,8 @@ subiu (gotcha #12 — GUT mente verde em arquivo que não parseia).
 
 | Arquivo | Mudança |
 |---------|---------|
-| `scripts/core/meta_progression.gd` | `freed_bosses`/`spirits_seen`, `free_boss()`, listener `boss_died`, save v4 + migração |
+| `scripts/core/meta_progression.gd` | `freed_bosses`/`spirits_seen`, `free_boss()`/`mark_spirit_seen()`, save v4 + migração |
+| `scripts/arena/arena_manager.gd` | `free_boss(active_phase)` na morte de boss (junto do bounty/`phase_reached`) |
 | `scripts/exploration/map_config.gd` | `boss_freed: bool` (preenchido do `MetaProgression` na construção) |
 | `scripts/exploration/map_generator.gd` | sem boss quando libertado; saída na cela do boss (P3/P4); guardas na passagem; rota limpa até a saída |
 | `scripts/exploration/exploration_manager.gd` | `next_screen_on_exit` para P3/P4 (usado só quando a saída existe) |

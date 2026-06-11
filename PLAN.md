@@ -896,9 +896,13 @@ em repouso são presenças antigas e perigosas, não mascotes — o horror não 
 Decisões travadas com o autor em 2026-06-11. Spec completa:
 [docs/PRD-santuario-dos-encantados.md](docs/PRD-santuario-dos-encantados.md).
 
-- [ ] **Etapa 0 — Memória dos encantados:** `freed_bosses`/`spirits_seen` no
-  `MetaProgression` via `SignalBus.boss_died` (ignora P5), save v4 + migração v3→v4
-  derivada de `phase_reached`. Testes de persistência/migração.
+- [x] **Etapa 0 — Memória dos encantados:** `freed_bosses`/`spirits_seen` no
+  `MetaProgression` (chamada direta no `arena_manager._on_actor_died` junto do
+  bounty/`phase_reached` — NÃO listener de `boss_died`: testes emitem o sinal cru e um
+  listener persistiria save como efeito colateral; ignora P5), save v4 + migração
+  v3→v4 derivada de `phase_reached` (generosa com quem pulou Mula/Boitatá pela saída —
+  trade-off documentado), `reset_save()` devolve os guardiões. 10 testes novos
+  (free/idempotência/P5 fora/round-trip/migração/sanitização/reset).
 - [ ] **Etapa 1 — A fase sem guardião:** `MapConfig.boss_freed` + `MapGenerator` sem
   boss e com saída na cela dele (P3/P4, rota limpa garantida; guardas na passagem);
   `next_screen_on_exit` de P3/P4. Invariantes por `boss_freed`×fase×seed; run
