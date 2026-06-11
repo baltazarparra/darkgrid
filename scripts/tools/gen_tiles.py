@@ -32,33 +32,33 @@ OUT = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sprites")
 
 BLACK = (0, 0, 0)
 NIGHT = (13, 17, 23)
-VOID_BROWN = (24, 12, 10)
-EARTH_DEEP = (18, 9, 8)
-EARTH_DARK = (28, 14, 12)
-EARTH = (50, 28, 24)
-EARTH_WET = (35, 18, 16)
-BARK = (48, 28, 13)
-BARK_DARK = (22, 12, 6)
-MOSS_DARK = (12, 28, 12)
-MOSS = (24, 45, 20)
-LEAF_DARK = (18, 34, 16)
+VOID_BROWN = (12, 6, 5)
+EARTH_DEEP = (8, 4, 4)
+EARTH_DARK = (13, 7, 6)
+EARTH = (24, 13, 11)
+EARTH_WET = (16, 8, 8)
+BARK = (25, 14, 7)
+BARK_DARK = (10, 6, 3)
+MOSS_DARK = (5, 14, 6)
+MOSS = (12, 24, 10)
+LEAF_DARK = (8, 17, 8)
 ORANGE_DK = (139, 42, 0)
 ORANGE = (255, 69, 0)
 FIRE = (255, 104, 8)
 FIRE_HOT = (255, 176, 50)
 BLOOD_DARK = (66, 0, 0)
 BLOOD = (139, 0, 0)
-BONE_DARK = (80, 70, 56)
-BONE = (175, 164, 134)
-WATER = (14, 22, 26)
-WATER_LIGHT = (58, 82, 90)
+BONE_DARK = (48, 42, 34)
+BONE = (120, 112, 92)
+WATER = (6, 10, 13)
+WATER_LIGHT = (22, 33, 38)
 
-STONE_DARK = (24, 24, 31)
-STONE = (48, 47, 55)
-STONE_LIGHT = (78, 73, 64)
-LIME_DARK = (44, 39, 34)
-LIME = (92, 82, 66)
-WAX = (126, 104, 70)
+STONE_DARK = (11, 11, 15)
+STONE = (23, 22, 27)
+STONE_LIGHT = (38, 35, 31)
+LIME_DARK = (21, 18, 16)
+LIME = (45, 39, 31)
+WAX = (82, 66, 44)
 
 SHADE = (0, 0, 0)
 SHADE_EDGE_ALPHA = (115, 77, 38)       # 0.45 / 0.30 / 0.15
@@ -158,10 +158,10 @@ def _deep_soil_blob(draw: ImageDraw.ImageDraw, rng: random.Random) -> None:
 
 def _forest_floor_variant(v: int) -> Image.Image:
     rng = random.Random(3026 + v * 101)
-    img = _new_tile(EARTH_DARK)
+    img = _new_tile(EARTH_DEEP)
     px = img.load()
     draw = ImageDraw.Draw(img)
-    _noise(px, rng, [EARTH_DEEP, EARTH_DARK, EARTH_DARK, EARTH_WET, VOID_BROWN], 0.14)
+    _noise(px, rng, [EARTH_DEEP, EARTH_DARK, EARTH_WET, VOID_BROWN, BLACK], 0.10)
     for _ in range(rng.randint(1, 2)):
         _deep_soil_blob(draw, rng)
 
@@ -186,7 +186,7 @@ def _forest_floor_variant(v: int) -> Image.Image:
     else:
         # Dark puddle with bone and orange rot; it stays readable as floor by
         # keeping a brown rim and a small water highlight.
-        _ellipse(draw, (2, 6, 29, 26), EARTH_WET)
+        _ellipse(draw, (2, 6, 29, 26), EARTH_DARK)
         _ellipse(draw, (4, 8, 27, 24), WATER)
         _ellipse(draw, (10, 12, 21, 18), NIGHT)
         _line(draw, [(8, 13), (21, 12)], WATER_LIGHT, 1)
@@ -194,8 +194,8 @@ def _forest_floor_variant(v: int) -> Image.Image:
         _bone_chip(draw, 22, 22, 1)
         _jagged_leaf(draw, 3, 7, 1, ORANGE_DK)
 
-    # A few restrained orange scars keep the Caipora mark in the ground.
-    for _ in range(2):
+    # A single restrained orange scar keeps the Caipora mark in the ground.
+    for _ in range(1):
         x = rng.randint(2, 29)
         y = rng.randint(2, 29)
         _line(draw, [(x, y), (x + rng.randint(-2, 3), y + rng.randint(2, 5))], ORANGE_DK, 1)
@@ -243,16 +243,16 @@ def _forest_wall_variant(v: int) -> Image.Image:
 
 def _church_floor_variant(v: int) -> Image.Image:
     rng = random.Random(1549 + v * 89)
-    img = _new_tile(STONE_DARK)
+    img = _new_tile(BLACK)
     px = img.load()
     draw = ImageDraw.Draw(img)
     for y in range(SIZE):
         for x in range(SIZE):
             joint = x % 16 == 0 or y % 16 == 0
             if joint:
-                px[x, y] = BLACK + (255,) if rng.random() < 0.65 else STONE_DARK + (255,)
+                px[x, y] = BLACK + (255,) if rng.random() < 0.78 else STONE_DARK + (255,)
             else:
-                px[x, y] = rng.choice([STONE_DARK, STONE_DARK, STONE, LIME_DARK]) + (255,)
+                px[x, y] = rng.choice([BLACK, STONE_DARK, STONE_DARK, STONE, LIME_DARK]) + (255,)
 
     # Fuligem em degraus duros nos cantos: a igreja continua caminhavel, mas
     # parece consumida pela mata e pelo sangue.
@@ -263,12 +263,12 @@ def _church_floor_variant(v: int) -> Image.Image:
                 d = abs(x - cx) + abs(y - cy)
                 if d < 6:
                     px[x, y] = BLACK + (255,)
-                elif d < 10 and rng.random() < 0.55:
-                    px[x, y] = STONE_DARK + (255,)
+                elif d < 12 and rng.random() < 0.70:
+                    px[x, y] = BLACK + (255,)
 
     if v == 0:
         _line(draw, [(4, 0), (7, 9), (5, 18), (12, 31)], STONE_DARK, 2)
-        _line(draw, [(5, 0), (8, 9), (6, 18), (13, 31)], STONE_LIGHT, 1)
+        _line(draw, [(5, 0), (8, 9), (6, 18), (13, 31)], STONE, 1)
     elif v == 1:
         for _ in range(4):
             _root(draw, rng, (rng.choice([0, 31]), rng.randint(2, 30)), BLACK, 2)

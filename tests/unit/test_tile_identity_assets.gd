@@ -48,12 +48,14 @@ func test_floor_and_wall_have_functional_value_separation() -> void:
 	assert_false(church_wall.is_empty(), "parede de igreja carrega")
 	if forest_floor.is_empty() or forest_wall.is_empty() or church_floor.is_empty() or church_wall.is_empty():
 		return
-	assert_gt(_mean_luminance(forest_floor) - _mean_luminance(forest_wall), 15.0,
+	assert_gt(_mean_luminance(forest_floor) - _mean_luminance(forest_wall), 4.0,
 		"floresta separa chao caminhavel da parede por valor")
-	assert_gt(_mean_luminance(church_floor) - _mean_luminance(church_wall), 12.0,
+	assert_lt(_mean_luminance(forest_floor), 30.0,
+		"piso da floresta fica no breu e nao compete com os atores")
+	assert_gt(_mean_luminance(church_floor) - _mean_luminance(church_wall), 4.0,
 		"igreja separa piso escuro da parede/sombra por valor")
-	assert_lt(_mean_luminance(church_floor), 70.0,
-		"piso da igreja fica sombrio e nao compete com os atores")
+	assert_lt(_mean_luminance(church_floor), 38.0,
+		"piso da igreja fica no breu e nao compete com os atores")
 
 func test_forest_floor_keeps_caipora_accent_without_becoming_orange() -> void:
 	var image := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/tile_floor.png"))
@@ -64,7 +66,8 @@ func test_forest_floor_keeps_caipora_accent_without_becoming_orange() -> void:
 	var blood_pixels := _count_color(image, COLOR_BLOOD)
 	assert_gt(orange_pixels + blood_pixels, 12, "chao tem assinatura laranja/sangue da identidade")
 	assert_lt(orange_pixels, 180, "laranja fica como acento, nao tapete")
-	assert_lt(_count_color(image, COLOR_BLACK), 12, "chao nao usa preto puro como massa dominante")
+	assert_lt(_count_color(image, COLOR_BLACK), image.get_width() * image.get_height() / 2,
+		"chao usa preto como breu, mas ainda preserva textura caminhavel")
 
 func test_church_tiles_are_corrupted_not_clean_stone() -> void:
 	var floor := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/tile_floor_church.png"))
