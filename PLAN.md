@@ -863,6 +863,7 @@ aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no fo
 | KI-010 | Média | ✅ Resolvida | A vitória terminal libera `phase_reached = 6`: matar o Jesuíta marca o marco no `ArenaManager`, e `GameState.end_run(true)` também garante o unlock pós-clear antes de salvar a vitória. |
 | KI-011 | Baixa | ✅ Resolvida | O loop de hover do menu tipava `Button` num array que inclui o `GithubLink` (`LinkButton`, irmão de `Button`): o array tipado rejeitava o item (vira `null`) e o som de hover do link morria em silêncio com SCRIPT ERROR no console. Corrigido tipando `BaseButton`. |
 | KI-012 | Baixa | Aberta | Hierarquia de escala interina: bosses/minibosses seguem com arte legada 48×48 e leem MENORES que os invasores comuns (112×112) na arena e no mapa. Resolve nas sessões de redesign de cada chefe no pipeline premium (`gen_inimigos.py`), um por sessão. |
+| KI-013 | Baixa | Aberta | `shaders/enemy_outline.gdshader` usa comentários `##`; no renderer dummy/headless do GUT isso emite `SHADER ERROR: Unknown character #35` ao instanciar criaturas, embora a suíte siga verde. Corrigir antes/de junto da Etapa 3 do `PRD-visual-exploracao.md`, que vai reutilizar esse outline nos inimigos do mapa. |
 
 ---
 
