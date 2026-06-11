@@ -308,32 +308,41 @@ def _jesuita_cruz(p: Painter) -> None:
 
 
 def _lamina(p: Painter, guard: tuple[float, float], tip: tuple[float, float],
-            steel: tuple[int, int, int], wa: float = 1.5) -> None:
-    # Baioneta consagrada CRUCIFORME: folha reta e comprida, guarda de ouro em
-    # cruz larga + punho curto — cada arma lê como uma cruz de aço à distância
-    # (forma genérica de adaga/baioneta de guarda cruciforme).
+            steel: tuple[int, int, int], ring_side: float = 1.0) -> None:
+    # Baioneta-espada consagrada (forma histórica da baioneta-espada
+    # austríaca, domínio público): folha LARGA reta de um fio com goteira,
+    # guarda curta de aço com ANEL DE ENCAIXE de um lado, punho de talas com
+    # bico de pomo — e a INSCRIÇÃO DOURADA correndo pela folha (bênção em
+    # ouro litúrgico, a cor dele).
     gx, gy = guard
     tx, ty = tip
     dx, dy = tx - gx, ty - gy
     length = (dx * dx + dy * dy) ** 0.5 or 1.0
     ux, uy = dx / length, dy / length
     nx, ny = -uy, ux
-    p.limb(guard, tip, wa, 0.2, steel)                               # folha reta
-    p.limb((gx + dx * 0.04, gy + dy * 0.04),
-           (gx + dx * 0.62, gy + dy * 0.62), 0.5, 0.3, STEEL_DK)     # goteira central
-    # guarda cruciforme LARGA (a cruz da arma)
-    p.limb((gx - nx * 2.3, gy - ny * 2.3), (gx + nx * 2.3, gy + ny * 2.3),
-           1.0, 1.0, GOLD)
-    p.ellipse(gx - nx * 2.3, gy - ny * 2.3, 0.55, 0.55, GOLD_DK)
-    p.ellipse(gx + nx * 2.3, gy + ny * 2.3, 0.55, 0.55, GOLD_DK)
-    # punho curto de couro + pomo de ouro (completa a cruz)
+    p.limb(guard, tip, 2.1, 0.3, steel)                              # folha larga
+    p.limb((gx + ux * 1.0 + nx * 0.45, gy + uy * 1.0 + ny * 0.45),
+           (gx + dx * 0.72 + nx * 0.3, gy + dy * 0.72 + ny * 0.3),
+           0.55, 0.3, STEEL_DK)                                      # goteira no dorso
+    p.limb((gx + dx * 0.14 - nx * 0.4, gy + dy * 0.14 - ny * 0.4),
+           (gx + dx * 0.58 - nx * 0.3, gy + dy * 0.58 - ny * 0.3),
+           0.34, 0.22, GOLD)                                         # inscrição dourada
+    # guarda curta de aço + anel de encaixe (a assinatura de baioneta)
+    p.limb((gx - nx * 1.6, gy - ny * 1.6), (gx + nx * 1.6, gy + ny * 1.6),
+           0.95, 0.95, STEEL_DK)
+    rcx, rcy = gx + nx * ring_side * 2.5, gy + ny * ring_side * 2.5
+    p.ellipse(rcx, rcy, 1.05, 1.05, STEEL_DK)
+    p.ellipse(rcx, rcy, 0.45, 0.45, (0, 0, 0, 0))                    # furo do anel
+    # punho de talas com inscrição e bico de pomo
     p.limb((gx - ux * 0.4, gy - uy * 0.4),
-           (gx - ux * 2.2, gy - uy * 2.2), 1.1, 0.9, LEATHER_DK)
-    p.ellipse(gx - ux * 2.8, gy - uy * 2.8, 0.7, 0.7, GOLD_DK)
+           (gx - ux * 2.6, gy - uy * 2.6), 1.25, 1.0, LEATHER_DK)
+    p.limb((gx - ux * 1.0, gy - uy * 1.0),
+           (gx - ux * 2.0, gy - uy * 2.0), 0.4, 0.3, GOLD)
+    p.ellipse(gx - ux * 3.0 - nx * 0.3, gy - uy * 3.0 - ny * 0.3, 0.65, 0.55, STEEL_DK)
     # consagrada e usada: água benta + sangue PINGANDO da folha — gotas
     # gordas e descoladas da lâmina (gota fina demais morre no snap/threshold)
-    p.ellipse(gx + dx * 0.68, gy + dy * 0.68 + 1.6, 0.62, 0.85, HOLY)
-    p.ellipse(gx + dx * 0.42, gy + dy * 0.42 + 1.5, 0.55, 0.75, BLOOD)
+    p.ellipse(gx + dx * 0.68, gy + dy * 0.68 + 1.8, 0.62, 0.85, HOLY)
+    p.ellipse(gx + dx * 0.42, gy + dy * 0.42 + 1.7, 0.55, 0.75, BLOOD)
 
 
 def _jesuita_armas(p: Painter, windup: bool) -> None:
@@ -342,19 +351,19 @@ def _jesuita_armas(p: Painter, windup: bool) -> None:
         # do caçador), a outra erguida atrás — o X de aço abre a silhueta.
         p.limb((19.6, 15.4), (14.6, 14.8), 2.4, 1.7, CASSOCK)        # braço frente
         p.ellipse(14.2, 14.9, 1.35, 1.15, SK)
-        _lamina(p, (12.6, 14.6), (3.4, 13.0), STEEL)
+        _lamina(p, (12.4, 14.6), (3.0, 13.0), STEEL, ring_side=-1.0)
         p.limb((27.6, 15.2), (30.4, 10.8), 2.4, 1.7, CASSOCK_DK)     # braço trás
         p.ellipse(30.7, 10.5, 1.3, 1.1, SK_DK)
-        _lamina(p, (31.8, 9.2), (37.6, 1.8), STEEL_DK)
+        _lamina(p, (32.0, 9.0), (38.0, 1.6), STEEL_DK)
     else:
         # Pronto, indiferente à mata: lâminas baixas, pontas pro chão —
         # quem já converteu uma floresta inteira não levanta guarda à toa.
         p.limb((19.4, 15.6), (15.8, 21.8), 2.4, 1.7, CASSOCK)        # braço frente
         p.ellipse(15.5, 22.2, 1.35, 1.15, SK)
-        _lamina(p, (14.4, 23.6), (8.6, 34.2), STEEL)
+        _lamina(p, (14.2, 23.8), (8.0, 35.6), STEEL, ring_side=-1.0)
         p.limb((27.8, 15.6), (30.6, 21.2), 2.4, 1.7, CASSOCK_DK)     # braço trás
         p.ellipse(30.9, 21.6, 1.3, 1.1, SK_DK)
-        _lamina(p, (32.0, 23.0), (36.2, 33.4), STEEL_DK)
+        _lamina(p, (32.2, 23.2), (37.0, 34.8), STEEL_DK)
 
 
 def _jesuita_papeis(p: Painter, windup: bool) -> None:
