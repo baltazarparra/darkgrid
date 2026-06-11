@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="caipora"
-config/version="beta 2 (dev)"
+config/version="alpha-0.1 (dev)"
 config/description="Roguelike brasileiro de horror folclórico"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.png"

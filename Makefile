@@ -15,20 +15,22 @@ test: ## run the GUT regression gate
 	$(GODOT) --headless --path $(PROJECT) -s res://addons/gut/gut_cmdln.gd \
 		-gdir=res://tests/unit -gprefix=test_ -gsuffix=.gd -gexit
 
+# Versão do jogo: alpha-X.Y.Z. A base alpha-X.Y vem do config/version do project.godot
+# (fonte única — bump de MAJOR/MINOR é lá); Z é a contagem de commits do git e
+# incrementa sozinho a cada commit.
 export: ## build the reproducible HTML5 release
 	mkdir -p export
-	@COMMITS=$$(git rev-list --count HEAD 2>/dev/null || echo 0); \
-	VERSION="beta 2.$$COMMITS"; \
+	@set -e; \
+	BASE=$$(sed -n 's/^config\/version="\(alpha-[0-9]\+\.[0-9]\+\).*/\1/p' project.godot); \
+	: "$${BASE:?config/version do project.godot deve comecar com alpha-X.Y}"; \
+	COMMITS=$$(git rev-list --count HEAD 2>/dev/null || echo 0); \
+	VERSION="$$BASE.$$COMMITS"; \
 	SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown); \
 	DATE=$$(date -u +%F); \
-	printf '# GERADO por `make export` — NÃO editar à mão. Versão derivada do git (contagem de\n# commits) e lida pelo menu (main_menu._resolve_version). Gitignored; recriado a cada build.\nextends RefCounted\n\nconst VERSION := "%s"\nconst BUILD := "%s"\nconst DATE := "%s"\n' "$$VERSION" "$$SHA" "$$DATE" > scripts/core/build_info.gd; \
-	echo "build_info.gd -> $$VERSION ($$SHA, $$DATE)"
-	$(GODOT) --headless --path $(PROJECT) --export-release "Web" export/index.html
-	cp html/update-notifier.js export/
-	@COMMITS=$$(git rev-list --count HEAD 2>/dev/null || echo 0); \
-	VERSION="beta 2.$$COMMITS"; \
-	SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown); \
-	DATE=$$(date -u +%F); \
+	printf '# GERADO por `make export` — NÃO editar à mão. Versão alpha-X.Y.Z derivada do git\n# (Z = contagem de commits) e lida pelo menu (main_menu._resolve_version). Gitignored;\n# recriado a cada build.\nextends RefCounted\n\nconst VERSION := "%s"\nconst BUILD := "%s"\nconst DATE := "%s"\n' "$$VERSION" "$$SHA" "$$DATE" > scripts/core/build_info.gd; \
+	echo "build_info.gd -> $$VERSION ($$SHA, $$DATE)"; \
+	$(GODOT) --headless --path $(PROJECT) --export-release "Web" export/index.html; \
+	cp html/update-notifier.js export/; \
 	printf '{"version":"%s","build":"%s","date":"%s"}\n' "$$VERSION" "$$SHA" "$$DATE" > export/version.json; \
 	echo "version.json -> $$VERSION ($$SHA, $$DATE)"
 
