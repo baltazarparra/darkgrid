@@ -144,8 +144,8 @@ def _outline(img: Image.Image) -> None:
 
 
 def _rig(pose: str, phase: int, chama: bool) -> Rig:
-    lean_by_pose = {"idle": 0.0, "walk": phase * 0.8, "windup": -1.0, "strike": 7.0, "recover": 1.0}
-    crouch_by_pose = {"idle": 0.0, "walk": 0.0, "windup": 4.0, "strike": 1.0, "recover": 1.5}
+    lean_by_pose = {"idle": 0.0, "walk": phase * 0.8, "windup": -1.0, "strike": 7.0, "recover": 1.0, "back": 0.0, "dead": 0.0}
+    crouch_by_pose = {"idle": 0.0, "walk": 0.0, "windup": 4.0, "strike": 1.0, "recover": 1.5, "back": 0.0, "dead": 0.0}
     lean = lean_by_pose[pose]
     crouch = crouch_by_pose[pose]
     head = (43.5 + lean * 0.35, 36.0 + crouch * 0.35)
@@ -157,6 +157,11 @@ def _rig(pose: str, phase: int, chama: bool) -> Rig:
     elif pose == "windup":
         staff_base = (66.5, 87.0)
         staff_tip = (62.0, 20.0)
+    elif pose == "back":
+        # Vista de costas: a mao da haste espelha para o outro lado da tela e a
+        # lamina desponta ACIMA da capa (a haste em si some sob a juba).
+        staff_base = (28.0, 88.0)
+        staff_tip = (25.0, 14.0)
     else:
         staff_base = (66.5 + lean * 0.2, 88.0)
         staff_tip = (66.5 + lean * 0.2, 23.5)
@@ -246,7 +251,7 @@ def _draw_serrated_cloak(p: Painter, rig: Rig) -> None:
         p.ellipse(hx + 1, top - 1, 2.5, 2.0, FIRE_CORE)
 
 
-def _draw_face_and_horns(p: Painter, rig: Rig) -> None:
+def _draw_face_and_horns(p: Painter, rig: Rig, eyes: bool = True) -> None:
     hx, hy = rig.head
     p.poly(
         [
@@ -260,8 +265,9 @@ def _draw_face_and_horns(p: Painter, rig: Rig) -> None:
         ],
         BLACK,
     )
-    p.ellipse(hx - 4.8, hy - 0.8, 2.4, 2.7, EYE)
-    p.ellipse(hx + 4.7, hy - 0.1, 2.3, 2.5, EYE)
+    if eyes:
+        p.ellipse(hx - 4.8, hy - 0.8, 2.4, 2.7, EYE)
+        p.ellipse(hx + 4.7, hy - 0.1, 2.3, 2.5, EYE)
 
     p.limb((hx - 7.5, hy - 10.0), (hx - 12.0, hy - 19.0), 4.3, 2.2, BLACK)
     p.limb((hx - 12.0, hy - 19.0), (hx - 9.5, hy - 24.0), 2.1, 1.0, BLACK)
@@ -308,13 +314,72 @@ def _draw_staff(p: Painter, rig: Rig) -> None:
     p.ellipse(tx, ty, 1.1, 1.1, CRYSTAL)
 
 
+def _draw_dead(p: Painter, chama: bool) -> None:
+    """Tombada no chão (final do sacrifício): juba drapejada como mortalha sobre
+    o corpo deitado, cabeca pousada à esquerda SEM olhos (o vazio fechou),
+    pés despontando à direita e o cajado caído à frente. Sem pose heroica."""
+    orange = FIRE if chama else ORANGE
+    shadow = FIRE_HOT if chama else ORANGE_DK
+
+    # Cabeça tombada, orelha no chão; chifres: um fincado na terra, outro ao alto.
+    p.ellipse(22.0, 72.0, 11.0, 9.5, BLACK)
+    p.limb((16.0, 66.0), (8.0, 58.0), 4.3, 2.0, BLACK)
+    p.limb((8.0, 58.0), (6.0, 53.0), 2.0, 1.0, BLACK)
+    p.limb((26.0, 64.0), (30.0, 54.0), 4.3, 2.0, BLACK)
+    p.limb((30.0, 54.0), (29.0, 49.0), 2.0, 1.0, BLACK)
+
+    # Pés/pernas largados despontando do lado direito da mortalha.
+    p.limb((70.0, 76.0), (84.0, 74.0), 5.0, 3.0, BLACK)
+    p.limb((68.0, 80.0), (82.0, 81.0), 5.0, 3.0, BLACK)
+
+    # A juba-capa cobre o corpo como um monte serrilhado baixo.
+    heap = [
+        (26.0, 80.0),
+        (30.0, 66.0),
+        (38.0, 59.0),
+        (35.0, 53.0),
+        (44.0, 56.0),
+        (52.0, 52.0),
+        (54.0, 58.0),
+        (63.0, 56.0),
+        (62.0, 62.0),
+        (72.0, 64.0),
+        (68.0, 70.0),
+        (76.0, 76.0),
+        (70.0, 82.0),
+        (56.0, 84.0),
+        (40.0, 84.0),
+    ]
+    p.poly(heap, orange)
+    p.poly([(54.0, 62.0), (70.0, 68.0), (64.0, 80.0), (48.0, 80.0)], shadow)
+
+    # O cajado caiu junto: haste no chão, lâmina morta apontando para longe.
+    p.limb((30.0, 90.0), (74.0, 88.0), 2.8, 2.8, BLACK)
+    blade = [(74.0, 84.0), (82.0, 80.0), (86.0, 87.0), (78.0, 91.0)]
+    p.poly(blade, BLACK)
+    p.ellipse(79.0, 86.0, 1.1, 1.1, CRYSTAL)
+
+
 def caipora(pose: str = "idle", leg_phase: int = 0, chama: bool = False) -> Image.Image:
     rig = _rig(pose, leg_phase, chama)
     p = Painter()
-    _draw_serrated_cloak(p, rig)
-    _draw_black_body(p, rig)
-    _draw_staff(p, rig)
-    _draw_face_and_horns(p, rig)
+    if pose == "dead":
+        _draw_dead(p, chama)
+        img = p.render()
+        _outline(img)
+        return img
+    if pose == "back":
+        # De costas a juba-capa cobre o corpo: corpo e haste por BAIXO da capa,
+        # cabeca/chifres por cima e SEM olhos — ela olha para dentro da cena.
+        _draw_black_body(p, rig)
+        _draw_staff(p, rig)
+        _draw_serrated_cloak(p, rig)
+        _draw_face_and_horns(p, rig, eyes=False)
+    else:
+        _draw_serrated_cloak(p, rig)
+        _draw_black_body(p, rig)
+        _draw_staff(p, rig)
+        _draw_face_and_horns(p, rig)
     img = p.render()
     _outline(img)
     return img
@@ -327,6 +392,8 @@ POSES = [
     ("player_windup.png", "windup", 0),
     ("player_strike.png", "strike", 0),
     ("player_recover.png", "recover", 0),
+    ("player_back.png", "back", 0),
+    ("player_dead.png", "dead", 0),
 ]
 
 
@@ -356,7 +423,7 @@ def generate_all() -> None:
         caipora(pose, phase).save(os.path.join(OUT, name))
         caipora(pose, phase, chama=True).save(os.path.join(OUT, name.replace(".png", "_chama.png")))
     _make_contact_sheet()
-    print("[gen_caipora] silhouette-board Caipora generated: 6 base + 6 CHAMA + contact sheet")
+    print("[gen_caipora] silhouette-board Caipora generated: 8 base + 8 CHAMA + contact sheet")
 
 
 if __name__ == "__main__":

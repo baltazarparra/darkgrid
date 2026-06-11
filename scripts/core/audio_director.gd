@@ -282,10 +282,16 @@ func _apply_screen_audio(screen: int) -> void:
 		SignalBus.Screen.WIN:
 			set_music_intensity(0)
 			_play_stinger(STING_VICTORY)
-		SignalBus.Screen.ENDING:
+		SignalBus.Screen.FINAL_CHOICE:
 			set_music_intensity(0)
-			# Só se chega ao ENDING matando o Jesuíta: o órgão dele estertora.
+			# O Jesuíta acaba de cair no altar: o órgão dele estertora SOB a
+			# pergunta final ("Poupar ele?"). Música em silêncio — só a igreja.
 			_play_stinger(STING_ORGAO_ESTERTOR)
+		SignalBus.Screen.ENDING_SACRIFICE:
+			set_music_intensity(0)
+			# Poupado, o Jesuíta venceu: o sino da igreja dobra por uma floresta
+			# que não respira mais. Sem música — o mundo convertido é mudo.
+			_play_stinger(STING_SINO_IGREJA)
 		SignalBus.Screen.GAME_OVER:
 			set_music_intensity(0)
 			# A morte esvazia o mundo (S7): música já cai via _play_music(""),
@@ -475,7 +481,8 @@ func _sync_heart_mode_audio() -> void:
 ## de pedra; as demais arenas são a clareira; todo o resto é mata fechada.
 func _space_for_screen(screen: int) -> StringName:
 	match screen:
-		SignalBus.Screen.EXPLORATION_PHASE5, SignalBus.Screen.ARENA_PHASE5:
+		SignalBus.Screen.EXPLORATION_PHASE5, SignalBus.Screen.ARENA_PHASE5, \
+		SignalBus.Screen.FINAL_CHOICE:
 			return &"igreja"
 		SignalBus.Screen.ARENA, SignalBus.Screen.ARENA_PHASE2, \
 		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4:
@@ -509,8 +516,10 @@ func _refresh_ambience(screen: int) -> void:
 		SignalBus.Screen.EXPLORATION_PHASE4:
 			path = AMB_DREAD   # ruína fria
 		# A arena da Fase 5 é o altar DENTRO da mesma igreja: a cama sonora não
-		# troca na porta (mesma continuidade espacial do boss-intro→arena).
-		SignalBus.Screen.EXPLORATION_PHASE5, SignalBus.Screen.ARENA_PHASE5:
+		# troca na porta (mesma continuidade espacial do boss-intro→arena). A
+		# escolha final acontece no MESMO altar, sobre o corpo do Jesuíta.
+		SignalBus.Screen.EXPLORATION_PHASE5, SignalBus.Screen.ARENA_PHASE5, \
+		SignalBus.Screen.FINAL_CHOICE:
 			path = AMB_CHURCH  # igreja fria e úmida
 		SignalBus.Screen.ARENA, SignalBus.Screen.ARENA_PHASE2, \
 		SignalBus.Screen.ARENA_PHASE3, SignalBus.Screen.ARENA_PHASE4:

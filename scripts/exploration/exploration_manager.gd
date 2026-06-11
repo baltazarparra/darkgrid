@@ -646,8 +646,9 @@ func _build_profile() -> Dictionary:
 		5:
 			# Fase FINAL — A Igreja na Mata. Diálogo de abertura com o Jesuíta; os
 			# "monstros" são os 4 chefes convertidos; o Jesuíta no altar. Progride ao
-			# derrotá-lo → ENDING (has_exit=false). O diálogo de boss é vazio: a fala
-			# marcante já ocorre na abertura da fase (intro_dialogue).
+			# derrotá-lo → FINAL_CHOICE → ENDING/ENDING_SACRIFICE (has_exit=false).
+			# O diálogo de boss é vazio: a fala marcante já ocorre na abertura da
+			# fase (intro_dialogue).
 			return {
 				"arena_screen": SignalBus.Screen.ARENA_PHASE5,
 				"boss_scene": JESUITA_SCENE,
@@ -656,7 +657,7 @@ func _build_profile() -> Dictionary:
 				"boss_color": Constants.COLOR_DIALOGUE_JESUITA,
 				"boss_frames": JESUITA_FRAMES,
 				"boss_aura": Constants.COLOR_AURA_JESUITA,
-				"next_screen_on_exit": SignalBus.Screen.ENDING,
+				"next_screen_on_exit": SignalBus.Screen.FINAL_CHOICE,
 				"hazard_damage": Constants.FIRE_TILE_DAMAGE,
 				"step_sfx": "step_stone",  # laje da igreja, não serrapilheira
 				"aura": Aura.TORCH,

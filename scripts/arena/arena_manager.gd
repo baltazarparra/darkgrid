@@ -633,12 +633,13 @@ func _disconnect_timing(callable: Callable) -> void:
 
 ## Tela-alvo após o combate (puro, sem efeitos colaterais). Vitória NUNCA avança a
 ## fase: boss ou comum, volta à exploração da MESMA fase — avançar é pisar no tile
-## de saída (ExplorationManager). Exceção única: o boss FINAL (Jesuíta, P5) → ENDING.
+## de saída (ExplorationManager). Exceção única: o boss FINAL (Jesuíta, P5) →
+## FINAL_CHOICE (a cena da escolha "Poupar ele?", que roteia para um dos dois finais).
 func _resolve_next_screen(caipora_won: bool) -> SignalBus.Screen:
 	if not caipora_won:
 		return SignalBus.Screen.GAME_OVER
 	if GameState.active_combat_is_boss and GameState.active_phase == 5:
-		return SignalBus.Screen.ENDING
+		return SignalBus.Screen.FINAL_CHOICE
 	match GameState.active_phase:
 		5: return SignalBus.Screen.EXPLORATION_PHASE5
 		4: return SignalBus.Screen.EXPLORATION_PHASE4
@@ -647,11 +648,12 @@ func _resolve_next_screen(caipora_won: bool) -> SignalBus.Screen:
 		_: return SignalBus.Screen.EXPLORATION
 
 ## Executa a troca de tela uma única vez (caminho normal OU watchdog). Registra o inimigo
-## derrotado apenas em vitórias que voltam à exploração (não no ENDING).
+## derrotado apenas em vitórias que voltam à exploração (não no caminho terminal
+## FINAL_CHOICE → finais).
 func _do_screen_change(screen: SignalBus.Screen, caipora_won: bool) -> void:
 	if _screen_changed:
 		return
 	_screen_changed = true
-	if caipora_won and screen != SignalBus.Screen.ENDING:
+	if caipora_won and screen != SignalBus.Screen.FINAL_CHOICE:
 		GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
 	GameState.change_screen(screen)
