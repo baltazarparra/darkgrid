@@ -27,7 +27,7 @@ const BOSSES: Dictionary = {
 	"res://scenes/arena/boitata.tscn": ["res://assets/sprites/boitata_idle.png", 1.2, -38.0],
 	"res://scenes/arena/curupira.tscn": ["res://assets/sprites/curupira_idle.png", 1.2, -47.0],
 	"res://scenes/arena/saci.tscn": ["res://assets/sprites/saci_idle.png", 1.8, -16.0],
-	"res://scenes/arena/jesuita.tscn": ["res://assets/sprites/jesuita_idle.png", 2.7, -18.0],
+	"res://scenes/arena/jesuita.tscn": ["res://assets/sprites/jesuita_idle.png", 1.2, -45.0],
 	"res://scenes/arena/boss.tscn": ["res://assets/sprites/boss_idle.png", 2.8, -18.0],
 }
 

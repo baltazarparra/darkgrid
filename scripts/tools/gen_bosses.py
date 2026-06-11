@@ -20,10 +20,15 @@ import os
 
 from gen_inimigos import (
     BLOOD,
+    BONE,
     BONE_DK,
+    LEATHER,
+    LEATHER_DK,
     OUT,
     OUTLINE,
     Painter,
+    STEEL,
+    STEEL_DK,
     _outline,
 )
 from PIL import Image, ImageDraw
@@ -216,10 +221,180 @@ def curupira_map() -> Image.Image:
 
 
 # ════════════════════════════════════════════════════
+# Jesuíta — leitura a 32px: a torre de batina-breu com
+# a cruz de ouro e as LÂMINAS CONSAGRADAS GÊMEAS
+# ════════════════════════════════════════════════════
+# O invasor final: padre-guerreiro fanático. Humano adulto — se agiganta
+# sobre a Caipora (contrato: >1.25× ela e 0.85–1.15× o caçador comum).
+# A cruz é DELE por lei (CONCEITO-inimigos: cruz é do catequizador).
+# Arquétipo do padre-combatente de lâminas gêmeas traduzido para a lei dos
+# invasores: rosto engolido pela sombra, fendas douradas de zelote, terra/
+# couro/breu/osso — nunca trade dress de personagem alheio.
+
+CASSOCK_DK = (16, 14, 20)       # #100e14 batina-breu (sombra)
+CASSOCK = (38, 34, 48)          # #262230 batina (prega iluminada)
+COLLAR = (222, 222, 212)        # colarinho clerical (nunca branco puro)
+SK = (150, 138, 120)            # pele esquálida de zelote
+SK_DK = (102, 92, 78)
+EYE_GOLD = (255, 196, 90)       # fendas em brasa dourada (fanático)
+EYE_CORE = (255, 244, 205)      # ponto vivo da fenda
+GOLD = (212, 180, 98)           # ouro litúrgico (cruz/guardas)
+GOLD_DK = (150, 120, 50)
+HOLY = (200, 222, 236)          # água benta escorrendo das lâminas
+
+JESUITA_MAP_GRID = 41.0
+JESUITA_MAP_SHIFT = (-3.0, -5.2)
+
+JESUITA_PALETTE = [
+    OUTLINE, CASSOCK_DK, CASSOCK, COLLAR, SK, SK_DK, EYE_GOLD, EYE_CORE,
+    GOLD, GOLD_DK, STEEL, STEEL_DK, LEATHER, LEATHER_DK, BONE, BLOOD, HOLY,
+]
+
+
+def _jesuita_batina(p: Painter, windup: bool) -> None:
+    # A torre: batina-breu dos ombros ao chão, barra esfarrapada e ensanguentada
+    # (o sangue dos convertidos). No windup o peso CRAVA e a barra abre.
+    spread = 0.8 if windup else 0.0
+    hem = [
+        (31.8 + spread, 44.0), (30.2, 45.6), (28.4, 43.8), (26.4, 45.6),
+        (24.2, 44.0), (22.0, 45.6), (19.8, 43.8), (17.6, 45.6),
+        (15.8 - spread, 44.0),
+    ]
+    body = [(18.6, 13.6), (28.4, 13.6), (29.6, 20.0), (31.0, 32.0)] + hem + [(16.6, 32.0), (17.6, 20.0)]
+    p.poly(body, CASSOCK)
+    # o breu come a luz do flanco direito e do vão central
+    p.poly([(27.0, 14.4), (29.6, 20.0), (31.0, 32.0), (31.8 + spread, 44.0),
+            (30.2, 45.6), (28.4, 43.8), (27.6, 32.0), (26.0, 16.0)], CASSOCK_DK)
+    p.poly([(21.8, 24.0), (24.2, 24.0), (24.6, 44.6), (21.6, 43.6)], CASSOCK_DK)
+    # ombros do gibão de couro (o sagrado veste couro de guerra)
+    p.poly([(18.2, 13.8), (28.8, 13.8), (29.4, 17.4), (17.8, 17.4)], LEATHER)
+    p.poly([(26.0, 14.0), (29.4, 17.4), (25.6, 17.4)], LEATHER_DK)
+    # sangue seco na barra — respingos, não bandeira
+    p.poly([(18.4, 42.6), (20.6, 42.2), (21.2, 45.0), (18.8, 44.4)], BLOOD)
+    p.ellipse(27.6, 43.4, 1.1, 0.8, BLOOD)
+    p.ellipse(23.0, 44.8, 0.7, 0.5, BLOOD)
+
+
+def _jesuita_cabeca(p: Painter, windup: bool) -> None:
+    dy = 0.4 if windup else 0.0
+    # gola erguida emoldurando a cabeça (asas de breu dos dois lados)
+    p.poly([(19.0, 13.8), (20.8, 8.6 + dy), (22.0, 13.0)], CASSOCK)
+    p.poly([(28.0, 13.8), (26.4, 8.6 + dy), (25.2, 13.0)], CASSOCK_DK)
+    # cabeça esquálida de zelote — a sombra engole o rosto (lei dos invasores)
+    p.ellipse(23.2, 10.4 + dy, 3.3, 3.0, SK)
+    p.poly([(24.6, 7.8 + dy), (26.5, 9.4 + dy), (26.3, 12.6 + dy), (24.4, 13.2 + dy)], SK_DK)
+    p.poly([(20.4, 11.6 + dy), (26.2, 11.6 + dy), (25.2, 13.2 + dy), (21.4, 13.2 + dy)], SK_DK)  # mandíbula encovada
+    # tonsura/coroa raspada em sombra (couro do crânio, nunca cabelo penteado)
+    p.ellipse(23.2, 8.2 + dy, 2.9, 1.3, SK_DK)
+    # faixa de sombra das órbitas + fendas DOURADAS de fanático — estreitas,
+    # fundas, NUNCA círculos (nem de óculos): o zelote olha por frestas.
+    p.ellipse(23.2, 10.0 + dy, 3.2, 1.05, OUTLINE)
+    ry = 0.52 if windup else 0.34
+    p.ellipse(21.7, 10.05 + dy, 1.0, ry, EYE_GOLD)
+    p.ellipse(24.9, 10.05 + dy, 1.0, ry, EYE_GOLD)
+    p.ellipse(21.4, 10.05 + dy, 0.4, ry * 0.5, EYE_CORE)
+    p.ellipse(24.6, 10.05 + dy, 0.4, ry * 0.5, EYE_CORE)
+    # colarinho clerical
+    p.poly([(21.6, 13.0 + dy), (25.4, 13.0 + dy), (25.2, 14.2 + dy), (21.8, 14.2 + dy)], COLLAR)
+    p.poly([(23.2, 13.0 + dy), (23.9, 13.0 + dy), (23.9, 14.2 + dy), (23.2, 14.2 + dy)], CASSOCK_DK)
+
+
+def _jesuita_cruz(p: Painter) -> None:
+    # Cruz de ouro litúrgico no peito — a assinatura do catequizador
+    p.limb((22.6, 16.6), (22.6, 23.2), 1.5, 1.3, GOLD)
+    p.limb((20.2, 18.6), (25.0, 18.6), 1.3, 1.2, GOLD)
+    p.ellipse(22.6, 22.8, 0.55, 0.55, GOLD_DK)
+    p.ellipse(24.7, 18.6, 0.5, 0.5, GOLD_DK)
+
+
+def _lamina(p: Painter, guard: tuple[float, float], tip: tuple[float, float],
+            steel: tuple[int, int, int], wa: float = 1.5) -> None:
+    # Baioneta consagrada CRUCIFORME: folha reta e comprida, guarda de ouro em
+    # cruz larga + punho curto — cada arma lê como uma cruz de aço à distância
+    # (forma genérica de adaga/baioneta de guarda cruciforme).
+    gx, gy = guard
+    tx, ty = tip
+    dx, dy = tx - gx, ty - gy
+    length = (dx * dx + dy * dy) ** 0.5 or 1.0
+    ux, uy = dx / length, dy / length
+    nx, ny = -uy, ux
+    p.limb(guard, tip, wa, 0.2, steel)                               # folha reta
+    p.limb((gx + dx * 0.04, gy + dy * 0.04),
+           (gx + dx * 0.62, gy + dy * 0.62), 0.5, 0.3, STEEL_DK)     # goteira central
+    # guarda cruciforme LARGA (a cruz da arma)
+    p.limb((gx - nx * 2.3, gy - ny * 2.3), (gx + nx * 2.3, gy + ny * 2.3),
+           1.0, 1.0, GOLD)
+    p.ellipse(gx - nx * 2.3, gy - ny * 2.3, 0.55, 0.55, GOLD_DK)
+    p.ellipse(gx + nx * 2.3, gy + ny * 2.3, 0.55, 0.55, GOLD_DK)
+    # punho curto de couro + pomo de ouro (completa a cruz)
+    p.limb((gx - ux * 0.4, gy - uy * 0.4),
+           (gx - ux * 2.2, gy - uy * 2.2), 1.1, 0.9, LEATHER_DK)
+    p.ellipse(gx - ux * 2.8, gy - uy * 2.8, 0.7, 0.7, GOLD_DK)
+    # consagrada e usada: água benta + sangue PINGANDO da folha — gotas
+    # gordas e descoladas da lâmina (gota fina demais morre no snap/threshold)
+    p.ellipse(gx + dx * 0.68, gy + dy * 0.68 + 1.6, 0.62, 0.85, HOLY)
+    p.ellipse(gx + dx * 0.42, gy + dy * 0.42 + 1.5, 0.55, 0.75, BLOOD)
+
+
+def _jesuita_armas(p: Painter, windup: bool) -> None:
+    if windup:
+        # A CONVERSÃO: lâmina da frente NIVELADA na Caipora (como a pontaria
+        # do caçador), a outra erguida atrás — o X de aço abre a silhueta.
+        p.limb((19.6, 15.4), (14.6, 14.8), 2.4, 1.7, CASSOCK)        # braço frente
+        p.ellipse(14.2, 14.9, 1.35, 1.15, SK)
+        _lamina(p, (12.6, 14.6), (3.4, 13.0), STEEL)
+        p.limb((27.6, 15.2), (30.4, 10.8), 2.4, 1.7, CASSOCK_DK)     # braço trás
+        p.ellipse(30.7, 10.5, 1.3, 1.1, SK_DK)
+        _lamina(p, (31.8, 9.2), (37.6, 1.8), STEEL_DK)
+    else:
+        # Pronto, indiferente à mata: lâminas baixas, pontas pro chão —
+        # quem já converteu uma floresta inteira não levanta guarda à toa.
+        p.limb((19.4, 15.6), (15.8, 21.8), 2.4, 1.7, CASSOCK)        # braço frente
+        p.ellipse(15.5, 22.2, 1.35, 1.15, SK)
+        _lamina(p, (14.4, 23.6), (8.6, 34.2), STEEL)
+        p.limb((27.8, 15.6), (30.6, 21.2), 2.4, 1.7, CASSOCK_DK)     # braço trás
+        p.ellipse(30.9, 21.6, 1.3, 1.1, SK_DK)
+        _lamina(p, (32.0, 23.0), (36.2, 33.4), STEEL_DK)
+
+
+def _jesuita_papeis(p: Painter, windup: bool) -> None:
+    # Tiras de papel de oração amarradas na guarda/cinto, marcadas a sangue —
+    # tremulam mais quando a conversão começa.
+    flutter = 1.0 if windup else 0.0
+    p.poly([(29.8, 22.6 - 9.0 * flutter), (30.9, 22.4 - 9.6 * flutter),
+            (31.6 + flutter, 26.0 - 9.0 * flutter), (30.4 + flutter, 26.3 - 9.2 * flutter)], BONE)
+    p.ellipse(30.7 + flutter * 0.5, 24.4 - 9.2 * flutter, 0.32, 0.5, BLOOD)
+    p.poly([(16.2 - flutter, 23.8 - 7.6 * flutter), (17.3 - flutter, 24.0 - 7.9 * flutter),
+            (17.0 - flutter * 1.6, 27.2 - 7.4 * flutter), (15.9 - flutter * 1.6, 26.9 - 7.2 * flutter)], BONE)
+    p.ellipse(16.5 - flutter * 1.3, 25.5 - 7.5 * flutter, 0.3, 0.45, BLOOD)
+
+
+def jesuita(pose: str = "idle", size: int = ARENA_SIZE, grid: float = 48.0,
+            shift: tuple[float, float] = (0.0, 0.0)) -> Image.Image:
+    p = Painter(size, grid, shift)
+    windup = pose == "windup"
+    _jesuita_batina(p, windup)
+    _jesuita_armas(p, windup)
+    _jesuita_papeis(p, windup)
+    _jesuita_cruz(p)
+    _jesuita_cabeca(p, windup)
+    img = p.render(JESUITA_PALETTE)
+    _outline(img)
+    return img
+
+
+def jesuita_map() -> Image.Image:
+    # Re-render dos MESMOS vetores na moldura do mapa (48×48, figura ~47px:
+    # o adulto preenche o tile que a criança-Curupira ocupa com folga).
+    return jesuita("idle", MAP_SIZE, JESUITA_MAP_GRID, JESUITA_MAP_SHIFT)
+
+
+# ════════════════════════════════════════════════════
 # Prancha de conceito
 # ════════════════════════════════════════════════════
 
-def _contact_sheet(frames: list[tuple[str, Image.Image]]) -> None:
+def _contact_sheet(frames: list[tuple[str, Image.Image]],
+                   out_name: str = "curupira_contact_sheet.png") -> None:
     """Prancha: boss 2× + leitura 32px + Caipora e caçador 2× (hierarquia)."""
     zoom = 2
     label_h = 14
@@ -246,7 +421,7 @@ def _contact_sheet(frames: list[tuple[str, Image.Image]]) -> None:
             tiny = img.resize((32, 32), Image.Resampling.BOX)
             sheet.alpha_composite(tiny, (x + 8, base_y + 8))
         x += cell_ws[i]
-    sheet.save(os.path.join(OUT, "curupira_contact_sheet.png"))
+    sheet.save(os.path.join(OUT, out_name))
 
 
 def generate_all() -> None:
@@ -257,7 +432,14 @@ def generate_all() -> None:
     windup.save(os.path.join(OUT, "curupira_windup.png"))
     curupira_map().save(os.path.join(OUT, "curupira_map.png"))
     _contact_sheet([("curupira idle", idle), ("curupira windup", windup)])
-    print("[gen_bosses] curupira idle/windup (128x128) + variante de mapa (48x48) + prancha gerados")
+    j_idle = jesuita("idle")
+    j_windup = jesuita("windup")
+    j_idle.save(os.path.join(OUT, "jesuita_idle.png"))
+    j_windup.save(os.path.join(OUT, "jesuita_windup.png"))
+    jesuita_map().save(os.path.join(OUT, "jesuita_map.png"))
+    _contact_sheet([("jesuita idle", j_idle), ("jesuita windup", j_windup)],
+                   "jesuita_contact_sheet.png")
+    print("[gen_bosses] curupira + jesuita idle/windup (128x128) + variantes de mapa (48x48) + pranchas gerados")
 
 
 if __name__ == "__main__":

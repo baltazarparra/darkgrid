@@ -41,6 +41,7 @@ assets/
    | Tiles/itens | 32×32 (grid lógico = 32) |
    | Bosses/minibosses legados | 48×48 (até a sessão de redesign de cada um — KI-012) |
    | Curupira (boss redesenhado) | 128×128 arena (corpo ~82px ≈ a Caipora, escala de nó 1.2) + mapa 48×48 |
+   | Jesuíta (boss final redesenhado) | 128×128 arena (corpo ~103px, escala de nó 1.2) + mapa 48×48 |
    | Boitatá premium | 160×128 arena (`gen_boitata.py`; escala 1.2) |
    | Caipora | 96×96 (corpo ~75px; a imponência é da silhueta, não do tamanho) |
    | Invasores comuns (caçador/bruxo) | 112×112 arena (~1.3× ela) + variante de mapa 56×56 |
@@ -50,13 +51,14 @@ assets/
    escala fracionária diferente por ator. Background transparente.
    **Exceção interina (KI-012):** os bosses legados 48×48 usam `sprite_scale`
    por cena para ler na proporção da lore (Saci 1.8 < Caipora ≈ Curupira <
-   Jesuíta 2.7 / caçador-de-machados 2.8 ≈ caçador comum < Boitatá <
+   Jesuíta / caçador-de-machados 2.8 ≈ caçador comum < Boitatá <
    Mula sem Cabeça), com offset de pés na mesma linha de chão dela —
    contrato travado em `tests/unit/test_boss_scale_proportions.gd`. O redesign
    premium de cada chefe (canvas ≥128) deve herdar essas ALTURAS VISUAIS e
-   voltar a escala de nó para 1.2 — o **Curupira** (`gen_bosses.py`,
-   `docs/CONCEITO-curupira.md`) e o **Boitatá** (`gen_boitata.py`) já
-   migraram; os demais seguem na exceção.
+   voltar a escala de nó para 1.2 — o **Curupira** e o **Jesuíta**
+   (`gen_bosses.py`, `docs/CONCEITO-curupira.md`/`docs/CONCEITO-jesuita.md`)
+   e o **Boitatá** (`gen_boitata.py`) já migraram; os demais (Mula, Saci,
+   caçador-de-machados) seguem na exceção.
 2b. **Pipeline de limpeza para IA (obrigatório):** quantizar para a paleta
    (`constants.gd`), alinhar ao grid, garantir alpha limpo (sem halos), ≤ 64×64.
    Sprite que não passar por isso não entra.
@@ -71,11 +73,12 @@ assets/
    personagem; travas de marca e contrato de tamanho cobrados por
    `tests/unit/test_inimigos_sprite_assets.gd`). O design é lei:
    `docs/CONCEITO-inimigos.md`.
-2e. **Curupira idem:** `curupira_*.png` saem SOMENTE de
-   `scripts/tools/gen_bosses.py` (mesma receita premium; 128×128 arena +
-   48×48 mapa re-renderizados dos mesmos vetores; travas de marca e contrato
-   cobrados por `tests/unit/test_curupira_sprite_assets.gd`). O design é lei:
-   `docs/CONCEITO-curupira.md`. Demais chefes entram aqui a cada redesign.
+2e. **Bosses redesenhados idem:** `curupira_*.png` e `jesuita_*.png` saem
+   SOMENTE de `scripts/tools/gen_bosses.py` (mesma receita premium; 128×128
+   arena + 48×48 mapa re-renderizados dos mesmos vetores; travas de marca e
+   contrato cobrados por `tests/unit/test_curupira_sprite_assets.gd` e
+   `test_jesuita_sprite_assets.gd`). O design é lei: `docs/CONCEITO-curupira.md`
+   e `docs/CONCEITO-jesuita.md`. Demais chefes entram aqui a cada redesign.
 3. **Audio:** Generate with [jsfxr](https://sfxr.me/) or [sfxr](https://www.drpetter.se/project_sfxr.html). Export as `.wav`. Short, punchy, under 100KB each.
 4. **No music in MVP.** SFX only. Music adds complexity and file size we don't need for the first Web build.
 5. **UI:** Use Godot's native UI nodes (`Button`, `Panel`, `Label`, `ProgressBar`). Do not create custom UI sprite sheets.
