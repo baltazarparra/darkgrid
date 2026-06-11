@@ -31,21 +31,23 @@ apenas **respira**.
 - **Dentro da run:** nada muda mecanicamente — o boss derrotado já não reaparece na fase
   (`defeated_enemy_ids`). O que muda é o que o jogador encontra na próxima visita ao
   acampamento: o encantado está lá, em paz, e a clareira mudou.
-- **Entre runs:** a libertação é **meta-persistente** (como `phase_reached`): uma vez
-  libertado, o encantado vive no acampamento para sempre — inclusive no santuário
-  pós-derrota. O acampamento vira a vitrine do progresso do jogador.
-- **Nas fases:** os bosses **continuam aparecendo** em runs novas. Lore: a corrupção
-  refaz a forma corrompida a cada ciclo — o que a Caipora liberta é o espírito; a casca
-  que ela enfrenta de novo é o eco do pacto quebrado se reerguendo. (Removê-los das fases
-  quebraria a progressão: P3/P4/P5 avançam pela morte do boss e não têm tile de saída.)
+- **Entre runs:** a libertação é **meta-persistente E definitiva** (como
+  `phase_reached`): uma vez libertado, o encantado vive no acampamento para sempre —
+  inclusive no santuário pós-derrota — e **sai da fase para sempre**. Em runs novas o
+  guardião não está mais lá: a toca dele virou passagem (§4.2). Os bosses só voltam às
+  fases se o jogador **resetar o progresso**.
+- **Na Fase 5:** o Jesuíta nunca é libertado — está sempre lá. E as "cascas batizadas"
+  dos quatro encantados continuam servindo ao altar (são simulacros, não os espíritos —
+  ver reconciliação abaixo), então a fase final **mantém a dificuldade cheia** mesmo com
+  o santuário completo.
 
-### Decisões de design propostas (a validar com o autor)
+### Decisões de design (travadas com o autor, 2026-06-11)
 
-| # | Decisão | Recomendação | Alternativa rejeitada |
-|---|---------|--------------|----------------------|
+| # | Decisão | Travado | Alternativa rejeitada |
+|---|---------|---------|----------------------|
 | 1 | Persistência | **Meta** (entre runs, no save) — o santuário acumula | Por run: o acampamento resetaria a cada morte, matando o impacto |
 | 2 | Jesuíta no santuário | **NUNCA** — não é encantado da mata; é o colonizador | Incluí-lo diluiria o conceito (e o final dele já é a FINAL_CHOICE) |
-| 3 | Bosses nas fases em runs novas | **Continuam** (eco da corrupção) | Removê-los quebra P3/P4/P5 (progressão = morte do boss) |
+| 3 | Bosses nas fases em runs novas | **Saem para sempre** ao serem libertados; só voltam com reset de progresso | Mantê-los como "eco da corrupção" — a libertação tem que valer |
 
 ### Reconciliação com a Fase 5 (a Igreja)
 
@@ -64,11 +66,12 @@ lore; opcionalmente (Etapa 3) uma linha de flavor no diálogo da P5 reforça
 | # | Objetivo | Sucesso |
 |---|----------|---------|
 | 1 | **Libertação registrada** | Derrotar um boss (P1–P4) grava o encantado como libertado, persistido no save |
-| 2 | **Encantado no acampamento** | Cada encantado libertado aparece no hub em pose de descanso, animado, com aura calma |
-| 3 | **Grande upgrade visual por boss** | Cada libertação transforma a cena do acampamento de forma cumulativa e imediatamente perceptível |
-| 4 | **Rito de chegada** | A primeira visita ao hub após cada libertação tem um beat de revelação (uma vez por encantado) |
-| 5 | **Identidade preservada** | A Caipora continua a marca mais forte da tela; pixel art chapada; horror material; verde com parcimônia |
-| 6 | **Sem regressão** | Loop, compra de ervas, saída, HUD, retrato/paisagem e save v3 intactos; gate verde |
+| 2 | **O guardião sai da fase** | Em runs novas o boss libertado não spawna; P3/P4 avançam pela passagem na toca dele; jogo completável com 0–4 libertados; bosses só voltam com reset de progresso |
+| 3 | **Encantado no acampamento** | Cada encantado libertado aparece no hub em pose de descanso, animado, com aura calma |
+| 4 | **Grande upgrade visual por boss** | Cada libertação transforma a cena do acampamento de forma cumulativa e imediatamente perceptível |
+| 5 | **Rito de chegada** | A primeira visita ao hub após cada libertação tem um beat de revelação (uma vez por encantado) |
+| 6 | **Identidade preservada** | A Caipora continua a marca mais forte da tela; pixel art chapada; horror material; verde com parcimônia |
+| 7 | **Sem regressão** | Loop, compra de ervas, saída, HUD, retrato/paisagem, Fase 5 e save v3 intactos; gate verde |
 
 ---
 
@@ -161,7 +164,33 @@ func free_boss(phase: int) -> void:
   veteranos não tomarem 4 ritos de chegada em sequência. Migração coberta por teste.
 - **Reset:** `reset_progress()` limpa ambos os dicts (junto do resto).
 
-### 4.2 A presença — `CampSpirit`
+### 4.2 A fase sem guardião — o boss sai do mapa
+
+Quando o boss da fase está libertado (`MetaProgression.freed_bosses`):
+
+- **Geração:** `MapConfig` ganha `boss_freed: bool`, preenchido na **construção** do
+  config a partir do `MetaProgression` (o `MapGenerator` segue puro e determinístico —
+  a flag é dado de entrada, não consulta de autoload). Com a flag ligada: o boss não é
+  colocado; nas fases **sem tile de saída** (P3/P4, `has_exit=false`), a **cela do boss
+  vira o tile de saída** — mesma posição mais profunda, mesma garantia de rota limpa
+  (`_ensure_clean_path` passa a proteger a rota até a saída, como protegia a rota até o
+  boss). Os guardas do boss viram **guardas da passagem** (`BOSS_GUARD_MIN` mantido,
+  ancorado na saída). P1/P2 já têm saída — o boss simplesmente não spawna.
+- **Roteamento:** o avanço por tile de saída já passa pelo hub
+  (`advance_phase_via_hub`). P3 e P4 ganham `next_screen_on_exit` no `_build_profile()`
+  (P3→`EXPLORATION_PHASE4`, P4→`EXPLORATION_PHASE5`), consumido apenas quando a saída
+  existe. `BossIntro`/diálogo pré-boss não disparam — não há encontro de boss. O marco
+  `phase_reached` já está gravado de runs anteriores (não há como ter boss libertado
+  sem ele), então nenhum unlock depende do encontro que deixou de existir.
+- **Lore no mapa:** onde o guardião vivia, fica a passagem — o `exit_marker` pulsante
+  na alcova mais funda, opcionalmente com uma marca ritual de paz (decoração
+  `MapObject`) ao lado. A mata reconhece quem a libertou.
+- **Economia:** o bounty do boss some das runs seguintes — **aceito**: a rota encurta,
+  as fases fundas pagam mais por kill comum, e a meta passa a ser libertar os quatro e
+  encarar a Igreja direto. Conferir o feel no playtest da Etapa 1.
+- **Reset:** `reset_progress()` limpa `freed_bosses` → os guardiões voltam às fases.
+
+### 4.3 A presença — `CampSpirit`
 
 | Arquivo | Papel |
 |---------|-------|
@@ -187,7 +216,7 @@ parede da clareira (16×12 em grid `Constants.GRID_WIDTH×GRID_HEIGHT`), escolhi
 caberem no quadro tanto em retrato quanto em paisagem (validar com a ferramenta de
 preview, §5 Etapa 2). Walkability intocada — todos os tiles-âncora já são parede/mata.
 
-### 4.3 A transformação — camadas de cena por encantado
+### 4.4 A transformação — camadas de cena por encantado
 
 `hub_manager._apply_sanctuary_layers()` itera `freed_bosses` e aplica cada camada
 (funções pequenas e independentes): `_layer_mula_pyre()`, `_layer_boitata_wisps()`,
@@ -196,7 +225,7 @@ construção (cada uma roda no máximo uma vez por `_ready`). A pira da Mula **m
 a fogueira existente (escala da chama + energia/raio da `ForestLight` + emissor de
 brasas extra) em vez de duplicá-la.
 
-### 4.4 O rito de chegada (reveal, uma vez por encantado)
+### 4.5 O rito de chegada (reveal, uma vez por encantado)
 
 Na entrada do hub, para cada libertado **sem** `spirits_seen`:
 
@@ -229,7 +258,18 @@ subiu (gotcha #12 — GUT mente verde em arquivo que não parseia).
 - **Gate:** `test_meta_progression` estendido (free/idempotência/clamp P1–P4/round-trip
   do save/migração/reset); P5 e mini-bosses não registram.
 
-### Etapa 1 — Os encantados no acampamento (presenças)
+### Etapa 1 — A fase sem guardião (o boss sai do mapa)
+- `MapConfig.boss_freed` (entrada de dado; gerador segue puro) + `MapGenerator`: sem
+  boss; em P3/P4 a cela do boss vira tile de saída com rota limpa garantida; guardas
+  ancorados na passagem. `next_screen_on_exit` de P3/P4 no `_build_profile()`; marca
+  ritual de paz opcional na alcova.
+- **Gate:** invariantes do gerador parametrizados por `boss_freed` × fase × seed (sem
+  boss no grid, saída válida/única/alcançável do spawn, contagem de inimigos, rota
+  limpa); roteamento P3→P4 e P4→P5 por saída via hub; run ponta-a-ponta com 0 e com 4
+  libertados (P5 sempre com Jesuíta e cascas batizadas). `/validate-controls` (mexe em
+  exploração).
+
+### Etapa 2 — Os encantados no acampamento (presenças)
 - `camp_spirit.gd` + `SPIRIT_DEFS` (frames, escala, âncora, flip, aura, fala);
   `hub_manager._spawn_spirits()`; idle lento + respiração + aura calma + modulate de
   repouso.
@@ -237,8 +277,8 @@ subiu (gotcha #12 — GUT mente verde em arquivo que não parseia).
   `test_hub_builds` estendido (hub monta com 0–4 espíritos; walkability/saída/compras
   intactas).
 
-### Etapa 2 — A transformação do acampamento (o grande impacto)
-- As 4 camadas de cena (§4.3), cumulativas, data-driven; pira modifica a fogueira
+### Etapa 3 — A transformação do acampamento (o grande impacto)
+- As 4 camadas de cena (§4.4), cumulativas, data-driven; pira modifica a fogueira
   existente; densidades respeitando `particle_amount_scale`.
 - **Ferramenta de preview** `scripts/tools/preview_camp_spirits.gd` (padrão
   `preview_combat_dpad.gd`/`preview_final_scenes.gd`): captura o acampamento sob Xvfb
@@ -247,8 +287,8 @@ subiu (gotcha #12 — GUT mente verde em arquivo que não parseia).
 - **Gate:** `make gate` + capturas revisadas + `/validate-platforms` (mexe em cena com
   câmera/safe-area).
 
-### Etapa 3 — O rito de chegada + narrativa + áudio
-- Reveal por encantado (§4.4) com fila, skip e trava de input; falas na `SPIRIT_DEFS`;
+### Etapa 4 — O rito de chegada + narrativa + áudio
+- Reveal por encantado (§4.5) com fila, skip e trava de input; falas na `SPIRIT_DEFS`;
   stinger novo no `gen_sfx.py` (regen determinístico — conferir que faixas vizinhas
   ficam byte-idênticas); `spirits_seen` persistido.
 - Lore P5: nota canônica das "cascas batizadas" nos docs (+ linha de flavor opcional no
@@ -265,15 +305,19 @@ subiu (gotcha #12 — GUT mente verde em arquivo que não parseia).
 | Arquivo | Mudança |
 |---------|---------|
 | `scripts/core/meta_progression.gd` | `freed_bosses`/`spirits_seen`, `free_boss()`, listener `boss_died`, save v4 + migração |
+| `scripts/exploration/map_config.gd` | `boss_freed: bool` (preenchido do `MetaProgression` na construção) |
+| `scripts/exploration/map_generator.gd` | sem boss quando libertado; saída na cela do boss (P3/P4); guardas na passagem; rota limpa até a saída |
+| `scripts/exploration/exploration_manager.gd` | `next_screen_on_exit` para P3/P4 (usado só quando a saída existe) |
 | `scripts/hub/camp_spirit.gd` **(novo)** | presença do encantado em repouso (`CampSpirit`) |
 | `scripts/hub/hub_manager.gd` | `SPIRIT_DEFS`, `_spawn_spirits()`, camadas de santuário, rito de chegada |
 | `scripts/tools/gen_sfx.py` | stinger de chegada do espírito |
 | `scripts/tools/preview_camp_spirits.gd` **(novo)** | capturas Xvfb dos 5 estados do santuário |
 | `docs/PRD-fase-final-igreja.md` (ou doc de lore) | nota canônica das cascas batizadas |
-| `tests/unit/test_meta_progression.gd`, `test_hub_builds.gd`, `test_camp_spirit.gd` **(novo)** | cobertura das etapas |
+| `tests/unit/test_map_generator.gd`, `test_exploration_phase{3,4}.gd`, `test_meta_progression.gd`, `test_hub_builds.gd`, `test_camp_spirit.gd` **(novo)** | cobertura das etapas |
 
-Sem mudança em: economia/ervas (`purchase_upgrade`), arena, exploração, progressão de
-fases, `boss_intro_screen`, finais.
+Sem mudança em: economia/ervas (`purchase_upgrade`), arena/timing, Fase 5 (Jesuíta +
+cascas batizadas intactos), `boss_intro_screen` (só deixa de ser chamado em fase sem
+guardião), finais.
 
 ---
 
@@ -281,6 +325,8 @@ fases, `boss_intro_screen`, finais.
 
 | Risco | Mitigação |
 |-------|-----------|
+| **Softlock**: fase sem boss ficar sem rota de avanço | Saída na cela do boss com `_ensure_clean_path` + invariantes "saída alcançável do spawn" por fase × seed no GUT |
+| Runs ficarem curtas/economia frouxa com 4 libertados | Aceito por design (a libertação tem que valer); fases fundas pagam mais por kill; conferir feel no playtest da Etapa 1 e ajustar `COMMON_FRAGMENT_REWARD` se preciso |
 | Encantados roubarem a leitura da Caipora (lei de marca) | Repouso abatido (modulate), bordas da clareira, gate visual por preview nos 5 estados |
 | Poluição visual/perf no mobile com 4 camadas ativas | Densidades mínimas, `particle_amount_scale`, medir com `?perf` no estado 4/4 |
 | Conflito de lore com a P5 (bosses "convertidos") | Retcon canônico das cascas batizadas (doc) + flavor opcional |
@@ -296,5 +342,4 @@ fases, `boss_intro_screen`, finais.
 - Interação com os encantados (falas ao se aproximar, bênçãos/buffs por espírito).
 - Música do hub evoluindo por encantado (camada de stem por libertação).
 - Marca visual do Jesuíta poupado (FINAL_CHOICE) em algum canto do santuário.
-- Remover bosses das fases em runs novas (rejeitado por ora — quebraria a progressão).
 - Key art / página do itch usando o santuário completo como imagem de meta-progresso.
