@@ -879,6 +879,34 @@ médio. Medir antes de mexer.
 - [x] `make gate` ✅ 321/321 + `make export` no fechamento da Fase 10; teste de
   carga da página (gotcha #5) junto da validação no device.
 
+### Santuário dos Encantados — Bosses Pacíficos no Acampamento 📋
+
+Mudança core no significado da vitória: a Caipora não mata os encantados — ela os
+**liberta**. Ao derrotar um boss (P1–P4), o espírito dele se recolhe ao Acampamento e
+passa a viver lá em paz; cada libertação aplica uma **grande transformação visual
+cumulativa** na clareira (Mula → pira ritual + brasas; Boitatá → perímetro de
+fogos-fátuos; Curupira → mata viva + vaga-lumes; Saci → vento + redemoinhos de folhas),
+até o estado final de santuário. Meta-persistente (save v4), com rito de chegada único
+por encantado. O Jesuíta NUNCA entra (não é encantado); os mini-bosses da P5 viram
+canonicamente "cascas batizadas" — simulacros, não os espíritos verdadeiros. Bosses
+continuam nas fases em runs novas (eco da corrupção — removê-los quebraria a progressão
+P3/P4/P5). Encantados em repouso são presenças antigas e perigosas, não mascotes — o
+horror não suaviza. Spec completa:
+[docs/PRD-santuario-dos-encantados.md](docs/PRD-santuario-dos-encantados.md).
+
+- [ ] **Etapa 0 — Memória dos encantados:** `freed_bosses`/`spirits_seen` no
+  `MetaProgression` via `SignalBus.boss_died` (ignora P5), save v4 + migração v3→v4
+  derivada de `phase_reached`. Testes de persistência/migração.
+- [ ] **Etapa 1 — Presenças:** `scripts/hub/camp_spirit.gd` (`CampSpirit`) + tabela
+  `SPIRIT_DEFS`; idle lento + respiração + aura calma + modulate de repouso nas bordas
+  da clareira (walkability intocada). `test_camp_spirit.gd` + `test_hub_builds`.
+- [ ] **Etapa 2 — Transformação da cena:** 4 camadas cumulativas data-driven no
+  `hub_manager`; `preview_camp_spirits.gd` (capturas Xvfb dos 5 estados, retrato +
+  paisagem) como gate visual de leitura; `/validate-platforms`.
+- [ ] **Etapa 3 — Rito de chegada + narrativa + áudio:** reveal único por encantado
+  (fila/skip/trava), falas secas, stinger novo no `gen_sfx.py`, nota de lore das
+  cascas batizadas na P5. `make gate` + playtest do loop.
+
 ---
 
 ## 11.1 Known Issues
