@@ -8,18 +8,21 @@ que tornam cada personagem identificável:
              ver docs/CONCEITO-protagonista.md). Este módulo apenas delega.
   Caçador & Bruxo — INIMIGOS COMUNS: gerados por gen_inimigos.py (pipeline
              premium 112px arena + 56px mapa, ver docs/CONCEITO-inimigos.md). Delega.
+  Curupira — BOSS P3: gerado por gen_bosses.py (pipeline premium 128px arena +
+             48px mapa, ver docs/CONCEITO-curupira.md). Delega.
   Caçador c/ machados — 48x48: capuz, manto, dois machados, olhos brilhando (boss base)
   Mula sem Cabeça     — 48x48: sem cabeça, jato de fogo no toco do pescoço,
                         ferraduras de ferro, arreio amaldiçoado (boss da Fase 1)
 
-Saída: player_* via gen_caipora (64x64), enemy_idle.png, boss/boitata/
-       curupira/saci/mula_idle.png (48x48)
+Saída: player_* via gen_caipora, enemy/bruxo_* via gen_inimigos, curupira_*
+       via gen_bosses, boss/boitata/saci/mula/jesuita_idle.png (48x48)
 """
 import os
 from PIL import Image
 
 import gen_caipora
 import gen_inimigos
+import gen_bosses
 
 S = 48
 OUT = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sprites")
@@ -239,66 +242,6 @@ def boitata():
     c.rect(43, 19, 46, 19, TONGUE)
     c.px(44, 20, TONGUE)
     c.px(46, 20, TONGUE)
-
-    return c
-
-
-def curupira():
-    """Curupira — humanóide infantil, pele verde, cabelo laranja selvagem, pés ao contrário."""
-    c = C()
-    SKIN   = (34, 90, 40)
-    SKIN_DK= (20, 58, 26)
-    HAIR   = (255, 107, 0)
-    HAIR_H = (255, 168, 56)
-    HAIR_D = (188, 42, 0)
-    EYE_G  = (180, 255, 80)
-    TOOTH  = (220, 200, 160)
-
-    # ── Cabelo selvagem (sobe e alarga) ──
-    c.rect(15, 4, 33, 16, HAIR_D)
-    c.disc(24, 12, 10, HAIR_D)
-    for (x, top) in [(14, 8), (17, 3), (20, 1), (24, 0), (28, 2), (31, 4), (34, 7)]:
-        c.rect(x, max(top, 0), x + 2, 14, HAIR)
-    for (x, top) in [(18, 2), (22, 0), (26, 1), (30, 3)]:
-        c.rect(x, max(top, 0), x + 1, top + 7, HAIR_H)
-
-    # ── Cabeça ──
-    c.disc(24, 20, 8, SKIN)
-    c.rect(17, 16, 31, 25, SKIN)
-    c.rect(17, 16, 19, 25, SKIN_DK)
-    # olhos brilhantes
-    c.rect(19, 18, 21, 20, EYE_G)
-    c.rect(27, 18, 29, 20, EYE_G)
-    c.px(20, 19, (220, 255, 120))
-    c.px(28, 19, (220, 255, 120))
-    # dentes afiados
-    c.rect(21, 23, 27, 24, TOOTH)
-    for xx in (21, 23, 25, 27):
-        c.px(xx, 25, SKIN_DK)
-
-    # ── Tronco (pequeno, encurvado) ──
-    c.rect(19, 26, 29, 36, SKIN)
-    c.rect(19, 26, 20, 36, SKIN_DK)
-    c.rect(28, 26, 29, 36, SKIN_DK)
-
-    # ── Braços longos ──
-    c.rect(12, 27, 19, 31, SKIN_DK)   # esq
-    c.rect(29, 27, 36, 31, SKIN)      # dir
-    c.rect(10, 30, 14, 33, SKIN_DK)   # mão esq
-    c.rect(34, 30, 38, 33, SKIN)      # mão dir
-
-    # ── Pernas curtas ──
-    c.rect(19, 36, 23, 43, SKIN)
-    c.rect(25, 36, 29, 43, SKIN)
-    c.rect(19, 36, 19, 43, SKIN_DK)
-    c.rect(25, 36, 25, 43, SKIN_DK)
-
-    # ── PÉS AO CONTRÁRIO (dedos apontando para TRÁS — para a esquerda) ──
-    for fx in (19, 25):
-        c.rect(fx - 5, 43, fx + 1, 45, SKIN)   # pé estendido pra trás
-        c.rect(fx + 1, 43, fx + 1, 45, SKIN_DK) # calcanhar (na frente)
-        c.px(fx - 3, 45, SKIN_DK)
-        c.px(fx - 1, 45, SKIN_DK)
 
     return c
 
@@ -579,12 +522,12 @@ def mula():
 
 if __name__ == "__main__":
     gen_caipora.generate_all()   # protagonista (pipeline premium próprio)
-    gen_inimigos.generate_all()  # caçador (pipeline premium 48px)
+    gen_inimigos.generate_all()  # caçador/bruxo (pipeline premium 112px+56px)
+    gen_bosses.generate_all()    # curupira (pipeline premium 128px+48px)
     axe_hunter().save("boss_idle.png")
     axe_hunter("windup").save("boss_windup.png")
     boitata().save("boitata_idle.png")
-    curupira().save("curupira_idle.png")
     saci().save("saci_idle.png")
     mula().save("mula_idle.png")
     jesuita().save("jesuita_idle.png")
-    print("[gen_chars] caipora (via gen_caipora) + caçador/bruxo (via gen_inimigos) + caçador-de-machados + boitatá + curupira + saci + mula-sem-cabeça + jesuíta-bandeirante (48x48) gerados")
+    print("[gen_chars] caipora (via gen_caipora) + caçador/bruxo (via gen_inimigos) + curupira (via gen_bosses) + caçador-de-machados + boitatá + saci + mula-sem-cabeça + jesuíta-bandeirante (48x48) gerados")

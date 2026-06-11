@@ -62,16 +62,23 @@ BRUXO_PALETTE = [
 
 
 class Painter:
-    def __init__(self, size: int = SIZE) -> None:
+    # `grid`/`shift` permitem re-renderizar os MESMOS vetores noutra moldura
+    # (ex.: variante de mapa dos bosses, gen_bosses.py). Defaults preservam
+    # exatamente os pixels de caçador/bruxo (shift 0.0 é identidade em float).
+    def __init__(self, size: int = SIZE, grid: float = GRID,
+                 shift: tuple[float, float] = (0.0, 0.0)) -> None:
         self.size = size
-        self.k = size / GRID * SS   # grade 48 → canvas supersampled
+        self.k = size / grid * SS   # grade `grid` → canvas supersampled
+        self.sx, self.sy = shift
         self.im = Image.new("RGBA", (size * SS, size * SS), TRANSPARENT)
         self.d = ImageDraw.Draw(self.im)
 
     def poly(self, pts: list[tuple[float, float]], col: tuple[int, int, int]) -> None:
-        self.d.polygon([(x * self.k, y * self.k) for x, y in pts], fill=col)
+        self.d.polygon([((x + self.sx) * self.k, (y + self.sy) * self.k) for x, y in pts], fill=col)
 
     def ellipse(self, cx: float, cy: float, rx: float, ry: float, col: tuple[int, int, int]) -> None:
+        cx += self.sx
+        cy += self.sy
         self.d.ellipse(
             [(cx - rx) * self.k, (cy - ry) * self.k, (cx + rx) * self.k, (cy + ry) * self.k],
             fill=col,
