@@ -39,6 +39,8 @@ func _apply_flash_material(sprite: AnimatedSprite2D) -> Array:
 	var mats: Array = []
 	var mat := ShaderMaterial.new()
 	mat.shader = FLASH_SHADER
+	mat.set_shader_parameter("outline_color", Constants.COLOR_ACTOR_OUTLINE)
+	mat.set_shader_parameter("outline_thickness_px", Constants.ACTOR_OUTLINE_THICKNESS)
 	sprite.material = mat
 	mats.append(mat)
 	return mats

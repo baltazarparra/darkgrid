@@ -97,12 +97,20 @@ const BOSS_FRAGMENT_BOUNTY := { 1: 3, 2: 5, 3: 8, 4: 12, 5: 20 }
 # jogo referencia ESTE recurso (PLANO-performance-60fps G9).
 const ADDITIVE_MATERIAL: CanvasItemMaterial = preload("res://resources/materials/additive_glow.tres")
 
-# ─── Arena actor contrast (shadow + front-light) ───
+# ─── Actor contrast (shadow + front-light + outline) ───
 const SHADOW_OVAL_PATH := "res://assets/sprites/shadow_oval.png"
-const COLOR_ENEMY_FRONT_LIGHT := Color(0.85, 0.80, 0.75)  # branco-quente sutil
-const COLOR_ENEMY_SHADOW := Color(0.0, 0.0, 0.0, 0.75)
-const ENEMY_FRONT_LIGHT_ENERGY := 1.0
-const ENEMY_FRONT_LIGHT_SCALE := 2.0
+const COLOR_ACTOR_FRONT_LIGHT := Color(0.92, 0.84, 0.68) # osso quente contra breu
+const COLOR_ACTOR_SHADOW := Color(0.0, 0.0, 0.0, 0.86)
+const COLOR_ACTOR_OUTLINE := Color(0.92, 0.78, 0.52, 0.82)
+const ACTOR_FRONT_LIGHT_ENERGY := 1.0
+const ACTOR_FRONT_LIGHT_SCALE := 2.0
+const ACTOR_OUTLINE_THICKNESS := 2.0
+# Compatibilidade temporária para scripts antigos enquanto o contraste migra
+# para ActorContrast.
+const COLOR_ENEMY_FRONT_LIGHT := COLOR_ACTOR_FRONT_LIGHT
+const COLOR_ENEMY_SHADOW := COLOR_ACTOR_SHADOW
+const ENEMY_FRONT_LIGHT_ENERGY := ACTOR_FRONT_LIGHT_ENERGY
+const ENEMY_FRONT_LIGHT_SCALE := ACTOR_FRONT_LIGHT_SCALE
 
 # ─── Colors (Horror Folk Palette) ──────────────────
 # Fonte ÚNICA de cor do jogo. Qualquer Color() novo deve referenciar/derivar daqui —

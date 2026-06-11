@@ -173,6 +173,7 @@ func _spawn_caipora() -> void:
 	_caipora = caipora_combat_scene.instantiate()
 	_caipora.position = ArenaFraming.caipora_pos(get_viewport().get_visible_rect().size)
 	add_child(_caipora)
+	ActorContrast.add_ground_shadow(_caipora, Vector2(0.92, 0.34), Vector2(0.0, 2.0))
 	CaiporaSkin.apply(_caipora.animated_sprite)
 	# max_health é int; GameState.caipora_max_hp é float (carrega o meio-HP acumulado).
 	_caipora.health.max_health = int(floor(GameState.caipora_max_hp))

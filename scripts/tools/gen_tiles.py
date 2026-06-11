@@ -32,16 +32,16 @@ OUT = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sprites")
 
 BLACK = (0, 0, 0)
 NIGHT = (13, 17, 23)
-VOID_BROWN = (38, 20, 17)
-EARTH_DEEP = (30, 16, 13)
-EARTH_DARK = (42, 23, 19)
-EARTH = (72, 42, 36)
-EARTH_WET = (54, 30, 27)
-BARK = (70, 42, 20)
-BARK_DARK = (34, 20, 10)
-MOSS_DARK = (21, 45, 18)
-MOSS = (38, 68, 28)
-LEAF_DARK = (31, 54, 24)
+VOID_BROWN = (24, 12, 10)
+EARTH_DEEP = (18, 9, 8)
+EARTH_DARK = (28, 14, 12)
+EARTH = (50, 28, 24)
+EARTH_WET = (35, 18, 16)
+BARK = (48, 28, 13)
+BARK_DARK = (22, 12, 6)
+MOSS_DARK = (12, 28, 12)
+MOSS = (24, 45, 20)
+LEAF_DARK = (18, 34, 16)
 ORANGE_DK = (139, 42, 0)
 ORANGE = (255, 69, 0)
 FIRE = (255, 104, 8)
@@ -53,12 +53,12 @@ BONE = (175, 164, 134)
 WATER = (14, 22, 26)
 WATER_LIGHT = (58, 82, 90)
 
-STONE_DARK = (46, 46, 56)
-STONE = (98, 96, 104)
-STONE_LIGHT = (142, 136, 118)
-LIME_DARK = (86, 78, 68)
-LIME = (160, 150, 128)
-WAX = (190, 170, 128)
+STONE_DARK = (24, 24, 31)
+STONE = (48, 47, 55)
+STONE_LIGHT = (78, 73, 64)
+LIME_DARK = (44, 39, 34)
+LIME = (92, 82, 66)
+WAX = (126, 104, 70)
 
 SHADE = (0, 0, 0)
 SHADE_EDGE_ALPHA = (115, 77, 38)       # 0.45 / 0.30 / 0.15
@@ -161,7 +161,7 @@ def _forest_floor_variant(v: int) -> Image.Image:
     img = _new_tile(EARTH_DARK)
     px = img.load()
     draw = ImageDraw.Draw(img)
-    _noise(px, rng, [EARTH_DEEP, EARTH_DARK, EARTH_DARK, EARTH, EARTH_WET, VOID_BROWN], 0.22)
+    _noise(px, rng, [EARTH_DEEP, EARTH_DARK, EARTH_DARK, EARTH_WET, VOID_BROWN], 0.14)
     for _ in range(rng.randint(1, 2)):
         _deep_soil_blob(draw, rng)
 
@@ -172,10 +172,11 @@ def _forest_floor_variant(v: int) -> Image.Image:
             _root(draw, rng, (start[0], max(0, start[1] - 1)), BARK, 1)
         _jagged_leaf(draw, 20, 7, 1, LEAF_DARK)
     elif v == 1:
-        # Serrated leaf litter, echoing the Caipora cloak edge.
-        for _ in range(7):
+        # Serrated leaf litter, echoing the Caipora cloak edge, but kept below
+        # actor value so it does not fight silhouettes in the exploration zoom.
+        for _ in range(5):
             _jagged_leaf(draw, rng.randint(1, 28), rng.randint(5, 28),
-                         rng.choice([-1, 1]), rng.choice([MOSS_DARK, LEAF_DARK, MOSS]))
+                         rng.choice([-1, 1]), rng.choice([MOSS_DARK, LEAF_DARK]))
         _line(draw, [(3, 28), (12, 23), (25, 25)], BARK_DARK, 3)
     elif v == 2:
         # Dry blood and clawed roots.
@@ -189,7 +190,7 @@ def _forest_floor_variant(v: int) -> Image.Image:
         _ellipse(draw, (4, 8, 27, 24), WATER)
         _ellipse(draw, (10, 12, 21, 18), NIGHT)
         _line(draw, [(8, 13), (21, 12)], WATER_LIGHT, 1)
-        _line(draw, [(7, 20), (18, 21)], EARTH, 1)
+        _line(draw, [(7, 20), (18, 21)], EARTH_WET, 1)
         _bone_chip(draw, 22, 22, 1)
         _jagged_leaf(draw, 3, 7, 1, ORANGE_DK)
 
@@ -251,7 +252,7 @@ def _church_floor_variant(v: int) -> Image.Image:
             if joint:
                 px[x, y] = BLACK + (255,) if rng.random() < 0.65 else STONE_DARK + (255,)
             else:
-                px[x, y] = rng.choice([STONE_DARK, STONE, STONE, STONE_LIGHT, LIME_DARK]) + (255,)
+                px[x, y] = rng.choice([STONE_DARK, STONE_DARK, STONE, LIME_DARK]) + (255,)
 
     # Fuligem em degraus duros nos cantos: a igreja continua caminhavel, mas
     # parece consumida pela mata e pelo sangue.
@@ -274,6 +275,8 @@ def _church_floor_variant(v: int) -> Image.Image:
         _jagged_leaf(draw, 17, 9, 1, MOSS_DARK)
     elif v == 2:
         _blood_smear(draw, rng, 16, 15, 9)
+        _line(draw, [(8, 7), (16, 13), (24, 12)], BLOOD, 2)
+        _line(draw, [(12, 22), (21, 25), (28, 23)], BLOOD_DARK, 2)
         for _ in range(5):
             x = rng.randint(2, 29)
             y = rng.randint(2, 29)

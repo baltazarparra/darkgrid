@@ -50,8 +50,10 @@ func test_floor_and_wall_have_functional_value_separation() -> void:
 		return
 	assert_gt(_mean_luminance(forest_floor) - _mean_luminance(forest_wall), 15.0,
 		"floresta separa chao caminhavel da parede por valor")
-	assert_gt(_mean_luminance(church_floor) - _mean_luminance(church_wall), 35.0,
-		"igreja separa piso claro da parede/sombra por valor")
+	assert_gt(_mean_luminance(church_floor) - _mean_luminance(church_wall), 12.0,
+		"igreja separa piso escuro da parede/sombra por valor")
+	assert_lt(_mean_luminance(church_floor), 70.0,
+		"piso da igreja fica sombrio e nao compete com os atores")
 
 func test_forest_floor_keeps_caipora_accent_without_becoming_orange() -> void:
 	var image := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/tile_floor.png"))

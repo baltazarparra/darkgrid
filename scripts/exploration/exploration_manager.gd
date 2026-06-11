@@ -46,6 +46,7 @@ const MINIBOSS_TYPES := ["mula", "boitata", "curupira", "saci"]
 # Variantes de tile no atlas (ver scripts/tools/gen_tiles.py).
 const FLOOR_VARIANTS := 4
 const WALL_VARIANTS := 2
+const SHADE_VARIANTS := 3
 
 # Atlas de piso/parede por tema. O profile da fase escolhe via "floor_texture"/
 # "wall_texture"; o default é a floresta (fases 1–4). Fase 5 = igreja colonial.
@@ -53,6 +54,7 @@ const FLOOR_TEXTURE := preload("res://assets/sprites/tile_floor.png")
 const WALL_TEXTURE := preload("res://assets/sprites/tile_wall.png")
 const FLOOR_TEXTURE_CHURCH := preload("res://assets/sprites/tile_floor_church.png")
 const WALL_TEXTURE_CHURCH := preload("res://assets/sprites/tile_wall_church.png")
+const SHADE_TEXTURE := preload("res://assets/sprites/tile_shade.png")
 
 # Aura da Caipora pela névoa/casa (= sprite.offset.y(-12) × scale(0.8); x=0).
 const CAIPORA_AURA_OFFSET := Vector2(0, -10)
@@ -531,8 +533,22 @@ func _setup_tilemap() -> void:
 		wall_source.create_tile(Vector2i(i, 0))
 	tileset.add_source(wall_source, 1)
 
+	var shade_source := TileSetAtlasSource.new()
+	shade_source.texture = SHADE_TEXTURE
+	shade_source.texture_region_size = Vector2i(Constants.TILE_SIZE, Constants.TILE_SIZE)
+	for i: int in SHADE_VARIANTS:
+		shade_source.create_tile(Vector2i(i, 0))
+	tileset.add_source(shade_source, 2)
+
 	_tilemap.tile_set = tileset
+	_ensure_tilemap_layers()
 	_paint_map()
+
+func _ensure_tilemap_layers() -> void:
+	while _tilemap.get_layers_count() < 2:
+		_tilemap.add_layer(_tilemap.get_layers_count())
+	_tilemap.set_layer_z_index(0, 0)
+	_tilemap.set_layer_z_index(1, 1)
 
 func _paint_map() -> void:
 	for y: int in _map.tiles.size():
@@ -545,8 +561,23 @@ func _paint_map() -> void:
 			else:
 				var fv: int = (x * 7 + y * 13) % FLOOR_VARIANTS
 				_tilemap.set_cell(0, pos, 0, Vector2i(fv, 0))
+				var shade := _shade_variant_for_floor(pos)
+				if shade >= 0:
+					_tilemap.set_cell(1, pos, 2, Vector2i(shade, 0))
 
 # ─── Perfil de Apresentação/Rota por Fase ──────────
+func _shade_variant_for_floor(pos: Vector2i) -> int:
+	var north := _map.char_at(pos + Vector2i(0, -1)) == "W"
+	var west := _map.char_at(pos + Vector2i(-1, 0)) == "W"
+	var east := _map.char_at(pos + Vector2i(1, 0)) == "W"
+	if north and (west or east):
+		return 1
+	if north:
+		return 2 if _profile["has_fog"] else 0
+	if west or east:
+		return 1
+	return -1
+
 func _build_profile() -> Dictionary:
 	match phase:
 		2:

@@ -71,6 +71,7 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 	# Sempre transborda pra cima: pés na base do tile.
 	sprite.offset = Vector2(0, -13) if (not boss and not miniboss) else Vector2(0, -8)
 	add_child(sprite)
+	ActorContrast.apply_outline(sprite)
 
 	# Sombra + luz frontal: ancora visual contra o chão escuro (mesmo sistema da arena).
 	_spawn_shadow(not boss and not miniboss)
@@ -113,22 +114,12 @@ func take_turn(player_pos: Vector2i, walkable_fn: Callable, occupied_fn: Callabl
 
 # ─── Private ───────────────────────────────────────
 func _spawn_shadow(is_common: bool) -> void:
-	var shadow := Sprite2D.new()
-	shadow.texture = load(Constants.SHADOW_OVAL_PATH)
-	shadow.z_index = -1
-	shadow.modulate = Constants.COLOR_ENEMY_SHADOW
-	shadow.position = Vector2(0.0, 2.0)
-	shadow.scale = Vector2(1.0, 0.35) if is_common else Vector2(0.85, 0.30)
-	add_child(shadow)
+	var scale := Vector2(1.12, 0.42) if is_common else Vector2(0.95, 0.34)
+	ActorContrast.add_ground_shadow(self, scale, Vector2(0.0, 2.0))
 
 func _spawn_front_light(is_common: bool) -> void:
-	var light := ForestLight.make(
-		Constants.COLOR_ENEMY_FRONT_LIGHT,
-		Constants.ENEMY_FRONT_LIGHT_ENERGY,
-		Constants.ENEMY_FRONT_LIGHT_SCALE
-	)
-	light.position = Vector2(-10, -10) if is_common else Vector2(-8, -8)
-	add_child(light)
+	var pos := Vector2(-10, -10) if is_common else Vector2(-8, -8)
+	ActorContrast.add_front_light(self, pos)
 
 func _spawn_aura(aura_type: String) -> void:
 	var aura := CPUParticles2D.new()

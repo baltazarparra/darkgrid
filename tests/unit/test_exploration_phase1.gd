@@ -38,6 +38,12 @@ func test_phase1_tilemap_keeps_forest_atlases() -> void:
 	var floor_source := tile_set.get_source(0) as TileSetAtlasSource
 	assert_eq(floor_source.texture.resource_path, "res://assets/sprites/tile_floor.png",
 		"Fase 1 mantém o chão de floresta")
+	var shade_source := tile_set.get_source(2) as TileSetAtlasSource
+	assert_eq(shade_source.texture.resource_path, "res://assets/sprites/tile_shade.png",
+		"Fase 1 usa atlas de sombra de contato")
+	var tilemap := scene.get_node("TileMap") as TileMap
+	assert_gt(tilemap.get_used_cells(1).size(), 0,
+		"Fase 1 pinta sombra de contato nos encontros de chao e parede")
 
 func test_phase1_skips_defeated_enemies() -> void:
 	GameState.start_run()
