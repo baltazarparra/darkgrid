@@ -1,10 +1,26 @@
 class_name Mula
 extends Boss
 
-## Boss da Fase 1: a Mula sem Cabeça. Reaproveita os três padrões do Boss base
-## (a dificuldade da primeira luta não muda) — o que a distingue é a identidade:
-## no lugar da cabeça, um jato de fogo; aura de brasas no chão e telegraph de
-## fogo no especial (em vez do roxo do Boss base).
+## Boss da Fase 1: a Mula sem Cabeça. Fase de aprendizado — máximo Tier 2 (2 botões).
+## Três padrões com identidade própria: COICE (tutorial), GALOPE (MONO duplo),
+## CABEÇADA (PINGPONG ↓↑ — primeira sequência real do jogo).
+
+const MULA_COICE_PATTERN    := preload("res://resources/attack_patterns/criatura_pattern.tres")
+const MULA_GALOPE_PATTERN   := preload("res://resources/attack_patterns/mula_galope_pattern.tres")
+const MULA_CABECADA_PATTERN := preload("res://resources/attack_patterns/mula_cabecada_pattern.tres")
+
+# ─── Public API ────────────────────────────────────
+func get_attack_pattern() -> AttackPattern:
+	var r := randf()
+	_current_is_special = false
+	if r < 0.40:
+		_active_pattern = MULA_COICE_PATTERN
+	elif r < 0.75:
+		_active_pattern = MULA_GALOPE_PATTERN
+	else:
+		_current_is_special = true  # ativa telegraph laranja
+		_active_pattern = MULA_CABECADA_PATTERN
+	return _active_pattern
 
 # ─── Animation override ─────────────────────────────
 func _on_state_changed(new_state: EnemyStateMachine.State) -> void:

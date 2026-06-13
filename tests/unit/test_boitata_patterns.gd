@@ -18,7 +18,7 @@ func test_white_special_pattern_fields() -> void:
 	assert_eq(p.strike_count, 4)
 	assert_true(p.is_special)
 	assert_almost_eq(p.damage_multiplier, 3.0, 0.001)
-	assert_almost_eq(p.strike_delay, 0.3, 0.001)
+	assert_almost_eq(p.strike_delay, 0.35, 0.001)  # Tier 4: 0.35s
 
 func test_white_special_input_sequence() -> void:
 	var p := preload("res://resources/attack_patterns/boitata_white_special_pattern.tres")
@@ -28,10 +28,14 @@ func test_white_special_input_sequence() -> void:
 	assert_eq(p.input_sequence[2], "ui_down")
 	assert_eq(p.input_sequence[3], "ui_down")
 
-func test_white_special_delay_is_0_2s_less_than_purple() -> void:
-	var white := preload("res://resources/attack_patterns/boitata_white_special_pattern.tres")
-	var purple := preload("res://resources/attack_patterns/boss_special_pattern.tres")
-	assert_almost_eq(white.strike_delay, purple.strike_delay - 0.2, 0.001)
+func test_white_special_is_harder_than_chama_falsa() -> void:
+	# BRASA_BRANCA (Tier 4) tem janela menor e dano maior que CHAMA_FALSA (Tier 3)
+	var white    := preload("res://resources/attack_patterns/boitata_white_special_pattern.tres")
+	var falsa    := preload("res://resources/attack_patterns/boitata_chama_falsa_pattern.tres")
+	assert_true(white.attack_duration <= falsa.attack_duration,
+		"brasa branca tem janela <= chama falsa (Tier 4 ≤ Tier 3)")
+	assert_true(white.damage_multiplier > falsa.damage_multiplier,
+		"brasa branca bate mais forte que chama falsa")
 
 func test_get_attack_pattern_returns_valid_pattern() -> void:
 	var pattern := _boitata.get_attack_pattern()

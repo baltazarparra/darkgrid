@@ -4,44 +4,47 @@ extends Saci
 ## Boss FINAL — Fase 5: Jesuíta Bandeirante Catequizador.
 ## "converti todos eles com espelhos e água benta. a floresta pertence ao vaticano."
 ##
-## Moveset = a UNIÃO de TODOS os padrões de TODOS os chefes, com a MESMA chance
-## (1/7 cada). O tuning da fase (janela igual à Fase 4, −1 de dano por golpe com
-## piso de 1) NÃO vive aqui — é da Fase 5 (Constants.PHASE5_*), aplicado
-## igualmente a ele e aos 4 chefes-monstro convertidos. Por isso "o mesmo
-## comportamento".
+## Moveset = os padrões mais difíceis/identitários de cada boss + 2 exclusivos,
+## com a MESMA chance (1/9 cada). O tuning da fase (janela igual à Fase 4,
+## −1 de dano por golpe com piso de 1) NÃO vive aqui — é da Fase 5
+## (Constants.PHASE5_*), aplicado igualmente a ele e aos 4 chefes-monstro.
 ##
-## Herda de Saci toda a cadeia de telegraphs (rastro/assobio/salto-duplo +
-## especial roxo do Boss). O único padrão fora dessa cadeia é o branco do
-## Boitatá (WHITE_SPECIAL_PATTERN), redeclarado aqui com seu próprio flag.
+## Telegraph: BRASA_BRANCA → branco (flag própria); RASTRO/TRILHA/PIRULITO →
+## verde/fogo via _current_is_rastro; ASSOVIO → salto duplo; resto → vermelho.
 
-const WHITE_SPECIAL_PATTERN := preload("res://resources/attack_patterns/boitata_white_special_pattern.tres")
+## Padrões herdados fora da cadeia Saci→Curupira→Boss
+const MULA_CABECADA_PATTERN      := preload("res://resources/attack_patterns/mula_cabecada_pattern.tres")
+const BOITATA_CHAMA_FALSA_PATTERN := preload("res://resources/attack_patterns/boitata_chama_falsa_pattern.tres")
+const WHITE_SPECIAL_PATTERN      := preload("res://resources/attack_patterns/boitata_white_special_pattern.tres")
+const JESUITA_CRUZ_PATTERN       := preload("res://resources/attack_patterns/jesuita_cruz_pattern.tres")
+const JESUITA_ESPADA_PATTERN     := preload("res://resources/attack_patterns/jesuita_espada_pattern.tres")
 
 var _current_is_white_special: bool = false
 
 func get_attack_pattern() -> AttackPattern:
-	# Zera todos os flags de telegraph antes de sortear.
 	_current_is_special = false
 	_current_is_rastro = false
 	_current_is_assobio = false
 	_current_is_white_special = false
 
-	# Todos os padrões de todos os chefes, com a MESMA chance (uniforme).
+	# Pool uniforme: 7 herdados (os mais difíceis de P1-P4) + 2 exclusivos = 9
 	var pool: Array[AttackPattern] = [
-		CRIATURA_PATTERN,        # base (Criatura/Boss)
-		SPECIAL_PATTERN,         # Boss (especial roxo)
-		DOUBLE_BLOCK_PATTERN,    # Boss (bloqueio duplo)
-		WHITE_SPECIAL_PATTERN,   # Boitatá (↑↑↓↓)
-		RASTRO_PATTERN,          # Curupira (←→←→)
-		ASSOBIO_PATTERN,         # Curupira (janela mínima, 3×)
-		SACI_RASTRO_PATTERN,     # Saci (rastro acelerado)
+		MULA_CABECADA_PATTERN,       # Mula: PINGPONG ↓↑
+		BOITATA_CHAMA_FALSA_PATTERN, # Boitatá: MONO→MISTO ↑↑↓
+		WHITE_SPECIAL_PATTERN,       # Boitatá: MONO ↑↑↓↓ (overbright)
+		RASTRO_PATTERN,              # Curupira: PINGPONG →←→←
+		ASSOBIO_PATTERN,             # Curupira: janela assassina
+		SACI_RASTRO_PATTERN,         # Saci: rastro acelerado
+		SACI_PIRULITO_PATTERN,       # Saci: SEQUENCIAL ↑→↓←
+		JESUITA_CRUZ_PATTERN,        # Jesuíta: SEQUENCIAL ↑↓→ (L)
+		JESUITA_ESPADA_PATTERN,      # Jesuíta: MISTO ↑→↓→ (mais letal)
 	]
 	var idx := randi() % pool.size()
 	match idx:
-		1: _current_is_special = true
-		3: _current_is_white_special = true
-		4: _current_is_rastro = true
-		5: _current_is_assobio = true
-		6: _current_is_rastro = true  # rastro do Saci reusa o telegraph de rastro
+		2: _current_is_white_special = true
+		3: _current_is_rastro = true
+		4: _current_is_assobio = true
+		5: _current_is_rastro = true  # rastro do Saci reusa telegraph de rastro
 	_active_pattern = pool[idx]
 	return _active_pattern
 

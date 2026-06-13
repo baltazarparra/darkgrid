@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AttackPattern" load_steps=2 format=3 uid="uid://jesuita_cruz_pattern"]
+
+[ext_resource type="Script" path="res://scripts/entities/attack_pattern.gd" id="1_pattern"]
+
+[resource]
+script = ExtResource("1_pattern")
+idle_duration = 0.0
+wind_up_duration = 0.35
+attack_duration = 0.7
+cooldown_duration = 2.0
+damage_multiplier = 2.5
+is_special = true
+strike_count = 3
+strike_delay = 0.3
+jump_telegraph = false
+input_sequence = ["ui_up", "ui_down", "ui_right"]

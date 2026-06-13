@@ -1,12 +1,19 @@
 class_name Boitata
 extends Boss
 
-## Boss da Fase 2: Boitatá, serpente de fogo. Reutiliza os três padrões do Boss
-## da Fase 1 e adiciona um especial branco (↑↑↓↓) mais rápido e mais letal.
+## Boss da Fase 2: Boitatá, serpente de fogo. Introduz Tier 3 (3 botões).
+## Padrões com identidade de "fogo que engana": sequências que começam iguais
+## mas terminam diferente (CHAMA_FALSA ↑↑↓ vs BRASA_BRANCA ↑↑↓↓).
+##
+## CHAMA (15%):       Tier 1, wind_up curto — surpresa rápida
+## LABAREDA (25%):    Tier 2 PINGPONG ↓↑ — familiar mas num boss novo
+## CHAMA_FALSA (35%): Tier 3 ↑↑↓ — começa igual à brasa, termina diferente
+## BRASA_BRANCA (25%): Tier 4 ↑↑↓↓ — devastador, overbright
 
-const WHITE_SPECIAL_PATTERN := preload("res://resources/attack_patterns/boitata_white_special_pattern.tres")
-
-const WHITE_SPECIAL_CHANCE: float = 0.25
+const BOITATA_CHAMA_PATTERN      := preload("res://resources/attack_patterns/boitata_chama_pattern.tres")
+const BOITATA_LABAREDA_PATTERN   := preload("res://resources/attack_patterns/boitata_labareda_pattern.tres")
+const BOITATA_CHAMA_FALSA_PATTERN := preload("res://resources/attack_patterns/boitata_chama_falsa_pattern.tres")
+const WHITE_SPECIAL_PATTERN      := preload("res://resources/attack_patterns/boitata_white_special_pattern.tres")
 
 var _current_is_white_special: bool = false
 
@@ -17,28 +24,18 @@ func _ready() -> void:
 # ─── Public API ────────────────────────────────────
 func get_attack_pattern() -> AttackPattern:
 	var r := randf()
-	var chosen: AttackPattern
-	if r < WHITE_SPECIAL_CHANCE:
-		_current_is_white_special = true
-		_current_is_special = false
-		chosen = WHITE_SPECIAL_PATTERN
+	_current_is_white_special = false
+	_current_is_special = false
+	if r < 0.15:
+		_active_pattern = BOITATA_CHAMA_PATTERN
+	elif r < 0.40:
+		_active_pattern = BOITATA_LABAREDA_PATTERN
+	elif r < 0.75:
+		_active_pattern = BOITATA_CHAMA_FALSA_PATTERN
 	else:
-		_current_is_white_special = false
-		# Distribui o restante (75%) igualmente entre os 3 padrões herdados do Boss.
-		# Boss.get_attack_pattern() usa SPECIAL_CHANCE=0.35, DOUBLE=0.30, resto=básico —
-		# reescrevemos aqui para manter distribuição uniforme dos 3 (25% cada).
-		var r2 := randf()
-		if r2 < 0.333:
-			_current_is_special = true
-			chosen = SPECIAL_PATTERN
-		elif r2 < 0.666:
-			_current_is_special = false
-			chosen = DOUBLE_BLOCK_PATTERN
-		else:
-			_current_is_special = false
-			chosen = CRIATURA_PATTERN
-	_active_pattern = chosen
-	return chosen
+		_current_is_white_special = true
+		_active_pattern = WHITE_SPECIAL_PATTERN
+	return _active_pattern
 
 # ─── Telegraph override ─────────────────────────────
 func _play_windup_telegraph() -> void:

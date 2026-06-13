@@ -1,19 +1,19 @@
 class_name Curupira
 extends Boss
 
-## Boss Final — Fase 3: Curupira, o mais antigo protetor da mata.
+## Boss da Fase 3: Curupira, o mais antigo protetor da mata.
 ## Indiferente e letal. Pés-para-trás. Verde profundo. Sem fogo.
 ##
-## Padrões exclusivos:
-##   RASTRO (30%): 4 golpes (←→←→), 2.5x dano — rastros invertidos que confundem.
-##   ASSOBIO (20%): 1 golpe pesado, wind-up longo, janela curtíssima, 3x dano.
-##   Herdados (50%): distribuídos entre os 3 padrões base do Boss.
+## Quatro padrões com identidade própria — sem padrões genéricos herdados do Boss:
+##   MATA (20%):    Tier 2 MISTO ↑→ — wind_up curto, surpresa de direções
+##   TRILHA (25%):  Tier 3 SEQUENCIAL ←↑→ — três direções em U
+##   RASTRO (30%):  Tier 4 PINGPONG →←→← — rastros invertidos, 2.5x dano
+##   ASSOBIO (25%): Tier 1 especial — wind_up longo, janela assassina, 3.0x dano
 
-const RASTRO_PATTERN  := preload("res://resources/attack_patterns/rastro_pattern.tres")
+const MATA_PATTERN   := preload("res://resources/attack_patterns/curupira_mata_pattern.tres")
+const TRILHA_PATTERN := preload("res://resources/attack_patterns/curupira_trilha_pattern.tres")
+const RASTRO_PATTERN := preload("res://resources/attack_patterns/rastro_pattern.tres")
 const ASSOBIO_PATTERN := preload("res://resources/attack_patterns/assobio_pattern.tres")
-
-const RASTRO_CHANCE:  float = 0.30
-const ASSOBIO_CHANCE: float = 0.20
 
 var _current_is_rastro: bool = false
 var _current_is_assobio: bool = false
@@ -23,28 +23,22 @@ func _ready() -> void:
 
 func get_attack_pattern() -> AttackPattern:
 	var r := randf()
-	var chosen: AttackPattern
 	_current_is_rastro = false
 	_current_is_assobio = false
 	_current_is_special = false
 
-	if r < RASTRO_CHANCE:
+	if r < 0.20:
+		_active_pattern = MATA_PATTERN           # telegraph vermelho normal
+	elif r < 0.45:
 		_current_is_rastro = true
-		chosen = RASTRO_PATTERN
-	elif r < RASTRO_CHANCE + ASSOBIO_CHANCE:
-		_current_is_assobio = true
-		chosen = ASSOBIO_PATTERN
+		_active_pattern = TRILHA_PATTERN         # telegraph verde (reusa visual do rastro)
+	elif r < 0.75:
+		_current_is_rastro = true
+		_active_pattern = RASTRO_PATTERN
 	else:
-		var r2 := randf()
-		if r2 < 0.333:
-			_current_is_special = true
-			chosen = SPECIAL_PATTERN
-		elif r2 < 0.666:
-			chosen = DOUBLE_BLOCK_PATTERN
-		else:
-			chosen = CRIATURA_PATTERN
-	_active_pattern = chosen
-	return chosen
+		_current_is_assobio = true
+		_active_pattern = ASSOBIO_PATTERN
+	return _active_pattern
 
 func _play_windup_telegraph() -> void:
 	if animated_sprite == null:

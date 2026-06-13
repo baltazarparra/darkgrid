@@ -1,38 +1,36 @@
 class_name Saci
 extends Curupira
 
-## Boss Final — Fase 4: Saci Pererê. A casa arde; ele já não pertence a ela.
+## Boss da Fase 4: Saci Pererê. A casa arde; ele já não pertence a ela.
+## Velocidade e caos — quatro padrões próprios, tudo mais rápido que o Curupira.
 ##
-## Mesmo kit do Curupira, com uma diferença no rastro: janela de ação 0.1s menor
-## e intervalo entre hits 0.2s menor (SACI_RASTRO_PATTERN). Tema de fogo — carapuça
-## vermelha, brasas — refletido no telegraph e na aura.
+## ASSOVIO (20%):  Tier 1 especial — wind_up 0.85s, janela 0.4s (piso 0.2s na P4)
+## PULA (25%):     Tier 3 PINGPONG ↑↓↑ — strike_delay 0.3s (apertado)
+## RASTRO (30%):   Tier 4 PINGPONG →←→← — attack 0.65s, strike_delay 0.25s
+## PIRULITO (25%): Tier 4 SEQUENCIAL ↑→↓← — 4 direções horárias, 3.0x dano
 
-const SACI_RASTRO_PATTERN := preload("res://resources/attack_patterns/saci_rastro_pattern.tres")
+const SACI_ASSOVIO_PATTERN  := preload("res://resources/attack_patterns/saci_assovio_pattern.tres")
+const SACI_PULA_PATTERN     := preload("res://resources/attack_patterns/saci_pula_pattern.tres")
+const SACI_RASTRO_PATTERN   := preload("res://resources/attack_patterns/saci_rastro_pattern.tres")
+const SACI_PIRULITO_PATTERN := preload("res://resources/attack_patterns/saci_pirulito_pattern.tres")
 
 func get_attack_pattern() -> AttackPattern:
 	var r := randf()
-	var chosen: AttackPattern
 	_current_is_rastro = false
 	_current_is_assobio = false
 	_current_is_special = false
 
-	if r < RASTRO_CHANCE:
-		_current_is_rastro = true
-		chosen = SACI_RASTRO_PATTERN
-	elif r < RASTRO_CHANCE + ASSOBIO_CHANCE:
+	if r < 0.20:
 		_current_is_assobio = true
-		chosen = ASSOBIO_PATTERN
+		_active_pattern = SACI_ASSOVIO_PATTERN   # salto duplo (telegraph herdado)
+	elif r < 0.45:
+		_active_pattern = SACI_PULA_PATTERN      # telegraph vermelho normal
+	elif r < 0.75:
+		_current_is_rastro = true
+		_active_pattern = SACI_RASTRO_PATTERN    # telegraph fogo (herdado)
 	else:
-		var r2 := randf()
-		if r2 < 0.333:
-			_current_is_special = true
-			chosen = SPECIAL_PATTERN
-		elif r2 < 0.666:
-			chosen = DOUBLE_BLOCK_PATTERN
-		else:
-			chosen = CRIATURA_PATTERN
-	_active_pattern = chosen
-	return chosen
+		_active_pattern = SACI_PIRULITO_PATTERN  # telegraph vermelho normal
+	return _active_pattern
 
 func _play_windup_telegraph() -> void:
 	if animated_sprite == null:

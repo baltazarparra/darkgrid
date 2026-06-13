@@ -1,14 +1,15 @@
-[gd_resource type="Resource" script_class="AttackPattern" load_steps=2 format=3 uid="uid://assobio_pattern"]
+[gd_resource type="Resource" script_class="AttackPattern" load_steps=2 format=3 uid="uid://saci_assovio_pattern"]
 
 [ext_resource type="Script" path="res://scripts/entities/attack_pattern.gd" id="1_pattern"]
 
 [resource]
 script = ExtResource("1_pattern")
 idle_duration = 0.0
-wind_up_duration = 0.9
-attack_duration = 0.45
+wind_up_duration = 0.85
+attack_duration = 0.4
 cooldown_duration = 2.5
-damage_multiplier = 3.0
+damage_multiplier = 2.5
 is_special = false
 strike_count = 1
 strike_delay = 0.0
+jump_telegraph = false
