@@ -5,6 +5,20 @@ const BLOOD_PARTICLES := preload("res://scenes/shared/blood_particles.tscn")
 const CRITICAL_PARTICLES := preload("res://scenes/shared/critical_particles.tscn")
 const DEATH_PARTICLES := preload("res://scenes/shared/death_particles.tscn")
 
+# ─── VFX sprite sheets ─────────────────────────────
+const HIT_VFX_PATH      := "res://assets/effects/hit_vfx_sheet.png"
+const CRITICAL_VFX_PATH := "res://assets/effects/critical_vfx_sheet.png"
+const DODGE_VFX_PATH    := "res://assets/effects/dodge_vfx_sheet.png"
+const LABEL_PATHS := {
+	&"critico":  "res://assets/effects/result_critico.png",
+	&"perfeito": "res://assets/effects/result_perfeito.png",
+	&"errou":    "res://assets/effects/result_errou.png",
+	&"esquiva":  "res://assets/effects/result_esquiva.png",
+}
+const COMBO_DIGIT_PATH  := "res://assets/effects/combo_digit_sheet.png"
+const COMBO_DIGIT_W     := 8
+const COMBO_DIGIT_H     := 12
+
 # ─── Signals ───────────────────────────────────────
 signal hit_stop_started(duration: float)
 signal hit_stop_ended
@@ -16,6 +30,25 @@ signal blood_spilled(at_position: Vector2, intensity: float)
 @export var shake_duration: float = 0.3
 
 var _hit_stop_active: bool = false
+
+# ─── VFX sprite pool ───────────────────────────────
+# AnimatedSprite2D em vez de CPUParticles2D para hit/crit/dodge:
+# 1 draw call por sprite vs. 20-60 por nuvem de partículas — ganho de
+# performance direto no frame do impacto, onde o timing é mais crítico.
+const POOL_PER_VFX := 2
+
+var _vfx_pool: Dictionary = {}      # StringName → Array[AnimatedSprite2D]
+var _vfx_pool_idx: Dictionary = {}  # StringName → int (round-robin)
+
+# Texturas carregadas uma vez, reutilizadas pelo pool.
+var _tex_hit: Texture2D
+var _tex_crit: Texture2D
+var _tex_dodge: Texture2D
+
+# ─── Combo tracker ─────────────────────────────────
+var _combo_streak: int = 0
+var _combo_node: Node2D  # HUD de dígitos (criado sob demanda)
+var _combo_tween: Tween
 
 # ─── Screenshake ───────────────────────────────────
 func trigger_screenshake(intensity: float = shake_intensity, duration: float = shake_duration) -> void:
@@ -66,7 +99,206 @@ func force_clear_hit_stop() -> void:
 	_hit_stop_active = false
 	hit_stop_ended.emit()
 
-# ─── Partículas (pool, Fase 10) ────────────────────
+# ─── VFX Sprite pool (hit/crit/dodge) ─────────────
+func _ready() -> void:
+	_tex_hit   = _safe_load(HIT_VFX_PATH)
+	_tex_crit  = _safe_load(CRITICAL_VFX_PATH)
+	_tex_dodge = _safe_load(DODGE_VFX_PATH)
+
+func _safe_load(path: String) -> Texture2D:
+	if ResourceLoader.exists(path):
+		return load(path)
+	return null
+
+func _make_vfx(tex: Texture2D, frame_w: int, frame_h: int,
+		frame_count: int, fps: float) -> AnimatedSprite2D:
+	var s := AnimatedSprite2D.new()
+	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if tex == null:
+		return s
+	var frames := SpriteFrames.new()
+	frames.add_animation(&"play")
+	frames.set_animation_speed(&"play", fps)
+	frames.set_animation_loop(&"play", false)
+	for i in frame_count:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = tex
+		atlas.region = Rect2(i * frame_w, 0, frame_w, frame_h)
+		frames.add_frame(&"play", atlas)
+	s.sprite_frames = frames
+	return s
+
+func _burst_vfx(key: StringName, tex: Texture2D, frame_w: int, frame_h: int,
+		frame_count: int, fps: float, at_position: Vector2) -> void:
+	if tex == null:
+		return
+	if not _vfx_pool.has(key):
+		_vfx_pool[key] = []
+		_vfx_pool_idx[key] = -1
+	var nodes: Array = _vfx_pool[key]
+	var idx: int = (int(_vfx_pool_idx[key]) + 1) % POOL_PER_VFX
+	_vfx_pool_idx[key] = idx
+	if nodes.size() <= idx:
+		nodes.resize(POOL_PER_VFX)
+	var s: AnimatedSprite2D = nodes[idx]
+	if not is_instance_valid(s) or not s.is_inside_tree():
+		s = _make_vfx(tex, frame_w, frame_h, frame_count, fps)
+		if not _attach_to_scene(s):
+			nodes[idx] = null
+			return
+		# Auto-hide after animation ends.
+		s.animation_finished.connect(func(): s.visible = false)
+		nodes[idx] = s
+	s.position = at_position
+	s.visible = true
+	s.play(&"play")
+
+## Impacto de sangue: substitui blood_particles com 1 draw call.
+func spawn_hit_vfx(at_position: Vector2) -> void:
+	blood_spilled.emit(at_position, 1.0)
+	_burst_vfx(&"hit", _tex_hit, 48, 48, 6, 30.0, at_position)
+
+## Explosão crítica laranja: substitui critical_particles + spark burst.
+func spawn_critical_vfx(at_position: Vector2) -> void:
+	blood_spilled.emit(at_position, 1.6)
+	var vp := get_viewport().get_visible_rect().size
+	if Constants.particle_amount_scale(vp) >= 1.0:
+		_burst_vfx(&"crit", _tex_crit, 64, 64, 6, 20.0, at_position)
+	else:
+		# Budget device: apenas o hit mais barato.
+		_burst_vfx(&"hit", _tex_hit, 48, 48, 6, 30.0, at_position)
+
+## Streaks de esquiva: substitui dodge_particles.
+func spawn_dodge_vfx(at_position: Vector2) -> void:
+	_burst_vfx(&"dodge", _tex_dodge, 80, 48, 4, 24.0, at_position)
+
+# ─── Aliases legados (mantém assinatura pública) ───
+func spawn_blood_particles(at_position: Vector2) -> void:
+	spawn_hit_vfx(at_position)
+
+func spawn_critical_particles(at_position: Vector2) -> void:
+	spawn_critical_vfx(at_position)
+
+func spawn_dodge_particles(at_position: Vector2) -> void:
+	spawn_dodge_vfx(at_position)
+
+func spawn_impact_particles(at_position: Vector2) -> void:
+	spawn_hit_vfx(at_position)
+
+# ─── Partículas mantidas ───────────────────────────
+## Morte: evento raro e dramático — vale o custo dos CPUParticles2D.
+func spawn_death_particles(at_position: Vector2) -> void:
+	blood_spilled.emit(at_position, 2.6)
+	_burst(&"death", _scene_factory(DEATH_PARTICLES, 1.0), at_position)
+
+## Bubble burst e fail continuam como partículas (contexto da bolha de timing,
+## não dos atores — custo já estava isolado e aceitável).
+func spawn_bubble_burst(at_position: Vector2, tint: Color) -> void:
+	_burst(&"bubble", _make_bubble, at_position, tint)
+
+func spawn_fail_particles(at_position: Vector2) -> void:
+	_burst(&"fail", _make_fail, at_position)
+
+# ─── Rótulos de resultado ─────────────────────────
+## Exibe rótulo pixel-art (critico/perfeito/errou/esquiva) que flutua para cima
+## e some. Aparece ACIMA da posição dada (timing bubble). Não precisa de pool
+## (1 rótulo por evento de combate — evento raro).
+func spawn_result_label(label_key: StringName, at_position: Vector2) -> void:
+	var path: String = LABEL_PATHS.get(label_key, "")
+	if path.is_empty() or not ResourceLoader.exists(path):
+		return
+	var tex: Texture2D = load(path)
+	if tex == null:
+		return
+	var sprite := Sprite2D.new()
+	sprite.texture = tex
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sprite.scale = Vector2(2.0, 2.0)
+	sprite.position = at_position + Vector2(0, -24)
+	sprite.z_index = 20
+	if not _attach_to_scene(sprite):
+		return
+	var tw := create_tween()
+	tw.set_parallel(true)
+	# Pop de escala rápido.
+	tw.tween_property(sprite, "scale", Vector2(2.4, 2.4), 0.06)
+	tw.chain().tween_property(sprite, "scale", Vector2(2.0, 2.0), 0.06)
+	# Flutua para cima.
+	tw.tween_property(sprite, "position:y", sprite.position.y - 28.0, 0.45)
+	# Fade-out após hold.
+	tw.chain().tween_interval(0.12)
+	tw.chain().tween_property(sprite, "modulate:a", 0.0, 0.18)
+	tw.chain().tween_callback(sprite.queue_free)
+
+# ─── Combo tracker / indicador ────────────────────
+## Registra acerto/falha. Streak ≥ 2 exibe o multiplicador na tela.
+func track_perfect(is_perfect: bool) -> void:
+	if is_perfect:
+		_combo_streak += 1
+	else:
+		_combo_streak = 0
+	var vp := get_viewport().get_visible_rect().size
+	if Constants.particle_amount_scale(vp) < 1.0:
+		return  # Budget device: skip combo indicator
+	_update_combo_indicator()
+
+func _update_combo_indicator() -> void:
+	if _combo_streak < 2:
+		if is_instance_valid(_combo_node):
+			_combo_node.visible = false
+		return
+	if not is_instance_valid(_combo_node) or not _combo_node.is_inside_tree():
+		_combo_node = _make_combo_node()
+		if not _attach_to_scene(_combo_node):
+			_combo_node = null
+			return
+	_combo_node.visible = true
+	_refresh_combo_digits()
+	# Reset auto-hide timer.
+	if _combo_tween != null and _combo_tween.is_valid():
+		_combo_tween.kill()
+	_combo_tween = create_tween()
+	_combo_tween.tween_interval(1.8)
+	_combo_tween.tween_callback(func():
+		if is_instance_valid(_combo_node):
+			_combo_node.visible = false
+	)
+
+func _make_combo_node() -> Node2D:
+	var node := Node2D.new()
+	node.z_index = 25
+	# Posição fixa: canto superior esquerdo da área de combate.
+	node.position = Vector2(60.0, 60.0)
+	return node
+
+func _refresh_combo_digits() -> void:
+	if not is_instance_valid(_combo_node):
+		return
+	for child in _combo_node.get_children():
+		child.queue_free()
+	var tex := _safe_load(COMBO_DIGIT_PATH)
+	if tex == null:
+		return
+	# Exibe "x{N}" — ex.: "x2", "x3".
+	var text: String = "x%d" % _combo_streak
+	var x: float = 0.0
+	for ch in text:
+		var digit_idx: int
+		if ch == "x":
+			digit_idx = 10  # "x" glyph no final da sheet
+		else:
+			digit_idx = int(ch)
+		var s := Sprite2D.new()
+		s.texture = tex
+		s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		s.region_enabled = true
+		s.region_rect = Rect2(digit_idx * COMBO_DIGIT_W, 0, COMBO_DIGIT_W, COMBO_DIGIT_H)
+		s.scale = Vector2(2.0, 2.0)
+		s.position = Vector2(x, 0.0)
+		_combo_node.add_child(s)
+		x += COMBO_DIGIT_W * 2.0
+
+# ─── Partículas legadas (pool, Fase 10) ────────────
 # Cada efeito reusa CPUParticles2D via restart() em vez de instantiate() +
 # queue_free() por golpe: a alocação acontecia exatamente no frame do impacto —
 # o momento crítico do timing — e era o maior suspeito de stutter em Android
@@ -80,42 +312,6 @@ const POOL_PER_KEY := 2
 var _pool: Dictionary = {}       # StringName -> Array[CPUParticles2D]
 var _pool_idx: Dictionary = {}   # StringName -> int (round-robin)
 
-func spawn_blood_particles(at_position: Vector2) -> void:
-	blood_spilled.emit(at_position, 1.0)
-	# Dobro da densidade base: o golpe espirra muito mais sangue (tom gore).
-	_burst(&"blood", _scene_factory(BLOOD_PARTICLES, 2.0), at_position)
-
-func spawn_critical_particles(at_position: Vector2) -> void:
-	blood_spilled.emit(at_position, 1.6)
-	_burst(&"critical", _scene_factory(CRITICAL_PARTICLES, 2.0), at_position)
-	# Segundo burst: faíscas claras overbright (blend aditivo) por cima do sangue,
-	# para a leitura do acerto crítico "estourar" e ficar nítida.
-	_burst(&"spark", _make_spark, at_position)
-
-func spawn_death_particles(at_position: Vector2) -> void:
-	blood_spilled.emit(at_position, 2.6)
-	_burst(&"death", _scene_factory(DEATH_PARTICLES, 1.0), at_position)
-
-func spawn_dodge_particles(at_position: Vector2) -> void:
-	_burst(&"dodge", _make_dodge, at_position)
-
-## Estouro radial na posição da bolha no acerto — nasce onde o olho do jogador está,
-## reforçando a leitura do timing. Aditivo (glow) na cor do contexto.
-func spawn_bubble_burst(at_position: Vector2, tint: Color) -> void:
-	_burst(&"bubble", _make_bubble, at_position, tint)
-
-## Estilhaço negativo do erro: partículas escuras dessaturadas, blend normal (sem
-## brilho — leitura "morta") que despencam e dispersam rápido. Comunica a falha sem
-## premiar o jogador.
-func spawn_fail_particles(at_position: Vector2) -> void:
-	_burst(&"fail", _make_fail, at_position)
-
-## Mantido como alias de sangue para chamadas legadas.
-func spawn_impact_particles(at_position: Vector2) -> void:
-	_burst(&"impact", _scene_factory(BLOOD_PARTICLES, 1.0), at_position)
-
-## Dispara o efeito `key` em `at_position`, criando o nó na primeira vez (ou se o
-## cache morreu com a cena anterior). `tint.a > 0` recolore antes do restart.
 func _burst(key: StringName, factory: Callable, at_position: Vector2, tint: Color = Color.TRANSPARENT) -> void:
 	if not _pool.has(key):
 		var fresh: Array = []
@@ -148,37 +344,6 @@ func _scene_factory(scene: PackedScene, amount_scale: float) -> Callable:
 		if amount_scale != 1.0:
 			p.amount = int(p.amount * amount_scale)
 		return p
-
-func _make_spark() -> CPUParticles2D:
-	var p := CPUParticles2D.new()
-	p.amount = 28
-	p.lifetime = 0.4
-	p.direction = Vector2(0, -1)
-	p.spread = 180.0
-	p.gravity = Vector2(0, 60)
-	p.initial_velocity_min = 220.0
-	p.initial_velocity_max = 480.0
-	p.scale_amount_min = 2.0
-	p.scale_amount_max = 5.0
-	p.color = Constants.COLOR_PARTICLE_SPARK
-	p.material = _glow_material()
-	return p
-
-# Spread estreito + blend aditivo: vira um "flash" de alívio limpo, não uma
-# nuvem dispersa — leitura clara da esquiva perfeita.
-func _make_dodge() -> CPUParticles2D:
-	var p := CPUParticles2D.new()
-	p.amount = 50
-	p.lifetime = 0.6
-	p.spread = 45.0
-	p.gravity = Vector2(0, -120)
-	p.initial_velocity_min = 120.0
-	p.initial_velocity_max = 280.0
-	p.scale_amount_min = 2.5
-	p.scale_amount_max = 6.0
-	p.color = Constants.COLOR_PARTICLE_DODGE
-	p.material = _glow_material()
-	return p
 
 func _make_bubble() -> CPUParticles2D:
 	var p := CPUParticles2D.new()

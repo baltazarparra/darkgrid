@@ -52,6 +52,8 @@ var _boss_special_hit_index: int = 0
 var _combat_over: bool = false
 var _screen_changed: bool = false
 var _animator: ActorAnimator
+var _backdrop: ArenaBackdrop
+var _doom_fire: DoomFire
 
 func _ready() -> void:
 	_timing_system = $TimingSystem
@@ -76,7 +78,9 @@ func _ready() -> void:
 	_update_camera_fit()
 	get_viewport().size_changed.connect(_update_camera_fit)
 
-	add_child(ArenaBackdrop.new())
+	_backdrop = ArenaBackdrop.new()
+	add_child(_backdrop)
+	_doom_fire = get_node_or_null("DoomFire") as DoomFire
 	var blood_decals := BloodDecals.new()
 	add_child(blood_decals)
 	_feedback.blood_spilled.connect(blood_decals.add_splat)
@@ -115,6 +119,9 @@ func _run_combat_loader() -> void:
 
 	var tween := create_tween()
 	tween.tween_property(fade, "color:a", 0.94, COMBAT_LOADER_FADE)
+	# Pausa efeitos de background assim que a tela cobre — libera CPU/GPU antes
+	# da primeira janela de timing (o lag de entrada do Fase 2 no iPad mini).
+	tween.tween_callback(_cull_visual_backdrop)
 	tween.tween_property(label, "modulate:a", 1.0, COMBAT_LOADER_FADE)
 	tween.tween_interval(COMBAT_LOADER_PREPARE_HOLD)
 	tween.tween_property(label, "modulate:a", 0.0, COMBAT_LOADER_FADE)
@@ -374,12 +381,16 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.spawn_critical_particles(_enemy.position)
 		_feedback.trigger_hit_stop(6)
 		_animator.strike(_caipora)
+		_feedback.spawn_result_label(&"critico", _timing_bubble.position + Vector2(0, -55))
+		_feedback.track_perfect(true)
 	else:
 		_timing_bubble.burst_fail()
 		_feedback.spawn_fail_particles(_timing_bubble.position)
 		_feedback.trigger_screenshake(6.0, 0.18)
 		_sfx.play(_sfx.ui_click_sound, -6.0)
 		_animator.settle(_caipora)
+		_feedback.spawn_result_label(&"errou", _timing_bubble.position + Vector2(0, -55))
+		_feedback.track_perfect(false)
 	if _enemy.health.is_alive():
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
 		_start_enemy_turn()
@@ -455,6 +466,8 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.spawn_dodge_particles(_caipora.position)
 		_feedback.trigger_hit_stop(5)
 		_animator.perfect_dodge(_caipora)
+		_feedback.spawn_result_label(&"perfeito", _timing_bubble.position + Vector2(0, -55))
+		_feedback.track_perfect(true)
 	else:
 		_timing_bubble.burst_fail()
 		var damage := _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
@@ -666,3 +679,11 @@ func _do_screen_change(screen: SignalBus.Screen, caipora_won: bool) -> void:
 	if caipora_won and screen != SignalBus.Screen.FINAL_CHOICE:
 		GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
 	GameState.change_screen(screen)
+
+## Pausa efeitos visuais de background imediatamente após o fade de entrada cobrir
+## a tela — libera CPU/GPU antes da primeira janela de timing. Idempotente.
+func _cull_visual_backdrop() -> void:
+	if _backdrop != null and is_instance_valid(_backdrop):
+		_backdrop.set_combat_mode(true)
+	if _doom_fire != null and is_instance_valid(_doom_fire):
+		_doom_fire.set_combat_mode(true)

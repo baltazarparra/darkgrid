@@ -45,9 +45,27 @@ var _key_hint: String = "up"
 var _frozen: bool = false
 var _flash_timer: float = 0.0
 
+# Sprite do glifo de direção (mesma garra tribal do D-pad redesenhado, 64×64).
+var _arrow_sprite: Sprite2D
+
+const _ARROW_TEXTURES := {
+	"up":    preload("res://assets/sprites/dpad_up.png"),
+	"down":  preload("res://assets/sprites/dpad_down.png"),
+	"left":  preload("res://assets/sprites/dpad_left.png"),
+	"right": preload("res://assets/sprites/dpad_right.png"),
+}
+# 64px sprite → ~35px dentro do anel-alvo de 40px de raio (PX=5 da versão grid).
+const ARROW_SCALE := 0.55
+
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	visible = false
+	_arrow_sprite = Sprite2D.new()
+	_arrow_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_arrow_sprite.scale = Vector2(ARROW_SCALE, ARROW_SCALE)
+	_arrow_sprite.texture = _ARROW_TEXTURES["up"]
+	_arrow_sprite.visible = false
+	add_child(_arrow_sprite)
 
 func _process(delta: float) -> void:
 	if _frozen:
@@ -102,6 +120,7 @@ func _process(delta: float) -> void:
 		_arrow_alpha = lerpf(0.35, 0.0, t)
 
 	_color = _flashed(_color)
+	_update_arrow_sprite()
 	queue_redraw()
 
 func _process_burst(delta: float) -> void:
@@ -136,8 +155,7 @@ func _draw() -> void:
 	# 2. Anel convergente (o timer): encolhe em direção ao alvo.
 	draw_arc(Vector2.ZERO, _outer_radius, 0.0, TAU, 40, _color, 2.5)
 
-	# 3. Glifo da tecla (seta) no centro — sempre visível enquanto a janela está ativa.
-	_draw_arrow(_key_hint, _arrow_alpha)
+	# 3. Glifo da tecla: atualizado via Sprite2D em _update_arrow_sprite (ver _process).
 
 # ─── Private helpers ───────────────────────────────
 func _mode_color() -> Color:
@@ -156,58 +174,19 @@ func _flashed(c: Color) -> Color:
 	var g: Color = Constants.COLOR_CRYSTAL_GLOW
 	return Color(lerpf(c.r, g.r, f), lerpf(c.g, g.g, f), lerpf(c.b, g.b, f), c.a)
 
-func _draw_arrow(dir: String, alpha: float) -> void:
-	const PX: float = 5.0
-	var grid: Array
-	match dir:
-		"up":
-			grid = [
-				"...X...",
-				"..XXX..",
-				".XXXXX.",
-				"XXXXXXX",
-				"...X...",
-				"...X...",
-				"...X...",
-			]
-		"down":
-			grid = [
-				"...X...",
-				"...X...",
-				"...X...",
-				"XXXXXXX",
-				".XXXXX.",
-				"..XXX..",
-				"...X...",
-			]
-		"left":
-			grid = [
-				"...X...",
-				"..X....",
-				".X.....",
-				"XXXXXXX",
-				".X.....",
-				"..X....",
-				"...X...",
-			]
-		"right":
-			grid = [
-				"...X...",
-				"....X..",
-				".....X.",
-				"XXXXXXX",
-				".....X.",
-				"....X..",
-				"...X...",
-			]
-	var rows: int = grid.size()
-	var cols: int = 7
-	var ox: float = -cols * PX * 0.5
-	var oy: float = -rows * PX * 0.5
-	for row in rows:
-		for col in cols:
-			if grid[row][col] == "X":
-				draw_rect(Rect2(ox + col * PX, oy + row * PX, PX, PX), Color(1.0, 1.0, 1.0, alpha))
+func _update_arrow_sprite() -> void:
+	if _arrow_sprite == null:
+		return
+	if _burst_timer >= 0.0 or _phase == PHASE_IDLE:
+		_arrow_sprite.visible = false
+		return
+	_arrow_sprite.visible = _arrow_alpha > 0.01
+	if _arrow_sprite.visible:
+		var tex: Texture2D = _ARROW_TEXTURES.get(_key_hint, _ARROW_TEXTURES["up"]) as Texture2D
+		if _arrow_sprite.texture != tex:
+			_arrow_sprite.texture = tex
+		var col := _flashed(_mode_color())
+		_arrow_sprite.modulate = Color(col.r, col.g, col.b, _arrow_alpha)
 
 # ─── Public API ────────────────────────────────────
 func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false, vuln_color: Color = Color.TRANSPARENT, key_hint: String = "up") -> void:
@@ -228,12 +207,18 @@ func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perf
 	_color = Color(1, 1, 1, 0.45)
 	position = world_pos
 	visible = true
+	if _arrow_sprite != null:
+		_arrow_sprite.texture = _ARROW_TEXTURES.get(key_hint, _ARROW_TEXTURES["up"])
+		_arrow_sprite.modulate = Color(1, 1, 1, 0.35)
+		_arrow_sprite.visible = true
 	queue_redraw()
 
 func hide_bubble() -> void:
 	_phase = PHASE_IDLE
 	_burst_timer = -1.0
 	visible = false
+	if _arrow_sprite != null:
+		_arrow_sprite.visible = false
 
 func burst_success() -> void:
 	_phase = PHASE_IDLE

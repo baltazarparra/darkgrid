@@ -54,8 +54,10 @@ func _play_windup_telegraph() -> void:
 # ─── Private helpers ───────────────────────────────
 func _spawn_shadow_aura() -> void:
 	var aura := CPUParticles2D.new()
-	aura.amount = 28
-	aura.lifetime = 1.4
+	var vp := get_viewport()
+	var ps: float = Constants.particle_amount_scale(vp.get_visible_rect().size) if vp != null else 1.0
+	aura.amount = maxi(1, int(28.0 * ps))
+	aura.lifetime = 1.0 if ps < 1.0 else 1.4
 	aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	aura.emission_sphere_radius = 30.0
 	aura.gravity = Vector2(0, -22)

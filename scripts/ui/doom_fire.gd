@@ -87,6 +87,10 @@ func _rebuild(vp: Vector2) -> void:
 	# Em landscape (720px): pix=16 → mesma cobertura do comportamento original.
 	var pix: int = maxi(SCALE, ceili(vp.y / float(ROWS)))
 	_cols = ceili(vp.x / float(pix))
+	# Em web (gl_compatibility mobile) reduz a grade pela metade — ~55% menos
+	# operações por update, sem impacto visual perceptível na tela pequena.
+	if OS.has_feature("web"):
+		_cols = maxi(1, _cols / 2)
 	_grid = PackedInt32Array()
 	_grid.resize(_cols * ROWS)
 	for col in _cols:
@@ -100,11 +104,17 @@ func _rebuild(vp: Vector2) -> void:
 	_sprite.position = Vector2(_cols * pix / 2.0, ROWS * pix / 2.0)
 
 func _process(_delta: float) -> void:
-	_fire_tick = (_fire_tick + 1) % 3
+	var tick_mod: int = 5 if OS.has_feature("web") else 3
+	_fire_tick = (_fire_tick + 1) % tick_mod
 	if _fire_tick != 0:
 		return
 	_update_fire()
 	_blit_image()
+
+## Para ou retoma o DoomFire durante o combate, liberando CPU para o timing.
+func set_combat_mode(active: bool) -> void:
+	set_process(not active)
+	visible = not active
 
 # ─── Private helpers ───────────────────────────────
 func _update_fire() -> void:

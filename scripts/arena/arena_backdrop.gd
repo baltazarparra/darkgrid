@@ -99,6 +99,9 @@ var _cam_offset: Vector2 = Vector2.ZERO
 var _has_moon: bool = false
 var _bonfire_pos: Vector2 = Vector2.INF
 var _layers: Array = []
+var _mist: CPUParticles2D
+var _fire_nodes: Array[Node] = []
+var _embers: CPUParticles2D
 
 func _ready() -> void:
 	z_index = -20
@@ -288,6 +291,7 @@ func _spawn_horizon_mist() -> void:
 	mist.scale_amount_max = 1.2
 	mist.color_ramp = _mist_ramp()
 	mist.material = Constants.ADDITIVE_MATERIAL
+	_mist = mist
 	add_child(mist)
 
 func _mist_ramp() -> Gradient:
@@ -307,7 +311,10 @@ func _setup_phase_dressing() -> void:
 			_add_moon(Color(0.55, 0.65, 0.85), 0.7)
 		2:
 			_bonfire_pos = Vector2(46.0, 172.0)
+			var pre_count: int = get_child_count()
 			FireEffect.attach(self, Vector2(46.0, 166.0), 1.4)
+			for fi in range(pre_count, get_child_count()):
+				_fire_nodes.append(get_child(fi))
 		3:
 			_has_moon = true
 			_add_moon(Color(0.45, 0.70, 0.55), 0.6)
@@ -352,7 +359,29 @@ func _spawn_rising_embers() -> void:
 	embers.scale_amount_max = 2.2
 	embers.color_ramp = _ember_ramp()
 	embers.material = Constants.ADDITIVE_MATERIAL
+	_embers = embers
 	add_child(embers)
+
+## Pausa ou restaura todos os efeitos visuais de background durante o combate.
+## Chamado pelo ArenaManager antes da primeira janela de timing para liberar
+## orçamento de CPU/GPU para a mecânica de reflexo.
+func set_combat_mode(active: bool) -> void:
+	if _far_line != null:
+		_far_line.visible = not active
+	if _mid_line != null:
+		_mid_line.visible = not active
+	if is_instance_valid(_mist):
+		_mist.visible = not active
+		_mist.emitting = not active
+	for node: Node in _fire_nodes:
+		if is_instance_valid(node):
+			node.visible = not active
+			if node is CPUParticles2D:
+				(node as CPUParticles2D).emitting = not active
+	if is_instance_valid(_embers):
+		_embers.visible = not active
+		_embers.emitting = not active
+	set_process(not active)
 
 func _ember_ramp() -> Gradient:
 	var grad := Gradient.new()

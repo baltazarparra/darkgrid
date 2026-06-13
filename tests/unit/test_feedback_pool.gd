@@ -63,26 +63,35 @@ func test_amount_respects_device_scale() -> void:
 	var expected: int = maxi(1, int(22.0 * Constants.particle_amount_scale(vp)))
 	assert_eq(p.amount, expected, "amount do fail escalado pela classe do device")
 
-# ── Glow compartilhado: um único CanvasItemMaterial para todo o projeto ──
+# ── Glow compartilhado: bubble ainda usa ADDITIVE_MATERIAL; dodge/crit migraram ──
 func test_glow_material_is_shared_single_resource() -> void:
+	# Bubble burst (timing visual) ainda usa CPUParticles2D com ADDITIVE_MATERIAL.
+	_fb.spawn_bubble_burst(Vector2.ZERO, Color.WHITE)
+	var bubble: CPUParticles2D = _fb._pool[&"bubble"][0]
+	assert_eq(bubble.material, Constants.ADDITIVE_MATERIAL,
+		"bubble usa o recurso compartilhado ADDITIVE_MATERIAL")
+	# Dodge e crit migraram para AnimatedSprite2D → _vfx_pool, não _pool.
 	_fb.spawn_dodge_particles(Vector2.ZERO)
-	_fb.spawn_critical_particles(Vector2.ZERO)
-	var dodge: CPUParticles2D = _fb._pool[&"dodge"][0]
-	var spark: CPUParticles2D = _fb._pool[&"spark"][0]
-	assert_eq(dodge.material, Constants.ADDITIVE_MATERIAL,
-		"dodge usa o recurso compartilhado, não uma instância própria")
-	assert_eq(spark.material, dodge.material, "mesmo material em todos os glows")
+	assert_true(_fb._vfx_pool.has(&"dodge"),
+		"spawn_dodge_particles alimenta _vfx_pool, não _pool")
+	assert_false(_fb._pool.has(&"dodge"),
+		"dodge não polui o _pool de CPUParticles2D")
 
 func test_fail_particles_have_no_glow() -> void:
 	# Leitura "morta" da falha: blend normal, sem brilho — tom não negocia.
 	_fb.spawn_fail_particles(Vector2.ZERO)
 	assert_null((_fb._pool[&"fail"][0] as CPUParticles2D).material)
 
-# ── Densidade do gore: golpe espirra o DOBRO do sangue base (alias impact) ──
+# ── blood e impact são aliases de hit VFX (AnimatedSprite2D, pool único) ──
 func test_blood_keeps_double_gore_density() -> void:
+	# Ambos agora encaminham para spawn_hit_vfx → _vfx_pool[&"hit"].
+	# AnimatedSprite2D não tem "amount" — invariante é que usam o mesmo pool
+	# sem criar entradas no _pool de CPUParticles2D.
 	_fb.spawn_blood_particles(Vector2.ZERO)
 	_fb.spawn_impact_particles(Vector2.ZERO)
-	var blood: CPUParticles2D = _fb._pool[&"blood"][0]
-	var impact: CPUParticles2D = _fb._pool[&"impact"][0]
-	# A escala por device multiplica os dois igualmente: a razão 2x sobrevive.
-	assert_eq(blood.amount, impact.amount * 2, "golpe espirra o dobro do sangue base")
+	assert_true(_fb._vfx_pool.has(&"hit"),
+		"blood e impact ambos alimentam _vfx_pool[hit]")
+	assert_false(_fb._pool.has(&"blood"),
+		"blood não usa mais o _pool de CPUParticles2D")
+	assert_false(_fb._pool.has(&"impact"),
+		"impact não usa mais o _pool de CPUParticles2D")
