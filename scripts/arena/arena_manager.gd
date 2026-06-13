@@ -512,10 +512,7 @@ func _boss_spread_pos() -> Vector2:
 	return pos
 
 func _phase_window(base: float) -> float:
-	return Constants.timing_window_for_phase(base, GameState.active_phase, _uses_touch_timing_bonus())
-
-func _uses_touch_timing_bonus() -> bool:
-	return _controls_hud != null and _controls_hud.is_touch_device_available()
+	return Constants.timing_window_for_phase(base, GameState.active_phase)
 
 func _is_under_dpad(world_pos: Vector2) -> bool:
 	var rect := _controls_hud.get_dpad_screen_rect()

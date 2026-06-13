@@ -56,9 +56,9 @@ const TIMING_TIER2_WINDOW := 0.85  # 2 botões — normal
 const TIMING_TIER3_WINDOW := 0.75  # 3 botões — médio
 const TIMING_TIER4_WINDOW := 0.65  # 4 botões — difícil
 
-## Janela de acao real depois do tuning por fase. Em device touch, soma folga
-## absoluta para compensar latencia/ergonomia sem facilitar desktop.
-static func timing_window_for_phase(base: float, phase: int, touch_device: bool = false) -> float:
+## Janela de acao real depois do tuning por fase. O bonus de touch e aplicado
+## sempre — e a janela padrao unica para todas as plataformas.
+static func timing_window_for_phase(base: float, phase: int) -> float:
 	var window: float = base
 	match phase:
 		5:
@@ -69,8 +69,7 @@ static func timing_window_for_phase(base: float, phase: int, touch_device: bool 
 			window = maxf(base - PHASE3_TIMING_REDUCTION, TIMING_WINDOW_MIN)
 		2:
 			window = maxf(base - PHASE2_TIMING_REDUCTION, TIMING_WINDOW_MIN)
-	if touch_device:
-		window += TOUCH_TIMING_WINDOW_BONUS
+	window += TOUCH_TIMING_WINDOW_BONUS
 	return window
 
 # ─── Audio ─────────────────────────────────────────
