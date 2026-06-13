@@ -23,22 +23,22 @@ const GRID := 16
 # Tuning visual: xvfb-run -a godot --path . --resolution 393x852
 #   -s scripts/tools/preview_combat_dpad.gd -- --out=/tmp/dpad.png [--press=ui_right]
 const GLYPH: PackedStringArray = [
-	"................",
-	".......KK.......",
-	"......KOOK......",
-	"....KKOOOOKK....",
-	"...KKOOOOOOKK...",
-	"..KKOOODDOOOKK..",
-	".KKOOODDDDOOOKK.",
-	"KKOOODDKKDDOOOKK",
-	"KOOODDKKKKDDOOOK",
-	"KOODDKK..KKDDOOK",
-	"KODDKK....KKDDOK",
-	"KDDKK......KKDDK",
-	"KDKK........KKDK",
-	"KKK..........KKK",
-	"................",
-	"................",
+	"................",   # 0
+	".......KK.......",   # 1 — ponta 2 px
+	"......KOOK......",   # 2
+	"....KKOOOOKK....",   # 3
+	"...KKOOOOOOKK...",   # 4
+	"..KKOOODDOOOKK..",   # 5
+	".KKOOODDDDOOOKK.",   # 6
+	"KKOOODDKKDDOOOKK",   # 7 — ombros totais
+	"KKKK.KOOODK.KKKK",   # 8 — entalhe tribal (arrowhead → shaft)
+	".....KOOODK.....",   # 9 — shaft
+	".....KOOODK.....",   # 10
+	".....KOOODK.....",   # 11
+	".....KOOODK.....",   # 12
+	".....KDDDDK.....",   # 13 — base com sombra
+	".....KKKKKK.....",   # 14 — base fechada
+	"................",   # 15
 ]
 
 const GLYPH_PAD_CELLS := 2

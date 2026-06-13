@@ -19,10 +19,31 @@ const PHASE_ACTIVE: int = 0
 const PHASE_IDLE: int = 1
 
 ## Flash verde-cristal ao ENTRAR na janela perfeita ("o cristal carregou").
-## Curto de propósito: o telegraph do Curupira é um modulate sustentado no
-## sprite do inimigo (curupira.gd), verde-folha; isto é um pop de 0.12s no anel,
-## verde-menta, sempre pareado com o timing_alert_sound — outra linguagem.
 const FLASH_S: float = 0.12
+
+# ─── Glifo direcional (seta pixel-art 12×12, apontando para CIMA) ──────────
+# K = outline preto  O = juba clara  D = juba escura  . = transparente
+# Exibido a ARROW_CELL px por célula → 60×60 px (vs 35 px dos PNGs anteriores).
+# Rotação por _key_hint usa o mesmo padrão do CombatArrowButton:
+#   up    → (c, r)          right → (GRID-1-r, c)
+#   down  → (GRID-1-c, GRID-1-r)  left → (r, GRID-1-c)
+const ARROW_GLYPH: PackedStringArray = [
+	"............",   # 0
+	".....KK.....",   # 1 — ponta 2 px
+	"....KOOK....",   # 2
+	"...KOOODK...",   # 3
+	"..KOOOOODK..",   # 4
+	".KOOOOOOODK.",   # 5
+	"KOOOOOOOOODK",   # 6 — ombros totais
+	"KK.KOOODK.KK",   # 7 — entalhe tribal (arrowhead → shaft)
+	"...KOOODK...",   # 8 — shaft
+	"...KOOODK...",   # 9
+	"...KOOODK...",   # 10
+	"...KKKKKK...",   # 11 — base fechada
+]
+const ARROW_GRID: int = 12
+const ARROW_CELL: float = 5.0   # px por célula → 60 px total
+const ARROW_NUDGE_DIST: float = 4.0   # px de "toque" na direção durante a janela
 
 # ─── State ─────────────────────────────────────────
 var _duration: float = 0.8
@@ -44,28 +65,13 @@ var _vuln_color: Color = Color.TRANSPARENT
 var _key_hint: String = "up"
 var _frozen: bool = false
 var _flash_timer: float = 0.0
+var _arrow_offset: Vector2 = Vector2.ZERO
 
-# Sprite do glifo de direção (mesma garra tribal do D-pad redesenhado, 64×64).
-var _arrow_sprite: Sprite2D
-
-const _ARROW_TEXTURES := {
-	"up":    preload("res://assets/sprites/dpad_up.png"),
-	"down":  preload("res://assets/sprites/dpad_down.png"),
-	"left":  preload("res://assets/sprites/dpad_left.png"),
-	"right": preload("res://assets/sprites/dpad_right.png"),
-}
-# 64px sprite → ~35px dentro do anel-alvo de 40px de raio (PX=5 da versão grid).
-const ARROW_SCALE := 0.55
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	visible = false
-	_arrow_sprite = Sprite2D.new()
-	_arrow_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_arrow_sprite.scale = Vector2(ARROW_SCALE, ARROW_SCALE)
-	_arrow_sprite.texture = _ARROW_TEXTURES["up"]
-	_arrow_sprite.visible = false
-	add_child(_arrow_sprite)
+
 
 func _process(delta: float) -> void:
 	if _frozen:
@@ -77,15 +83,14 @@ func _process(delta: float) -> void:
 	if _phase == PHASE_IDLE:
 		return
 
-	# Decai depois dos early-returns: o hit-stop (_frozen) congela o flash junto.
 	_flash_timer = maxf(0.0, _flash_timer - delta)
 
 	_elapsed += delta
 	var progress: float = clampf(_elapsed / _duration, 0.0, 1.0)
 	var pc: float = (_perfect_start + _perfect_end) * 0.5
 
-	# Anel convergente: encolhe de RADIUS_MAX até encostar no alvo exatamente no
-	# centro da zona perfeita, depois colapsa para dentro (leitura de falha).
+	# Anel convergente: encolhe de RADIUS_MAX até o alvo no centro da zona perfeita,
+	# depois colapsa para dentro.
 	if progress <= pc:
 		var t: float = progress / maxf(pc, 0.0001)
 		_outer_radius = lerpf(RADIUS_MAX, RADIUS_TARGET, t)
@@ -96,7 +101,7 @@ func _process(delta: float) -> void:
 	var in_perfect: bool = progress >= _perfect_start and progress <= _perfect_end
 	if in_perfect and not _vuln_emitted:
 		_vuln_emitted = true
-		_flash_timer = FLASH_S  # sincronizado com o timing_alert_sound do listener
+		_flash_timer = FLASH_S
 		vulnerable_entered.emit()
 
 	# Cor do anel convergente + brilho do alvo + opacidade da seta.
@@ -106,28 +111,32 @@ func _process(delta: float) -> void:
 		var pulse: float = sin(t * TAU * 4.0) * 0.1
 		_color = Color(mode_color.r, mode_color.g, mode_color.b, 0.95)
 		_target_alpha = 0.7 + pulse
-		_arrow_alpha = 0.9
+		_arrow_alpha = 0.95
+		# Toque gentil na direção da ação: 3 Hz, sempre levemente à frente.
+		var nudge: float = (sin(_elapsed * TAU * 3.0) * 0.3 + 0.7) * ARROW_NUDGE_DIST
+		_arrow_offset = _key_hint_to_vec() * nudge
 	elif progress < _perfect_start:
 		var t: float = progress / maxf(_perfect_start, 0.0001)
 		_color = Color(mode_color.r, mode_color.g, mode_color.b, lerpf(0.45, 0.9, t))
 		_target_alpha = 0.25
 		_arrow_alpha = 0.35
+		_arrow_offset = Vector2.ZERO
 	else:
 		# Pós-janela: anel colapsando, esmaece.
 		var t: float = (progress - _perfect_end) / maxf(1.0 - _perfect_end, 0.0001)
 		_color = Color(mode_color.r * 0.5, mode_color.g * 0.2, mode_color.b * 0.2, lerpf(0.7, 0.0, t))
 		_target_alpha = lerpf(0.25, 0.0, t)
 		_arrow_alpha = lerpf(0.35, 0.0, t)
+		_arrow_offset = Vector2.ZERO
 
 	_color = _flashed(_color)
-	_update_arrow_sprite()
 	queue_redraw()
+
 
 func _process_burst(delta: float) -> void:
 	_burst_timer -= delta
 	var t: float = 1.0 - maxf(0.0, _burst_timer / 0.12)
 	if _burst_fail:
-		# Colapso: encolhe e escurece — leitura "morta" da falha.
 		_burst_color = Color(0.2, 0.05, 0.05, lerpf(0.8, 0.0, t))
 		_burst_radius = lerpf(RADIUS_TARGET * 0.8, RADIUS_TARGET * 0.3, t)
 	else:
@@ -137,6 +146,7 @@ func _process_burst(delta: float) -> void:
 	if _burst_timer <= 0.0:
 		_phase = PHASE_IDLE
 		visible = false
+
 
 func _draw() -> void:
 	if _burst_timer >= 0.0:
@@ -155,7 +165,57 @@ func _draw() -> void:
 	# 2. Anel convergente (o timer): encolhe em direção ao alvo.
 	draw_arc(Vector2.ZERO, _outer_radius, 0.0, TAU, 40, _color, 2.5)
 
-	# 3. Glifo da tecla: atualizado via Sprite2D em _update_arrow_sprite (ver _process).
+	# 3. Glifo direcional pixel-art: seta 60×60 px com nudge na janela perfeita.
+	if _arrow_alpha > 0.01:
+		_draw_arrow_glyph(_arrow_alpha, _flashed(_mode_color()))
+
+
+# ─── Glifo pixel-art ───────────────────────────────
+func _draw_arrow_glyph(alpha: float, color: Color) -> void:
+	# Origem: canto superior-esquerdo do glifo 12×12 centrado em (0,0) + nudge.
+	var half: float = ARROW_GRID * ARROW_CELL * 0.5
+	var origin: Vector2 = Vector2(-half, -half) + _arrow_offset
+	var cs: Vector2 = Vector2.ONE * (ARROW_CELL + 0.5)  # overlap mínimo anti-seam
+
+	var bright: Color = Color(color.r, color.g, color.b, alpha)
+	var dark: Color = Color(
+		Constants.COLOR_JUBA_DARK.r, Constants.COLOR_JUBA_DARK.g,
+		Constants.COLOR_JUBA_DARK.b, alpha * 0.7)
+	var outline: Color = Color(0.0, 0.0, 0.0, alpha)
+
+	for r: int in ARROW_GRID:
+		var row: String = ARROW_GLYPH[r]
+		for c: int in ARROW_GRID:
+			var ch: String = row[c]
+			if ch == ".":
+				continue
+			var col: Color
+			match ch:
+				"O": col = bright
+				"D": col = dark
+				_:   col = outline
+			var cell_pos: Vector2 = _glyph_rotated_cell(r, c)
+			draw_rect(Rect2(origin + cell_pos * ARROW_CELL, cs), col, true)
+
+
+## Mapeia (row, col) do glifo UP para a posição rotacionada por _key_hint.
+func _glyph_rotated_cell(r: int, c: int) -> Vector2:
+	var g: int = ARROW_GRID - 1
+	match _key_hint:
+		"right": return Vector2(float(g - r), float(c))
+		"down":  return Vector2(float(g - c), float(g - r))
+		"left":  return Vector2(float(r), float(g - c))
+		_:       return Vector2(float(c), float(r))  # up
+
+
+## Vetor unitário na direção de _key_hint (coords de tela: Y+ = baixo).
+func _key_hint_to_vec() -> Vector2:
+	match _key_hint:
+		"down":  return Vector2.DOWN
+		"left":  return Vector2.LEFT
+		"right": return Vector2.RIGHT
+		_:       return Vector2.UP
+
 
 # ─── Private helpers ───────────────────────────────
 func _mode_color() -> Color:
@@ -165,8 +225,8 @@ func _mode_color() -> Color:
 		return Color(0.1, 0.6, 1.0, 1.0)
 	return Color(1.0, 0.15, 0.1, 1.0)
 
-## Lerp para o verde-cristal enquanto o flash da janela perfeita está ativo;
-## decai linearmente de volta à cor de modo. Preserva o alpha de entrada.
+
+## Lerp para o verde-cristal enquanto o flash da janela perfeita está ativo.
 func _flashed(c: Color) -> Color:
 	if _flash_timer <= 0.0:
 		return c
@@ -174,19 +234,6 @@ func _flashed(c: Color) -> Color:
 	var g: Color = Constants.COLOR_CRYSTAL_GLOW
 	return Color(lerpf(c.r, g.r, f), lerpf(c.g, g.g, f), lerpf(c.b, g.b, f), c.a)
 
-func _update_arrow_sprite() -> void:
-	if _arrow_sprite == null:
-		return
-	if _burst_timer >= 0.0 or _phase == PHASE_IDLE:
-		_arrow_sprite.visible = false
-		return
-	_arrow_sprite.visible = _arrow_alpha > 0.01
-	if _arrow_sprite.visible:
-		var tex: Texture2D = _ARROW_TEXTURES.get(_key_hint, _ARROW_TEXTURES["up"]) as Texture2D
-		if _arrow_sprite.texture != tex:
-			_arrow_sprite.texture = tex
-		var col := _flashed(_mode_color())
-		_arrow_sprite.modulate = Color(col.r, col.g, col.b, _arrow_alpha)
 
 # ─── Public API ────────────────────────────────────
 func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false, vuln_color: Color = Color.TRANSPARENT, key_hint: String = "up") -> void:
@@ -203,22 +250,19 @@ func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perf
 	_outer_radius = RADIUS_MAX
 	_target_alpha = 0.25
 	_arrow_alpha = 0.35
+	_arrow_offset = Vector2.ZERO
 	_flash_timer = 0.0
 	_color = Color(1, 1, 1, 0.45)
 	position = world_pos
 	visible = true
-	if _arrow_sprite != null:
-		_arrow_sprite.texture = _ARROW_TEXTURES.get(key_hint, _ARROW_TEXTURES["up"])
-		_arrow_sprite.modulate = Color(1, 1, 1, 0.35)
-		_arrow_sprite.visible = true
 	queue_redraw()
+
 
 func hide_bubble() -> void:
 	_phase = PHASE_IDLE
 	_burst_timer = -1.0
 	visible = false
-	if _arrow_sprite != null:
-		_arrow_sprite.visible = false
+
 
 func burst_success() -> void:
 	_phase = PHASE_IDLE
@@ -229,8 +273,10 @@ func burst_success() -> void:
 	visible = true
 	queue_redraw()
 
+
 func set_frozen(value: bool) -> void:
 	_frozen = value
+
 
 ## Estilhaço de erro: a bolha colapsa (encolhe e escurece) em vez de explodir.
 func burst_fail() -> void:
