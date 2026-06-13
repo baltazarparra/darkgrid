@@ -431,11 +431,17 @@ func _on_enemy_attack_started() -> void:
 	var vuln: Color = BOSS_BUBBLE_COLOR if is_special else Color.TRANSPARENT
 	_timing_bubble.show_bubble(bubble_pos, window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, true, vuln, hint)
 	_timing_system.open_window(window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, false, 0.0, 0.0, action)
+	SignalBus.defense_window_opened.emit(action)
 
 func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 	if _combat_over:
 		return
 	_timing_system.timing_result.disconnect(_on_defense_timing_result)
+	SignalBus.defense_window_closed.emit()
+	if result == TimingSystem.TimingResult.PERFECT:
+		SignalBus.defense_result_perfect.emit()
+	else:
+		SignalBus.defense_result_miss.emit()
 
 	_animator.play_pose(_enemy, &"idle")
 	if result == TimingSystem.TimingResult.PERFECT:
@@ -615,6 +621,7 @@ func _on_actor_died(actor: CombatActor) -> void:
 ## handlers de resultado/primeiro-hit, para a state machine do inimigo e limpa o hit-stop
 ## (restaurando speed_scale). Chamado uma vez, no início de _on_actor_died, antes de awaits.
 func _teardown_combat() -> void:
+	SignalBus.defense_window_closed.emit()
 	_timing_system.close_window()
 	_disconnect_timing(_on_attack_timing_result)
 	_disconnect_timing(_on_double_final_result)

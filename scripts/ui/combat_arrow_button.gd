@@ -1,10 +1,10 @@
 class_name CombatArrowButton
 extends BaseButton
 
-# Botão direcional do D-pad de COMBATE, na identidade da protagonista: garra-chevron
+# Botão direcional do D-pad de COMBATE, na identidade da protagonista: garra tribal
 # pixel-art na paleta da juba (laranja sobre vazio preto, outline duro, cantos retos),
-# que flasheia nos tons de CHAMA ao pressionar. Substitui os Buttons de texto "↑←↓→"
-# que liam como teclas de teclado.
+# que flasheia nos tons de CHAMA ao pressionar, pulsa laranja quando a janela de defesa
+# abre e explode verde-cristal no acerto perfeito.
 #
 # Ergonomia: o retângulo do Control cobre o cluster INTEIRO do D-pad (os 4 irmãos se
 # sobrepõem) e `_has_point` aceita apenas o gajo (wedge) de 90° da própria direção —
@@ -16,13 +16,16 @@ extends BaseButton
 
 # ─── Constants ─────────────────────────────────────
 const GRID := 16
-# Glifo em pixel-art autoral (célula a célula, sem polígono — leitura chapada).
-# Desenhado apontando para CIMA; as outras direções rotacionam no _draw.
+# Garra Tribal da Mata — ponta afiada 2px (vs 4px do arrowhead genérico), corpo
+# simétrico com D-pixels de profundidade, base V-aberta (dois entalhes divergentes).
+# Desenhado apontando para CIMA; as outras direções rotacionam no _draw via _rotated_cell.
 # '.'=vazio  'K'=outline preto  'O'=juba clara  'D'=juba escura.
+# Tuning visual: xvfb-run -a godot --path . --resolution 393x852
+#   -s scripts/tools/preview_combat_dpad.gd -- --out=/tmp/dpad.png [--press=ui_right]
 const GLYPH: PackedStringArray = [
 	"................",
-	"......KKKK......",
-	".....KKOOKK.....",
+	".......KK.......",
+	"......KOOK......",
 	"....KKOOOOKK....",
 	"...KKOOOOOOKK...",
 	"..KKOOODDOOOKK..",
@@ -38,19 +41,20 @@ const GLYPH: PackedStringArray = [
 	"................",
 ]
 
-# Respiro entre o glifo e a borda da plate, em células da grade.
 const GLYPH_PAD_CELLS := 2
-const PLATE_BG := Color(0.04, 0.025, 0.025, 0.92)
+const PLATE_BG         := Color(0.04, 0.025, 0.025, 0.92)
 const PLATE_BG_PRESSED := Color(0.0, 0.0, 0.0, 0.98)
+const PLATE_BG_ACTIVE  := Color(0.06, 0.035, 0.028, 0.95)
 
 # Press: o glifo avança 1.5 células na própria direção (bote, não afundamento).
 const PRESS_LUNGE_CELLS := 1.5
-const RELEASE_SECONDS := 0.10
-# Anel de impacto: contorno duro expandindo da borda da plate, alpha em degraus
-# (sem gradiente suave — acabamento chapado).
-const RING_SECONDS := 0.16
-const RING_GROW_CELLS := 2.5
-const RING_ALPHA_STEPS := 4
+const RELEASE_SECONDS   := 0.10
+const PERFECT_SECONDS   := 0.14
+const MISS_SECONDS      := 0.10
+# Anel de impacto: contorno duro expandindo da borda da plate, alpha em degraus.
+const RING_SECONDS      := 0.16
+const RING_GROW_CELLS   := 2.5
+const RING_ALPHA_STEPS  := 4
 
 const _ORIENTATIONS: Dictionary = {
 	"ui_up": 0, "ui_right": 1, "ui_down": 2, "ui_left": 3,
@@ -70,6 +74,7 @@ var _plate_rect: Rect2 = Rect2()
 var _wedge_center: Vector2 = Vector2.ZERO
 var _dead_radius: float = 0.0
 
+# Press
 var _press_amount: float = 0.0:
 	set(value):
 		_press_amount = value
@@ -81,11 +86,37 @@ var _ring_amount: float = 1.0:
 var _release_tween: Tween = null
 var _ring_tween: Tween = null
 
+# Janela de defesa ativa — esta seta é a ação esperada
+var _window_open: bool = false
+var _window_amount: float = 0.0:
+	set(value):
+		_window_amount = value
+		queue_redraw()
+var _window_tween: Tween = null
+
+# Feedback de resultado
+var _perfect_amount: float = 0.0:
+	set(value):
+		_perfect_amount = value
+		queue_redraw()
+var _miss_amount: float = 0.0:
+	set(value):
+		_miss_amount = value
+		queue_redraw()
+var _perfect_tween: Tween = null
+var _miss_tween: Tween = null
+
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	button_down.connect(_on_visual_press)
 	button_up.connect(_on_visual_release)
+
+
+func _process(_delta: float) -> void:
+	# Pulso animado do anel de janela ativa requer redraw contínuo.
+	if _window_amount > 0.001:
+		queue_redraw()
 
 
 # ─── Public API ────────────────────────────────────
@@ -98,14 +129,44 @@ func configure(plate_rect: Rect2, wedge_center: Vector2, dead_radius: float) -> 
 	queue_redraw()
 
 
-## Zera o estado visual de press (usado quando o HUD solta todas as actions à força).
+## Zera o estado visual de press, janela e resultados.
 func clear_feedback() -> void:
-	if _release_tween != null:
-		_release_tween.kill()
-	if _ring_tween != null:
-		_ring_tween.kill()
+	for tw: Tween in [_release_tween, _ring_tween, _window_tween, _perfect_tween, _miss_tween]:
+		if tw != null:
+			tw.kill()
 	_press_amount = 0.0
 	_ring_amount = 1.0
+	_window_open = false
+	_window_amount = 0.0
+	_perfect_amount = 0.0
+	_miss_amount = 0.0
+
+
+## Ativa/desativa o estado de janela de defesa (esta seta = ação esperada agora).
+func set_window_open(on: bool) -> void:
+	_window_open = on
+	if _window_tween != null:
+		_window_tween.kill()
+	_window_tween = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_window_tween.tween_property(self, "_window_amount", 1.0 if on else 0.0, 0.18)
+
+
+## Flash verde-cristal: acerto perfeito (0.14s expo-out).
+func flash_perfect() -> void:
+	if _perfect_tween != null:
+		_perfect_tween.kill()
+	_perfect_amount = 1.0
+	_perfect_tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	_perfect_tween.tween_property(self, "_perfect_amount", 0.0, PERFECT_SECONDS)
+
+
+## Pulso sangue escuro: erro ou janela expirada (0.10s sine-out).
+func flash_miss() -> void:
+	if _miss_tween != null:
+		_miss_tween.kill()
+	_miss_amount = 1.0
+	_miss_tween = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_miss_tween.tween_property(self, "_miss_amount", 0.0, MISS_SECONDS)
 
 
 # ─── Hit-test em gajo (wedge) ──────────────────────
@@ -151,25 +212,50 @@ func _draw() -> void:
 	var border_w := float(Constants.UI_BORDER_WIDTH)
 	var cell := (_plate_rect.size.x - border_w * 2.0) / float(GRID + GLYPH_PAD_CELLS * 2)
 
-	# Plate: vazio preto com borda dura (cantos retos — direção de arte da UI).
+	# ── Plate: base. Janela ativa clareia o background e aquece a borda. ──
 	var border_color := Constants.COLOR_JUBA_DARK.lerp(Constants.COLOR_JUBA, _press_amount)
+	if _window_amount > 0.0:
+		border_color = border_color.lerp(Constants.COLOR_CHAMA_HOT, _window_amount * 0.6)
 	draw_rect(_plate_rect, border_color, true)
 	var bg := PLATE_BG.lerp(PLATE_BG_PRESSED, _press_amount)
+	if _window_amount > 0.0:
+		bg = bg.lerp(PLATE_BG_ACTIVE, _window_amount)
 	draw_rect(_plate_rect.grow(-border_w), bg, true)
 
-	# Anel de impacto: contorno expandindo da plate, alpha quantizado em degraus.
+	# ── Anel pulsante de janela ativa (3 Hz) ──
+	if _window_amount > 0.001:
+		var t := Time.get_ticks_msec() * 0.001
+		var pulse_alpha := (sin(t * TAU * 3.0) * 0.4 + 0.6) * _window_amount * 0.7
+		var pulse_color := Constants.COLOR_JUBA
+		pulse_color.a = pulse_alpha
+		draw_rect(_plate_rect.grow(-border_w * 1.5), pulse_color, false, 1.0)
+
+	# ── Anel de impacto de press: alpha quantizado, cor depende do resultado ──
 	if _ring_amount < 1.0:
 		var alpha := floorf((1.0 - _ring_amount) * RING_ALPHA_STEPS) / float(RING_ALPHA_STEPS)
 		if alpha > 0.0:
 			var ring := _plate_rect.grow(_ring_amount * RING_GROW_CELLS * cell)
-			var ring_color := Constants.COLOR_JUBA
+			var ring_color := Constants.COLOR_CRYSTAL_GLOW if _perfect_amount > 0.001 else Constants.COLOR_JUBA
 			ring_color.a = alpha
 			draw_rect(ring, ring_color, false, maxf(border_w * 0.5, 1.0))
 
-	# Glifo: célula a célula, rotacionado para a direção; no press, troca a paleta
-	# para CHAMA e avança ("bote") na direção do comando.
+	# ── Overlay de resultado ──
+	if _perfect_amount > 0.001:
+		var gc := Constants.COLOR_CRYSTAL_GLOW
+		gc.a = _perfect_amount * 0.55
+		draw_rect(_plate_rect.grow(-border_w), gc, true)
+	if _miss_amount > 0.001:
+		var bc := Constants.COLOR_BLOOD
+		bc.a = _miss_amount * 0.45
+		draw_rect(_plate_rect.grow(-border_w), bc, true)
+
+	# ── Glifo: célula a célula, rotacionado para a direção; no press, troca a paleta
+	# para CHAMA e avança ("bote") na direção do comando. Janela ativa aquece levemente. ──
 	var bright := Constants.COLOR_JUBA.lerp(Constants.COLOR_CHAMA_CORE, _press_amount)
 	var dark := Constants.COLOR_JUBA_DARK.lerp(Constants.COLOR_CHAMA_HOT, _press_amount)
+	if _window_amount > 0.0:
+		bright = bright.lerp(Constants.COLOR_CHAMA_CORE, _window_amount * 0.3)
+		dark = dark.lerp(Constants.COLOR_CHAMA_HOT, _window_amount * 0.3)
 	var lunge: Vector2 = _LUNGE_DIRS[_orientation] * (PRESS_LUNGE_CELLS * cell * _press_amount)
 	var origin := _plate_rect.position + Vector2.ONE * (border_w + GLYPH_PAD_CELLS * cell) + lunge
 	# Overlap mínimo entre células vizinhas: mata as emendas de float sem borrar.

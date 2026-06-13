@@ -28,6 +28,16 @@ signal boss_special_telegraph(boss_type: String)
 ## Boss derrotado (fase identifica o chefe: 1=mula..5=jesuíta). Cicatriz sonora própria.
 signal boss_died(phase: int)
 
+# ─── Janela de defesa — feedback no D-pad de combate ──
+## Janela de bloqueio/dodge abriu para esta ação direcional.
+signal defense_window_opened(action: String)
+## Janela fechou (resultado já foi processado — perfeito ou miss).
+signal defense_window_closed()
+## Jogador acertou o timing perfeito.
+signal defense_result_perfect()
+## Janela expirou sem input correto, ou input veio no timing errado.
+signal defense_result_miss()
+
 # ─── Bolsa de fragmentos (corpse run) ──────────────
 # Emitidos pelo MetaProgression; o AudioDirector (persistente) toca os one-shots —
 # a cena que derruba a bolsa morre na transição para GAME_OVER e cortaria o som.

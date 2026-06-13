@@ -61,3 +61,35 @@ func test_clear_feedback_resets_press_visual() -> void:
 	_btn.clear_feedback()
 	assert_eq(_btn._press_amount, 0.0, "clear_feedback zera o press")
 	assert_eq(_btn._ring_amount, 1.0, "clear_feedback encerra o anel")
+
+func test_set_window_open_true_sets_flag_and_tween() -> void:
+	_btn.set_window_open(true)
+	assert_true(_btn._window_open, "set_window_open(true) levanta a flag")
+	assert_not_null(_btn._window_tween, "tween de janela criado")
+
+func test_set_window_open_false_clears_flag() -> void:
+	_btn.set_window_open(true)
+	_btn.set_window_open(false)
+	assert_false(_btn._window_open, "set_window_open(false) baixa a flag")
+
+func test_flash_perfect_sets_amount_to_one() -> void:
+	_btn.flash_perfect()
+	assert_almost_eq(_btn._perfect_amount, 1.0, 0.001, "flash_perfect inicia em 1.0")
+	assert_not_null(_btn._perfect_tween, "tween de perfeito criado")
+
+func test_flash_miss_sets_amount_to_one() -> void:
+	_btn.flash_miss()
+	assert_almost_eq(_btn._miss_amount, 1.0, 0.001, "flash_miss inicia em 1.0")
+	assert_not_null(_btn._miss_tween, "tween de miss criado")
+
+func test_clear_feedback_resets_all_states() -> void:
+	_btn.set_window_open(true)
+	_btn.flash_perfect()
+	_btn._on_visual_press()
+	_btn.clear_feedback()
+	assert_eq(_btn._press_amount, 0.0, "clear zera press")
+	assert_eq(_btn._ring_amount, 1.0, "clear restaura anel")
+	assert_eq(_btn._window_amount, 0.0, "clear zera window")
+	assert_eq(_btn._perfect_amount, 0.0, "clear zera perfect")
+	assert_eq(_btn._miss_amount, 0.0, "clear zera miss")
+	assert_false(_btn._window_open, "clear baixa flag de janela")

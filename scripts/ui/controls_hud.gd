@@ -74,6 +74,10 @@ func _ready() -> void:
 	layer = HUD_LAYER
 	print("[caipora] build ", _BUILD_TAG)
 	SignalBus.screen_changed.connect(_on_screen_changed)
+	SignalBus.defense_window_opened.connect(_on_defense_window_opened)
+	SignalBus.defense_window_closed.connect(_on_defense_window_closed)
+	SignalBus.defense_result_perfect.connect(_on_defense_result_perfect)
+	SignalBus.defense_result_miss.connect(_on_defense_result_miss)
 
 
 func _on_screen_changed(screen: SignalBus.Screen) -> void:
@@ -442,6 +446,40 @@ func _release_all_actions() -> void:
 		Input.action_release(action)
 	for btn in _keys:
 		(btn as CombatArrowButton).clear_feedback()
+
+
+# ─── Feedback de janela de defesa ──────────────────
+func _on_defense_window_opened(action: String) -> void:
+	if _button_mode != MODE_COMBAT:
+		return
+	for btn in _keys:
+		var b := btn as CombatArrowButton
+		b.set_window_open(b.action == action)
+
+
+func _on_defense_window_closed() -> void:
+	if _button_mode != MODE_COMBAT:
+		return
+	for btn in _keys:
+		(btn as CombatArrowButton).set_window_open(false)
+
+
+func _on_defense_result_perfect() -> void:
+	if _button_mode != MODE_COMBAT:
+		return
+	for btn in _keys:
+		var b := btn as CombatArrowButton
+		if b._window_open:
+			b.flash_perfect()
+
+
+func _on_defense_result_miss() -> void:
+	if _button_mode != MODE_COMBAT:
+		return
+	for btn in _keys:
+		var b := btn as CombatArrowButton
+		if b._window_open:
+			b.flash_miss()
 
 
 func _feed_event(action: String, pressed: bool) -> void:
