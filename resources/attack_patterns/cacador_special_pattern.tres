@@ -4,12 +4,12 @@
 
 [resource]
 script = ExtResource("1_pattern")
-idle_duration = 0.2
-wind_up_duration = 0.5
-attack_duration = 1.0
+idle_duration = 0.0
+wind_up_duration = 0.4
+attack_duration = 0.85
 cooldown_duration = 2.0
-damage_multiplier = 2.0
-input_sequence = ["ui_up", "ui_down", "ui_up", "ui_down"]
+damage_multiplier = 1.5
+input_sequence = ["ui_down", "ui_up"]
 is_special = true
-strike_count = 4
-strike_delay = 0.5
+strike_count = 2
+strike_delay = 0.45

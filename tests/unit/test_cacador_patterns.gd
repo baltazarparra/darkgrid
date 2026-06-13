@@ -17,19 +17,18 @@ func test_cacador_has_correct_health() -> void:
 	assert_eq(Constants.COMMON_HEALTH_LATE, 8)
 
 func test_special_pattern_fields() -> void:
+	# Tier 2 PINGPONG ↓↑ — redesenhado de Tier 4 para ser coerente com Fase 1
 	var p := preload("res://resources/attack_patterns/cacador_special_pattern.tres")
-	assert_eq(p.strike_count, 4)
+	assert_eq(p.strike_count, 2)
 	assert_true(p.is_special)
-	assert_almost_eq(p.damage_multiplier, 2.0, 0.001)
-	assert_almost_eq(p.strike_delay, 0.5, 0.001)
+	assert_almost_eq(p.damage_multiplier, 1.5, 0.001)
+	assert_almost_eq(p.strike_delay, 0.45, 0.001)
 
 func test_special_pattern_input_sequence() -> void:
 	var p := preload("res://resources/attack_patterns/cacador_special_pattern.tres")
-	assert_eq(p.input_sequence.size(), 4)
-	assert_eq(p.input_sequence[0], "ui_up")
-	assert_eq(p.input_sequence[1], "ui_down")
-	assert_eq(p.input_sequence[2], "ui_up")
-	assert_eq(p.input_sequence[3], "ui_down")
+	assert_eq(p.input_sequence.size(), 2)
+	assert_eq(p.input_sequence[0], "ui_down")
+	assert_eq(p.input_sequence[1], "ui_up")
 
 func test_get_attack_pattern_returns_valid_pattern() -> void:
 	var pattern := _cacador.get_attack_pattern()

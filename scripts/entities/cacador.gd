@@ -1,8 +1,11 @@
 class_name Cacador
 extends Criatura
 
-## Inimigo da Fase 2: caçador com tocha. Herda Criatura e adiciona um terceiro
-## padrão especial de 4 hits (↑↓↑↓) com telegraph de pulso âmbar cegante.
+## Inimigo das Fases 1, 2, 4: caçador com tocha.
+## Três padrões coerentes com o framework Tier 1-2:
+##   BÁSICO (35%):  Tier 1 ↓ — tutorial
+##   DUPLO (30%):   Tier 2 MONO ↓↓ — mesmo botão, mais rápido
+##   ESPECIAL (35%): Tier 2 PINGPONG ↓↑ — telegraph âmbar, escala naturalmente por fase
 
 const CACADOR_BASIC_PATTERN  := preload("res://resources/attack_patterns/criatura_pattern.tres")
 const CACADOR_DOUBLE_PATTERN := preload("res://resources/attack_patterns/criatura_double_block_pattern.tres")
